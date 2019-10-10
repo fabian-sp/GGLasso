@@ -23,7 +23,7 @@ def Gdot(X, Y):
     
     xy = np.trace( np.matmul( t(X), Y) , axis1 = 1, axis2 = 2)
     
-    return xy   
+    return xy.sum() 
 
 
 #%%
@@ -45,3 +45,88 @@ Gdot(A,A)
 
 # check if trace equal to sum of eigenvalues
 M.sum(axis = 1)
+
+
+
+
+#%%
+
+A = np.random.normal(size=(2000,2000))
+A = A.T @ A
+
+xt = np.random.normal(size= 2000)
+
+b = A @ xt
+
+
+def lin(x):
+    return A@x
+
+def dot(x,y):
+    return x@y
+
+
+#%%
+
+def cg_general(lin, dot, b, eps = 1e-8):
+    
+    dim = b.shape
+    N_iter = len(b)
+    x = np.zeros(dim)
+    r = b - lin(x)
+    p = r.copy()
+    j = 0
+    
+    while j < N_iter :
+        
+        linp = lin(p)
+        alpha = dot(r,r) / dot(p, linp)
+        
+        x =  x + alpha * p
+        denom = dot(r,r)
+        r = r -  alpha * linp
+        #r = b - linp
+        
+        if np.sqrt(dot(r,r)) <= eps:
+            print("Reached accuracy")
+            break
+        
+        beta = dot(r,r)/denom
+        
+        p = r + beta * p
+        
+        j += 1
+        
+    return x
+
+
+
+#%%
+
+x_sol = cg_general(lin, dot, b, eps = 1e-5)
+
+np.linalg.norm(x_sol-xt)
+
+
+#%%
+
+A = np.random.normal(size=(200,200))
+A = A.T @ A + np.eye(A.shape[0])
+
+def lin(X):
+    return A @  X
+
+def dot(X, Y):
+    return np.trace(X.T @ Y)
+
+
+Xt = np.random.normal(size=(200,200))
+B = lin(Xt)
+
+
+Xs = cg_general(lin, dot, B, eps = 1e-5)
+
+
+dot(Xt-Xs, Xt-Xs)
+
+
