@@ -105,6 +105,44 @@ def jacobian_prox_phi(v , l1 , l2):
     assert abs(M - M.T).max() <= 1e-10
     return M
 
+def jacobian_prox_p(X, Y ,l1, l2):
+    assert X.shape == Y.shape, "argument has not the same shape as evaluation point"
+    assert abs(Y - t(Y)).max() <= 1e-10 , "argument Y is not symmetric"
+    
+    d = X.shape
+    W = np.zeros(d)
+    for i in np.arange(d[1]):
+        for j in np.arange(d[2]):
+            if i == j:
+                W[:,i,j] = Y[:,i,j]
+            else:
+                W[:,i,j] = jacobian_prox_phi(X[:,i,j] , l1 , l2) @ Y[:,i,j]
+    
+    assert Gdot(W, Y) >= 0 , "not a pos. semidef operator"
+    return W
+
+#%%
+# functions related to the log determinant
+    
+def h(A):
+    return - np.log(np.linalg.det(A))
+
+def phiplus(A, beta):
+    D, Q = np.linalg.eig(A)
+    
+    phip = lambda d: 0.5 * (np.sqrt(d**2 + 4*beta) + d)
+    
+    B = Q @ np.diag(phip(D)) @ Q.T
+    return B
+
+def phiminus(A, beta):
+    D, Q = np.linalg.eig(A)
+
+    phim = lambda d: 0.5 * (np.sqrt(d**2 + 4*beta) - d)
+    
+    B = Q @ np.diag(phim(D)) @ Q.T
+    return B
+
 #%%
 # testing
 v = np.array([1.5,0.3,0])
@@ -115,12 +153,14 @@ jacobian_projection(v,12)
 
 A = np.array( [ [[1, 2], [3, 4]] , [[5, 6], [7, 8]] ])
 
+A = np.random.normal( size = (10,10))
+A = A.T @ A
 
+X = np.random.normal( size = (5,10,10))
+X = t(X) @ X
 
-A = np.random.normal( size = (5,20,20))
-A = t(A) @ A
-
-
+Y = np.random.normal( size = (5,10,10))
+Y = t(Y) @ Y
 
 
 
