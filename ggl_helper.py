@@ -28,7 +28,10 @@ def Gdot(X, Y):
     
     return xy.sum() 
 
-
+# general functions for the space S
+    
+def Sdot(X,Y):
+    return np.trace( X.T @ Y )
 #%%
 # functions related to the GGL regularizer
     
@@ -127,21 +130,50 @@ def jacobian_prox_p(X, Y ,l1, l2):
 def h(A):
     return - np.log(np.linalg.det(A))
 
-def phiplus(A, beta):
-    D, Q = np.linalg.eig(A)
+def phiplus(A, beta, D = np.array([]), Q = np.array([])):
+    # D and Q are optional if already precomputed
+    if len(D) != A.shape[0]:
+        D, Q = np.linalg.eig(A)
     
     phip = lambda d: 0.5 * (np.sqrt(d**2 + 4*beta) + d)
     
     B = Q @ np.diag(phip(D)) @ Q.T
     return B
 
-def phiminus(A, beta):
-    D, Q = np.linalg.eig(A)
+def phiminus(A, beta , D = np.array([]), Q = np.array([]) ):
+    # D and Q are optional if already precomputed
+    if len(D) != A.shape[0]:
+        D, Q = np.linalg.eig(A)
 
     phim = lambda d: 0.5 * (np.sqrt(d**2 + 4*beta) - d)
     
     B = Q @ np.diag(phim(D)) @ Q.T
     return B
+
+def moreau_h(A, beta , D = np.array([]), Q = np.array([])):
+    
+    return - beta * np.log (np.linalg.det( phiplus(A, beta, D , Q))) + 0.5 * np.linalg.norm(phiminus(A,beta, D , Q))**2
+
+def jacobian_phiplus(A, B, beta, D = np.array([]), Q = np.array([])):
+    
+    d = A.shape
+    if len(D) != A.shape[0]:
+        D, Q = np.linalg.eig(A)
+    
+    phip = lambda d: 0.5 * (np.sqrt(d**2 + 4*beta) + d)
+    
+    Gamma = np.zeros(d)
+    phip_d = phip(D) 
+    
+    for i in np.arange(d[0]):
+        for j in np.arange(d[1]):
+            denom = np.sqrt(D[i]**2 + 4* beta) + np.sqrt(D[j]**2 + 4* beta)
+            Gamma[i,j] = (phip_d[i] + phip_d[j]) / denom
+            
+            
+    res = Q @ (Gamma * (Q.T @ B @ Q)) @ Q.T
+    return res
+    
 
 #%%
 # testing
@@ -161,7 +193,6 @@ X = t(X) @ X
 
 Y = np.random.normal( size = (5,10,10))
 Y = t(Y) @ Y
-
 
 
 
