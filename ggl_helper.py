@@ -128,6 +128,19 @@ def jacobian_prox_p(X, Y ,l1, l2):
     
     assert Gdot(W, Y) >= 0 , "not a pos. semidef operator"
     return W
+  
+def construct_jacobian_prox_p(X, l1 , l2):
+    # each (i,j) entry has a corresponding jacobian which is a KxK matrix
+    (K,p,p) = X.shape
+    W = np.zeros((K,K,p,p))
+    for i in np.arange(p):
+        for j in np.arange(p):
+            if i == j:
+                W[:,:,i,j] = np.eye(K)
+            else:
+                W[:,:,i,j] = jacobian_prox_phi(X[:,i,j] , l1 , l2) 
+    return W
+    
 
 #%%
 # functions related to the log determinant
@@ -181,7 +194,28 @@ def jacobian_phiplus(A, B, beta, D = np.array([]), Q = np.array([])):
             
     res = Q @ (Gamma * (Q.T @ B @ Q)) @ Q.T
     return res
+
+def construct_gamma(A, beta, D = np.array([]), Q = np.array([])):
     
+    d = A.shape
+    if len(D) != A.shape[0]:
+        D, Q = np.linalg.eig(A)
+    
+    phip = lambda d: 0.5 * (np.sqrt(d**2 + 4*beta) + d)
+    
+    Gamma = np.zeros(d)
+    phip_d = phip(D) 
+    
+    for i in np.arange(d[0]):
+        for j in np.arange(d[1]):
+            denom = np.sqrt(D[i]**2 + 4* beta) + np.sqrt(D[j]**2 + 4* beta)
+            Gamma[i,j] = (phip_d[i] + phip_d[j]) / denom
+            
+            
+    return Gamma
+    
+
+def 
 
 #%%
 # testing
