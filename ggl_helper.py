@@ -1,9 +1,7 @@
-# -*- coding: utf-8 -*-
 """
-Created on Tue Oct  8 17:57:33 2019
+author: Fabian Schaipp
+"""
 
-@author: fscha
-"""
 
 import pandas as pd
 import numpy as np
@@ -72,7 +70,14 @@ def prox_p(X, l1, l2):
     
     assert abs(M - t(M)).max() <= 1e-10
     return M
-            
+  
+def moreau_P(X, l1, l2):
+  # calculates the moreau envelope of P
+  # as we need also the prox later it returns both!
+  Y = prox_p(X, l1, l2)
+  psi = P(Y, l1, l2) + 0.5 * Gdot(X-Y, X-Y) 
+ 
+  return psi, Y           
           
 def jacobian_projection(v, l):
     
@@ -151,9 +156,12 @@ def phiminus(A, beta , D = np.array([]), Q = np.array([]) ):
     return B
 
 def moreau_h(A, beta , D = np.array([]), Q = np.array([])):
-    
-    return - beta * np.log (np.linalg.det( phiplus(A, beta, D , Q))) + 0.5 * np.linalg.norm(phiminus(A,beta, D , Q))**2
-
+    pp = phiplus(A, beta, D , Q)
+    pm = phiminus(A,beta, D , Q)
+    psi =  - (beta * np.log (np.linalg.det(pp))) + (0.5 * np.linalg.norm(pm)**2 )
+    return psi, pp, pm
+  
+  
 def jacobian_phiplus(A, B, beta, D = np.array([]), Q = np.array([])):
     
     d = A.shape
