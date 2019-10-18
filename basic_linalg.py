@@ -8,24 +8,6 @@ Created on Wed Oct  9 10:44:40 2019
 
 import numpy as np
 
-def t(X):   
-    # transposes for a block of matrices each single matrix
-    # assumes that X is given in the form (K, p, p)
-    
-    assert len(A.shape) == 3 , "dimension of input has to be 3"
-    assert A.shape[1] == A.shape[2] , "thrid dimension has to be equal to second dimension"
-    
-    return A.transpose(0,2,1)
-
-def Gdot(X, Y):
-    # calculates the inner product for X,Y in G
-    assert X.shape == Y.shape
-    
-    xy = np.trace( np.matmul( t(X), Y) , axis1 = 1, axis2 = 2)
-    
-    return xy.sum() 
-
-
 #%%
 A = np.random.normal( size = (5,20,20))
 #A = np.array( [ [[1, 2], [3, 4]] , [[5, 6], [7, 8]] ])
@@ -51,15 +33,15 @@ M.sum(axis = 1)
 
 #%%
 
-A = np.random.normal(size=(2000,2000))
-A = A.T @ A
+A = np.random.normal(size=(20,20))
+A = A.T @ A + np.eye(A.shape[0])
 
-xt = np.random.normal(size= 2000)
+xt = np.random.normal(size= 20)
 
 b = A @ xt
 
 
-def lin(x):
+def lin(x , A):
     return A@x
 
 def dot(x,y):
@@ -68,27 +50,36 @@ def dot(x,y):
 
 #%%
 
-def cg_general(lin, dot, b, eps = 1e-8):
+def cg_general(lin, dot, b, eps = 1e-8, kwargs = {}):
+    """
+    This is the CG method for a general selfadjoint linear operator "lin" and a general scalar product "dot"
+    
+    It solves after x: lin(x) = b
+    
+    lin: should be a callable where the first argument is the argument of the operator
+         other arguments can be handled via kwargs
+    dot: should be a callable with two arguments, namely the two points of <X,Y>
+    """
     
     dim = b.shape
     N_iter = len(b)
     x = np.zeros(dim)
-    r = b - lin(x)
+    r = b - lin(x, **kwargs)
     p = r.copy()
     j = 0
     
     while j < N_iter :
         
-        linp = lin(p)
+        linp = lin(p , **kwargs)
         alpha = dot(r,r) / dot(p, linp)
         
-        x =  x + alpha * p
+        x +=   alpha * p
         denom = dot(r,r)
-        r = r -  alpha * linp
+        r -=  alpha * linp
         #r = b - linp
         
         if np.sqrt(dot(r,r)) <= eps:
-            print("Reached accuracy")
+            print(f"Reached accuracy after {str(j)} iterations")
             break
         
         beta = dot(r,r)/denom
@@ -103,7 +94,7 @@ def cg_general(lin, dot, b, eps = 1e-8):
 
 #%%
 
-x_sol = cg_general(lin, dot, b, eps = 1e-5)
+x_sol = cg_general(lin, dot, b, eps = 1e-2, kwargs = {'A': A})
 
 np.linalg.norm(x_sol-xt)
 
@@ -129,4 +120,14 @@ Xs = cg_general(lin, dot, B, eps = 1e-5)
 
 dot(Xt-Xs, Xt-Xs)
 
+
+#%%
+
+
+def tester(a,b,c):
+  return a*b + c
+
+kwargs = {'a':2, 'c':3}
+
+tester(b=3 , **kwargs)
 

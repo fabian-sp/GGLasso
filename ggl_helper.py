@@ -51,6 +51,7 @@ def prox_1norm(v, l):
 def prox_2norm(v,l):
     a = max(np.linalg.norm(v,2) , l)
     return v * (a - l) / a
+
     
 def prox_phi(v, l1, l2):
     assert min(l1,l2) > 0, "lambda 1 and lambda2 have to be positive"
@@ -141,7 +142,20 @@ def construct_jacobian_prox_p(X, l1 , l2):
                 W[:,:,i,j] = jacobian_prox_phi(X[:,i,j] , l1 , l2) 
     return W
     
-
+def eval_jacobian_prox_p(Y , W):
+    # W is the result of construct_jacobian_prox_p
+    (K,p,p) = Y.shape
+  
+    assert W.shape == (K,K,p,p) , "wrong dimensions"
+  
+    fun = np.zeros((K,p,p))
+    for i in np.arange(p):
+        for j in np.arange(p):
+            fun[:,i,j] = W[:,:,i,j] @ Y[:,i,j]
+  
+    return fun
+  
+  
 #%%
 # functions related to the log determinant
     
@@ -195,28 +209,58 @@ def jacobian_phiplus(A, B, beta, D = np.array([]), Q = np.array([])):
     res = Q @ (Gamma * (Q.T @ B @ Q)) @ Q.T
     return res
 
+#def construct_gamma(A, beta, D = np.array([]), Q = np.array([])):
+#    
+#    d = A.shape
+#    if len(D) != A.shape[0]:
+#        D, Q = np.linalg.eig(A)
+#    
+#    phip = lambda d: 0.5 * (np.sqrt(d**2 + 4*beta) + d)
+#    
+#    Gamma = np.zeros(d)
+#    phip_d = phip(D) 
+#    
+#    for i in np.arange(d[0]):
+#        for j in np.arange(d[1]):
+#            denom = np.sqrt(D[i]**2 + 4* beta) + np.sqrt(D[j]**2 + 4* beta)
+#            Gamma[i,j] = (phip_d[i] + phip_d[j]) / denom
+#            
+#            
+#    return Gamma
+  
 def construct_gamma(A, beta, D = np.array([]), Q = np.array([])):
+
+    (K,p,p) = A.shape
+    Gamma = np.zeros((K,p,p))
     
-    d = A.shape
-    if len(D) != A.shape[0]:
+    if D.shape[0] != A.shape[0]:
         D, Q = np.linalg.eig(A)
     
     phip = lambda d: 0.5 * (np.sqrt(d**2 + 4*beta) + d)
     
-    Gamma = np.zeros(d)
-    phip_d = phip(D) 
-    
-    for i in np.arange(d[0]):
-        for j in np.arange(d[1]):
-            denom = np.sqrt(D[i]**2 + 4* beta) + np.sqrt(D[j]**2 + 4* beta)
-            Gamma[i,j] = (phip_d[i] + phip_d[j]) / denom
+    for k in np.arange(K):
+        phip_d = phip(D[k,:]) 
+        
+        for i in np.arange(p):
+            for j in np.arange(p):    
+                
+                denom = np.sqrt(D[k,i]**2 + 4* beta) + np.sqrt(D[k,j]**2 + 4* beta)
+                Gamma[k,i,j] = (phip_d[i] + phip_d[j]) / denom
             
             
     return Gamma
+
+
     
-
-def 
-
+def eval_jacobian_phiplus(B, Gamma, Q):
+    # Gamma is constructed with construct_gamma
+    # Q is the right-eigenvector matrix of the point A
+        
+    res = Q @ (Gamma * (t(Q) @ B @ Q)) @ t(Q)
+    
+    assert abs(res - t(res)).max() <= 1e-10
+    return res
+      
 #%%
 # testing
 v = np.array([1.5,0.3,0])
