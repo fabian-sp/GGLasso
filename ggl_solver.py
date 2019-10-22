@@ -51,7 +51,7 @@ W = construct_jacobian_prox_p( (1/sigma_t) * V_t, lambda1 , lambda2)
 
 
 
-def hessian_Y(D , Gamma, eigQ, W):
+def hessian_Y(D , Gamma, eigQ, W, sigma_t):
     """
     this is the linear operator for the CG method
     argument is D
@@ -96,5 +96,19 @@ V_t = Theta_t + (sigma_t * X)
 
   
 #Y_fun, Y_grad = Y_t(Omega_t, Theta_t, S, X, lambda1, lambda2, sigma_t)
+
+#%%
+# test the CG method
+
+B = hessian_Y(X, Gamma,eigQ, W, sigma_t)
+
+kwargs = {'Gamma' : Gamma, 'eigQ' : eigQ, 'W' : W, 'sigma_t' : sigma_t }
+
+X_recovered = cg_general(hessian_Y, Gdot, B, eps = 1e-8, kwargs = kwargs)
+
+np.linalg.norm(X-X_recovered)
+
+
+
 
 
