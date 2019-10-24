@@ -67,7 +67,7 @@ def hessian_Y(D , Gamma, eigQ, W, sigma_t):
 
 #%%
 K = 5
-p = 10
+p = 100
 
 X = np.random.normal( size = (K,p,p))
 X = t(X) @ X
@@ -97,6 +97,7 @@ V_t = Theta_t + (sigma_t * X)
   
 #Y_fun, Y_grad = Y_t(Omega_t, Theta_t, S, X, lambda1, lambda2, sigma_t)
 
+
 #%%
 # test the CG method
 
@@ -104,9 +105,9 @@ B = hessian_Y(X, Gamma,eigQ, W, sigma_t)
 
 kwargs = {'Gamma' : Gamma, 'eigQ' : eigQ, 'W' : W, 'sigma_t' : sigma_t }
 
-X_recovered = cg_general(hessian_Y, Gdot, B, eps = 1e-8, kwargs = kwargs)
+X_recovered = cg_general(hessian_Y, Gdot, B, eps = 1e-6, kwargs = kwargs)
 
-np.linalg.norm(X-X_recovered)
+np.linalg.norm(X-X_recovered) / np.linalg.norm(X)
 
 
 

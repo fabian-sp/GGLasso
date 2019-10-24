@@ -8,28 +8,6 @@ Created on Wed Oct  9 10:44:40 2019
 
 import numpy as np
 
-#%%
-A = np.random.normal( size = (5,20,20))
-#A = np.array( [ [[1, 2], [3, 4]] , [[5, 6], [7, 8]] ])
-
-#transpose the single matrices like this
-A.transpose(0,2,1)
-
-B = np.matmul( t(A), A)
-
-
-# eigenvalue decomp works for each matrix 
-[M,T] = np.linalg.eig(B)
-
-
-
-Gdot(A,A) 
-
-# check if trace equal to sum of eigenvalues
-M.sum(axis = 1)
-
-
-
 
 #%%
 
@@ -62,6 +40,7 @@ def cg_general(lin, dot, b, eps = 1e-8, kwargs = {}):
     """
     
     dim = b.shape
+    bdotb = dot(b,b)
     N_iter = len(b)
     x = np.zeros(dim)
     r = b - lin(x, **kwargs)
@@ -78,7 +57,7 @@ def cg_general(lin, dot, b, eps = 1e-8, kwargs = {}):
         r -=  alpha * linp
         #r = b - linp
         
-        if np.sqrt(dot(r,r)) <= eps:
+        if np.sqrt(dot(r,r) / bdotb)  <= eps:
             print(f"Reached accuracy after {str(j)} iterations")
             break
         
@@ -94,7 +73,7 @@ def cg_general(lin, dot, b, eps = 1e-8, kwargs = {}):
 
 #%%
 
-x_sol = cg_general(lin, dot, b, eps = 1e-2, kwargs = {'A': A})
+x_sol = cg_general(lin, dot, b, eps = 1e-5, kwargs = {'A': A})
 
 np.linalg.norm(x_sol-xt)
 
@@ -121,13 +100,4 @@ Xs = cg_general(lin, dot, B, eps = 1e-5)
 dot(Xt-Xs, Xt-Xs)
 
 
-#%%
-
-
-def tester(a,b,c):
-  return a*b + c
-
-kwargs = {'a':2, 'c':3}
-
-tester(b=3 , **kwargs)
 
