@@ -10,24 +10,29 @@ import numpy as np
 
 
 #%%
+## general functions for the space G
+def t(X):   
+    # transposes for a block of matrices each single matrix
+    # assumes that X is given in the form (K, p, p)
+    
+    assert len(X.shape) == 3 , "dimension of input has to be 3"
+    assert X.shape[1] == X.shape[2] , "third dimension has to be equal to second dimension"
+    
+    return X.transpose(0,2,1)
 
-A = np.random.normal(size=(20,20))
-A = A.T @ A + np.eye(A.shape[0])
+def Gdot(X, Y):
+    # calculates the inner product for X,Y in G
+    assert X.shape == Y.shape
+    
+    xy = np.trace( np.matmul( t(X), Y) , axis1 = 1, axis2 = 2)
+    
+    return xy.sum() 
 
-xt = np.random.normal(size= 20)
-
-b = A @ xt
-
-
-def lin(x , A):
-    return A@x
-
-def dot(x,y):
-    return x@y
-
-
+# general functions for the space S
+    
+def Sdot(X,Y):
+    return np.trace( X.T @ Y )
 #%%
-
 def cg_general(lin, dot, b, eps = 1e-8, kwargs = {}):
     """
     This is the CG method for a general selfadjoint linear operator "lin" and a general scalar product "dot"
@@ -71,33 +76,7 @@ def cg_general(lin, dot, b, eps = 1e-8, kwargs = {}):
 
 
 
-#%%
 
-x_sol = cg_general(lin, dot, b, eps = 1e-5, kwargs = {'A': A})
-
-np.linalg.norm(x_sol-xt)
-
-
-#%%
-
-A = np.random.normal(size=(200,200))
-A = A.T @ A + np.eye(A.shape[0])
-
-def lin(X):
-    return A @  X
-
-def dot(X, Y):
-    return np.trace(X.T @ Y)
-
-
-Xt = np.random.normal(size=(200,200))
-B = lin(Xt)
-
-
-Xs = cg_general(lin, dot, B, eps = 1e-5)
-
-
-dot(Xt-Xs, Xt-Xs)
 
 
 

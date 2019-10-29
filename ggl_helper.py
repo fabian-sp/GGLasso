@@ -7,29 +7,7 @@ import pandas as pd
 import numpy as np
 import scipy as sc
 
-#%%
-## general functions for the space G
-def t(X):   
-    # transposes for a block of matrices each single matrix
-    # assumes that X is given in the form (K, p, p)
-    
-    assert len(X.shape) == 3 , "dimension of input has to be 3"
-    assert X.shape[1] == X.shape[2] , "third dimension has to be equal to second dimension"
-    
-    return X.transpose(0,2,1)
-
-def Gdot(X, Y):
-    # calculates the inner product for X,Y in G
-    assert X.shape == Y.shape
-    
-    xy = np.trace( np.matmul( t(X), Y) , axis1 = 1, axis2 = 2)
-    
-    return xy.sum() 
-
-# general functions for the space S
-    
-def Sdot(X,Y):
-    return np.trace( X.T @ Y )
+from basic_linalg import t,Gdot,Sdot
 #%%
 # functions related to the GGL regularizer
     
@@ -158,14 +136,17 @@ def eval_jacobian_prox_p(Y , W):
   
 #%%
 # functions related to the log determinant
-    
 def h(A):
     return - np.log(np.linalg.det(A))
+
+def f(Omega, S):
+    return h(Omega).sum() + Gdot(Omega, S)
 
 def phiplus(A, beta, D = np.array([]), Q = np.array([])):
     # D and Q are optional if already precomputed
     if len(D) != A.shape[0]:
         D, Q = np.linalg.eig(A)
+        print("Eigendecomposition is executed")
     
     phip = lambda d: 0.5 * (np.sqrt(d**2 + 4*beta) + d)
     
@@ -176,6 +157,7 @@ def phiminus(A, beta , D = np.array([]), Q = np.array([]) ):
     # D and Q are optional if already precomputed
     if len(D) != A.shape[0]:
         D, Q = np.linalg.eig(A)
+        print("Eigendecomposition is executed")
 
     phim = lambda d: 0.5 * (np.sqrt(d**2 + 4*beta) - d)
     
@@ -194,6 +176,7 @@ def jacobian_phiplus(A, B, beta, D = np.array([]), Q = np.array([])):
     d = A.shape
     if len(D) != A.shape[0]:
         D, Q = np.linalg.eig(A)
+        print("Eigendecomposition is executed")
     
     phip = lambda d: 0.5 * (np.sqrt(d**2 + 4*beta) + d)
     
@@ -209,25 +192,6 @@ def jacobian_phiplus(A, B, beta, D = np.array([]), Q = np.array([])):
     res = Q @ (Gamma * (Q.T @ B @ Q)) @ Q.T
     return res
 
-#def construct_gamma(A, beta, D = np.array([]), Q = np.array([])):
-#    
-#    d = A.shape
-#    if len(D) != A.shape[0]:
-#        D, Q = np.linalg.eig(A)
-#    
-#    phip = lambda d: 0.5 * (np.sqrt(d**2 + 4*beta) + d)
-#    
-#    Gamma = np.zeros(d)
-#    phip_d = phip(D) 
-#    
-#    for i in np.arange(d[0]):
-#        for j in np.arange(d[1]):
-#            denom = np.sqrt(D[i]**2 + 4* beta) + np.sqrt(D[j]**2 + 4* beta)
-#            Gamma[i,j] = (phip_d[i] + phip_d[j]) / denom
-#            
-#            
-#    return Gamma
-  
 def construct_gamma(A, beta, D = np.array([]), Q = np.array([])):
 
     (K,p,p) = A.shape
@@ -235,6 +199,7 @@ def construct_gamma(A, beta, D = np.array([]), Q = np.array([])):
     
     if D.shape[0] != A.shape[0]:
         D, Q = np.linalg.eig(A)
+        print("Eigendecomposition is executed")
     
     phip = lambda d: 0.5 * (np.sqrt(d**2 + 4*beta) + d)
     
@@ -250,8 +215,7 @@ def construct_gamma(A, beta, D = np.array([]), Q = np.array([])):
             
     return Gamma
 
-
-    
+   
 def eval_jacobian_phiplus(B, Gamma, Q):
     # Gamma is constructed with construct_gamma
     # Q is the right-eigenvector matrix of the point A
@@ -261,27 +225,13 @@ def eval_jacobian_phiplus(B, Gamma, Q):
     assert abs(res - t(res)).max() <= 1e-10
     return res
       
+
 #%%
-# testing
-v = np.array([1.5,0.3,0])
-l = 1.4
-
-jacobian_projection(v,12)
-
-
-A = np.array( [ [[1, 2], [3, 4]] , [[5, 6], [7, 8]] ])
-
-A = np.random.normal( size = (10,10))
-A = A.T @ A
-
-X = np.random.normal( size = (5,10,10))
-X = t(X) @ X
-
-Y = np.random.normal( size = (5,10,10))
-Y = t(Y) @ Y
-
-
-
+# functions related to the proximal point algorithm
+    
+def Phi_t(Omega, Theta, S, Omega_t, Theta_t, sigma_t):
+    
+    f(Omega, S) + P(Theta) + 1/(2*sigma_t) * (np.linalg.norm(Omega - Omega_t)**2 + np.linalg.norm(Theta - Theta_t)**2)
 
 
 
