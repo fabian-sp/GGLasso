@@ -235,3 +235,46 @@ def Phi_t(Omega, Theta, S, Omega_t, Theta_t, sigma_t, lambda1, lambda2):
     res = f(Omega, S) + P(Theta, lambda1, lambda2) + 1/(2*sigma_t) * (np.linalg.norm(Omega - Omega_t)**2 + np.linalg.norm(Theta - Theta_t)**2)
     return res
 
+def hessian_Y(D , Gamma, eigQ, W, sigma_t):
+    """
+    this is the linear operator for the CG method
+    argument is D
+    Gamma and W are constructed beforehand in order to evaluate more efficiently
+    """
+    tmp1 = eval_jacobian_phiplus( D, Gamma, eigQ)
+    tmp2 = eval_jacobian_prox_p( D , W)
+
+    res = - sigma_t * (tmp1 + tmp2)
+    return res
+
+
+def Y_t( X, Omega_t, Theta_t, S, lambda1, lambda2, sigma_t):
+  
+    assert min(lambda1, lambda2, sigma_t) > 0 , "at least one parameter is not positive"
+    assert X.shape[1] == X.shape[2], "dimensions are not as expected"
+  
+    (K,p,p) = X.shape
+  
+    W_t = Omega_t - (sigma_t * (S + X))  
+    V_t = Theta_t + (sigma_t * X)
+
+    eigD, eigQ = np.linalg.eig(W_t)
+    print("Eigendecomposition is executed")
+  
+    grad1 = np.zeros((K,p,p))
+    term1 = 0
+    for k in np.arange(K):
+        Psi_h, phip, _ = moreau_h(W_t[k,:,:] , sigma_t, D = eigD[k,:] , Q = eigQ[k,:,:] )
+        term1 += (1/sigma_t) * Psi_h
+        grad1[k,:,:] = phip
+    
+    term2 = - 1/(2*sigma_t) * ( Gdot(W_t, W_t) + Gdot(V_t, V_t))
+    term3 = 1/(2*sigma_t) * (  Gdot(Omega_t, Omega_t)  +  Gdot(Theta_t, Theta_t)   )  
+  
+    Psi_P , U = moreau_P(V_t, sigma_t * lambda1, sigma_t*lambda2)  
+    term4 = (1/sigma_t) * Psi_P
+  
+    fun = term1 + term2 + term3 + term4
+    grad = grad1 - U
+  
+    return fun, grad
