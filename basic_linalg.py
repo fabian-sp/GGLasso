@@ -45,7 +45,6 @@ def cg_general(lin, dot, b, eps = 1e-8, kwargs = {}):
     """
     
     dim = b.shape
-    bdotb = dot(b,b)
     N_iter = len(b)
     x = np.zeros(dim)
     r = b - lin(x, **kwargs)
@@ -62,8 +61,8 @@ def cg_general(lin, dot, b, eps = 1e-8, kwargs = {}):
         r -=  alpha * linp
         #r = b - linp
         
-        if np.sqrt(dot(r,r) / bdotb)  <= eps:
-            print(f"Reached accuracy after {str(j)} iterations")
+        if np.sqrt(dot(r,r))  <= eps:
+            print(f"Reached accuracy in iteration {str(j)}")
             break
         
         beta = dot(r,r)/denom

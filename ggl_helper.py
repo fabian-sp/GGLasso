@@ -51,8 +51,8 @@ def prox_p(X, l1, l2):
     return M
   
 def moreau_P(X, l1, l2):
-  # calculates the moreau envelope of P
-  # as we need also the prox later it returns both!
+  # returns the Moreau_Yosida reg. value as well as the proximal map of P
+  
   Y = prox_p(X, l1, l2)
   psi = P(Y, l1, l2) + 0.5 * Gdot(X-Y, X-Y) 
  
@@ -165,6 +165,7 @@ def phiminus(A, beta , D = np.array([]), Q = np.array([]) ):
     return B
 
 def moreau_h(A, beta , D = np.array([]), Q = np.array([])):
+    # returns the Moreau_Yosida reg. value as well as the proximal map of beta*h
     pp = phiplus(A, beta, D , Q)
     pm = phiminus(A,beta, D , Q)
     psi =  - (beta * np.log (np.linalg.det(pp))) + (0.5 * np.linalg.norm(pm)**2 )
@@ -229,9 +230,8 @@ def eval_jacobian_phiplus(B, Gamma, Q):
 #%%
 # functions related to the proximal point algorithm
     
-def Phi_t(Omega, Theta, S, Omega_t, Theta_t, sigma_t):
+def Phi_t(Omega, Theta, S, Omega_t, Theta_t, sigma_t, lambda1, lambda2):
     
-    f(Omega, S) + P(Theta) + 1/(2*sigma_t) * (np.linalg.norm(Omega - Omega_t)**2 + np.linalg.norm(Theta - Theta_t)**2)
-
-
+    res = f(Omega, S) + P(Theta, lambda1, lambda2) + 1/(2*sigma_t) * (np.linalg.norm(Omega - Omega_t)**2 + np.linalg.norm(Theta - Theta_t)**2)
+    return res
 
