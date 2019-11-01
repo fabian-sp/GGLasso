@@ -146,7 +146,7 @@ def phiplus(A, beta, D = np.array([]), Q = np.array([])):
     # D and Q are optional if already precomputed
     if len(D) != A.shape[0]:
         D, Q = np.linalg.eig(A)
-        print("Eigendecomposition is executed")
+        print("Single eigendecomposition is executed in phiplus")
     
     phip = lambda d: 0.5 * (np.sqrt(d**2 + 4*beta) + d)
     
@@ -157,7 +157,7 @@ def phiminus(A, beta , D = np.array([]), Q = np.array([]) ):
     # D and Q are optional if already precomputed
     if len(D) != A.shape[0]:
         D, Q = np.linalg.eig(A)
-        print("Eigendecomposition is executed")
+        print("Single eigendecomposition is executed in phiminus")
 
     phim = lambda d: 0.5 * (np.sqrt(d**2 + 4*beta) - d)
     
@@ -177,7 +177,7 @@ def jacobian_phiplus(A, B, beta, D = np.array([]), Q = np.array([])):
     d = A.shape
     if len(D) != A.shape[0]:
         D, Q = np.linalg.eig(A)
-        print("Eigendecomposition is executed")
+        print("Single eigendecomposition is executed in jacobian_phiplus")
     
     phip = lambda d: 0.5 * (np.sqrt(d**2 + 4*beta) + d)
     
@@ -200,7 +200,7 @@ def construct_gamma(A, beta, D = np.array([]), Q = np.array([])):
     
     if D.shape[0] != A.shape[0]:
         D, Q = np.linalg.eig(A)
-        print("Eigendecomposition is executed")
+        print("Eigendecomposition is executed in construct_gamma")
     
     phip = lambda d: 0.5 * (np.sqrt(d**2 + 4*beta) + d)
     
@@ -259,7 +259,7 @@ def Y_t( X, Omega_t, Theta_t, S, lambda1, lambda2, sigma_t):
     V_t = Theta_t + (sigma_t * X)
 
     eigD, eigQ = np.linalg.eig(W_t)
-    print("Eigendecomposition is executed")
+    print("Eigendecomposition is executed in Y_t")
   
     grad1 = np.zeros((K,p,p))
     term1 = 0
