@@ -148,7 +148,7 @@ def PPDNA(S, lambda1, lambda2, Omega_0, Theta_0, sigma_0 = 10, max_iter = 100, v
         
         if verbose:
             print("sigma_t value: " , ppa_sub_params['sigma_t'])
-
+            print("Distance Omega to Theta: " ,np.linalg.norm(Omega_t-Theta_t))
 
     return Omega_t, Theta_t, X_t
 

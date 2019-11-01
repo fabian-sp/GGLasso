@@ -34,7 +34,7 @@ S = np.zeros((K,p,p))
 for k in np.arange(K):
     S[k,:,:] = np.cov(sample[k,:,:])
     
-#S = np.tile(np.eye(p), (K,1,1))
+S = np.tile(np.eye(p), (K,1,1))
 
 #%%
 Omega_0 = np.zeros((K,p,p))
@@ -43,4 +43,4 @@ Theta_0 =  np.zeros((K,p,p))
 lambda1 = .01
 lambda2 = .01
 
-Omega_sol, Theta_sol, X_sol = PPDNA(S, lambda1, lambda2, Omega_0, Theta_0, sigma_0 = 10, max_iter = 10, verbose = True)
+Omega_sol, Theta_sol, X_sol = PPDNA(S, lambda1, lambda2, Omega_0, Theta_0, sigma_0 = 1, max_iter = 10, verbose = True)
