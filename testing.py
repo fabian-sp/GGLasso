@@ -19,11 +19,12 @@ tmp = np.random.normal(size=(p,p))
 Sigma_inv = tmp.T @ tmp
 Sigma_inv[Sigma_inv <= 2] = 0
 
-L,_ = np.linalg.eig(Sigma_inv)
+#np.fill_diagonal(Sigma_inv , 1)
+Sigma = np.linalg.inv(Sigma_inv)
+
+L,_ = np.linalg.eig(Sigma)
 
 assert L.min() >= 0
-
-Sigma = np.linalg.inv(Sigma_inv)
 
 
 sample = np.zeros((K,p,N))
@@ -34,13 +35,19 @@ S = np.zeros((K,p,p))
 for k in np.arange(K):
     S[k,:,:] = np.cov(sample[k,:,:])
     
-S = np.tile(np.eye(p), (K,1,1))
+#S = np.tile(np.eye(p), (K,1,1))
 
+
+diag_S = 1/np.diagonal(S, axis1 = 1, axis2 = 2)
+Omega_0 = np.apply_along_axis(np.diag, 1,diag_S)
+Theta_0 = Omega_0.copy()
 #%%
-Omega_0 = np.zeros((K,p,p))
-Theta_0 =  np.zeros((K,p,p))
+#Omega_0 = np.zeros((K,p,p))
 
-lambda1 = .01
-lambda2 = .01
+lambda1 = 1e-2
+lambda2 = 1e-2
 
-Omega_sol, Theta_sol, X_sol = PPDNA(S, lambda1, lambda2, Omega_0, Theta_0, sigma_0 = 1, max_iter = 10, verbose = True)
+Omega_sol, Theta_sol, X_sol = PPDNA(S, lambda1, lambda2, Omega_0, Theta_0, sigma_0 = 10, max_iter = 10, verbose = True)
+
+
+naive = np.linalg.inv(S[0,:,:])

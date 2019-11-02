@@ -57,7 +57,9 @@ def PPA_subproblem(Omega_t, Theta_t, X_t, S, ppa_sub_params = None, verbose = Fa
     condA = False
     condB = False
     
-    while not(condA and condB):
+    sub_iter = 0
+    
+    while not(condA or condB) and sub_iter < 10:
         
         # step 0: set variables
         W_t = Omega_t - (sigma_t * (S + X_t))  
@@ -106,7 +108,7 @@ def PPA_subproblem(Omega_t, Theta_t, X_t, S, ppa_sub_params = None, verbose = Fa
         condA = opt_dist <= eps_t**2/(2*sigma_t)
         condB = opt_dist <= delta_t**2/(2*sigma_t) * ((np.linalg.norm(Omega_sol - Omega_t)**2 + np.linalg.norm(Theta_sol - Theta_t)**2))
     
-    
+        sub_iter += 1
     
 
     return Omega_sol, Theta_sol, X_sol
@@ -140,7 +142,7 @@ def PPDNA(S, lambda1, lambda2, Omega_0, Theta_0, sigma_0 = 10, max_iter = 100, v
         
         print(f"------------Iteration {iter_t} of the Proximal Point Algorithm----------------")
     
-        Omega_t, Theta_t, X_t = PPA_subproblem(Omega_t, Theta_t, X_t0, S, ppa_sub_params = None, verbose = verbose)
+        Omega_t, Theta_t, X_t = PPA_subproblem(Omega_t, Theta_t, X_t0, S, ppa_sub_params = ppa_sub_params, verbose = verbose)
         
         ppa_sub_params['sigma_t'] = 1.3 * ppa_sub_params['sigma_t']
         ppa_sub_params['eps_t'] = 0.5 * ppa_sub_params['eps_t']
