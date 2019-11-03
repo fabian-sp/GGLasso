@@ -91,22 +91,6 @@ def jacobian_prox_phi(v , l1 , l2):
     M = (np.eye(len(v)) - sig) @ lam
     assert abs(M - M.T).max() <= 1e-10
     return M
-
-def jacobian_prox_p(X, Y ,l1, l2):
-    assert X.shape == Y.shape, "argument has not the same shape as evaluation point"
-    assert abs(Y - t(Y)).max() <= 1e-10 , "argument Y is not symmetric"
-    
-    d = X.shape
-    W = np.zeros(d)
-    for i in np.arange(d[1]):
-        for j in np.arange(d[2]):
-            if i == j:
-                W[:,i,j] = Y[:,i,j]
-            else:
-                W[:,i,j] = jacobian_prox_phi(X[:,i,j] , l1 , l2) @ Y[:,i,j]
-    
-    assert Gdot(W, Y) >= 0 , "not a pos. semidef operator"
-    return W
   
 def construct_jacobian_prox_p(X, l1 , l2):
     # each (i,j) entry has a corresponding jacobian which is a KxK matrix
@@ -171,27 +155,6 @@ def moreau_h(A, beta , D = np.array([]), Q = np.array([])):
     psi =  - (beta * np.log (np.linalg.det(pp))) + (0.5 * np.linalg.norm(pm)**2 )
     return psi, pp, pm
   
-  
-def jacobian_phiplus(A, B, beta, D = np.array([]), Q = np.array([])):
-    
-    d = A.shape
-    if len(D) != A.shape[0]:
-        D, Q = np.linalg.eig(A)
-        print("Single eigendecomposition is executed in jacobian_phiplus")
-    
-    phip = lambda d: 0.5 * (np.sqrt(d**2 + 4*beta) + d)
-    
-    Gamma = np.zeros(d)
-    phip_d = phip(D) 
-    
-    for i in np.arange(d[0]):
-        for j in np.arange(d[1]):
-            denom = np.sqrt(D[i]**2 + 4* beta) + np.sqrt(D[j]**2 + 4* beta)
-            Gamma[i,j] = (phip_d[i] + phip_d[j]) / denom
-            
-            
-    res = Q @ (Gamma * (Q.T @ B @ Q)) @ Q.T
-    return res
 
 def construct_gamma(A, beta, D = np.array([]), Q = np.array([])):
 
@@ -216,7 +179,6 @@ def construct_gamma(A, beta, D = np.array([]), Q = np.array([])):
             
     return Gamma
 
-   
 def eval_jacobian_phiplus(B, Gamma, Q):
     # Gamma is constructed with construct_gamma
     # Q is the right-eigenvector matrix of the point A

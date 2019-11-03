@@ -1,6 +1,6 @@
 import numpy as np
 
-from ggl_helper import moreau_h, moreau_P, construct_gamma, construct_jacobian_prox_p, Y_t, hessian_Y,  Phi_t
+from ggl_helper import prox_p, phiplus, moreau_h, moreau_P, construct_gamma, construct_jacobian_prox_p, Y_t, hessian_Y,  Phi_t
                         
 from basic_linalg import t, Gdot, cg_general
 #%%
@@ -68,7 +68,8 @@ def PPA_subproblem(Omega_t, Theta_t, X_t, S, ppa_sub_params = None, verbose = Fa
         funY_Xt, gradY_Xt = Y_t( X_t, Omega_t, Theta_t, S, lambda1, lambda2, sigma_t)
         
         eigD, eigQ = np.linalg.eig(W_t)
-        print("Eigendecomposition is executed")
+        if verbose:
+            print("Eigendecomposition is executed in PPA_subproblem")
         Gamma = construct_gamma(W_t, sigma_t, D = eigD, Q = eigQ)
         
         W = construct_jacobian_prox_p( (1/sigma_t) * V_t, lambda1 , lambda2)
@@ -97,8 +98,9 @@ def PPA_subproblem(Omega_t, Theta_t, X_t, S, ppa_sub_params = None, verbose = Fa
         X_sol = X_t.copy()
         
         Omega_sol = np.zeros((K,p,p))
+        eigW, eigV = np.linalg.eig(Omega_t - sigma_t * (S + X_sol))
         for k in np.arange(K):
-            _, phip_k, _ = moreau_h( Omega_t[k,:,:] - sigma_t* (S[k,:,:] + X_sol[k,:,:]) , sigma_t)
+            _, phip_k, _ = moreau_h( Omega_t[k,:,:] - sigma_t * (S[k,:,:] + X_sol[k,:,:]) , sigma_t , eigW[k,:], eigV[k,:,:])
             Omega_sol[k,:,:] = phip_k
         
         _, Theta_sol = moreau_P(Theta_t + sigma_t * X_sol, sigma_t * lambda1, sigma_t * lambda2)
@@ -115,7 +117,7 @@ def PPA_subproblem(Omega_t, Theta_t, X_t, S, ppa_sub_params = None, verbose = Fa
 
 
 #%%
-def PPDNA(S, lambda1, lambda2, Omega_0, Theta_0, sigma_0 = 10, max_iter = 100, verbose = False):
+def PPDNA(S, lambda1, lambda2, Omega_0, Theta_0, sigma_0 = 10, max_iter = 100, eps_ppdna = 1e-5 , verbose = False):
     """
     This is the outer proximal point algorithm
     Algorithm 2 in Zhang et al.
@@ -147,22 +149,42 @@ def PPDNA(S, lambda1, lambda2, Omega_0, Theta_0, sigma_0 = 10, max_iter = 100, v
         ppa_sub_params['sigma_t'] = 1.3 * ppa_sub_params['sigma_t']
         ppa_sub_params['eps_t'] = 0.5 * ppa_sub_params['eps_t']
         ppa_sub_params['delta_t'] = 0.5 * ppa_sub_params['delta_t']
+            
+        eta_P = PPDNA_stopping_criterion(Omega_t, Theta_t, X_t, S , ppa_sub_params)
         
         if verbose:
             print("sigma_t value: " , ppa_sub_params['sigma_t'])
-            print("Distance Omega to Theta: " ,np.linalg.norm(Omega_t-Theta_t))
-
+            #print("Distance Omega to Theta: " ,np.linalg.norm(Omega_t-Theta_t))
+            print(f"Current accuracy: ", eta_P)
+        
+        
+        if eta_P <= eps_ppdna:
+            break
+        
+    print(f"PPDNA terminated after {iter_t} iterations with accuracy {eta_P}")
+    
     return Omega_t, Theta_t, X_t
 
 
+def PPDNA_stopping_criterion(Omega, Theta, X, S , ppa_sub_params):
+    
+    assert Omega.shape == Theta.shape == S.shape
+    assert S.shape[1] == S.shape[2]
+    
+    (K,p,p) = S.shape
+    
+    term1 = np.linalg.norm(Theta- prox_p(Theta + X , l1 = ppa_sub_params['lambda1'], l2= ppa_sub_params['lambda2'])) / (1 + np.linalg.norm(Theta))
+    
+    term2 = np.linalg.norm(Theta - Omega) / (1 + np.linalg.norm(Theta))
+    
+    proxK = np.zeros((K,p,p))
+    eigD, eigQ = np.linalg.eig(Omega-S-X)
+    for k in np.arange(K):       
+        proxK[k,:,:] = phiplus(A = Omega[k,:,:] - S[k,:,:] - X[k,:,:], beta = 1, D = eigD[k,:], Q = eigQ[k,:,:])
+    
+    term3 = np.linalg.norm(Omega - proxK) / (1 + np.linalg.norm(Omega))
 
-
-
-
-
-
-
-
+    return max(term1, term2, term3)
 
 
 

@@ -12,8 +12,8 @@ from ggl_solver import PPDNA
 #%% inputs 
 
 K = 5
-p = 10
-N = 100
+p = 100
+N = 200
 
 tmp = np.random.normal(size=(p,p))
 Sigma_inv = tmp.T @ tmp
@@ -40,14 +40,15 @@ for k in np.arange(K):
 
 diag_S = 1/np.diagonal(S, axis1 = 1, axis2 = 2)
 Omega_0 = np.apply_along_axis(np.diag, 1,diag_S)
-Theta_0 = Omega_0.copy()
-#%%
 #Omega_0 = np.zeros((K,p,p))
 
-lambda1 = 1e-2
-lambda2 = 1e-2
+Theta_0 = Omega_0.copy()
+#%%
 
-Omega_sol, Theta_sol, X_sol = PPDNA(S, lambda1, lambda2, Omega_0, Theta_0, sigma_0 = 10, max_iter = 10, verbose = True)
+lambda1 = .5e-2
+lambda2 = .5e-2
+
+Omega_sol, Theta_sol, X_sol = PPDNA(S, lambda1, lambda2, Omega_0, Theta_0, sigma_0 = 10, max_iter = 100, eps_ppdna = 1e-5, verbose = True)
 
 
 naive = np.linalg.inv(S[0,:,:])
