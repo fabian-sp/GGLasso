@@ -59,7 +59,7 @@ def PPA_subproblem(Omega_t, Theta_t, X_t, S, ppa_sub_params = None, verbose = Fa
     
     sub_iter = 0
     
-    while not(condA or condB) and sub_iter < 10:
+    while not(condA or condB) and sub_iter < 20:
         
         # step 0: set variables
         W_t = Omega_t - (sigma_t * (S + X_t))  
