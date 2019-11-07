@@ -2,16 +2,108 @@
 author: Fabian Schaipp
 """
 
-
-import pandas as pd
 import numpy as np
 import scipy as sc
+from tick.prox import ProxTV
 
 from basic_linalg import t,Gdot,Sdot
-#%%
-# functions related to the GGL regularizer
+#%% functions specifically related to the GGL regularizer
+
+def prox_1norm(v, l): 
+    return np.sign(v) * np.maximum(abs(v) - l, 0)
     
-def P(X, l1, l2):
+def prox_2norm(v,l):
+    a = max(np.linalg.norm(v,2) , l)
+    return v * (a - l) / a
+
+def prox_phi_ggl(v, l1, l2):
+    assert min(l1,l2) > 0, "lambda 1 and lambda2 have to be positive"
+    u = prox_1norm(v, l1)
+    return prox_2norm(u,l2)
+
+def jacobian_projection(v, l):
+    
+    K = len(v)
+    a = np.linalg.norm(v)
+    if a <= l:
+        g = np.eye(K)
+    else:
+        g = (l/a) * ( np.eye(K) - (1/a**2) * np.outer(v,v) )
+        
+    return g
+    
+
+def jacobian_2norm(v, l):
+    # jacobian of the euclidean norm: v is the vector, l is lambda_2
+    K = len(v)
+    g = np.eye(K) - jacobian_projection(v, l)
+    return g
+
+
+def jacobian_1norm(v, l):
+    
+    d = (abs(v) > l).astype(int)
+    return np.diag(d)
+
+def jacobian_prox_phi_ggl(v , l1 , l2):
+    
+    u = prox_1norm(v, l1)
+    sig = jacobian_projection(u, l2)
+    lam = jacobian_1norm(v, l1)
+    
+    M = (np.eye(len(v)) - sig) @ lam
+    assert abs(M - M.T).max() <= 1e-10
+    return M
+
+#%% functions specifically related to the FGL regularizer
+
+def construct_B(K):
+    dd = np.eye(K)
+    ld = - np.tri(K, k = -1) + np.tri(K, k = -2) 
+    
+    B = dd+ld
+    B = np.delete(B, 0, axis = 0)
+    Binv = np.linalg.pinv(B.T)
+    return B, Binv
+
+
+def prox_tv(v,l):
+    a = ProxTV(l).call(v)
+    return a
+
+def prox_phi_fgl(v, l1, l2):
+    assert min(l1,l2) > 0, "lambda 1 and lambda2 have to be positive"
+    
+    return prox_1norm(prox_tv(v,l2) , l1)
+
+def jacobian_tv(v,l):
+    
+    K = len(v)   
+    B, Binv = construct_B(K)
+    
+    x_l2 = prox_tv(v,l)   
+    z_l2 = Binv @ (v - x_l2)
+    
+    ind1 = (abs(abs(z_l2) - l) <= 1e-10)    
+    #ind2 = (B@x_l2 != 0)
+    #assert ind1 == ind2
+    
+    Sigma = np.diag(1-ind1.astype(int))   
+    P_hat = np.linalg.pinv(Sigma @ B@ B.T @ Sigma , hermitian = True)
+    P = np.eye(K) - B.T @ P_hat @ B
+    return P 
+    
+def jacobian_prox_phi_fgl(v , l1 , l2):
+    
+    x = prox_tv(v,l2)
+    P = jacobian_tv(v,l2)
+    Theta = jacobian_1norm(x, l1)
+    
+    return Theta @ P
+
+#%% general functions related to the regularizer
+    
+def P_val(X, l1, l2):
     assert min(l1,l2) > 0, "lambda 1 and lambda2 have to be positive"
     d = X.shape
     res = 0
@@ -22,14 +114,6 @@ def P(X, l1, l2):
     
     # multiply by 2 as we only summed the upper triangular
     return 2 * res
-
-def prox_1norm(v, l): 
-    return np.sign(v) * np.maximum(abs(v) - l, 0)
-    
-def prox_2norm(v,l):
-    a = max(np.linalg.norm(v,2) , l)
-    return v * (a - l) / a
-
     
 def prox_phi(v, l1, l2):
     assert min(l1,l2) > 0, "lambda 1 and lambda2 have to be positive"
@@ -54,33 +138,10 @@ def moreau_P(X, l1, l2):
   # returns the Moreau_Yosida reg. value as well as the proximal map of P
   
   Y = prox_p(X, l1, l2)
-  psi = P(Y, l1, l2) + 0.5 * Gdot(X-Y, X-Y) 
+  psi = P_val(Y, l1, l2) + 0.5 * Gdot(X-Y, X-Y) 
  
   return psi, Y           
           
-def jacobian_projection(v, l):
-    
-    K = len(v)
-    a = np.linalg.norm(v)
-    if a <= l:
-        g = np.eye(K)
-    else:
-        g = (l/a) * ( np.eye(K) - (1/a**2) * np.outer(v,v) )
-        
-    return g
-    
-
-def jacobian_2norm(v, l):
-    # jacobian of the euclidean norm: v is the vector, l is lambda_2
-    K = len(v)
-    g = np.eye(K) - jacobian_projection(v, l)
-    return g
-
-
-def jacobian_1norm(v, l):
-    
-    d = (abs(v) > l).astype(int)
-    return np.diag(d)
 
 def jacobian_prox_phi(v , l1 , l2):
     
@@ -194,7 +255,7 @@ def eval_jacobian_phiplus(B, Gamma, Q):
     
 def Phi_t(Omega, Theta, S, Omega_t, Theta_t, sigma_t, lambda1, lambda2):
     
-    res = f(Omega, S) + P(Theta, lambda1, lambda2) + 1/(2*sigma_t) * (np.linalg.norm(Omega - Omega_t)**2 + np.linalg.norm(Theta - Theta_t)**2)
+    res = f(Omega, S) + P_val(Theta, lambda1, lambda2) + 1/(2*sigma_t) * (np.linalg.norm(Omega - Omega_t)**2 + np.linalg.norm(Theta - Theta_t)**2)
     return res
 
 def hessian_Y(D , Gamma, eigQ, W, sigma_t):

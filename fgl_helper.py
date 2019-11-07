@@ -6,6 +6,9 @@ y is the point where we calculate prox_lambda*||By||_1
 """
 
 import numpy as np
+from tick.prox import ProxTV
+
+
 #%%
 def condat_method(y,lam):
 
@@ -66,8 +69,16 @@ def condat_method(y,lam):
         
 #%%
 
-
-for i in range(1000):
+for i in range(1):
     print(i)
-    y = np.random.rand(10)
+    y = np.random.rand(100)
     x = condat_method(y, 1)
+    x2 = ProxTV(1).call(y)
+    
+
+    
+    
+
+
+
+
