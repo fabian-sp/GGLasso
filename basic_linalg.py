@@ -33,7 +33,7 @@ def Gdot(X, Y):
 def Sdot(X,Y):
     return np.trace( X.T @ Y )
 #%%
-def cg_general(lin, dot, b, eps = 1e-8, kwargs = {}):
+def cg_general(lin, dot, b, eps = 1e-6, kwargs = {}):
     """
     This is the CG method for a general selfadjoint linear operator "lin" and a general scalar product "dot"
     
@@ -45,7 +45,8 @@ def cg_general(lin, dot, b, eps = 1e-8, kwargs = {}):
     """
     
     dim = b.shape
-    N_iter = len(b)
+    #N_iter = len(b)
+    N_iter = np.array(dim).prod()
     x = np.zeros(dim)
     r = b - lin(x, **kwargs)
     p = r.copy()

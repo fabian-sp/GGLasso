@@ -31,7 +31,7 @@ def check_ppa_sub_params(ppa_sub_params):
     
     return
 
-def PPA_subproblem(Omega_t, Theta_t, X_t, S, ppa_sub_params = None, verbose = False):
+def PPA_subproblem(Omega_t, Theta_t, X_t, S, reg, ppa_sub_params = None, verbose = False):
     """
     This is the dual based semismooth Newton method solver for the PPA subproblems
     Algorithm 1 in Zhang et al.
@@ -69,14 +69,14 @@ def PPA_subproblem(Omega_t, Theta_t, X_t, S, ppa_sub_params = None, verbose = Fa
         W_t = Omega_t - (sigma_t * (S + X_t))  
         V_t = Theta_t + (sigma_t * X_t)
         
-        funY_Xt, gradY_Xt = Y_t( X_t, Omega_t, Theta_t, S, lambda1, lambda2, sigma_t)
+        funY_Xt, gradY_Xt = Y_t( X_t, Omega_t, Theta_t, S, lambda1, lambda2, sigma_t, reg)
         
         eigD, eigQ = np.linalg.eig(W_t)
         if verbose:
             print("Eigendecomposition is executed in PPA_subproblem")
         Gamma = construct_gamma(W_t, sigma_t, D = eigD, Q = eigQ)
         
-        W = construct_jacobian_prox_p( (1/sigma_t) * V_t, lambda1 , lambda2)
+        W = construct_jacobian_prox_p( (1/sigma_t) * V_t, lambda1 , lambda2, reg)
         
         # step 1: CG method
         kwargs = {'Gamma' : Gamma, 'eigQ': eigQ, 'W': W, 'sigma_t': sigma_t}
@@ -89,10 +89,10 @@ def PPA_subproblem(Omega_t, Theta_t, X_t, S, ppa_sub_params = None, verbose = Fa
         if verbose:
             print("Start Line search")
         alpha = rho
-        Y_t_new = Y_t( X_t + alpha * D, Omega_t, Theta_t, S, lambda1, lambda2, sigma_t)[0]
+        Y_t_new = Y_t( X_t + alpha * D, Omega_t, Theta_t, S, lambda1, lambda2, sigma_t, reg)[0]
         while Y_t_new < funY_Xt + mu * alpha * Gdot(gradY_Xt , D):
             alpha *= rho
-            Y_t_new = Y_t( X_t + alpha * D, Omega_t, Theta_t, S, lambda1, lambda2, sigma_t)[0]
+            Y_t_new = Y_t( X_t + alpha * D, Omega_t, Theta_t, S, lambda1, lambda2, sigma_t, reg)[0]
             
         # step 3: update variables and check stopping condition
         if verbose:
@@ -107,21 +107,25 @@ def PPA_subproblem(Omega_t, Theta_t, X_t, S, ppa_sub_params = None, verbose = Fa
             _, phip_k, _ = moreau_h( Omega_t[k,:,:] - sigma_t * (S[k,:,:] + X_sol[k,:,:]) , sigma_t , eigW[k,:], eigV[k,:,:])
             Omega_sol[k,:,:] = phip_k
         
-        _, Theta_sol = moreau_P(Theta_t + sigma_t * X_sol, sigma_t * lambda1, sigma_t * lambda2)
+        _, Theta_sol = moreau_P(Theta_t + sigma_t * X_sol, sigma_t * lambda1, sigma_t * lambda2, reg)
         
         # step 4: evaluate stopping criterion
-        opt_dist = Phi_t(Omega_sol, Theta_sol, S, Omega_t, Theta_t, sigma_t, lambda1, lambda2) - Y_t_new
+        opt_dist = Phi_t(Omega_sol, Theta_sol, S, Omega_t, Theta_t, sigma_t, lambda1, lambda2, reg) - Y_t_new
         condA = opt_dist <= eps_t**2/(2*sigma_t)
         condB = opt_dist <= delta_t**2/(2*sigma_t) * ((np.linalg.norm(Omega_sol - Omega_t)**2 + np.linalg.norm(Theta_sol - Theta_t)**2))
     
         sub_iter += 1
+        
+    if verbose and not(condA or condB):
+        print("Subproblem could not be solve with the given accuracy! -- reached maximal iterations")
+            
     
 
     return Omega_sol, Theta_sol, X_sol
 
 
 #%%
-def PPDNA(S, lambda1, lambda2, Omega_0, Theta_0, sigma_0 = 10, max_iter = 100, eps_ppdna = 1e-5 , verbose = False):
+def PPDNA(S, lambda1, lambda2, Omega_0, Theta_0, reg, sigma_0 = 10, max_iter = 100, eps_ppdna = 1e-5 , verbose = False):
     """
     This is the outer proximal point algorithm
     Algorithm 2 in Zhang et al.
@@ -129,6 +133,7 @@ def PPDNA(S, lambda1, lambda2, Omega_0, Theta_0, sigma_0 = 10, max_iter = 100, e
     
     assert Omega_0.shape == Theta_0.shape == S.shape
     assert S.shape[1] == S.shape[2]
+    assert reg in ['GGL', 'FGL']
     
     (K,p,p) = S.shape
     
@@ -148,13 +153,13 @@ def PPDNA(S, lambda1, lambda2, Omega_0, Theta_0, sigma_0 = 10, max_iter = 100, e
         
         print(f"------------Iteration {iter_t} of the Proximal Point Algorithm----------------")
     
-        Omega_t, Theta_t, X_t = PPA_subproblem(Omega_t, Theta_t, X_t0, S, ppa_sub_params = ppa_sub_params, verbose = verbose)
+        Omega_t, Theta_t, X_t = PPA_subproblem(Omega_t, Theta_t, X_t0, S, reg = reg, ppa_sub_params = ppa_sub_params, verbose = verbose)
         
         ppa_sub_params['sigma_t'] = 1.3 * ppa_sub_params['sigma_t']
-        ppa_sub_params['eps_t'] = 0.5 * ppa_sub_params['eps_t']
-        ppa_sub_params['delta_t'] = 0.5 * ppa_sub_params['delta_t']
+        ppa_sub_params['eps_t'] = 0.9 * ppa_sub_params['eps_t']
+        ppa_sub_params['delta_t'] = 0.9 * ppa_sub_params['delta_t']
             
-        eta_P = PPDNA_stopping_criterion(Omega_t, Theta_t, X_t, S , ppa_sub_params)
+        eta_P = PPDNA_stopping_criterion(Omega_t, Theta_t, X_t, S , ppa_sub_params, reg)
         
         if verbose:
             print("sigma_t value: " , ppa_sub_params['sigma_t'])
@@ -170,14 +175,14 @@ def PPDNA(S, lambda1, lambda2, Omega_0, Theta_0, sigma_0 = 10, max_iter = 100, e
     return Omega_t, Theta_t, X_t
 
 
-def PPDNA_stopping_criterion(Omega, Theta, X, S , ppa_sub_params):
+def PPDNA_stopping_criterion(Omega, Theta, X, S , ppa_sub_params, reg):
     
     assert Omega.shape == Theta.shape == S.shape
     assert S.shape[1] == S.shape[2]
     
     (K,p,p) = S.shape
     
-    term1 = np.linalg.norm(Theta- prox_p(Theta + X , l1 = ppa_sub_params['lambda1'], l2= ppa_sub_params['lambda2'])) / (1 + np.linalg.norm(Theta))
+    term1 = np.linalg.norm(Theta- prox_p(Theta + X , l1 = ppa_sub_params['lambda1'], l2= ppa_sub_params['lambda2'], reg = reg)) / (1 + np.linalg.norm(Theta))
     
     term2 = np.linalg.norm(Theta - Omega) / (1 + np.linalg.norm(Theta))
     

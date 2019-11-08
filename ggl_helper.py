@@ -17,7 +17,6 @@ def prox_2norm(v,l):
     return v * (a - l) / a
 
 def prox_phi_ggl(v, l1, l2):
-    assert min(l1,l2) > 0, "lambda 1 and lambda2 have to be positive"
     u = prox_1norm(v, l1)
     return prox_2norm(u,l2)
 
@@ -68,13 +67,12 @@ def construct_B(K):
 
 
 def prox_tv(v,l):
-    a = ProxTV(l).call(v)
+    a = ProxTV(l).call(np.ascontiguousarray(v))
     return a
 
 def prox_phi_fgl(v, l1, l2):
-    assert min(l1,l2) > 0, "lambda 1 and lambda2 have to be positive"
-    
-    return prox_1norm(prox_tv(v,l2) , l1)
+    res = prox_1norm(prox_tv(v,l2) , l1)
+    return res
 
 def jacobian_tv(v,l):
     
@@ -103,24 +101,31 @@ def jacobian_prox_phi_fgl(v , l1 , l2):
 
 #%% general functions related to the regularizer
     
-def P_val(X, l1, l2):
+def P_val(X, l1, l2, reg):
     assert min(l1,l2) > 0, "lambda 1 and lambda2 have to be positive"
     d = X.shape
     res = 0
     for i in np.arange(d[1]):
         for j in np.arange(start = i + 1 , stop = d[2]):
-            #print(X[:,i,j])
-            res += l1 * np.linalg.norm(X[:,i,j] , 1) + l2 * np.linalg.norm(X[:,i,j] , 2)
-    
+            if reg == 'GGL':
+                res += l1 * np.linalg.norm(X[:,i,j] , 1) + l2 * np.linalg.norm(X[:,i,j] , 2)
+            elif reg == 'FGL':
+                res += l1 * np.linalg.norm(X[:,i,j] , 1) + l2 * np.linalg.norm(X[1:,i,j] - X[:-1,i,j] , 1)
+                
     # multiply by 2 as we only summed the upper triangular
     return 2 * res
     
-def prox_phi(v, l1, l2):
+def prox_phi(v, l1, l2, reg):
     assert min(l1,l2) > 0, "lambda 1 and lambda2 have to be positive"
-    u = prox_1norm(v, l1)
-    return prox_2norm(u,l2)
+    assert reg in ['GGL', 'FGL']
     
-def prox_p(X, l1, l2):
+    if reg == 'GGL':
+        res = prox_phi_ggl(v, l1, l2)
+    elif reg == 'FGL':
+        res = prox_phi_fgl(v, l1, l2)
+    return res
+    
+def prox_p(X, l1, l2, reg):
     assert min(l1,l2) > 0, "lambda 1 and lambda2 have to be positive"
     d = X.shape
     M = np.zeros(d)
@@ -129,31 +134,32 @@ def prox_p(X, l1, l2):
             if i == j:
                 M[:,i,j] = X[:,i,j]
             else:
-                M[:,i,j] = prox_phi(X[:,i,j], l1, l2)
+                M[:,i,j] = prox_phi(X[:,i,j], l1, l2 , reg)
     
     assert abs(M - t(M)).max() <= 1e-10
     return M
   
-def moreau_P(X, l1, l2):
+def moreau_P(X, l1, l2, reg):
   # returns the Moreau_Yosida reg. value as well as the proximal map of P
   
-  Y = prox_p(X, l1, l2)
-  psi = P_val(Y, l1, l2) + 0.5 * Gdot(X-Y, X-Y) 
+  Y = prox_p(X, l1, l2, reg)
+  psi = P_val(Y, l1, l2, reg) + 0.5 * Gdot(X-Y, X-Y) 
  
   return psi, Y           
           
 
-def jacobian_prox_phi(v , l1 , l2):
+def jacobian_prox_phi(v , l1 , l2, reg):
     
-    u = prox_1norm(v, l1)
-    sig = jacobian_projection(u, l2)
-    lam = jacobian_1norm(v, l1)
+    assert reg in ['GGL', 'FGL']
     
-    M = (np.eye(len(v)) - sig) @ lam
-    assert abs(M - M.T).max() <= 1e-10
-    return M
+    if reg == 'GGL':
+        res = jacobian_prox_phi_ggl(v , l1 , l2)
+    elif reg == 'FGL':
+        res = jacobian_prox_phi_fgl(v , l1 , l2)
+        
+    return res
   
-def construct_jacobian_prox_p(X, l1 , l2):
+def construct_jacobian_prox_p(X, l1 , l2, reg):
     # each (i,j) entry has a corresponding jacobian which is a KxK matrix
     (K,p,p) = X.shape
     W = np.zeros((K,K,p,p))
@@ -162,7 +168,7 @@ def construct_jacobian_prox_p(X, l1 , l2):
             if i == j:
                 W[:,:,i,j] = np.eye(K)
             else:
-                W[:,:,i,j] = jacobian_prox_phi(X[:,i,j] , l1 , l2) 
+                W[:,:,i,j] = jacobian_prox_phi(X[:,i,j] , l1 , l2, reg) 
     return W
     
 def eval_jacobian_prox_p(Y , W):
@@ -253,9 +259,9 @@ def eval_jacobian_phiplus(B, Gamma, Q):
 #%%
 # functions related to the proximal point algorithm
     
-def Phi_t(Omega, Theta, S, Omega_t, Theta_t, sigma_t, lambda1, lambda2):
+def Phi_t(Omega, Theta, S, Omega_t, Theta_t, sigma_t, lambda1, lambda2, reg):
     
-    res = f(Omega, S) + P_val(Theta, lambda1, lambda2) + 1/(2*sigma_t) * (np.linalg.norm(Omega - Omega_t)**2 + np.linalg.norm(Theta - Theta_t)**2)
+    res = f(Omega, S) + P_val(Theta, lambda1, lambda2, reg) + 1/(2*sigma_t) * (np.linalg.norm(Omega - Omega_t)**2 + np.linalg.norm(Theta - Theta_t)**2)
     return res
 
 def hessian_Y(D , Gamma, eigQ, W, sigma_t):
@@ -271,7 +277,7 @@ def hessian_Y(D , Gamma, eigQ, W, sigma_t):
     return res
 
 
-def Y_t( X, Omega_t, Theta_t, S, lambda1, lambda2, sigma_t):
+def Y_t( X, Omega_t, Theta_t, S, lambda1, lambda2, sigma_t, reg):
   
     assert min(lambda1, lambda2, sigma_t) > 0 , "at least one parameter is not positive"
     assert X.shape[1] == X.shape[2], "dimensions are not as expected"
@@ -294,7 +300,7 @@ def Y_t( X, Omega_t, Theta_t, S, lambda1, lambda2, sigma_t):
     term2 = - 1/(2*sigma_t) * ( Gdot(W_t, W_t) + Gdot(V_t, V_t))
     term3 = 1/(2*sigma_t) * (  Gdot(Omega_t, Omega_t)  +  Gdot(Theta_t, Theta_t)   )  
   
-    Psi_P , U = moreau_P(V_t, sigma_t * lambda1, sigma_t*lambda2)  
+    Psi_P , U = moreau_P(V_t, sigma_t * lambda1, sigma_t*lambda2, reg)  
     term4 = (1/sigma_t) * Psi_P
   
     fun = term1 + term2 + term3 + term4
