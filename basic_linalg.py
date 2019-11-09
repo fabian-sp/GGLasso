@@ -11,7 +11,7 @@ import numpy as np
 
 #%%
 ## general functions for the space G
-def t(X):   
+def trp(X):   
     # transposes for a block of matrices each single matrix
     # assumes that X is given in the form (K, p, p)
     
@@ -24,7 +24,7 @@ def Gdot(X, Y):
     # calculates the inner product for X,Y in G
     assert X.shape == Y.shape
     
-    xy = np.trace( np.matmul( t(X), Y) , axis1 = 1, axis2 = 2)
+    xy = np.trace( np.matmul( trp(X), Y) , axis1 = 1, axis2 = 2)
     
     return xy.sum() 
 

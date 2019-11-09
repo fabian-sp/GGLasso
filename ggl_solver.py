@@ -6,7 +6,7 @@ import numpy as np
 
 from ggl_helper import prox_p, phiplus, moreau_h, moreau_P, construct_gamma, construct_jacobian_prox_p, Y_t, hessian_Y,  Phi_t
                         
-from basic_linalg import t, Gdot, cg_general
+from basic_linalg import Gdot, cg_general
 #%%
 def get_ppa_sub_params_default():
     ppa_sub_params = {'lambda1' : .1 , 'lambda2' : .1, 'sigma_t' : 1e8, 

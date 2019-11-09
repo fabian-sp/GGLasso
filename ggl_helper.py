@@ -6,7 +6,7 @@ import numpy as np
 import scipy as sc
 from tick.prox import ProxTV
 
-from basic_linalg import t,Gdot,Sdot
+from basic_linalg import trp,Gdot,Sdot
 #%% functions specifically related to the GGL regularizer
 
 def prox_1norm(v, l): 
@@ -62,11 +62,13 @@ def construct_B(K):
     
     B = dd+ld
     B = np.delete(B, 0, axis = 0)
+    # this is the left-inverse of B.T, is needed to reconstruct the dual solution z_lambda
     Binv = np.linalg.pinv(B.T)
     return B, Binv
 
 
 def prox_tv(v,l):
+    #a = condat_method(v,l)
     a = ProxTV(l).call(np.ascontiguousarray(v))
     return a
 
@@ -136,7 +138,7 @@ def prox_p(X, l1, l2, reg):
             else:
                 M[:,i,j] = prox_phi(X[:,i,j], l1, l2 , reg)
     
-    assert abs(M - t(M)).max() <= 1e-10
+    assert abs(M - trp(M)).max() <= 1e-10
     return M
   
 def moreau_P(X, l1, l2, reg):
@@ -250,9 +252,9 @@ def eval_jacobian_phiplus(B, Gamma, Q):
     # Gamma is constructed with construct_gamma
     # Q is the right-eigenvector matrix of the point A
         
-    res = Q @ (Gamma * (t(Q) @ B @ Q)) @ t(Q)
+    res = Q @ (Gamma * (trp(Q) @ B @ Q)) @ trp(Q)
     
-    assert abs(res - t(res)).max() <= 1e-10
+    assert abs(res - trp(res)).max() <= 1e-10
     return res
       
 

@@ -6,8 +6,10 @@
 import numpy as np
 import scipy as sp
 
-from basic_linalg import t
+from basic_linalg import trp
 from ggl_solver import PPDNA
+
+from evaluation import discovery_rate, draw_group_graph
 
 #%% inputs 
 
@@ -45,10 +47,21 @@ Omega_0 = np.apply_along_axis(np.diag, 1,diag_S)
 Theta_0 = Omega_0.copy()
 #%%
 
-lambda1 = 1e-1
-lambda2 = 1e-2
+lambda1 = 0.05
+lambda2 = 0.05
 
-Omega_sol, Theta_sol, X_sol = PPDNA(S, lambda1, lambda2, Omega_0, Theta_0, reg = 'FGL', sigma_0 = 10, max_iter = 100, eps_ppdna = 1e-5, verbose = True)
+Omega_sol, Theta_sol, X_sol = PPDNA(S, lambda1, lambda2, Omega_0, Theta_0, reg = 'GGL', sigma_0 = 10, max_iter = 100, eps_ppdna = 1e-5, verbose = True)
 
 
 naive = np.linalg.inv(S[0,:,:])
+
+
+#%%
+
+S_true = np.tile(Sigma_inv, (K,1,1))
+
+fig = draw_group_graph(Theta_sol , t = 1e-9)
+
+fig = draw_group_graph(S_true , t = 1e-9)
+
+discovery_rate(Theta_sol , S_true, t = 1e-9)
