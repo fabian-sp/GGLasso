@@ -47,14 +47,16 @@ Omega_0 = np.apply_along_axis(np.diag, 1,diag_S)
 Theta_0 = Omega_0.copy()
 #%%
 
-lambda1 = 0.05
-lambda2 = 0.05
+lambda1 = 1e-1
+lambda2 = 1e-1
 
 Omega_sol, Theta_sol, X_sol = PPDNA(S, lambda1, lambda2, Omega_0, Theta_0, reg = 'GGL', sigma_0 = 10, max_iter = 100, eps_ppdna = 1e-5, verbose = True)
 
 
-naive = np.linalg.inv(S[0,:,:])
+naive  = np.linalg.inv(S)
 
+# Sanity check 1: for lambda very small, we want to recover S^-1
+print(np.linalg.norm(naive-Theta_sol)/np.linalg.norm(naive))
 
 #%%
 

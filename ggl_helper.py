@@ -290,7 +290,7 @@ def Y_t( X, Omega_t, Theta_t, S, lambda1, lambda2, sigma_t, reg):
     V_t = Theta_t + (sigma_t * X)
 
     eigD, eigQ = np.linalg.eig(W_t)
-    print("Eigendecomposition is executed in Y_t")
+    #print("Eigendecomposition is executed in Y_t")
   
     grad1 = np.zeros((K,p,p))
     term1 = 0

@@ -4,7 +4,7 @@ import networkx as nx
 
 
 def get_graph_aes(with_edge_col = True):
-    aes = {'node_size' : 100, 'node_color' : 'steelblue', 'edge_color' : 'lightslategrey', 'width' : 1.5}
+    aes = {'node_size' : 100, 'node_color' : 'lightslategrey', 'edge_color' : 'lightslategrey', 'width' : 1.5}
     
     if not with_edge_col:
         del aes['edge_color']
@@ -52,7 +52,7 @@ def draw_group_graph(Omega , t = 1e-9):
         edge_col.append( gA[e[0], e[1]])
         
     fig = plt.figure()
-    nx.draw_kamada_kawai(G, with_labels = True, edge_color = edge_col, edge_cmap = plt.cm.RdYlGn, edge_vmin = 0, edge_vmax = K, **aes)
+    nx.draw_shell(G, with_labels = True, edge_color = edge_col, edge_cmap = plt.cm.RdYlGn, edge_vmin = 0, edge_vmax = K, **aes)
     
     return fig
     

@@ -71,6 +71,7 @@ def PPA_subproblem(Omega_t, Theta_t, X_t, S, reg, ppa_sub_params = None, verbose
         
         funY_Xt, gradY_Xt = Y_t( X_t, Omega_t, Theta_t, S, lambda1, lambda2, sigma_t, reg)
         
+        
         eigD, eigQ = np.linalg.eig(W_t)
         if verbose:
             print("Eigendecomposition is executed in PPA_subproblem")
@@ -80,7 +81,7 @@ def PPA_subproblem(Omega_t, Theta_t, X_t, S, reg, ppa_sub_params = None, verbose
         
         # step 1: CG method
         kwargs = {'Gamma' : Gamma, 'eigQ': eigQ, 'W': W, 'sigma_t': sigma_t}
-        cg_accur = min(eta, np.linalg.norm(gradY_Xt)**(1+tau))
+        cg_accur = min(eta, np.linalg.norm(gradY_Xt)**(1+tau), 1e-10)
         if verbose:
             print("Start CG method")
         D = cg_general(hessian_Y, Gdot, - gradY_Xt, eps = cg_accur, kwargs = kwargs)
@@ -140,7 +141,7 @@ def PPDNA(S, lambda1, lambda2, Omega_0, Theta_0, reg, sigma_0 = 10, max_iter = 1
     # initialize 
     Omega_t = Omega_0.copy()
     Theta_t = Theta_0.copy()
-    X_t0 = np.zeros((K,p,p))
+    X_t = np.zeros((K,p,p))
     
     ppa_sub_params = get_ppa_sub_params_default()
     
@@ -151,24 +152,25 @@ def PPDNA(S, lambda1, lambda2, Omega_0, Theta_0, reg, sigma_0 = 10, max_iter = 1
     
     for iter_t in np.arange(max_iter):
         
+        eta_P = PPDNA_stopping_criterion(Omega_t, Theta_t, X_t, S , ppa_sub_params, reg)
+        if eta_P <= eps_ppdna:
+            break
+        
         print(f"------------Iteration {iter_t} of the Proximal Point Algorithm----------------")
     
-        Omega_t, Theta_t, X_t = PPA_subproblem(Omega_t, Theta_t, X_t0, S, reg = reg, ppa_sub_params = ppa_sub_params, verbose = verbose)
+        Omega_t, Theta_t, X_t = PPA_subproblem(Omega_t, Theta_t, X_t, S, reg = reg, ppa_sub_params = ppa_sub_params, verbose = verbose)
         
         ppa_sub_params['sigma_t'] = 1.3 * ppa_sub_params['sigma_t']
         ppa_sub_params['eps_t'] = 0.9 * ppa_sub_params['eps_t']
         ppa_sub_params['delta_t'] = 0.9 * ppa_sub_params['delta_t']
             
-        eta_P = PPDNA_stopping_criterion(Omega_t, Theta_t, X_t, S , ppa_sub_params, reg)
+        
         
         if verbose:
             print("sigma_t value: " , ppa_sub_params['sigma_t'])
             #print("Distance Omega to Theta: " ,np.linalg.norm(Omega_t-Theta_t))
             print(f"Current accuracy: ", eta_P)
         
-        
-        if eta_P <= eps_ppdna:
-            break
         
     print(f"PPDNA terminated after {iter_t} iterations with accuracy {eta_P}")
     
