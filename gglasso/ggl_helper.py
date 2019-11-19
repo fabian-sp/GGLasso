@@ -5,8 +5,9 @@ author: Fabian Schaipp
 import numpy as np
 import scipy as sc
 from tick.prox import ProxTV
+from numba import jit
 
-from basic_linalg import trp,Gdot,Sdot
+from .basic_linalg import trp,Gdot,Sdot
 #%% functions specifically related to the GGL regularizer
 
 def prox_1norm(v, l): 
@@ -19,6 +20,7 @@ def prox_2norm(v,l):
 def prox_phi_ggl(v, l1, l2):
     u = prox_1norm(v, l1)
     return prox_2norm(u,l2)
+
 
 def jacobian_projection(v, l):
     
@@ -43,6 +45,7 @@ def jacobian_1norm(v, l):
     
     d = (abs(v) > l).astype(int)
     return np.diag(d)
+
 
 def jacobian_prox_phi_ggl(v , l1 , l2):
     
@@ -76,6 +79,7 @@ def prox_phi_fgl(v, l1, l2):
     res = prox_1norm(prox_tv(v,l2) , l1)
     return res
 
+
 def jacobian_tv(v,l):
     
     K = len(v)   
@@ -92,7 +96,8 @@ def jacobian_tv(v,l):
     P_hat = np.linalg.pinv(Sigma @ B@ B.T @ Sigma , hermitian = True)
     P = np.eye(K) - B.T @ P_hat @ B
     return P 
-    
+
+   
 def jacobian_prox_phi_fgl(v , l1 , l2):
     
     x = prox_tv(v,l2)
@@ -160,7 +165,8 @@ def jacobian_prox_phi(v , l1 , l2, reg):
         res = jacobian_prox_phi_fgl(v , l1 , l2)
         
     return res
-  
+
+
 def construct_jacobian_prox_p(X, l1 , l2, reg):
     # each (i,j) entry has a corresponding jacobian which is a KxK matrix
     (K,p,p) = X.shape
@@ -172,7 +178,7 @@ def construct_jacobian_prox_p(X, l1 , l2, reg):
             else:
                 W[:,:,i,j] = jacobian_prox_phi(X[:,i,j] , l1 , l2, reg) 
     return W
-    
+
 def eval_jacobian_prox_p(Y , W):
     # W is the result of construct_jacobian_prox_p
     (K,p,p) = Y.shape
@@ -195,15 +201,19 @@ def h(A):
 def f(Omega, S):
     return h(Omega).sum() + Gdot(Omega, S)
 
+@jit(nopython=True)
+def phip(d, beta):
+    return 0.5 * (np.sqrt(d**2 + 4*beta) + d)
+
 def phiplus(A, beta, D = np.array([]), Q = np.array([])):
     # D and Q are optional if already precomputed
     if len(D) != A.shape[0]:
         D, Q = np.linalg.eig(A)
         print("Single eigendecomposition is executed in phiplus")
     
-    phip = lambda d: 0.5 * (np.sqrt(d**2 + 4*beta) + d)
+    #phip = lambda d: 0.5 * (np.sqrt(d**2 + 4*beta) + d)
     
-    B = Q @ np.diag(phip(D)) @ Q.T
+    B = Q @ np.diag(phip(D,beta)) @ Q.T
     return B
 
 def phiminus(A, beta , D = np.array([]), Q = np.array([]) ):
@@ -223,8 +233,11 @@ def moreau_h(A, beta , D = np.array([]), Q = np.array([])):
     pm = phiminus(A,beta, D , Q)
     psi =  - (beta * np.log (np.linalg.det(pp))) + (0.5 * np.linalg.norm(pm)**2 )
     return psi, pp, pm
-  
 
+
+
+
+@jit(nopython=True)
 def construct_gamma(A, beta, D = np.array([]), Q = np.array([])):
 
     (K,p,p) = A.shape
@@ -234,10 +247,10 @@ def construct_gamma(A, beta, D = np.array([]), Q = np.array([])):
         D, Q = np.linalg.eig(A)
         print("Eigendecomposition is executed in construct_gamma")
     
-    phip = lambda d: 0.5 * (np.sqrt(d**2 + 4*beta) + d)
+    #phip = lambda d: 0.5 * (np.sqrt(d**2 + 4*beta) + d)
     
     for k in np.arange(K):
-        phip_d = phip(D[k,:]) 
+        phip_d = phip(D[k,:] , beta) 
         
         for i in np.arange(p):
             for j in np.arange(p):    
@@ -295,9 +308,9 @@ def Y_t( X, Omega_t, Theta_t, S, lambda1, lambda2, sigma_t, reg):
     grad1 = np.zeros((K,p,p))
     term1 = 0
     for k in np.arange(K):
-        Psi_h, phip, _ = moreau_h(W_t[k,:,:] , sigma_t, D = eigD[k,:] , Q = eigQ[k,:,:] )
+        Psi_h, proxh, _ = moreau_h(W_t[k,:,:] , sigma_t, D = eigD[k,:] , Q = eigQ[k,:,:] )
         term1 += (1/sigma_t) * Psi_h
-        grad1[k,:,:] = phip
+        grad1[k,:,:] = proxh
     
     term2 = - 1/(2*sigma_t) * ( Gdot(W_t, W_t) + Gdot(V_t, V_t))
     term3 = 1/(2*sigma_t) * (  Gdot(Omega_t, Omega_t)  +  Gdot(Theta_t, Theta_t)   )  

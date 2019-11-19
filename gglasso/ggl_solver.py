@@ -4,8 +4,8 @@ author: Fabian Schaipp
 
 import numpy as np
 
-from ggl_helper import prox_p, phiplus, moreau_h, moreau_P, construct_gamma, construct_jacobian_prox_p, Y_t, hessian_Y,  Phi_t
-from basic_linalg import Gdot, cg_general
+from .ggl_helper import prox_p, phiplus, moreau_h, moreau_P, construct_gamma, construct_jacobian_prox_p, Y_t, hessian_Y,  Phi_t
+from .basic_linalg import Gdot, cg_general
 
 #%%
 def get_ppa_sub_params_default():

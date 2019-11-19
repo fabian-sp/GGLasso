@@ -5,16 +5,17 @@
 
 import numpy as np
 import scipy as sp
+from time import time
 
-from basic_linalg import trp
-from ggl_solver import PPDNA
+from gglasso.basic_linalg import trp
+from gglasso.ggl_solver import PPDNA
 
 from evaluation import discovery_rate, draw_group_graph
 
 #%% inputs 
 
 K = 5
-p = 10
+p = 20
 N = 20
 
 tmp = np.random.normal(size=(p,p))
@@ -47,11 +48,13 @@ Omega_0 = np.apply_along_axis(np.diag, 1,diag_S)
 Theta_0 = Omega_0.copy()
 #%%
 
-lambda1 = 1e-1
-lambda2 = 1e-1
+lambda1 = 1e-2
+lambda2 = 1e-2
 
+start = time()
 Omega_sol, Theta_sol, X_sol = PPDNA(S, lambda1, lambda2, Omega_0, Theta_0, reg = 'GGL', sigma_0 = 10, max_iter = 100, eps_ppdna = 1e-5, verbose = True)
-
+end = time()
+print("Running time was ", end-start, "sec")
 
 naive  = np.linalg.inv(S)
 
