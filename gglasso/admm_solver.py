@@ -60,9 +60,9 @@ def ADMM_MGL(S, lambda1, lambda2, Omega_0, reg, nk, rho = 1, max_iter = 100, eps
         
     if eta_A > eps_admm:
         status = 'max iterations reached'
-        print("WARNING: ADMM did not converge but stopped after max iterations!")
-    
+        
     print(f"ADMM terminated after {iter_t} iterations with accuracy {eta_A}")
+    print(f"ADMM status: {status}")
                
     return Omega_t, status
 
@@ -95,5 +95,5 @@ reg = 'FGL'
 nk = np.ones(5)*20
 Theta_0 = np.zeros((5,20,20))
 
-Theta_sol,_ = ADMM_MGL(S, lambda1, lambda2, Theta_0, reg, nk, max_iter = 100, eps_admm = 1e-5 , verbose = True)
+Theta_sol,_ = ADMM_MGL(S, lambda1, lambda2, Theta_0, reg, nk, max_iter = 100, eps_admm = 1e-3 , verbose = True)
     

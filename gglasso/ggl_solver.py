@@ -139,6 +139,7 @@ def PPDNA(S, lambda1, lambda2, Omega_0, Theta_0, reg, sigma_0 = 10, max_iter = 1
     (K,p,p) = S.shape
     
     # initialize 
+    status = 'not optimal'
     Omega_t = Omega_0.copy()
     Theta_t = Theta_0.copy()
     X_t = np.zeros((K,p,p))
@@ -154,6 +155,7 @@ def PPDNA(S, lambda1, lambda2, Omega_0, Theta_0, reg, sigma_0 = 10, max_iter = 1
         
         eta_P = PPDNA_stopping_criterion(Omega_t, Theta_t, X_t, S , ppa_sub_params, reg)
         if eta_P <= eps_ppdna:
+            status = 'optimal'
             break
         
         print(f"------------Iteration {iter_t} of the Proximal Point Algorithm----------------")
@@ -170,11 +172,14 @@ def PPDNA(S, lambda1, lambda2, Omega_0, Theta_0, reg, sigma_0 = 10, max_iter = 1
             print("sigma_t value: " , ppa_sub_params['sigma_t'])
             #print("Distance Omega to Theta: " ,np.linalg.norm(Omega_t-Theta_t))
             print(f"Current accuracy: ", eta_P)
-        
-        
+     
+    if eta_P > eps_ppdna:
+            status = 'max iterations reached'    
+            
     print(f"PPDNA terminated after {iter_t} iterations with accuracy {eta_P}")
+    print(f"PPDNA status: {status}")
     
-    return Omega_t, Theta_t, X_t
+    return Omega_t, Theta_t, X_t, status
 
 
 def PPDNA_stopping_criterion(Omega, Theta, X, S , ppa_sub_params, reg):

@@ -52,7 +52,7 @@ lambda1 = 1e-2
 lambda2 = 1e-2
 
 start = time()
-Omega_sol, Theta_sol, X_sol = PPDNA(S, lambda1, lambda2, Omega_0, Theta_0, reg = 'GGL', sigma_0 = 10, max_iter = 100, eps_ppdna = 1e-5, verbose = True)
+Omega_sol, Theta_sol, X_sol, status = PPDNA(S, lambda1, lambda2, Omega_0, Theta_0, reg = 'GGL', sigma_0 = 10, max_iter = 100, eps_ppdna = 1e-5, verbose = True)
 end = time()
 print("Running time was ", end-start, "sec")
 
