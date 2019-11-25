@@ -10,23 +10,31 @@ from gglasso.ggl_helper import prox_p, phiplus
 
 #%%
 
-def ADMM_MGL(S, lambda1, lambda2, Omega_0, reg, nk, rho = 1, max_iter = 100, eps_admm = 1e-5 , verbose = False):
+def ADMM_MGL(S, lambda1, lambda2, Omega_0, reg, n_samples = None, rho = 1, max_iter = 100, eps_admm = 1e-5 , verbose = False):
     """
     This is an ADMM algorithm for solving the Multiple Graphical Lasso problem
     reg specifies the type of penalty, i.e. Group or Fused Graphical Lasso
     see also the article from Danaher et. al.
     
-    nk are the sample sizes for the K instances
+    n_samples are the sample sizes for the K instances, can also be None or integer to be 
     """
     assert Omega_0.shape == S.shape
     assert S.shape[1] == S.shape[2]
-    assert len(nk) == S.shape[0]
     assert reg in ['GGL', 'FGL']
         
     (K,p,p) = S.shape
     
-    if len(nk.shape) == 1:
-        nk = nk.reshape(K,1,1)
+    # n_samples None --> set them all to 1
+    # n_samples integer --> all instances have same number of samples
+    # else --> n_samples should be array with sample sizes
+    if n_samples == None:
+        nk = np.ones((K,1,1))
+    elif type(n_samples) == int:
+        nk = n_samples * np.ones((K,1,1))
+        
+    else:
+        assert len(nk) == K
+        nk = n_samples.reshape(K,1,1)
     
     # initialize 
     status = 'not optimal'
@@ -80,7 +88,6 @@ def ADMM_stopping_criterion(Omega, Theta, X, S , lambda1, lambda2, nk, reg):
     proxK = np.zeros((K,p,p))
     eigD, eigQ = np.linalg.eig(Omega - nk*S - X)
     for k in np.arange(K):       
-        #proxK[k,:,:] = phiplus(A = Omega[k,:,:] - S[k,:,:] - X[k,:,:], beta = 1, D = eigD[k,:], Q = eigQ[k,:,:])
         proxK[k,:,:] = phiplus(A = Omega[k,:,:] - nk[k,0,0]*S[k,:,:] - X[k,:,:], beta = nk[k,0,0], D = eigD[k,:], Q = eigQ[k,:,:])
         
     term3 = np.linalg.norm(Omega - proxK) / (1 + np.linalg.norm(Omega))
@@ -91,9 +98,9 @@ def ADMM_stopping_criterion(Omega, Theta, X, S , lambda1, lambda2, nk, reg):
 
 lambda1 = .1*20
 lambda2 = .1*20
-reg = 'FGL'
-nk = np.ones(5)*20
+reg = 'GGL'
+n_samples = 20
 Theta_0 = np.zeros((5,20,20))
 
-Theta_sol,_ = ADMM_MGL(S, lambda1, lambda2, Theta_0, reg, nk, max_iter = 100, eps_admm = 1e-3 , verbose = True)
+Theta_sol,_ = ADMM_MGL(S, lambda1, lambda2, Theta_0, reg, n_samples, max_iter = 100, eps_admm = 1e-3 , verbose = True)
     
