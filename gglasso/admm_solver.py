@@ -4,8 +4,8 @@ author: Fabian Schaipp
 
 import numpy as np
 
-from gglasso.basic_linalg import trp,Gdot,Sdot
-from gglasso.ggl_helper import prox_p, phiplus
+from .basic_linalg import trp,Gdot,Sdot
+from .ggl_helper import prox_p, phiplus
 
 
 #%%
@@ -94,13 +94,5 @@ def ADMM_stopping_criterion(Omega, Theta, X, S , lambda1, lambda2, nk, reg):
 
     return max(term1, term2, term3)
 
-#%%
 
-lambda1 = .1*20
-lambda2 = .1*20
-reg = 'GGL'
-n_samples = 20
-Theta_0 = np.zeros((5,20,20))
-
-Theta_sol,_ = ADMM_MGL(S, lambda1, lambda2, Theta_0, reg, n_samples, max_iter = 100, eps_admm = 1e-3 , verbose = True)
     

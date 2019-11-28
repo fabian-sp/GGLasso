@@ -120,19 +120,6 @@ def group_power_network(p=100, K=10, M=10):
         
     return Sigma, Theta    
 
-#%%
-
-from evaluation import draw_group_graph
-
-Sigma, Theta   = group_power_network(p=100, K=10, M=10)
-
-fig = draw_group_graph(Theta)
-
-# calc adjacency matrix
-#adjA = (Theta != 0).astype(int)
-#
-#G = nx.from_numpy_array(adjA)
-#nx.draw(G)
 
 
 
