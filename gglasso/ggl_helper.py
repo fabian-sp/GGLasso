@@ -179,11 +179,12 @@ def construct_jacobian_prox_p(X, l1 , l2, reg):
                 W[:,:,i,j] = jacobian_prox_phi(X[:,i,j] , l1 , l2, reg) 
     return W
 
+@jit(nopython=True)
 def eval_jacobian_prox_p(Y , W):
     # W is the result of construct_jacobian_prox_p
     (K,p,p) = Y.shape
   
-    assert W.shape == (K,K,p,p) , "wrong dimensions"
+    assert W.shape == (K,K,p,p)
   
     fun = np.zeros((K,p,p))
     for i in np.arange(p):
@@ -244,8 +245,9 @@ def construct_gamma(A, beta, D = np.array([]), Q = np.array([])):
     Gamma = np.zeros((K,p,p))
     
     if D.shape[0] != A.shape[0]:
-        D, Q = np.linalg.eig(A)
-        print("Eigendecomposition is executed in construct_gamma")
+        #D, Q = np.linalg.eig(A)
+        #print("Eigendecomposition is executed in construct_gamma")
+        raise KeyError
     
     #phip = lambda d: 0.5 * (np.sqrt(d**2 + 4*beta) + d)
     

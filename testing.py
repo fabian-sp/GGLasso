@@ -15,8 +15,8 @@ from evaluation import discovery_rate, draw_group_graph
 #%% inputs 
 
 K = 5
-p = 20
-N = 20
+p = 80
+N = 100
 
 tmp = np.random.normal(size=(p,p))
 Sigma_inv = tmp.T @ tmp
@@ -48,8 +48,8 @@ Omega_0 = np.apply_along_axis(np.diag, 1,diag_S)
 Theta_0 = Omega_0.copy()
 #%%
 
-lambda1 = 1e-2
-lambda2 = 1e-2
+lambda1 = 1e-1
+lambda2 = 1e-1
 
 start = time()
 Omega_sol, Theta_sol, X_sol, status = PPDNA(S, lambda1, lambda2, Omega_0, Theta_0, reg = 'GGL', sigma_0 = 10, max_iter = 100, eps_ppdna = 1e-5, verbose = True)
