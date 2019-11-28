@@ -36,6 +36,9 @@ def discovery_rate(S_sol , S_true, t = 1e-9):
 
 
 def draw_group_graph(Omega , t = 1e-9):
+    """
+    Draws a network with Omega as precision matrix
+    """
     
     assert len(Omega.shape) == 3
     (K,p,p) = Omega.shape
@@ -45,14 +48,16 @@ def draw_group_graph(Omega , t = 1e-9):
     
     G = nx.from_numpy_array(gA)
     
-    aes = get_graph_aes(False)
+    aes = get_graph_aes(with_edge_col = False)
     
     edge_col = []
     for e in G.edges:
         edge_col.append( gA[e[0], e[1]])
         
     fig = plt.figure()
-    nx.draw_shell(G, with_labels = True, edge_color = edge_col, edge_cmap = plt.cm.RdYlGn, edge_vmin = 0, edge_vmax = K, **aes)
+    #nx.draw_shell(G, with_labels = True, edge_color = edge_col, edge_cmap = plt.cm.RdYlGn, edge_vmin = 0, edge_vmax = K, **aes)
+    
+    nx.draw_spring(G, with_labels = True, edge_color = edge_col, edge_cmap = plt.cm.RdYlGn, edge_vmin = 0, edge_vmax = K, **aes)
     
     return fig
     
