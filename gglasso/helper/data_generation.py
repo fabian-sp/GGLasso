@@ -9,7 +9,7 @@ multiple classes" from Danaher et al.
 import numpy as np
 import networkx as nx
 
-from gglasso.helper.basic_linalg import trp
+from .basic_linalg import trp
 
 
 def power_law_network(p=100, M=10):

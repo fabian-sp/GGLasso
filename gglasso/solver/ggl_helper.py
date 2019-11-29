@@ -6,7 +6,7 @@ import numpy as np
 from tick.prox import ProxTV
 from numba import jit
 
-from gglasso.helper.basic_linalg import trp,Gdot,Sdot
+from ..helper.basic_linalg import trp,Gdot,Sdot
 
 # functions specifically related to the GGL regularizer
 def prox_1norm(v, l): 

@@ -4,8 +4,8 @@ author: Fabian Schaipp
 
 import numpy as np
 
-from gglasso.helper.basic_linalg import trp,Gdot,Sdot
-from gglasso.solver.ggl_helper import prox_p, phiplus
+from ..helper.basic_linalg import trp,Gdot,Sdot
+from .ggl_helper import prox_p, phiplus
 
 
 def ADMM_MGL(S, lambda1, lambda2, Omega_0, reg, n_samples = None, rho = 1, max_iter = 100, eps_admm = 1e-5 , verbose = False):

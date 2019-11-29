@@ -12,7 +12,12 @@ def get_graph_aes(with_edge_col = True):
     return aes
 
 def adjacency_matrix(S , t = 1e-9):
-    return (np.abs(S) >= t).astype(int)
+    A = (np.abs(S) >= t).astype(int)
+    # do not count diagonal entries as edges
+    if len(S.shape) == 3:
+        for k in np.arange(S.shape[0]):
+            np.fill_diagonal(A[k,:,:], 0)
+    return A
 
 
 def discovery_rate(S_sol , S_true, t = 1e-9):
@@ -22,7 +27,7 @@ def discovery_rate(S_sol , S_true, t = 1e-9):
     A_true = adjacency_matrix(S_true, t)
         
     true_edges = A_true.sum(axis = (1,2))
-    true_non_edges =  p**2 - true_edges
+    true_non_edges =  p*(p-1) - true_edges
     positive_edges = A_sol.sum(axis = (1,2))
     
     # true positive edge ratio
