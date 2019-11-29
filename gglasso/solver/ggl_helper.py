@@ -201,7 +201,7 @@ def phim(d, beta):
 def phiplus(A, beta, D = np.array([]), Q = np.array([])):
     # D and Q are optional if already precomputed
     if len(D) != A.shape[0]:
-        D, Q = np.linalg.eig(A)
+        D, Q = np.linalg.eigh(A)
         print("Single eigendecomposition is executed in phiplus")
     
     B = Q @ np.diag(phip(D,beta)) @ Q.T
@@ -210,7 +210,7 @@ def phiplus(A, beta, D = np.array([]), Q = np.array([])):
 def phiminus(A, beta , D = np.array([]), Q = np.array([]) ):
     # D and Q are optional if already precomputed
     if len(D) != A.shape[0]:
-        D, Q = np.linalg.eig(A)
+        D, Q = np.linalg.eigh(A)
         print("Single eigendecomposition is executed in phiminus")
     
     B = Q @ np.diag(phim(D,beta)) @ Q.T
@@ -282,7 +282,7 @@ def Y_t( X, Omega_t, Theta_t, S, lambda1, lambda2, sigma_t, reg):
     W_t = Omega_t - (sigma_t * (S + X))  
     V_t = Theta_t + (sigma_t * X)
 
-    eigD, eigQ = np.linalg.eig(W_t)
+    eigD, eigQ = np.linalg.eigh(W_t)
     #print("Eigendecomposition is executed in Y_t")
   
     grad1 = np.zeros((K,p,p))

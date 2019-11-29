@@ -22,7 +22,7 @@ def power_law_network(p=100, M=10):
     
     for m in np.arange(M):
     
-        G_m = nx.generators.random_graphs.random_powerlaw_tree(n = L, gamma = 3, tries = 200)
+        G_m = nx.generators.random_graphs.random_powerlaw_tree(n = L, gamma = 2.5, tries = 5*p)
         A_m = nx.to_numpy_array(G_m)
         
         # generate random numbers for the nonzero entries
@@ -34,22 +34,21 @@ def power_law_network(p=100, M=10):
         A[m*L:(m+1)*L, m*L:(m+1)*L] = A_m
     
     
-    row_sum_od = 1.5 * abs(A).sum(axis = 1)
+    row_sum_od = 1.7 * abs(A).sum(axis = 1)
     # broadcasting in order to divide ROW-wise
-    A = A/ row_sum_od[:,np.newaxis]
+    A = A / row_sum_od[:,np.newaxis]
+    
+    A = .5 * (A + A.T)
     
     # A has 0 on diagonal, fill with 1s
     A = A + np.eye(p)
     assert all(np.diag(A)==1), "Expected 1s on diagonal"
     
-    A = .5 * (A + A.T)
     
-    
-    D,_ = np.linalg.eig(A)
+    D,_ = np.linalg.eigh(A)
     assert D.min() > 0, "generated matrix A is not positive definite"
     
-    
-    Ainv = np.linalg.inv(A)
+    Ainv = np.linalg.pinv(A, hermitian = True)
     
     for i in np.arange(p):
         for j in np.arange(p):
@@ -58,8 +57,7 @@ def power_law_network(p=100, M=10):
                 Sigma[i,j] = Ainv[i,j]/np.sqrt(Ainv[i,i] * Ainv[j,j])
             else:
                 Sigma[i,j] = 0.6 * Ainv[i,j]/np.sqrt(Ainv[i,i] * Ainv[j,j])
-    
-    
+     
     assert abs(Sigma.T - Sigma).max() <= 1e-8
     D,_ = np.linalg.eig(Sigma)
     assert D.min() > 0, "generated matrix Sigma is not positive definite"
@@ -91,10 +89,12 @@ def time_varying_power_network(p=100, K=10, M=10):
             Sigma_k[0:L, 0:L] = np.eye(L)
             
         Sigma[k,:,:] = Sigma_k
-        
-    Theta = np.linalg.inv(Sigma)
+    
+    Sigma[abs(Sigma) <= 1e-3] = 0
+    
+    Theta = np.linalg.pinv(Sigma, hermitian = True)
     # ensure sparsity 
-    Theta[abs(Theta) <= 1e-4] = 0
+    Theta[abs(Theta) <= 1e-3] = 0
         
     return Sigma, Theta
     

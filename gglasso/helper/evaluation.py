@@ -62,7 +62,8 @@ def draw_group_graph(Omega , t = 1e-9):
     edge_col = []
     for e in G.edges:
         edge_col.append( gA[e[0], e[1]])
-        
+    
+    
     fig = plt.figure()
     #nx.draw_shell(G, with_labels = True, edge_color = edge_col, edge_cmap = plt.cm.RdYlGn, edge_vmin = 0, edge_vmax = K, **aes)
     

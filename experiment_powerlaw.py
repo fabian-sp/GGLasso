@@ -10,18 +10,20 @@ from matplotlib import pyplot as plt
 
 from gglasso.solver.ggl_solver import PPDNA
 from gglasso.helper.data_generation import time_varying_power_network, sample_covariance_matrix
-from gglasso.helper.evaluation import discovery_rate, error
+from gglasso.helper.evaluation import discovery_rate, error, draw_group_graph
 from gglasso.helper.experiment_helper import lambda_parametrizer
 
 
-p = 50
+p = 100
 K = 5
-N = 200
-M = 2
+N = 2000
+M = 10
 
 
 Sigma, Theta = time_varying_power_network(p, K, M)
 #np.linalg.norm(np.eye(p) - Sigma@Theta)
+
+draw_group_graph(Theta)
 
 S = sample_covariance_matrix(Sigma, N)
 W1 = np.array([ 0.05, 0.1, 0.2 , 0.3])

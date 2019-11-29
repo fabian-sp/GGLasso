@@ -73,7 +73,7 @@ def PPA_subproblem(Omega_t, Theta_t, X_t, S, reg, ppa_sub_params = None, verbose
         funY_Xt, gradY_Xt = Y_t( X_t, Omega_t, Theta_t, S, lambda1, lambda2, sigma_t, reg)
         
         
-        eigD, eigQ = np.linalg.eig(W_t)
+        eigD, eigQ = np.linalg.eigh(W_t)
         if verbose:
             print("Eigendecomposition is executed in PPA_subproblem")
         Gamma = construct_gamma(W_t, sigma_t, D = eigD, Q = eigQ)
@@ -104,7 +104,7 @@ def PPA_subproblem(Omega_t, Theta_t, X_t, S, reg, ppa_sub_params = None, verbose
         X_sol = X_t.copy()
         
         Omega_sol = np.zeros((K,p,p))
-        eigW, eigV = np.linalg.eig(Omega_t - sigma_t * (S + X_sol))
+        eigW, eigV = np.linalg.eigh(Omega_t - sigma_t * (S + X_sol))
         for k in np.arange(K):
             _, phip_k, _ = moreau_h( Omega_t[k,:,:] - sigma_t * (S[k,:,:] + X_sol[k,:,:]) , sigma_t , eigW[k,:], eigV[k,:,:])
             Omega_sol[k,:,:] = phip_k
@@ -210,7 +210,7 @@ def PPDNA_stopping_criterion(Omega, Theta, X, S , ppa_sub_params, reg):
     term2 = np.linalg.norm(Theta - Omega) / (1 + np.linalg.norm(Theta))
     
     proxK = np.zeros((K,p,p))
-    eigD, eigQ = np.linalg.eig(Omega-S-X)
+    eigD, eigQ = np.linalg.eigh(Omega-S-X)
     for k in np.arange(K):       
         proxK[k,:,:] = phiplus(A = Omega[k,:,:] - S[k,:,:] - X[k,:,:], beta = 1, D = eigD[k,:], Q = eigQ[k,:,:])
     
