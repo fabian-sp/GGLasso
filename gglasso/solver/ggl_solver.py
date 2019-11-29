@@ -1,13 +1,14 @@
 """
 author: Fabian Schaipp
+
+This file contains the proximal point algorithm proposed by Zhang et al.
 """
 
 import numpy as np
 
-from .ggl_helper import prox_p, phiplus, moreau_h, moreau_P, construct_gamma, construct_jacobian_prox_p, Y_t, hessian_Y,  Phi_t
-from .basic_linalg import Gdot, cg_general
+from gglasso.solver.ggl_helper import prox_p, phiplus, moreau_h, moreau_P, construct_gamma, construct_jacobian_prox_p, Y_t, hessian_Y,  Phi_t
+from gglasso.helper.basic_linalg import Gdot, cg_general
 
-#%%
 def get_ppa_sub_params_default():
     ppa_sub_params = {'lambda1' : .1 , 'lambda2' : .1, 'sigma_t' : 1e8, 
           'eta' : .5, 'tau' : .5, 'rho' : .5, 'mu' : .25,
@@ -64,7 +65,6 @@ def PPA_subproblem(Omega_t, Theta_t, X_t, S, reg, ppa_sub_params = None, verbose
     sub_iter = 0
     
     while not(condA or condB) and sub_iter < 20:
-        
         # step 0: set variables
         W_t = Omega_t - (sigma_t * (S + X_t))  
         V_t = Theta_t + (sigma_t * X_t)
@@ -121,18 +121,16 @@ def PPA_subproblem(Omega_t, Theta_t, X_t, S, reg, ppa_sub_params = None, verbose
         print("Subproblem could not be solve with the given accuracy! -- reached maximal iterations")
             
     
-
     return Omega_sol, Theta_sol, X_sol
 
 
-#%%
-def PPDNA(S, lambda1, lambda2, Omega_0, Theta_0, reg, sigma_0 = 10, max_iter = 100, eps_ppdna = 1e-5 , verbose = False):
+def PPDNA(S, lambda1, lambda2, reg, Omega_0, Theta_0 = None, sigma_0 = 10, max_iter = 100, eps_ppdna = 1e-5 , verbose = False):
     """
     This is the outer proximal point algorithm
     Algorithm 2 in Zhang et al.
     """
     
-    assert Omega_0.shape == Theta_0.shape == S.shape
+    assert Omega_0.shape == S.shape
     assert S.shape[1] == S.shape[2]
     assert reg in ['GGL', 'FGL']
     
@@ -141,6 +139,9 @@ def PPDNA(S, lambda1, lambda2, Omega_0, Theta_0, reg, sigma_0 = 10, max_iter = 1
     # initialize 
     status = 'not optimal'
     Omega_t = Omega_0.copy()
+    if Theta_0 == None:
+        Theta_0 = Omega_0.copy()
+    
     Theta_t = Theta_0.copy()
     X_t = np.zeros((K,p,p))
     
@@ -153,6 +154,7 @@ def PPDNA(S, lambda1, lambda2, Omega_0, Theta_0, reg, sigma_0 = 10, max_iter = 1
     
     for iter_t in np.arange(max_iter):
         
+        # check stopping criterion
         eta_P = PPDNA_stopping_criterion(Omega_t, Theta_t, X_t, S , ppa_sub_params, reg)
         if eta_P <= eps_ppdna:
             status = 'optimal'
@@ -166,11 +168,8 @@ def PPDNA(S, lambda1, lambda2, Omega_0, Theta_0, reg, sigma_0 = 10, max_iter = 1
         ppa_sub_params['eps_t'] = 0.9 * ppa_sub_params['eps_t']
         ppa_sub_params['delta_t'] = 0.9 * ppa_sub_params['delta_t']
             
-        
-        
         if verbose:
             print("sigma_t value: " , ppa_sub_params['sigma_t'])
-            #print("Distance Omega to Theta: " ,np.linalg.norm(Omega_t-Theta_t))
             print(f"Current accuracy: ", eta_P)
      
     if eta_P > eps_ppdna:
@@ -182,8 +181,7 @@ def PPDNA(S, lambda1, lambda2, Omega_0, Theta_0, reg, sigma_0 = 10, max_iter = 1
     return Omega_t, Theta_t, X_t, status
 
 
-def PPDNA_stopping_criterion(Omega, Theta, X, S , ppa_sub_params, reg):
-    
+def PPDNA_stopping_criterion(Omega, Theta, X, S , ppa_sub_params, reg): 
     assert Omega.shape == Theta.shape == S.shape
     assert S.shape[1] == S.shape[2]
     

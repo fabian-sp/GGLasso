@@ -7,10 +7,10 @@ import numpy as np
 import scipy as sp
 from time import time
 
-from gglasso.basic_linalg import trp
-from gglasso.ggl_solver import PPDNA
+from gglasso.helper.basic_linalg import trp
+from gglasso.solver.ggl_solver import PPDNA
 
-from evaluation import discovery_rate, draw_group_graph
+from gglasso.helper.evaluation import discovery_rate, draw_group_graph
 
 #%% inputs 
 
@@ -48,8 +48,8 @@ Omega_0 = np.apply_along_axis(np.diag, 1,diag_S)
 Theta_0 = Omega_0.copy()
 #%%
 
-lambda1 = 1e-1
-lambda2 = 1e-1
+lambda1 = 1e-3
+lambda2 = 1e-3
 
 start = time()
 Omega_sol, Theta_sol, X_sol, status = PPDNA(S, lambda1, lambda2, Omega_0, Theta_0, reg = 'GGL', sigma_0 = 10, max_iter = 100, eps_ppdna = 1e-5, verbose = True)

@@ -16,24 +16,28 @@ def adjacency_matrix(S , t = 1e-9):
 
 
 def discovery_rate(S_sol , S_true, t = 1e-9):
+    (K,p,p) = S_true.shape
+    
     A_sol = adjacency_matrix(S_sol, t)
     A_true = adjacency_matrix(S_true, t)
-    
-    
+        
     true_edges = A_true.sum(axis = (1,2))
+    true_non_edges =  p**2 - true_edges
     positive_edges = A_sol.sum(axis = (1,2))
     
     # true positive edge ratio
-    tp = (A_sol + A_true == 2).sum(axis = (1,2)) / true_edges
-    
+    tp = (A_sol + A_true == 2).sum(axis = (1,2)) / true_edges 
     # false positive edge ratio
-    fp = (A_true - A_sol == -1).sum(axis = (1,2)) / positive_edges
-    
-    # true negative edge ration
+    fp = (A_true - A_sol == -1).sum(axis = (1,2)) / true_non_edges 
+    # true negative edge ratio
     nd =  (A_true - A_sol == 1).sum(axis = (1,2)) / true_edges
     
-    return tp, fp, nd, true_edges, positive_edges
+    res = {'TPR': tp.mean(), 'FPR' : fp.mean(), 'TNR' : nd.mean(), 'TE' : true_edges}
+    
+    return res
 
+def error(S_sol , S_true):
+    return np.linalg.norm(S_sol - S_true)
 
 def draw_group_graph(Omega , t = 1e-9):
     """

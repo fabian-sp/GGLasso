@@ -9,7 +9,9 @@ multiple classes" from Danaher et al.
 import numpy as np
 import networkx as nx
 
-#%%
+from gglasso.helper.basic_linalg import trp
+
+
 def power_law_network(p=100, M=10):
     
     L = int(p/M)
@@ -91,6 +93,8 @@ def time_varying_power_network(p=100, K=10, M=10):
         Sigma[k,:,:] = Sigma_k
         
     Theta = np.linalg.inv(Sigma)
+    # ensure sparsity 
+    Theta[abs(Theta) <= 1e-4] = 0
         
     return Sigma, Theta
     
@@ -117,9 +121,27 @@ def group_power_network(p=100, K=10, M=10):
         Sigma[k,:,:] = Sigma_k
         
     Theta = np.linalg.inv(Sigma)
+    # ensure sparsity 
+    Theta[abs(Theta) <= 1e-4] = 0
         
     return Sigma, Theta    
 
+def sample_covariance_matrix(Sigma, N):
+    """
+    samples data for a given covariance matrix Sigma (with K layers)
+    return: sample covariance matrix S
+    """
+    assert abs(Sigma - trp(Sigma)).max() <= 1e-10
+    (K,p,p) = Sigma.shape
 
+    sample = np.zeros((K,p,N))
+    for k in np.arange(K):
+        sample[k,:,:] = np.random.multivariate_normal(np.zeros(p), Sigma[k,:,:], N).T
+
+    S = np.zeros((K,p,p))
+    for k in np.arange(K):
+        S[k,:,:] = np.cov(sample[k,:,:])
+        
+    return S
 
 
