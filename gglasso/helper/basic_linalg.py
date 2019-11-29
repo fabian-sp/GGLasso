@@ -29,7 +29,7 @@ def Gdot(X, Y):
 def Sdot(X,Y):
     return np.trace( X.T @ Y )
 #%%
-def cg_general(lin, dot, b, eps = 1e-6, kwargs = {}):
+def cg_general(lin, dot, b, eps = 1e-6, kwargs = {}, verbose = False):
     """
     This is the CG method for a general selfadjoint linear operator "lin" and a general scalar product "dot"
     
@@ -59,13 +59,12 @@ def cg_general(lin, dot, b, eps = 1e-6, kwargs = {}):
         #r = b - linp
         
         if np.sqrt(dot(r,r))  <= eps:
-            print(f"Reached accuracy in iteration {str(j)}")
+            if verbose:
+                print(f"Reached accuracy in iteration {str(j)}")
             break
         
         beta = dot(r,r)/denom
-        
-        p = r + beta * p
-        
+        p = r + beta * p 
         j += 1
         
     return x

@@ -36,9 +36,10 @@ for j in np.arange(len(W1)):
     Omega_0 = np.linalg.pinv(S)
     reg = 'FGL'
     
-    Omega_sol, Theta_sol, X_sol, status = PPDNA(S, lambda1, lambda2, reg, Omega_0, Theta_0 = None, sigma_0 = 10, max_iter = 20, \
+    sol, info = PPDNA(S, lambda1, lambda2, reg, Omega_0, Theta_0 = None, sigma_0 = 10, max_iter = 20, \
                                                 eps_ppdna = 1e-4 , verbose = False)
     
+    Theta_sol = sol['Theta']
     
     TPR[j] = discovery_rate(Theta_sol, Theta, t = 1e-5)['TPR']
     FPR[j] = discovery_rate(Theta_sol, Theta, t = 1e-5)['FPR']

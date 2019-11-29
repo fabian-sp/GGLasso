@@ -5,6 +5,7 @@ This file contains the proximal point algorithm proposed by Zhang et al.
 """
 
 import numpy as np
+import time
 
 from .ggl_helper import prox_p, phiplus, moreau_h, moreau_P, construct_gamma, construct_jacobian_prox_p, Y_t, hessian_Y,  Phi_t
 from ..helper.basic_linalg import Gdot, cg_general
@@ -84,7 +85,7 @@ def PPA_subproblem(Omega_t, Theta_t, X_t, S, reg, ppa_sub_params = None, verbose
         cg_accur = min(eta, np.linalg.norm(gradY_Xt)**(1+tau), 1e-10)
         if verbose:
             print("Start CG method")
-        D = cg_general(hessian_Y, Gdot, - gradY_Xt, eps = cg_accur, kwargs = kwargs)
+        D = cg_general(hessian_Y, Gdot, - gradY_Xt, eps = cg_accur, kwargs = kwargs, verbose = verbose)
         
         # step 2: line search 
         if verbose:
@@ -124,7 +125,7 @@ def PPA_subproblem(Omega_t, Theta_t, X_t, S, reg, ppa_sub_params = None, verbose
     return Omega_sol, Theta_sol, X_sol
 
 
-def PPDNA(S, lambda1, lambda2, reg, Omega_0, Theta_0 = None, sigma_0 = 10, max_iter = 100, eps_ppdna = 1e-5 , verbose = False):
+def PPDNA(S, lambda1, lambda2, reg, Omega_0, Theta_0 = None, sigma_0 = 10, max_iter = 100, eps_ppdna = 1e-5 , verbose = False, measure = False):
     """
     This is the outer proximal point algorithm
     Algorithm 2 in Zhang et al.
@@ -138,32 +139,44 @@ def PPDNA(S, lambda1, lambda2, reg, Omega_0, Theta_0 = None, sigma_0 = 10, max_i
     
     # initialize 
     status = 'not optimal'
+    
     Omega_t = Omega_0.copy()
     if Theta_0 == None:
         Theta_0 = Omega_0.copy()
-    
     Theta_t = Theta_0.copy()
     X_t = np.zeros((K,p,p))
     
     ppa_sub_params = get_ppa_sub_params_default()
-    
     ppa_sub_params['sigma_t'] = sigma_0
     ppa_sub_params['lambda1'] = lambda1
     ppa_sub_params['lambda2'] = lambda2
     
+    if measure:
+        runtime = np.zeros(max_iter)
+        kkt_residual = np.zeros(max_iter)
     
     for iter_t in np.arange(max_iter):
         
         # check stopping criterion
         eta_P = PPDNA_stopping_criterion(Omega_t, Theta_t, X_t, S , ppa_sub_params, reg)
+        if measure:
+            kkt_residual[iter_t] = eta_P
         if eta_P <= eps_ppdna:
             status = 'optimal'
             break
         
-        print(f"------------Iteration {iter_t} of the Proximal Point Algorithm----------------")
-    
+        if verbose:
+            print(f"------------Iteration {iter_t} of the Proximal Point Algorithm----------------")
+        
+        if measure:
+            start = time.time()
+        
         Omega_t, Theta_t, X_t = PPA_subproblem(Omega_t, Theta_t, X_t, S, reg = reg, ppa_sub_params = ppa_sub_params, verbose = verbose)
         
+        if measure:
+            end = time.time()
+            runtime[iter_t] = end-start
+            
         ppa_sub_params['sigma_t'] = 1.3 * ppa_sub_params['sigma_t']
         ppa_sub_params['eps_t'] = 0.9 * ppa_sub_params['eps_t']
         ppa_sub_params['delta_t'] = 0.9 * ppa_sub_params['delta_t']
@@ -178,7 +191,12 @@ def PPDNA(S, lambda1, lambda2, reg, Omega_0, Theta_0 = None, sigma_0 = 10, max_i
     print(f"PPDNA terminated after {iter_t} iterations with accuracy {eta_P}")
     print(f"PPDNA status: {status}")
     
-    return Omega_t, Theta_t, X_t, status
+    sol = {'Omega': Omega_t, 'Theta': Theta_t, 'X': X_t}
+    if measure:
+        info = {'status': status , 'runtime': runtime, 'kkt_residual': kkt_residual}
+    else:
+        info = {'status': status}
+    return sol, info
 
 
 def PPDNA_stopping_criterion(Omega, Theta, X, S , ppa_sub_params, reg): 
