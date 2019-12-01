@@ -2,22 +2,25 @@ import numpy as np
 import matplotlib.pyplot as plt
 import networkx as nx
 
-def lambda_parametrizer(w1 = 0.1, w2 = 0.2):
+from .basic_linalg import Sdot
+
+def lambda_parametrizer(l2 = 0.05, w2 = 0.5):
     
-    l2 = np.sqrt(2) * w1 * w2
-    l1 = w1 - (1/np.sqrt(2)) * l2
-   
-    return l1,l2
+    w1 = l2/(w2*np.sqrt(2))
+    l1 = w1 - l2/np.sqrt(2)
+    return l1
 
 
-def get_graph_aes(with_edge_col = True):
-    aes = {'node_size' : 100, 'node_color' : 'lightslategrey', 'edge_color' : 'lightslategrey', 'width' : 1.5}
+def lambda_grid(num1 = 5, num2 = 2):
+    l2 = np.logspace(start = -1, stop = -2, num = num2, base = 10)
+    #w2 = np.linspace(0.1, 0.7, num = num1)
+    #l1 = lambda_parametrizer(l2, w2)
     
-    if not with_edge_col:
-        del aes['edge_color']
+    l1 = np.logspace(start = -.5, stop = -2, num = num1, base = 10)
+    
+    L1, L2 = np.meshgrid(l1,l2)
+    return L1.T, L2.T
            
-    return aes
-
 def adjacency_matrix(S , t = 1e-9):
     A = (np.abs(S) >= t).astype(int)
     # do not count diagonal entries as edges
@@ -28,6 +31,11 @@ def adjacency_matrix(S , t = 1e-9):
 
 
 def discovery_rate(S_sol , S_true, t = 1e-9):
+    if len(S_true.shape) == 2:
+        print("Warning: function designed for 3-dim arrays")
+        S_true = S_true[np.newaxis,:,:]
+        S_sol = S_sol[np.newaxis,:,:]
+        
     (K,p,p) = S_true.shape
     
     A_sol = adjacency_matrix(S_sol, t)
@@ -51,6 +59,26 @@ def discovery_rate(S_sol , S_true, t = 1e-9):
 def error(S_sol , S_true):
     return np.linalg.norm(S_sol - S_true)
 
+def aic(S,Theta, N):
+    (K,p,p) = S.shape
+    aic = 0
+    for k in np.arange(K):
+        aic += N*( Sdot(S[k,:,:], Theta[k,:,:]) - np.log(np.linalg.det(Theta[k,:,:])) ) + 2*(abs(Theta[k,:,:]) >= 1e-4).sum()
+        
+    return aic
+
+
+# Drawing functions
+
+
+def get_graph_aes(with_edge_col = True):
+    aes = {'node_size' : 100, 'node_color' : 'lightslategrey', 'edge_color' : 'lightslategrey', 'width' : 1.5}
+    
+    if not with_edge_col:
+        del aes['edge_color']
+    return aes
+        
+        
 def draw_group_graph(Omega , t = 1e-9):
     """
     Draws a network with Omega as precision matrix
@@ -61,9 +89,7 @@ def draw_group_graph(Omega , t = 1e-9):
     A = adjacency_matrix(Omega , t)
     
     gA = A.sum(axis=0)
-    
     G = nx.from_numpy_array(gA)
-    
     aes = get_graph_aes(with_edge_col = False)
     
     edge_col = []
@@ -73,7 +99,6 @@ def draw_group_graph(Omega , t = 1e-9):
     
     fig = plt.figure()
     #nx.draw_shell(G, with_labels = True, edge_color = edge_col, edge_cmap = plt.cm.RdYlGn, edge_vmin = 0, edge_vmax = K, **aes)
-    
     nx.draw_spring(G, with_labels = True, edge_color = edge_col, edge_cmap = plt.cm.RdYlGn, edge_vmin = 0, edge_vmax = K, **aes)
     
     return fig

@@ -44,7 +44,6 @@ def power_law_network(p=100, M=10):
     A = A + np.eye(p)
     assert all(np.diag(A)==1), "Expected 1s on diagonal"
     
-    
     D,_ = np.linalg.eigh(A)
     assert D.min() > 0, "generated matrix A is not positive definite"
     
@@ -52,7 +51,6 @@ def power_law_network(p=100, M=10):
     
     for i in np.arange(p):
         for j in np.arange(p):
-            
             if i == j:
                 Sigma[i,j] = Ainv[i,j]/np.sqrt(Ainv[i,i] * Ainv[j,j])
             else:
@@ -90,11 +88,11 @@ def time_varying_power_network(p=100, K=10, M=10):
             
         Sigma[k,:,:] = Sigma_k
     
-    Sigma[abs(Sigma) <= 1e-3] = 0
+    #Sigma[abs(Sigma) <= 1e-3] = 0
     
     Theta = np.linalg.pinv(Sigma, hermitian = True)
     # ensure sparsity 
-    Theta[abs(Theta) <= 1e-3] = 0
+    Theta[abs(Theta) <= 1e-2] = 0
         
     return Sigma, Theta
     
@@ -120,7 +118,7 @@ def group_power_network(p=100, K=10, M=10):
         Sigma_k[block[k]*L : (block[k]+1)*L, block[k]*L : (block[k]+1)*L] = np.eye(L)
         Sigma[k,:,:] = Sigma_k
         
-    Theta = np.linalg.inv(Sigma)
+    Theta = np.linalg.pinv(Sigma, hermitian = True)
     # ensure sparsity 
     Theta[abs(Theta) <= 1e-4] = 0
         
