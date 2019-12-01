@@ -10,8 +10,7 @@ from matplotlib import pyplot as plt
 
 from gglasso.solver.ggl_solver import PPDNA
 from gglasso.helper.data_generation import time_varying_power_network, sample_covariance_matrix
-from gglasso.helper.evaluation import discovery_rate, error
-from gglasso.helper.experiment_helper import lambda_parametrizer
+from gglasso.helper.experiment_helper import lambda_parametrizer,  discovery_rate, error
 
 
 p = 20
