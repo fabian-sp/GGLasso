@@ -14,10 +14,10 @@ from gglasso.helper.data_generation import time_varying_power_network, sample_co
 from gglasso.helper.experiment_helper import lambda_grid, discovery_rate, aic, error, draw_group_graph
 
 
-p = 100
+p = 10
 K = 3
-N = 500
-M = 10
+N = 9
+M = 2
 
 
 Sigma, Theta = time_varying_power_network(p, K, M)
@@ -27,6 +27,9 @@ draw_group_graph(Theta)
 
 S = sample_covariance_matrix(Sigma, N)
 Sinv = np.linalg.pinv(S, hermitian = True)
+
+#%%
+# grid search for best lambda values
 L1, L2 = lambda_grid(num1 = 7, num2 = 2)
 grid1 = L1.shape[0]; grid2 = L2.shape[1]
 
@@ -45,7 +48,7 @@ for g1 in np.arange(grid1):
         reg = 'FGL'
         
         sol, info = PPDNA(S, lambda1, lambda2, reg, Omega_0, Theta_0 = None, sigma_0 = 10, max_iter = 20, \
-                                                    eps_ppdna = 1e-3 , verbose = False)
+                                                    eps_ppdna = 1e-5 , verbose = True)
         
         Theta_sol = sol['Theta']
         
@@ -55,6 +58,7 @@ for g1 in np.arange(grid1):
         AIC[g1,g2] = aic(S,Theta_sol,N)
 
 #%%
+# plot results
 
 plt.figure()
 plt.plot(FPR, TPR)
@@ -66,6 +70,8 @@ sns.heatmap(AIC, annot = True, ax = axs[2])
 
 
 #%%
-lambda1 = 0.1
+# optimize with optimal lambda values
+
+lambda1 = 0.2
 lambda2 = 0.1
 

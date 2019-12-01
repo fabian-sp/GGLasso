@@ -250,7 +250,7 @@ def eval_jacobian_phiplus(B, Gamma, Q):
         
     res = Q @ (Gamma * (trp(Q) @ B @ Q)) @ trp(Q)
     
-    assert abs(res - trp(res)).max() <= 1e-10
+    assert abs(res - trp(res)).max() <= 1e-5
     return res
       
 

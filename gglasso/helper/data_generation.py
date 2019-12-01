@@ -22,7 +22,7 @@ def power_law_network(p=100, M=10):
     
     for m in np.arange(M):
     
-        G_m = nx.generators.random_graphs.random_powerlaw_tree(n = L, gamma = 2.5, tries = 5*p)
+        G_m = nx.generators.random_graphs.random_powerlaw_tree(n = L, gamma = 2.5, tries = max(5*p,1000))
         A_m = nx.to_numpy_array(G_m)
         
         # generate random numbers for the nonzero entries
