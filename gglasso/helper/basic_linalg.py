@@ -5,7 +5,6 @@ author: Fabian Schaipp
 import numpy as np
 
 
-#%%
 ## general functions for the space G
 def trp(X):   
     # transposes for a block of matrices each single matrix
@@ -28,7 +27,7 @@ def Gdot(X, Y):
     
 def Sdot(X,Y):
     return np.trace( X.T @ Y )
-#%%
+
 def cg_general(lin, dot, b, eps = 1e-6, kwargs = {}, verbose = False):
     """
     This is the CG method for a general selfadjoint linear operator "lin" and a general scalar product "dot"

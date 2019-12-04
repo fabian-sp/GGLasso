@@ -8,7 +8,7 @@ import numpy as np
 import time
 
 from .ggl_helper import prox_p, phiplus, moreau_h, moreau_P, construct_gamma, construct_jacobian_prox_p, Y_t, hessian_Y,  Phi_t
-from ..helper.basic_linalg import Gdot, cg_general
+from ..helper.basic_linalg import trp,Gdot, cg_general
 
 def get_ppa_sub_params_default():
     ppa_sub_params = {'lambda1' : .1 , 'lambda2' : .1, 'sigma_t' : 1e8, 
@@ -190,9 +190,12 @@ def PPDNA(S, lambda1, lambda2, reg, Omega_0, Theta_0 = np.array([]), X_0 = np.ar
      
     if eta_P > eps_ppdna:
             status = 'max iterations reached'    
-            
+        
     print(f"PPDNA terminated after {iter_t} iterations with accuracy {eta_P}")
     print(f"PPDNA status: {status}")
+    
+    assert abs(trp(Omega_t)- Omega_t).max() <= 1e-5, "Solution is not symmetric"
+    assert abs(trp(Theta_t)- Theta_t).max() <= 1e-5, "Solution is not symmetric"
     
     sol = {'Omega': Omega_t, 'Theta': Theta_t, 'X': X_t}
     if measure:

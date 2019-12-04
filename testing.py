@@ -35,10 +35,10 @@ lambda2 = 0.1
 Omega_0 = np.zeros((K,p,p))
 
 
-sol, info = PPDNA(S, lambda1, lambda2, reg, Omega_0, sigma_0 = 10, max_iter = 20, \
+solPPDNA, info = PPDNA(S, lambda1, lambda2, reg, Omega_0, sigma_0 = 10, max_iter = 20, \
                                             eps_ppdna = 1e-4 , verbose = True, measure = True)
 
-Theta_ADMM, status = ADMM_MGL(S, lambda1, lambda2, Omega_0, reg, n_samples = None, rho = 1, max_iter = 100, eps_admm = 1e-4 , verbose = True)
+solADMM, info = ADMM_MGL(S, lambda1, lambda2, Omega_0, reg, n_samples = None, rho = 1, max_iter = 100, eps_admm = 1e-4 , verbose = True)
 
-Theta_sol = sol['Theta']
+Theta_sol = solPPDNA['Theta']
 

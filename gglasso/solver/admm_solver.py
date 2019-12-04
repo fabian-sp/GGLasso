@@ -4,11 +4,11 @@ author: Fabian Schaipp
 
 import numpy as np
 
-from ..helper.basic_linalg import trp,Gdot,Sdot
+from ..helper.basic_linalg import trp
 from .ggl_helper import prox_p, phiplus
 
 
-def ADMM_MGL(S, lambda1, lambda2, Omega_0, reg, n_samples = None, rho = 1, max_iter = 100, eps_admm = 1e-5 , verbose = False):
+def ADMM_MGL(S, lambda1, lambda2, Omega_0, reg, Theta_0 = np.array([]), X_0 = np.array([]), n_samples = None, rho = 1, max_iter = 100, eps_admm = 1e-5 , verbose = False):
     """
     This is an ADMM algorithm for solving the Multiple Graphical Lasso problem
     reg specifies the type of penalty, i.e. Group or Fused Graphical Lasso
@@ -37,8 +37,13 @@ def ADMM_MGL(S, lambda1, lambda2, Omega_0, reg, n_samples = None, rho = 1, max_i
     # initialize 
     status = 'not optimal'
     Omega_t = Omega_0.copy()
-    Theta_t = np.zeros((K,p,p))
-    X_t = np.zeros((K,p,p))
+    if len(Theta_0) == 0:
+        Theta_0 = Omega_0.copy()
+    if len(X_0) == 0:
+        X_0 = np.zeros((K,p,p))
+
+    Theta_t = Theta_0.copy()
+    X_t = X_0.copy()
     
     for iter_t in np.arange(max_iter):
         
@@ -69,8 +74,14 @@ def ADMM_MGL(S, lambda1, lambda2, Omega_0, reg, n_samples = None, rho = 1, max_i
         
     print(f"ADMM terminated after {iter_t} iterations with accuracy {eta_A}")
     print(f"ADMM status: {status}")
+    
+    assert abs(trp(Omega_t)- Omega_t).max() <= 1e-5, "Solution is not symmetric"
+    assert abs(trp(Theta_t)- Theta_t).max() <= 1e-5, "Solution is not symmetric"
+    
+    sol = {'Omega': Omega_t, 'Theta': Theta_t, 'X': X_t}
+    info = {'status': status}
                
-    return Omega_t, status
+    return sol, info
 
 def ADMM_stopping_criterion(Omega, Theta, X, S , lambda1, lambda2, nk, reg):
     
