@@ -120,7 +120,7 @@ def group_power_network(p=100, K=10, M=10):
         
     Theta = np.linalg.pinv(Sigma, hermitian = True)
     # ensure sparsity 
-    Theta[abs(Theta) <= 1e-4] = 0
+    Theta[abs(Theta) <= 1e-2] = 0
         
     return Sigma, Theta    
 

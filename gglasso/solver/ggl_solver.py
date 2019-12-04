@@ -125,7 +125,7 @@ def PPA_subproblem(Omega_t, Theta_t, X_t, S, reg, ppa_sub_params = None, verbose
     return Omega_sol, Theta_sol, X_sol
 
 
-def PPDNA(S, lambda1, lambda2, reg, Omega_0, Theta_0 = None, sigma_0 = 10, max_iter = 100, eps_ppdna = 1e-5 , verbose = False, measure = False):
+def PPDNA(S, lambda1, lambda2, reg, Omega_0, Theta_0 = np.array([]), X_0 = np.array([]), sigma_0 = 10, max_iter = 100, eps_ppdna = 1e-5 , verbose = False, measure = False):
     """
     This is the outer proximal point algorithm
     Algorithm 2 in Zhang et al.
@@ -141,10 +141,13 @@ def PPDNA(S, lambda1, lambda2, reg, Omega_0, Theta_0 = None, sigma_0 = 10, max_i
     status = 'not optimal'
     
     Omega_t = Omega_0.copy()
-    if Theta_0 == None:
+    if len(Theta_0) == 0:
         Theta_0 = Omega_0.copy()
+    if len(X_0) == 0:
+        X_t = np.zeros((K,p,p))
+
     Theta_t = Theta_0.copy()
-    X_t = np.zeros((K,p,p))
+    X_t = X_0.copy()
     
     ppa_sub_params = get_ppa_sub_params_default()
     ppa_sub_params['sigma_t'] = sigma_0
