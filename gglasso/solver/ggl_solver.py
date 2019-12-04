@@ -144,7 +144,7 @@ def PPDNA(S, lambda1, lambda2, reg, Omega_0, Theta_0 = np.array([]), X_0 = np.ar
     if len(Theta_0) == 0:
         Theta_0 = Omega_0.copy()
     if len(X_0) == 0:
-        X_t = np.zeros((K,p,p))
+        X_0 = np.zeros((K,p,p))
 
     Theta_t = Theta_0.copy()
     X_t = X_0.copy()
