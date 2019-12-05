@@ -1,5 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
+import seaborn as sns
 import networkx as nx
 
 from .basic_linalg import Sdot
@@ -91,14 +92,14 @@ def get_graph_aes(with_edge_col = True):
     return aes
         
         
-def draw_group_graph(Omega , t = 1e-9):
+def draw_group_graph(Theta , t = 1e-9):
     """
-    Draws a network with Omega as precision matrix
+    Draws a network with Theta as precision matrix
     """
     
-    assert len(Omega.shape) == 3
-    (K,p,p) = Omega.shape
-    A = adjacency_matrix(Omega , t)
+    assert len(Theta.shape) == 3
+    (K,p,p) = Theta.shape
+    A = adjacency_matrix(Theta , t)
     
     gA = A.sum(axis=0)
     G = nx.from_numpy_array(gA)
@@ -108,10 +109,20 @@ def draw_group_graph(Omega , t = 1e-9):
     for e in G.edges:
         edge_col.append( gA[e[0], e[1]])
     
-    
     fig = plt.figure()
     #nx.draw_shell(G, with_labels = True, edge_color = edge_col, edge_cmap = plt.cm.RdYlGn, edge_vmin = 0, edge_vmax = K, **aes)
     nx.draw_spring(G, with_labels = True, edge_color = edge_col, edge_cmap = plt.cm.RdYlGn, edge_vmin = 0, edge_vmax = K, **aes)
     
     return fig
+
+def draw_group_heatmap(Theta, ax = None):
+    (K,p,p) = Theta.shape
+    A = adjacency_matrix(Theta)
+    mask = A.sum(axis=0) == 0
+    
+    if ax == None:
+        fig,ax = plt.subplots(nrows = 1, ncols = 1)
+    with sns.axes_style("white"):
+        sns.heatmap(A.sum(axis=0), mask = mask, ax = ax, square = True, cmap = 'Blues', vmin = 0.1, vmax = K, linewidths=.5, cbar_kws={"shrink": .5})
+
 

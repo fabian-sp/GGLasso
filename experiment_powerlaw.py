@@ -13,13 +13,13 @@ import seaborn as sns
 
 from gglasso.solver.ggl_solver import PPDNA
 from gglasso.helper.data_generation import time_varying_power_network, group_power_network, sample_covariance_matrix
-from gglasso.helper.experiment_helper import lambda_grid, discovery_rate, aic, error, draw_group_graph
+from gglasso.helper.experiment_helper import lambda_grid, discovery_rate, aic, error, draw_group_graph, draw_group_heatmap
 
 
-p = 30
+p = 100
 K = 5
-N = 200
-M = 3
+N = 500
+M = 10
 
 reg = 'GGL'
 
@@ -29,14 +29,14 @@ elif reg == 'FGL':
     Sigma, Theta = time_varying_power_network(p, K, M)
 #np.linalg.norm(np.eye(p) - Sigma@Theta)/np.linalg.norm(np.eye(p))
 
-draw_group_graph(Theta)
+draw_group_heatmap(Theta)
 
 S = sample_covariance_matrix(Sigma, N)
 Sinv = np.linalg.pinv(S, hermitian = True)
 
 #%%
 # grid search for best lambda values with warm starts
-L1, L2 = lambda_grid(num1 = 5, num2 = 2, reg = reg)
+L1, L2 = lambda_grid(num1 = 3, num2 = 5, reg = reg)
 grid1 = L1.shape[0]; grid2 = L2.shape[1]
 
 ERR = np.zeros((grid1, grid2))
@@ -54,7 +54,7 @@ for g1 in np.arange(grid1):
     
         
         sol, info = PPDNA(S, lambda1, lambda2, reg, Omega_0, Theta_0 = Theta_0, sigma_0 = 10, max_iter = 20, \
-                                                    eps_ppdna = 1e-3 , verbose = False)
+                                                    eps_ppdna = 1e-2 , verbose = False)
         
         Theta_sol = sol['Theta']
         Omega_sol = sol['Omega']
@@ -67,6 +67,28 @@ for g1 in np.arange(grid1):
         FPR[g1,g2] = discovery_rate(Theta_sol, Theta, t = 1e-5)['FPR']
         ERR[g1,g2] = error(Theta_sol, Theta)
         AIC[g1,g2] = aic(S,Theta_sol,N)
+
+#%%
+# get optimal lambda
+ix= np.unravel_index(AIC.argmin(), AIC.shape)
+l1opt = L1[ix]
+l2opt = L2[ix]
+
+Omega_0 = np.zeros((K,p,p))
+Theta_0 = np.zeros((K,p,p))
+
+sol, info = PPDNA(S, l1opt, l2opt, reg, Omega_0, Theta_0 = Theta_0, sigma_0 = 10, max_iter = 20, \
+                                                    eps_ppdna = 1e-4 , verbose = True)
+
+Theta_sol = sol['Theta']
+Omega_sol = sol['Omega']
+
+fig,axs = plt.subplots(nrows = 1, ncols = 2)
+draw_group_heatmap(Theta, axs[0])
+draw_group_heatmap(Theta_sol, axs[1])
+
+for k in np.arange(K):
+    print(error(Theta_sol[k,:,:], Theta[k,:,:]))
 
 #%%
 # plot results
@@ -140,3 +162,9 @@ for l in np.arange(grid1):
 ax.set_xlim(EPS.max(), EPS.min())
 ax.legend(labels = L2)
 ax.set_xscale('log')
+
+
+
+
+
+
