@@ -6,6 +6,8 @@ Sigma denotes the covariance matrix, Theta the precision matrix
 from time import time
 import numpy as np
 from matplotlib import pyplot as plt
+from matplotlib import cm
+from mpl_toolkits.mplot3d import Axes3D
 import seaborn as sns
 
 
@@ -16,7 +18,7 @@ from gglasso.helper.experiment_helper import lambda_grid, discovery_rate, aic, e
 
 p = 30
 K = 5
-N = 50
+N = 200
 M = 3
 
 reg = 'GGL'
@@ -34,7 +36,7 @@ Sinv = np.linalg.pinv(S, hermitian = True)
 
 #%%
 # grid search for best lambda values with warm starts
-L1, L2 = lambda_grid(num1 = 5, num2 = 2)
+L1, L2 = lambda_grid(num1 = 5, num2 = 2, reg = reg)
 grid1 = L1.shape[0]; grid2 = L2.shape[1]
 
 ERR = np.zeros((grid1, grid2))
@@ -52,7 +54,7 @@ for g1 in np.arange(grid1):
     
         
         sol, info = PPDNA(S, lambda1, lambda2, reg, Omega_0, Theta_0 = Theta_0, sigma_0 = 10, max_iter = 20, \
-                                                    eps_ppdna = 1e-3 , verbose = True)
+                                                    eps_ppdna = 1e-3 , verbose = False)
         
         Theta_sol = sol['Theta']
         Omega_sol = sol['Omega']
@@ -80,39 +82,61 @@ sns.heatmap(AIC, annot = True, ax = axs[2])
 
 #%%
 # accuracy impact on total error analysis
-lambda1 = 0.3
-lambda2 = 0.1
+L1, L2 = lambda_grid(num1 = 1, num2 = 5, reg = reg)
+grid1 = L1.shape[0]
+grid2 = 7
 
-eps_num = 6
-EPS = np.logspace(start = -1, stop = -6, num = eps_num, base = 10)
-ERR = np.zeros(eps_num)
-AIC = np.zeros(eps_num)
-RT = np.zeros(eps_num)
+EPS = np.logspace(start = -.5, stop = -5, num = grid2, base = 10)
 
-Omega_0 = np.zeros((K,p,p))
-Theta_0 = np.zeros((K,p,p))
-X_0 = np.zeros((K,p,p))
+ERR = np.zeros((grid1, grid2))
+AIC = np.zeros((grid1, grid2))
+RT = np.zeros((grid1, grid2))
 
-for j in np.arange(eps_num):
+#Omega_0 = np.zeros((K,p,p)); Theta_0 = np.zeros((K,p,p)); X_0 = np.zeros((K,p,p))
+Om_0_0 = np.zeros((K,p,p)); Th_0_0 = np.zeros((K,p,p)); X_0_0 = np.zeros((K,p,p))
+
+for g1 in np.arange(grid1):
     
-    start = time()
-    sol, info = PPDNA(S, lambda1, lambda2, reg, Omega_0, Theta_0 = Theta_0, X_0 = X_0, sigma_0 = 10, max_iter = 100, \
-                                                    eps_ppdna = EPS[j] , verbose = False)
-    end = time()
+    Omega_0 = Om_0_0.copy()
+    Theta_0 = Th_0_0.copy()
+    X_0 = X_0_0.copy()
     
-    Theta_sol = sol['Theta']
-    Omega_sol = sol['Omega']
-    X_sol = sol['X']
-    
-    # warm start
-    Omega_0 = Omega_sol.copy()
-    Theta_0 = Theta_sol.copy()
-    X_0 = X_sol.copy()
-    
-    ERR[j] = error(Theta_sol, Theta)
-    AIC[j] = aic(S,Theta_sol,N)
-    RT[j] = end-start
-    
+    for g2 in np.arange(grid2):
+            
+        start = time()
+        sol, info = PPDNA(S, L1[g1], L2[g1], reg, Omega_0, Theta_0 = Theta_0, X_0 = X_0, sigma_0 = 10, max_iter = 20, \
+                                                        eps_ppdna = EPS[g2] , verbose = False)
+        end = time()
+        
+        Theta_sol = sol['Theta']
+        Omega_sol = sol['Omega']
+        X_sol = sol['X']
+        
+        # warm start, has to be resetted whenever changing g1 
+        Omega_0 = Omega_sol.copy(); Theta_0 = Theta_sol.copy(); X_0 = X_sol.copy()
+        if g2 == 0:
+            Om_0_0 = Omega_sol.copy(); Th_0_0 = Theta_sol.copy(); X_0_0 = X_sol.copy()
+        
+        ERR[g1,g2] = error(Theta_sol, Theta)
+        AIC[g1,g2] = aic(S,Theta_sol,N)
+        RT[g1,g2] = end-start
+
+
 #%%
+#fig = plt.figure()
+#ax = fig.gca(projection='3d')
+#
+#X,Y = np.meshgrid(EPS, L2)
+#Z = AIC
+#surf = ax.plot_surface(X, Y, Z, cmap=cm.coolwarm,
+#                       linewidth=0, antialiased=False)    
+pal = sns.color_palette("GnBu_d", grid1)
 
+sns.set()
+fig, ax = plt.subplots(1,1)
+for l in np.arange(grid1):
+    ax.plot(EPS, ERR[l,:], c=pal[l] )
 
+ax.set_xlim(EPS.max(), EPS.min())
+ax.legend(labels = L2)
+ax.set_xscale('log')
