@@ -7,6 +7,7 @@ from tick.prox import ProxTV
 from numba import jit
 
 from ..helper.basic_linalg import trp,Gdot,Sdot
+from .fgl_helper import condat_method
 
 # functions specifically related to the GGL regularizer
 def prox_1norm(v, l): 
@@ -66,8 +67,8 @@ def construct_B(K):
 
 
 def prox_tv(v,l):
-    #a = condat_method(v,l)
-    a = ProxTV(l).call(np.ascontiguousarray(v))
+    a = condat_method(v,l)
+    #a = ProxTV(l).call(np.ascontiguousarray(v))
     return a
 
 def prox_phi_fgl(v, l1, l2):
@@ -160,13 +161,17 @@ def jacobian_prox_phi(v , l1 , l2, reg):
 def construct_jacobian_prox_p(X, l1 , l2, reg):
     # each (i,j) entry has a corresponding jacobian which is a KxK matrix
     (K,p,p) = X.shape
+    assert abs(X - trp(X)).max() <= 1e-5
+    
     W = np.zeros((K,K,p,p))
     for i in np.arange(p):
-        for j in np.arange(p):
+        for j in np.arange(start = i, stop = p):
             if i == j:
                 W[:,:,i,j] = np.eye(K)
             else:
-                W[:,:,i,j] = jacobian_prox_phi(X[:,i,j] , l1 , l2, reg) 
+                ij_entry = jacobian_prox_phi(X[:,i,j] , l1 , l2, reg)
+                W[:,:,i,j] = ij_entry
+                W[:,:,j,i] = ij_entry                 
     return W
 
 @jit(nopython=True)
