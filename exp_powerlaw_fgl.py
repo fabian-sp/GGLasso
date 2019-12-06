@@ -50,7 +50,14 @@ end = time()
 Theta_sol = sol['Theta']
 Omega_sol = sol['Omega']
 
+quic = QuicGraphicalLasso(lam = lambda1, tol = 1e-6)
+Theta_quic = np.zeros((K,p,p))
+
+for k in np.arange(K):
+    model = quic.fit(S[k,:,:], verbose = 1)
+    Theta_quic[k,:,:] = model.precision_
+    
 
 fig,axs = plt.subplots(nrows = 1, ncols = 2)
 draw_group_heatmap(Theta, axs[0])
-draw_group_heatmap(Theta_sol, axs[1])
+draw_group_heatmap(Theta_quic, axs[1])
