@@ -154,7 +154,7 @@ for g1 in np.arange(grid1):
 #                       linewidth=0, antialiased=False)    
 pal = sns.color_palette("GnBu_d", grid1)
 
-sns.set()
+#sns.set()
 fig, ax = plt.subplots(1,1)
 for l in np.arange(grid1):
     ax.plot(EPS, ERR[l,:], c=pal[l] )
