@@ -76,10 +76,8 @@ def PPA_subproblem(Omega_t, Theta_t, X_t, S, reg, ppa_sub_params = None, verbose
         eigD, eigQ = np.linalg.eigh(W_t)
         if verbose:
             print("Eigendecomposition is executed in PPA_subproblem")
+            
         Gamma = construct_gamma(W_t, sigma_t, D = eigD, Q = eigQ)
-        
-        if verbose:
-            print("Calculate Jacobian Prox P")
         W = construct_jacobian_prox_p( (1/sigma_t) * V_t, lambda1 , lambda2, reg)
         
         # step 1: CG method
