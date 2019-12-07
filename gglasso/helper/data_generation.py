@@ -80,7 +80,7 @@ def time_varying_power_network(p=100, K=10, M=10):
     
     for k in np.arange(K):
         
-        Sigma_k = Sigma_0.copy()    
+        Sigma_k = Sigma_0.copy()
         if k <= K/2:   
             Sigma_k[L:2*L, L:2*L] = np.eye(L)
         else:

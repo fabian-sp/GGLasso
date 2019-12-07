@@ -8,7 +8,7 @@ from ..helper.basic_linalg import trp
 from .ggl_helper import prox_p, phiplus
 
 
-def ADMM_MGL(S, lambda1, lambda2, Omega_0, reg, Theta_0 = np.array([]), X_0 = np.array([]), n_samples = None, rho = 1, max_iter = 100, eps_admm = 1e-5 , verbose = False):
+def ADMM_MGL(S, lambda1, lambda2, reg , Omega_0 , Theta_0 = np.array([]), X_0 = np.array([]), n_samples = None, rho = 1, max_iter = 100, eps_admm = 1e-5 , verbose = False):
     """
     This is an ADMM algorithm for solving the Multiple Graphical Lasso problem
     reg specifies the type of penalty, i.e. Group or Fused Graphical Lasso

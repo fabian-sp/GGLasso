@@ -5,6 +5,17 @@ import networkx as nx
 
 from .basic_linalg import Sdot
 
+def default_color_coding():
+    mypal = sns.color_palette("Set2")
+    
+    color_dict = {}    
+    color_dict['truth'] = mypal[0]
+    color_dict['GLASSO'] = mypal[1]
+    color_dict['ADMM'] = mypal[2]
+    color_dict['PPDNA'] = mypal[3]
+
+    return color_dict
+
 def lambda_parametrizer(l2 = 0.05, w2 = 0.5):
     
     w1 = l2/(w2*np.sqrt(2))
