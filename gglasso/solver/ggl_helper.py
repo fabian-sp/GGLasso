@@ -99,6 +99,19 @@ def jacobian_prox_phi_fgl(v , l1 , l2):
     
     return Theta @ P
 
+def prox_p2(X, l2):
+    assert l2 > 0, "lambda2 havs to be positive"
+    (K,p,p) = X.shape
+    M = np.zeros((K,p,p))
+    for i in np.arange(p):
+        for j in np.arange(p):
+            if i == j:
+                M[:,i,j] = X[:,i,j]
+            else:
+                M[:,i,j] = condat_method(X[:,i,j], l2)
+    
+    assert abs(M - trp(M)).max() <= 1e-10
+    return M
 # general functions related to the regularizer P
     
 def P_val(X, l1, l2, reg):

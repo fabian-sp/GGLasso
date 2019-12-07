@@ -12,6 +12,7 @@ from inverse_covariance import QuicGraphicalLasso
 
 from gglasso.solver.ggl_solver import PPDNA
 from gglasso.solver.admm_solver import ADMM_MGL
+from gglasso.solver.ggl_helper import prox_p2
 from gglasso.helper.data_generation import time_varying_power_network, sample_covariance_matrix
 from gglasso.helper.experiment_helper import lambda_grid, discovery_rate, aic, error, draw_group_heatmap, plot_evolution, get_default_color_coding
 
@@ -44,12 +45,14 @@ results = {}
 
 #%%
 # solve with QUIC/single Glasso
-quic = QuicGraphicalLasso(lam = lambda1, tol = 1e-6)
+quic = QuicGraphicalLasso(lam = .2, tol = 1e-6)
 res = np.zeros((K,p,p))
 
 for k in np.arange(K):
     model = quic.fit(S[k,:,:], verbose = 1)
     res[k,:,:] = model.precision_
+
+res = prox_p2(res, .01)
 
 results['GLASSO'] = {'Theta' : res}
 
@@ -84,10 +87,10 @@ Theta_ppdna = results.get('PPDNA').get('Theta')
 Theta_glasso = results.get('GLASSO').get('Theta')
 
 
-plot_evolution(results, Theta, block = 1, L = L)
+plot_evolution(results, Theta, block = 0, L = L)
 
 #%%
-method = 'ADMM'
+method = 'GLASSO'
 
 fig,axs = plt.subplots(nrows = 1, ncols = 2)
 draw_group_heatmap(Theta, axs[0])
