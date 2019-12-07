@@ -12,8 +12,8 @@ from inverse_covariance import QuicGraphicalLasso
 
 from gglasso.solver.ggl_solver import PPDNA
 from gglasso.solver.admm_solver import ADMM_MGL
-from gglasso.helper.data_generation import time_varying_power_network, group_power_network, sample_covariance_matrix
-from gglasso.helper.experiment_helper import lambda_grid, discovery_rate, aic, error, draw_group_graph, draw_group_heatmap, default_color_coding
+from gglasso.helper.data_generation import time_varying_power_network, sample_covariance_matrix
+from gglasso.helper.experiment_helper import lambda_grid, discovery_rate, aic, error, draw_group_heatmap, plot_evolution, get_default_color_coding
 
 
 p = 100
@@ -34,11 +34,11 @@ Sinv = np.linalg.pinv(S, hermitian = True)
 
 
 #%%
-lambda1 = 0.1
+lambda1 = 0.05
 lambda2 = 0.1
 
 methods = ['PPDNA', 'ADMM', 'GLASSO']
-color_dict = default_color_coding()
+color_dict = get_default_color_coding()
 
 results = {}
 
@@ -78,26 +78,13 @@ results['ADMM'] = {'Theta' : sol['Theta']}
 
 #print(np.linalg.norm(results.get('ADMM').get('Theta') - results.get('PPDNA').get('Theta')))
 
+#%%
 Theta_admm = results.get('ADMM').get('Theta')
 Theta_ppdna = results.get('PPDNA').get('Theta')
 Theta_glasso = results.get('GLASSO').get('Theta')
-#%%
-
-plt.figure()
-
-for i in np.arange(L):
-    for j in np.arange(start = i+1, stop = L):
-        
-        x = np.arange(K)
-        plt.plot(x, abs(Theta[:,i,j]), c=color_dict['truth'], label = 'True Network' if (i == 0) & (j == 1) else "")
-        
-        for m in methods:
-            T = results.get(m).get('Theta')
-            plt.plot(x, abs(T[:,i,j]), c=color_dict[m], label = m if (i == 0) & (j == 1) else "")
-            
-plt.legend()        
 
 
+plot_evolution(results, Theta, block = 1, L = L)
 
 #%%
 method = 'ADMM'

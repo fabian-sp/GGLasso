@@ -5,7 +5,7 @@ import networkx as nx
 
 from .basic_linalg import Sdot
 
-def default_color_coding():
+def get_default_color_coding():
     mypal = sns.color_palette("Set2")
     
     color_dict = {}    
@@ -136,4 +136,38 @@ def draw_group_heatmap(Theta, ax = None):
     with sns.axes_style("white"):
         sns.heatmap(A.sum(axis=0), mask = mask, ax = ax, square = True, cmap = 'Blues', vmin = 0.1, vmax = K, linewidths=.5, cbar_kws={"shrink": .5})
 
+def plot_block_evolution(ax, start, stop, Theta, method, color_dict):
+    (K,p,p) = Theta.shape
+    for i in np.arange(start, stop):
+        for j in np.arange(start = i+1, stop = stop):
+            
+            x = np.arange(K)
+            ax.plot(x, abs(Theta[:,i,j]), c=color_dict[method], label = method if (i == start) & (j == start+1) else "")
+    
+    ax.legend(labels = [method])   
+    ax.set_ylim(0,0.5)
+    return
+
+def plot_evolution(results, Theta, block = None, L = None, start = None, stop = None):
+    """
+    plots the evolution of edges for block
+    alternatively specify start and stop index of the matrix
+    Theta: true network
+    """
+    color_dict = get_default_color_coding()
+    
+    if block is not None:
+        assert L is not None
+        
+    if block is not None:
+        start = block*L
+        stop = (block+1)*L
+        
+    fig,axs = plt.subplots(nrows = 2, ncols = 2)
+    plot_block_evolution(axs[0,0], start, stop, Theta, 'truth', color_dict)
+    plot_block_evolution(axs[0,1], start, stop, results.get('PPDNA').get('Theta'), 'PPDNA', color_dict)
+    plot_block_evolution(axs[1,0], start, stop, results.get('ADMM').get('Theta'), 'ADMM', color_dict)
+    plot_block_evolution(axs[1,1], start, stop, results.get('GLASSO').get('Theta'), 'GLASSO', color_dict)
+
+    return
 
