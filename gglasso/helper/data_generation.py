@@ -143,10 +143,11 @@ def plot_degree_distribution(Theta):
     
     degrees = np.array([d for n,d in list(G.degree)])
     
+    plt.figure()
     sns.distplot(degrees, kde = False, hist_kws = {"range" : (0,10), "density" : True})
     plt.plot(np.arange(10), 2.1**(-np.arange(10)))
     
-    return
+    return degrees
     
 def sample_covariance_matrix(Sigma, N):
     """

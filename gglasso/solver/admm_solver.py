@@ -3,12 +3,13 @@ author: Fabian Schaipp
 """
 
 import numpy as np
+import time
 
 from ..helper.basic_linalg import trp
 from .ggl_helper import prox_p, phiplus
 
 
-def ADMM_MGL(S, lambda1, lambda2, reg , Omega_0 , Theta_0 = np.array([]), X_0 = np.array([]), n_samples = None, rho = 1, max_iter = 100, eps_admm = 1e-5 , verbose = False):
+def ADMM_MGL(S, lambda1, lambda2, reg , Omega_0 , Theta_0 = np.array([]), X_0 = np.array([]), n_samples = None, rho = 1, max_iter = 100, eps_admm = 1e-5 , verbose = False, measure = False):
     """
     This is an ADMM algorithm for solving the Multiple Graphical Lasso problem
     reg specifies the type of penalty, i.e. Group or Fused Graphical Lasso
@@ -45,14 +46,24 @@ def ADMM_MGL(S, lambda1, lambda2, reg , Omega_0 , Theta_0 = np.array([]), X_0 = 
     Theta_t = Theta_0.copy()
     X_t = X_0.copy()
     
+    if measure:
+        runtime = np.zeros(max_iter)
+        kkt_residual = np.zeros(max_iter)
+
+    
     for iter_t in np.arange(max_iter):
         
         eta_A = ADMM_stopping_criterion(Omega_t, Theta_t, X_t, S , lambda1, lambda2, nk, reg)
+        if measure:
+            kkt_residual[iter_t] = eta_A
+            
         if eta_A <= eps_admm:
             status = 'optimal'
             break
         
         print(f"------------Iteration {iter_t} of the ADMM Algorithm----------------")
+        if measure:
+            start = time.time()
             
         # Omega Xpdate
         W_t = Theta_t - X_t - (nk/rho) * S
@@ -66,6 +77,10 @@ def ADMM_MGL(S, lambda1, lambda2, reg , Omega_0 , Theta_0 = np.array([]), X_0 = 
         # X Xpdate
         X_t = X_t + Omega_t - Theta_t
         
+        if measure:
+            end = time.time()
+            runtime[iter_t] = end-start
+            
         if verbose:
             print(f"Current accuracy: ", eta_A)
         
@@ -79,7 +94,10 @@ def ADMM_MGL(S, lambda1, lambda2, reg , Omega_0 , Theta_0 = np.array([]), X_0 = 
     assert abs(trp(Theta_t)- Theta_t).max() <= 1e-5, "Solution is not symmetric"
     
     sol = {'Omega': Omega_t, 'Theta': Theta_t, 'X': X_t}
-    info = {'status': status}
+    if measure:
+        info = {'status': status , 'runtime': runtime[:iter_t +1], 'kkt_residual': kkt_residual[:iter_t +1]}
+    else:
+        info = {'status': status}
                
     return sol, info
 

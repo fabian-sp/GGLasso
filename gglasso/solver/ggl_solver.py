@@ -8,7 +8,27 @@ import numpy as np
 import time
 
 from .ggl_helper import prox_p, phiplus, moreau_h, moreau_P, construct_gamma, construct_jacobian_prox_p, Y_t, hessian_Y,  Phi_t
+from .admm_solver import ADMM_MGL
 from ..helper.basic_linalg import trp,Gdot, cg_general
+
+def get_ppdna_params(ppdna_params = None):
+    
+    # initialize if empty
+    if ppdna_params == None:
+        ppdna_params = {}
+    p0 = list(ppdna_params.keys())
+    
+    if 'max_iter' not in p0:
+        ppdna_params['max_iter'] = 20
+    
+    if 'sigma_0' not in p0:
+        ppdna_params['sigma_0'] = 100
+        
+    if 'sigma_fix' not in p0:
+        ppdna_params['sigma_fix'] = False
+
+    return ppdna_params
+         
 
 def get_ppa_sub_params_default():
     ppa_sub_params = {'lambda1' : .1 , 'lambda2' : .1, 'sigma_t' : 1e8, 
@@ -125,7 +145,7 @@ def PPA_subproblem(Omega_t, Theta_t, X_t, S, reg, ppa_sub_params = None, verbose
     return Omega_sol, Theta_sol, X_sol
 
 
-def PPDNA(S, lambda1, lambda2, reg, Omega_0, Theta_0 = np.array([]), X_0 = np.array([]), sigma_0 = 10, max_iter = 100, eps_ppdna = 1e-5 , verbose = False, measure = False):
+def PPDNA(S, lambda1, lambda2, reg, Omega_0, Theta_0 = np.array([]), X_0 = np.array([]), ppdna_params = None, eps_ppdna = 1e-5 , verbose = False, measure = False):
     """
     This is the outer proximal point algorithm
     Algorithm 2 in Zhang et al.
@@ -148,6 +168,11 @@ def PPDNA(S, lambda1, lambda2, reg, Omega_0, Theta_0 = np.array([]), X_0 = np.ar
 
     Theta_t = Theta_0.copy()
     X_t = X_0.copy()
+    
+    # adds all necessary paramters which are not given as input
+    ppdna_params = get_ppdna_params(ppdna_params)
+    max_iter = ppdna_params['max_iter']
+    sigma_0 = ppdna_params['sigma_0']
     
     ppa_sub_params = get_ppa_sub_params_default()
     ppa_sub_params['sigma_t'] = sigma_0
@@ -179,8 +204,9 @@ def PPDNA(S, lambda1, lambda2, reg, Omega_0, Theta_0 = np.array([]), X_0 = np.ar
         if measure:
             end = time.time()
             runtime[iter_t] = end-start
-            
-        ppa_sub_params['sigma_t'] = 1.3 * ppa_sub_params['sigma_t']
+        
+        if not ppdna_params['sigma_fix']:
+            ppa_sub_params['sigma_t'] = 1.3 * ppa_sub_params['sigma_t']
         ppa_sub_params['eps_t'] = 0.9 * ppa_sub_params['eps_t']
         ppa_sub_params['delta_t'] = 0.9 * ppa_sub_params['delta_t']
             
@@ -199,7 +225,7 @@ def PPDNA(S, lambda1, lambda2, reg, Omega_0, Theta_0 = np.array([]), X_0 = np.ar
     
     sol = {'Omega': Omega_t, 'Theta': Theta_t, 'X': X_t}
     if measure:
-        info = {'status': status , 'runtime': runtime, 'kkt_residual': kkt_residual}
+        info = {'status': status , 'runtime': runtime[:iter_t +1], 'kkt_residual': kkt_residual[:iter_t +1]}
     else:
         info = {'status': status}
     return sol, info
@@ -225,6 +251,38 @@ def PPDNA_stopping_criterion(Omega, Theta, X, S , ppa_sub_params, reg):
     return max(term1, term2, term3)
 
 
-
+def warmPPDNA(S, lambda1, lambda2, reg, Omega_0, Theta_0 = np.array([]), X_0 = np.array([]), admm_params = None, ppdna_params = None, eps = 1e-5 , verbose = False, measure = False):
+    """
+    function for solving a MGL problem with PPDNA but using ADMM as a warm start (i.e. solve to low accuracy with ADMM first)
+    """
+    
+    if eps >= 1e-3:
+        eps_admm = eps
+        phase2 = False
+    else:
+        eps_admm = 1e-3
+        eps_ppdna = eps
+        phase2 = True
+    
+    
+    sol1, info1 = ADMM_MGL(S, lambda1, lambda2, reg , Omega_0 , Theta_0, X_0, n_samples = None, rho = 1, max_iter = 100, eps_admm = eps_admm , verbose = verbose, measure = measure)
+    
+    assert info1['status'] == 'optimal'
+    
+    Theta_0 = sol1['Theta']
+    Omega_0 = sol1['Omega']
+    X_0 = sol1['X']
+    
+    if phase2:
+        sol2, info2 = PPDNA(S, lambda1, lambda2, reg, Omega_0 = Omega_0, Theta_0 = Theta_0, X_0 = X_0, ppdna_params = ppdna_params,  eps_ppdna = eps_ppdna , verbose = verbose, measure = measure)
+    
+    # append the infos
+    if measure:
+        info2['runtime'] = np.append(info1['runtime'], info2['runtime'])
+        info2['kkt_residual'] = np.append(info1['kkt_residual'], info2['kkt_residual'])
+        info2['iter_admm'] = len(info1['runtime']) -1 
+    
+    return sol2, info2
+    
 
 
