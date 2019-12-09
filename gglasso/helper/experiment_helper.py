@@ -134,7 +134,7 @@ def draw_group_heatmap(Theta, ax = None):
     if ax == None:
         fig,ax = plt.subplots(nrows = 1, ncols = 1)
     with sns.axes_style("white"):
-        sns.heatmap(A.sum(axis=0), mask = mask, ax = ax, square = True, cmap = 'Blues', vmin = 0.1, vmax = K, linewidths=.5, cbar_kws={"shrink": .5})
+        sns.heatmap(A.sum(axis=0), mask = mask, ax = ax, square = True, cmap = 'Blues', vmin = 0, vmax = K, linewidths=.5, cbar_kws={"shrink": .5})
 
 def plot_block_evolution(ax, start, stop, Theta, method, color_dict):
     (K,p,p) = Theta.shape

@@ -8,8 +8,11 @@ multiple classes" from Danaher et al.
 
 import numpy as np
 import networkx as nx
+import matplotlib.pyplot as plt
+import seaborn as sns
 
 from .basic_linalg import trp
+from .experiment_helper import adjacency_matrix
 
 
 def power_law_network(p=100, M=10):
@@ -88,12 +91,9 @@ def time_varying_power_network(p=100, K=10, M=10):
             
         Sigma[k,:,:] = Sigma_k
     
-    #Sigma[abs(Sigma) <= 1e-3] = 0
-    
     Theta = np.linalg.pinv(Sigma, hermitian = True)
-    # ensure sparsity 
-    Theta[abs(Theta) <= 1e-2] = 0
-        
+    Sigma, Theta = ensure_sparsity(Sigma, Theta)
+    
     return Sigma, Theta
     
 def group_power_network(p=100, K=10, M=10):
@@ -119,11 +119,35 @@ def group_power_network(p=100, K=10, M=10):
         Sigma[k,:,:] = Sigma_k
         
     Theta = np.linalg.pinv(Sigma, hermitian = True)
-    # ensure sparsity 
-    Theta[abs(Theta) <= 1e-2] = 0
-        
+    Sigma, Theta = ensure_sparsity(Sigma, Theta)
+    
     return Sigma, Theta    
 
+def ensure_sparsity(Sigma, Theta):
+    
+    Theta[abs(Theta) <= 1e-2] = 0
+    
+    D,_ = np.linalg.eigh(Theta)
+    assert D.min() > 0, "generated matrix Theta is not positive definite"
+    
+    Sigma = np.linalg.pinv(Theta, hermitian = True)
+    
+    return Sigma, Theta
+
+def plot_degree_distribution(Theta):
+    A = adjacency_matrix(Theta)
+    if len(Theta.shape) == 3:
+        G=nx.from_numpy_array(A[0,:,:])
+    else:
+        G=nx.from_numpy_array(A)
+    
+    degrees = np.array([d for n,d in list(G.degree)])
+    
+    sns.distplot(degrees, kde = False, hist_kws = {"range" : (0,10), "density" : True})
+    plt.plot(np.arange(10), 2.1**(-np.arange(10)))
+    
+    return
+    
 def sample_covariance_matrix(Sigma, N):
     """
     samples data for a given covariance matrix Sigma (with K layers)

@@ -90,8 +90,35 @@ Theta_glasso = results.get('GLASSO').get('Theta')
 plot_evolution(results, Theta, block = 0, L = L)
 
 #%%
-method = 'GLASSO'
+method = 'PPDNA'
 
 fig,axs = plt.subplots(nrows = 1, ncols = 2)
 draw_group_heatmap(Theta, axs[0])
 draw_group_heatmap(results.get(method).get('Theta'), axs[1])
+
+
+#%%
+# gif part
+from matplotlib.animation import FuncAnimation
+
+def plot_single_heatmap(k, Theta):
+    """
+    plots a heatmap of the adjacency matrix at index k
+    """
+    A = adjacency_matrix(Theta[:k,:,:])
+    mask = A.sum(axis=0) == 0
+    
+    with sns.axes_style("white"):
+        p = sns.heatmap(A.sum(axis=0), mask = mask, square = True, cmap = 'Blues', vmin = 0, vmax = K, linewidths=.5, cbar = False)
+        plt.title(f"timestamp {k}")
+    
+    return p 
+
+
+frames = np.arange(K)
+fargs = (Theta,)
+
+fig = plt.figure()
+anim = FuncAnimation(fig, plot_single_heatmap, frames = frames, interval= 1e3, fargs = fargs)
+
+anim.save("tv_network.gif", writer='imagemagick')
