@@ -50,6 +50,8 @@ def adjacency_matrix(S , t = 1e-9):
     if len(S.shape) == 3:
         for k in np.arange(S.shape[0]):
             np.fill_diagonal(A[k,:,:], 0)
+    else:
+        np.fill_diagonal(A, 0)
     return A
 
 

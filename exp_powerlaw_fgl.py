@@ -10,7 +10,7 @@ import seaborn as sns
 
 from inverse_covariance import QuicGraphicalLasso
 
-from gglasso.solver.ggl_solver import PPDNA
+from gglasso.solver.ggl_solver import PPDNA, warmPPDNA
 from gglasso.solver.admm_solver import ADMM_MGL
 from gglasso.solver.ggl_helper import prox_p2
 from gglasso.helper.data_generation import time_varying_power_network, sample_covariance_matrix
@@ -52,7 +52,7 @@ for k in np.arange(K):
     model = quic.fit(S[k,:,:], verbose = 1)
     res[k,:,:] = model.precision_
 
-res = prox_p2(res, .01)
+#res = prox_p2(res, .01)
 
 results['GLASSO'] = {'Theta' : res}
 
@@ -62,8 +62,9 @@ Theta_0 = Omega_0.copy()
 X_0 = np.zeros((K,p,p))
 
 start = time()
-sol, info = PPDNA(S, lambda1, lambda2, reg, Omega_0, Theta_0 = Theta_0, X_0 = X_0, sigma_0 = 10, max_iter = 20, \
-                                                        eps_ppdna = 1e-3, verbose = True)
+sol, info = PPDNA(S, lambda1, lambda2, reg, Omega_0, Theta_0 = Theta_0, X_0 = X_0, eps_ppdna = 1e-3, verbose = True)
+
+sol, info = warmPPDNA(S, lambda1, lambda2, reg, Omega_0, Theta_0 = Theta_0, X_0 = X_0, admm_params = None, ppdna_params = None, eps = 1e-5 , verbose = True, measure = True)
 end = time()
 
 print(f"Running time for PPDNA was {end-start} seconds")
@@ -72,7 +73,7 @@ results['PPDNA'] = {'Theta' : sol['Theta']}
 #%%
 start = time()
 sol, info = ADMM_MGL(S, lambda1, lambda2, reg, Omega_0, Theta_0 = Theta_0, X_0 = X_0, rho = 1, max_iter = 100, \
-                                                        eps_admm = 1e-3, verbose = True)
+                                                        eps_admm = 1e-5, verbose = True, measure = True)
 end = time()
 
 print(f"Running time for ADMM was {end-start} seconds")
@@ -101,24 +102,31 @@ draw_group_heatmap(results.get(method).get('Theta'), axs[1])
 # gif part
 from matplotlib.animation import FuncAnimation
 
+def init():
+    plt.clf()
+    A = np.zeros((p, p))
+    mask = (A == 0) 
+    sns.heatmap(A, mask = mask, square = True, cmap = 'Blues', vmin = 0, vmax = 1, linewidths=.5, cbar = False)
+    
 def plot_single_heatmap(k, Theta):
     """
     plots a heatmap of the adjacency matrix at index k
     """
-    A = adjacency_matrix(Theta[:k,:,:])
-    mask = A.sum(axis=0) == 0
+    A = adjacency_matrix(Theta[k,:,:])
+    mask = (A == 0) 
     
-    with sns.axes_style("white"):
-        p = sns.heatmap(A.sum(axis=0), mask = mask, square = True, cmap = 'Blues', vmin = 0, vmax = K, linewidths=.5, cbar = False)
-        plt.title(f"timestamp {k}")
+    #with sns.axes_style("white"):
+    plt.clf()
+    sns.heatmap(A, mask = mask, square = True, cmap = 'Blues', vmin = 0, vmax = 1, linewidths=.5, cbar = False)
+    plt.title(f"timestamp {k}")
     
-    return p 
+    return 
 
 
 frames = np.arange(K)
 fargs = (Theta,)
 
 fig = plt.figure()
-anim = FuncAnimation(fig, plot_single_heatmap, frames = frames, interval= 1e3, fargs = fargs)
+anim = FuncAnimation(fig, plot_single_heatmap, frames = K, init_func=init, interval= 100, fargs = fargs, repeat = False)
 
 anim.save("tv_network.gif", writer='imagemagick')
