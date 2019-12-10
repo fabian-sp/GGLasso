@@ -16,6 +16,7 @@ from gglasso.solver.ggl_helper import prox_p2
 from gglasso.helper.data_generation import time_varying_power_network, sample_covariance_matrix
 from gglasso.helper.experiment_helper import lambda_grid, discovery_rate, aic, error, draw_group_heatmap, plot_evolution, get_default_color_coding
 
+from tvgl3.TVGL3 import TVGLwrapper
 
 p = 100
 K = 10
@@ -30,11 +31,11 @@ Sigma, Theta = time_varying_power_network(p, K, M)
 
 draw_group_heatmap(Theta)
 
-S = sample_covariance_matrix(Sigma, N)
+S,sample = sample_covariance_matrix(Sigma, N)
 Sinv = np.linalg.pinv(S, hermitian = True)
 
 
-#%%
+
 lambda1 = 0.05
 lambda2 = 0.1
 
@@ -42,6 +43,7 @@ methods = ['PPDNA', 'ADMM', 'GLASSO']
 color_dict = get_default_color_coding()
 
 results = {}
+results['truth'] = {'Theta' : Theta}
 
 #%%
 # solve with QUIC/single Glasso
@@ -57,12 +59,13 @@ for k in np.arange(K):
 results['GLASSO'] = {'Theta' : res}
 
 #%%
+# solve with PPDNA
 Omega_0 = results.get('GLASSO').get('Theta')
 Theta_0 = Omega_0.copy()
 X_0 = np.zeros((K,p,p))
 
 start = time()
-sol, info = PPDNA(S, lambda1, lambda2, reg, Omega_0, Theta_0 = Theta_0, X_0 = X_0, eps_ppdna = 1e-3, verbose = True)
+#sol, info = PPDNA(S, lambda1, lambda2, reg, Omega_0, Theta_0 = Theta_0, X_0 = X_0, eps_ppdna = 1e-3, verbose = True)
 
 sol, info = warmPPDNA(S, lambda1, lambda2, reg, Omega_0, Theta_0 = Theta_0, X_0 = X_0, admm_params = None, ppdna_params = None, eps = 1e-5 , verbose = True, measure = True)
 end = time()
@@ -71,6 +74,7 @@ print(f"Running time for PPDNA was {end-start} seconds")
 results['PPDNA'] = {'Theta' : sol['Theta']}
 
 #%%
+# solve with general ADMM
 start = time()
 sol, info = ADMM_MGL(S, lambda1, lambda2, reg, Omega_0, Theta_0 = Theta_0, X_0 = X_0, rho = 1, max_iter = 100, \
                                                         eps_admm = 1e-5, verbose = True, measure = True)
@@ -82,6 +86,14 @@ results['ADMM'] = {'Theta' : sol['Theta']}
 
 #print(np.linalg.norm(results.get('ADMM').get('Theta') - results.get('PPDNA').get('Theta')))
 
+
+#%%
+# solve with TVGL
+
+start = time()
+thetSet = TVGLwrapper(sample, lambda1, lambda2)
+end = time()
+
 #%%
 Theta_admm = results.get('ADMM').get('Theta')
 Theta_ppdna = results.get('PPDNA').get('Theta')
@@ -90,43 +102,37 @@ Theta_glasso = results.get('GLASSO').get('Theta')
 
 plot_evolution(results, Theta, block = 0, L = L)
 
-#%%
-method = 'PPDNA'
 
-fig,axs = plt.subplots(nrows = 1, ncols = 2)
-draw_group_heatmap(Theta, axs[0])
-draw_group_heatmap(results.get(method).get('Theta'), axs[1])
+def l1norm_od(Theta):
+    (p1,p2) = Theta.shape
+    res = 0
+    for i in np.arange(p1):
+        for j in np.arange(p2):
+            if i == j:
+                continue
+            else:
+                res += abs(Theta[i,j])
+                
+    return res
 
-
-#%%
-# gif part
-from matplotlib.animation import FuncAnimation
-
-def init():
-    plt.clf()
-    A = np.zeros((p, p))
-    mask = (A == 0) 
-    sns.heatmap(A, mask = mask, square = True, cmap = 'Blues', vmin = 0, vmax = 1, linewidths=.5, cbar = False)
-    
-def plot_single_heatmap(k, Theta):
-    """
-    plots a heatmap of the adjacency matrix at index k
-    """
-    A = adjacency_matrix(Theta[k,:,:])
-    mask = (A == 0) 
-    
-    #with sns.axes_style("white"):
-    plt.clf()
-    sns.heatmap(A, mask = mask, square = True, cmap = 'Blues', vmin = 0, vmax = 1, linewidths=.5, cbar = False)
-    plt.title(f"timestamp {k}")
-    
-    return 
+def deviation(Theta):
+    #tmp = np.roll(Theta, 1, axis = 0)
+    (K,p,p) = Theta.shape
+    d = np.zeros(K-1)
+    for k in np.arange(K-1):
+        d[k] = l1norm_od(Theta[k+1,:,:] - Theta[k,:,:])
+        
+    return d
 
 
-frames = np.arange(K)
-fargs = (Theta,)
+plt.figure()
 
-fig = plt.figure()
-anim = FuncAnimation(fig, plot_single_heatmap, frames = K, init_func=init, interval= 100, fargs = fargs, repeat = False)
+for m in list(results.keys()):
+    d = deviation(results.get(m).get('Theta'))
+    with sns.axes_style("darkgrid"):
+        plt.plot(d, c = color_dict[m])
+        
+plt.ylabel('temporal deviation')
+plt.xlabel('time')
+plt.legend(labels = list(results.keys()))
 
-anim.save("tv_network.gif", writer='imagemagick')

@@ -165,6 +165,6 @@ def sample_covariance_matrix(Sigma, N):
     for k in np.arange(K):
         S[k,:,:] = np.cov(sample[k,:,:])
         
-    return S
+    return S,sample
 
 

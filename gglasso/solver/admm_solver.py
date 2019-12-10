@@ -118,7 +118,7 @@ def ADMM_stopping_criterion(Omega, Theta, X, S , lambda1, lambda2, nk, reg):
         proxK[k,:,:] = phiplus(A = Omega[k,:,:] - nk[k,0,0]*S[k,:,:] - X[k,:,:], beta = nk[k,0,0], D = eigD[k,:], Q = eigQ[k,:,:])
         
     term3 = np.linalg.norm(Omega - proxK) / (1 + np.linalg.norm(Omega))
-
+    
     return max(term1, term2, term3)
 
 

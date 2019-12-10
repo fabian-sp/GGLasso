@@ -1,5 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
+from matplotlib.animation import FuncAnimation
+
 import seaborn as sns
 import networkx as nx
 
@@ -86,6 +88,7 @@ def error(S_sol , S_true):
 
 def aic(S,Theta, N):
     (K,p,p) = S.shape
+    # counts the non-zero off-diagonal elements
     nonzero_count = (abs(Theta) >= 1e-3).sum(axis=(1,2)) - p
     aic = 0
     for k in np.arange(K):
@@ -173,3 +176,78 @@ def plot_evolution(results, Theta, block = None, L = None, start = None, stop = 
 
     return
 
+
+
+#################################################################################################################
+############################ GIF ################################################################################
+#################################################################################################################
+
+def plot_single_heatmap(k, Theta, method, ax):
+    """
+    plots a heatmap of the adjacency matrix at index k
+    """
+    A = adjacency_matrix(Theta[k,:,:])
+    mask = (A == 0) 
+    
+    #with sns.axes_style("white"):
+    col = get_default_color_coding()[method]
+    this_cmap = sns.light_palette(col, as_cmap=True)
+    
+    ax.cla()
+    sns.heatmap(A, mask = mask, ax = ax, square = True, cmap = this_cmap, vmin = 0, vmax = 1, linewidths=.5, cbar = False)
+    ax.set_title(f"Precision matrix at timestamp {k}")
+    
+    return 
+
+def single_heatmap_animation(Theta, method = 'truth', save = False):
+    
+    (K,p,p) = Theta.shape
+    
+    fig, ax = plt.subplots(1,1)
+    fargs = (Theta, method, ax,)
+    
+    def init():
+        ax.cla()
+        A = np.zeros((p, p))
+        mask = (A == 0) 
+        sns.heatmap(A, mask = mask, ax = ax, square = True, cmap = 'Blues', vmin = 0, vmax = 1, linewidths=.5, cbar = False)
+
+    anim = FuncAnimation(fig, plot_single_heatmap, frames = K, init_func=init, interval= 1000, fargs = fargs, repeat = True)
+    
+    if save:    
+        anim.save("single_network.gif", writer='imagemagick')
+        
+    return anim
+
+
+def plot_multiple_heatmap(k, Theta, results, axs):
+    
+    plot_single_heatmap(k, Theta, 'truth', axs[0,0])
+    plot_single_heatmap(k, results.get('PPDNA').get('Theta'), 'PPDNA', axs[0,1])
+    plot_single_heatmap(k, results.get('ADMM').get('Theta'), 'ADMM', axs[1,0])
+    plot_single_heatmap(k, results.get('GLASSO').get('Theta'), 'GLASSO', axs[1,1])
+    
+    return
+
+def multiple_heatmap_animation(Theta, results, save = False):
+    (K,p,p) = Theta.shape
+    fig, axs = plt.subplots(nrows = 2, ncols=2)
+
+    def init():
+        for ax in axs.ravel():
+            ax.cla()
+        A = np.zeros((p, p))
+        mask = (A == 0) 
+        for ax in axs.ravel():
+            sns.heatmap(A, mask = mask, ax = ax, square = True, cmap = 'Blues', vmin = 0, vmax = 1, linewidths=.5, cbar = False)
+
+
+    fargs = (Theta, results, axs,)
+    anim = FuncAnimation(fig, plot_multiple_heatmap, frames = K, init_func=init, interval= 1000, fargs = fargs, repeat = True)
+       
+    if save:    
+        anim.save("multiple_network.gif", writer='imagemagick')
+    
+    return anim    
+
+#################################################################################################################
