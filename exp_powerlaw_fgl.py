@@ -96,15 +96,16 @@ results['ADMM'] = {'Theta' : sol['Theta']}
 
 #%%
 start = time()
-ltgl = LatentTimeGraphicalLasso(alpha = lambda1, beta = lambda2, psi = 'l1', max_iter=200, verbose = True)
-ltgl = ltgl.fit(sample.transpose(0,2,1))
+ltgl = LatentTimeGraphicalLasso(alpha = lambda1, beta = lambda2, tau = 1, psi = 'l1', max_iter=2000, verbose = True)
+ltgl = ltgl.fit(S)
 end = time()
 
-print(f"Running time for LGTL was {end-start} seconds")
+print(f"Running time for LGTL was {end-start}  seconds")
 
 #results['LGTL'] = {'Theta' : ltgl.precision_}
 
-
+tmp1 = ltgl.precision_
+tmp2 = ltgl.latent_
 draw_group_heatmap(ltgl.precision_)
 
 

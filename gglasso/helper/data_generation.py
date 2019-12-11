@@ -161,7 +161,8 @@ def sample_covariance_matrix(Sigma, N):
 
     S = np.zeros((K,p,p))
     for k in np.arange(K):
-        S[k,:,:] = np.cov(sample[k,:,:])
+        # normalize with N --> bias = True
+        S[k,:,:] = np.cov(sample[k,:,:], bias = True)
         
     return S,sample
 
