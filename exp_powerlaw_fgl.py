@@ -12,7 +12,6 @@ from inverse_covariance import QuicGraphicalLasso
 
 from gglasso.solver.ggl_solver import PPDNA, warmPPDNA
 from gglasso.solver.admm_solver import ADMM_MGL
-from gglasso.solver.ggl_helper import prox_p2
 from gglasso.helper.data_generation import time_varying_power_network, sample_covariance_matrix
 from gglasso.helper.experiment_helper import lambda_grid, discovery_rate, aic, error, draw_group_heatmap, plot_evolution, get_default_color_coding
 
@@ -100,10 +99,13 @@ Theta_ppdna = results.get('PPDNA').get('Theta')
 Theta_glasso = results.get('GLASSO').get('Theta')
 
 
-plot_evolution(results, Theta, block = 0, L = L)
+plot_evolution(results, block = 0, L = L)
 
 
 def l1norm_od(Theta):
+    """
+    calculates the off-diagonal l1-norm of a matrix
+    """
     (p1,p2) = Theta.shape
     res = 0
     for i in np.arange(p1):
@@ -116,6 +118,10 @@ def l1norm_od(Theta):
     return res
 
 def deviation(Theta):
+    """
+    calculates the deviation of subsequent Theta estimates
+    deviation = off-diagonal l1 norm
+    """
     #tmp = np.roll(Theta, 1, axis = 0)
     (K,p,p) = Theta.shape
     d = np.zeros(K-1)
@@ -124,15 +130,17 @@ def deviation(Theta):
         
     return d
 
-
+#%%
+plot_aesthetics = {'marker' : 'o', 'linestyle' : '-', 'markersize' : 5}
 plt.figure()
 
 for m in list(results.keys()):
     d = deviation(results.get(m).get('Theta'))
-    with sns.axes_style("darkgrid"):
-        plt.plot(d, c = color_dict[m])
+    with sns.axes_style("whitegrid"):
+        plt.plot(d, c = color_dict[m], **plot_aesthetics)
         
-plt.ylabel('temporal deviation')
-plt.xlabel('time')
+plt.ylabel('Temporal Deviation')
+plt.xlabel('Time (k=1,...,K)')
 plt.legend(labels = list(results.keys()))
+
 

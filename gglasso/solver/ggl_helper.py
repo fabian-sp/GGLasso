@@ -99,7 +99,10 @@ def jacobian_prox_phi_fgl(v , l1 , l2):
     
     return Theta @ P
 
-def prox_p2(X, l2):
+def prox_PTV(X, l2):
+    """
+    prox of only the TV penalty, but on the space G
+    """
     assert l2 > 0, "lambda2 havs to be positive"
     (K,p,p) = X.shape
     M = np.zeros((K,p,p))
@@ -172,7 +175,14 @@ def jacobian_prox_phi(v , l1 , l2, reg):
 
 
 def construct_jacobian_prox_p(X, l1 , l2, reg):
-    # each (i,j) entry has a corresponding jacobian which is a KxK matrix
+    """
+    calculates the gen. Jacobian of prox_P at X in G
+    X is symmetric, hence only need to calc. for upper triangular matrix
+    
+    return: 4dim array
+    each (i,j) entry has a corresponding jacobian which is a KxK matrix
+    """
+    # 
     (K,p,p) = X.shape
     assert abs(X - trp(X)).max() <= 1e-5
     
