@@ -63,8 +63,6 @@ def power_law_network(p=100, M=10):
     D,_ = np.linalg.eig(Sigma)
     assert D.min() > 0, "generated matrix Sigma is not positive definite"
          
-    #Theta = np.linalg.inv(Sigma)
-    
     return Sigma
 
 def time_varying_power_network(p=100, K=10, M=10):
@@ -82,13 +80,13 @@ def time_varying_power_network(p=100, K=10, M=10):
     Sigma_0 = power_law_network(p = p, M = M)
     
     for k in np.arange(K):
-        
         Sigma_k = Sigma_0.copy()
+
         if k <= K/2:   
             Sigma_k[L:2*L, L:2*L] = np.eye(L)
         else:
             Sigma_k[0:L, 0:L] = np.eye(L)
-            
+        
         Sigma[k,:,:] = Sigma_k
     
     Theta = np.linalg.pinv(Sigma, hermitian = True)

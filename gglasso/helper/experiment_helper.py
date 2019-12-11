@@ -7,22 +7,6 @@ import networkx as nx
 
 from .basic_linalg import Sdot
 
-def get_default_plot_aes():
-    plot_aes = {'marker' : 'o', 'linestyle' : '-', 'markersize' : 5}
-    
-    return plot_aes
-
-
-def get_default_color_coding():
-    mypal = sns.color_palette("Set2")
-    
-    color_dict = {}    
-    color_dict['truth'] = mypal[0]
-    color_dict['GLASSO'] = mypal[1]
-    color_dict['ADMM'] = mypal[2]
-    color_dict['PPDNA'] = mypal[3]
-
-    return color_dict
 
 def lambda_parametrizer(l2 = 0.05, w2 = 0.5):
     
@@ -102,9 +86,54 @@ def aic(S,Theta, N):
         
     return aic
 
+def l1norm_od(Theta):
+    """
+    calculates the off-diagonal l1-norm of a matrix
+    """
+    (p1,p2) = Theta.shape
+    res = 0
+    for i in np.arange(p1):
+        for j in np.arange(p2):
+            if i == j:
+                continue
+            else:
+                res += abs(Theta[i,j])
+                
+    return res
 
-# Drawing functions
+def deviation(Theta):
+    """
+    calculates the deviation of subsequent Theta estimates
+    deviation = off-diagonal l1 norm
+    """
+    #tmp = np.roll(Theta, 1, axis = 0)
+    (K,p,p) = Theta.shape
+    d = np.zeros(K-1)
+    for k in np.arange(K-1):
+        d[k] = l1norm_od(Theta[k+1,:,:] - Theta[k,:,:])
+        
+    return d
 
+#################################################################################################################
+############################ DRAWING FUNCTIONS ################################################################################
+#################################################################################################################
+
+def get_default_plot_aes():
+    plot_aes = {'marker' : 'o', 'linestyle' : '-', 'markersize' : 5}
+    
+    return plot_aes
+
+
+def get_default_color_coding():
+    mypal = sns.color_palette("Set2")
+    
+    color_dict = {}    
+    color_dict['truth'] = mypal[0]
+    color_dict['GLASSO'] = mypal[1]
+    color_dict['ADMM'] = mypal[2]
+    color_dict['PPDNA'] = mypal[3]
+
+    return color_dict
 
 def get_graph_aes(with_edge_col = True):
     aes = {'node_size' : 100, 'node_color' : 'lightslategrey', 'edge_color' : 'lightslategrey', 'width' : 1.5}
@@ -112,8 +141,7 @@ def get_graph_aes(with_edge_col = True):
     if not with_edge_col:
         del aes['edge_color']
     return aes
-        
-        
+                
 def draw_group_graph(Theta , t = 1e-9):
     """
     Draws a network with Theta as precision matrix
@@ -184,7 +212,25 @@ def plot_evolution(results, block = None, L = None, start = None, stop = None):
     fig.suptitle('Precision matrix entries - evolution over time')
     return
 
+def plot_deviation(results):
+    """
+    plots the temporal deviation
+    """
+    color_dict = get_default_color_coding()
+    plot_aesthetics = get_default_plot_aes()
+    
+    with sns.axes_style("whitegrid"):
+        fig,ax = plt.subplots(nrows=1,ncols=1)
+    
+        for m in list(results.keys()):
+            d = deviation(results.get(m).get('Theta'))
+            ax.plot(d, c = color_dict[m], **plot_aesthetics)
+                
+        ax.set_ylabel('Temporal Deviation')
+        ax.set_xlabel('Time (k=1,...,K)')
+        ax.legend(labels = list(results.keys()))
 
+    return
 
 #################################################################################################################
 ############################ GIF ################################################################################
