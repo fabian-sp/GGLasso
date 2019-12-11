@@ -8,7 +8,7 @@ import numpy as np
 from matplotlib import pyplot as plt
 import seaborn as sns
 
-from inverse_covariance import QuicGraphicalLasso
+from sklearn.covariance import GraphicalLasso
 
 from gglasso.solver.ggl_solver import PPDNA, warmPPDNA
 from gglasso.solver.admm_solver import ADMM_MGL
@@ -48,11 +48,17 @@ results['truth'] = {'Theta' : Theta}
 
 #%%
 # solve with QUIC/single Glasso
-quic = QuicGraphicalLasso(lam = .2, tol = 1e-6)
+#from inverse_covariance import QuicGraphicalLasso
+
+#quic = QuicGraphicalLasso(lam = .2, tol = 1e-6)
+singleGL = GraphicalLasso(alpha = 1.5*lambda1, tol = 1e-6, max_iter = 200, verbose = True)
+
 res = np.zeros((K,p,p))
 
 for k in np.arange(K):
-    model = quic.fit(S[k,:,:], verbose = 1)
+    #model = quic.fit(S[k,:,:], verbose = 1)
+    model = singleGL.fit(sample[k,:,:].T)
+    
     res[k,:,:] = model.precision_
 
 
