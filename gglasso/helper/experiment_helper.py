@@ -165,9 +165,9 @@ def draw_group_graph(Theta , t = 1e-9):
     
     return fig
 
-def draw_group_heatmap(Theta, ax = None):
+def draw_group_heatmap(Theta, ax = None, t = 1e-9):
     (K,p,p) = Theta.shape
-    A = adjacency_matrix(Theta)
+    A = adjacency_matrix(Theta, t)
     mask = A.sum(axis=0) == 0
     
     if ax == None:
