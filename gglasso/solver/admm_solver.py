@@ -60,8 +60,8 @@ def ADMM_MGL(S, lambda1, lambda2, reg , Omega_0 , Theta_0 = np.array([]), X_0 = 
         if eta_A <= eps_admm:
             status = 'optimal'
             break
-        
-        print(f"------------Iteration {iter_t} of the ADMM Algorithm----------------")
+        if verbose:
+            print(f"------------Iteration {iter_t} of the ADMM Algorithm----------------")
         if measure:
             start = time.time()
             

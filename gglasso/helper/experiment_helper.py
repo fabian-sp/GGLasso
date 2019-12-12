@@ -77,12 +77,16 @@ def error(S_sol , S_true):
     return np.linalg.norm(S_sol - S_true)/np.linalg.norm(S_true)
 
 def aic(S,Theta, N):
+    """
+    AIC information criterion after Danaher et al.
+    """
     (K,p,p) = S.shape
-    # counts the non-zero off-diagonal elements
-    nonzero_count = (abs(Theta) >= 1e-3).sum(axis=(1,2)) - p
+    
+    A = adjacency_matrix(Theta , t = 1e-5)
+    nonzero_count = A.sum(axis=(1,2)) - p
     aic = 0
     for k in np.arange(K):
-        aic += N*Sdot(S[k,:,:], Theta[k,:,:]) - N*np.log(np.linalg.det(Theta[k,:,:])) + 1*nonzero_count[k]
+        aic += N*Sdot(S[k,:,:], Theta[k,:,:]) - N*np.log(np.linalg.det(Theta[k,:,:])) + nonzero_count[k]
         
     return aic
 

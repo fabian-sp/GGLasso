@@ -20,9 +20,13 @@ def get_ppdna_params(ppdna_params = None):
     
     if 'max_iter' not in p0:
         ppdna_params['max_iter'] = 20
+    else:
+        assert ppdna_params['max_iter'] > 0
     
     if 'sigma_0' not in p0:
-        ppdna_params['sigma_0'] = 100
+        ppdna_params['sigma_0'] = 10
+    else:
+        assert ppdna_params['sigma_0'] > 0
         
     if 'sigma_fix' not in p0:
         ppdna_params['sigma_fix'] = False
@@ -85,7 +89,7 @@ def PPA_subproblem(Omega_t, Theta_t, X_t, S, reg, ppa_sub_params = None, verbose
     
     sub_iter = 0
     
-    while not(condA or condB) and sub_iter < 20:
+    while not(condA or condB) and sub_iter < 10:
         # step 0: set variables
         W_t = Omega_t - (sigma_t * (S + X_t))  
         V_t = Theta_t + (sigma_t * X_t)
@@ -222,6 +226,7 @@ def PPDNA(S, lambda1, lambda2, reg, Omega_0, Theta_0 = np.array([]), X_0 = np.ar
     
     assert abs(trp(Omega_t)- Omega_t).max() <= 1e-5, "Solution is not symmetric"
     assert abs(trp(Theta_t)- Theta_t).max() <= 1e-5, "Solution is not symmetric"
+    assert abs(trp(X_t)- X_t).max() <= 1e-5, "Solution is not symmetric"
     
     sol = {'Omega': Omega_t, 'Theta': Theta_t, 'X': X_t}
     if measure:
@@ -276,13 +281,16 @@ def warmPPDNA(S, lambda1, lambda2, reg, Omega_0, Theta_0 = np.array([]), X_0 = n
     if phase2:
         sol2, info2 = PPDNA(S, lambda1, lambda2, reg, Omega_0 = Omega_0, Theta_0 = Theta_0, X_0 = X_0, ppdna_params = ppdna_params,  eps_ppdna = eps_ppdna , verbose = verbose, measure = measure)
     
-    # append the infos
-    if measure:
-        info2['runtime'] = np.append(info1['runtime'], info2['runtime'])
-        info2['kkt_residual'] = np.append(info1['kkt_residual'], info2['kkt_residual'])
-        info2['iter_admm'] = len(info1['runtime']) -1 
+        # append the infos
+        if measure:
+            info2['runtime'] = np.append(info1['runtime'], info2['runtime'])
+            info2['kkt_residual'] = np.append(info1['kkt_residual'], info2['kkt_residual'])
+            info2['iter_admm'] = len(info1['runtime']) -1 
+            
+        return sol2, info2
     
-    return sol2, info2
+    else:
+        return sol1, info1
     
 
 

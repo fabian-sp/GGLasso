@@ -6,37 +6,31 @@ Sigma denotes the covariance matrix, Theta the precision matrix
 from time import time
 import numpy as np
 from matplotlib import pyplot as plt
-from matplotlib import cm
-from mpl_toolkits.mplot3d import Axes3D
 import seaborn as sns
 
 
-from gglasso.solver.ggl_solver import PPDNA
+from gglasso.solver.ggl_solver import PPDNA, warmPPDNA
 from gglasso.helper.data_generation import time_varying_power_network, group_power_network, sample_covariance_matrix
 from gglasso.helper.experiment_helper import lambda_grid, discovery_rate, aic, error, draw_group_graph, draw_group_heatmap
 
 
 p = 100
 K = 5
-N = 500
+N = 2000
 M = 10
 
 reg = 'GGL'
 
-if reg == 'GGL':
-    Sigma, Theta = group_power_network(p, K, M)
-elif reg == 'FGL':
-    Sigma, Theta = time_varying_power_network(p, K, M)
-#np.linalg.norm(np.eye(p) - Sigma@Theta)/np.linalg.norm(np.eye(p))
+Sigma, Theta = group_power_network(p, K, M)
 
 draw_group_heatmap(Theta)
 
-S = sample_covariance_matrix(Sigma, N)
+S,sample = sample_covariance_matrix(Sigma, N)
 Sinv = np.linalg.pinv(S, hermitian = True)
 
 #%%
 # grid search for best lambda values with warm starts
-L1, L2 = lambda_grid(num1 = 3, num2 = 5, reg = reg)
+L1, L2 = lambda_grid(num1 = 2, num2 = 6, reg = reg)
 grid1 = L1.shape[0]; grid2 = L2.shape[1]
 
 ERR = np.zeros((grid1, grid2))
@@ -53,9 +47,10 @@ for g1 in np.arange(grid1):
         lambda2 = L2[g1,g2]
     
         
-        sol, info = PPDNA(S, lambda1, lambda2, reg, Omega_0, Theta_0 = Theta_0, sigma_0 = 10, max_iter = 20, \
-                                                    eps_ppdna = 1e-2 , verbose = False)
+        #sol, info = PPDNA(S, lambda1, lambda2, reg, Omega_0, Theta_0 = Theta_0, sigma_0 = 10, max_iter = 20, \
+        #                                            eps_ppdna = 1e-2 , verbose = False)
         
+        sol, info = warmPPDNA(S, lambda1, lambda2, reg, Omega_0, Theta_0 = Theta_0, eps = 1e-3, verbose = False, measure = False)
         Theta_sol = sol['Theta']
         Omega_sol = sol['Omega']
         
@@ -77,8 +72,7 @@ l2opt = L2[ix]
 Omega_0 = np.zeros((K,p,p))
 Theta_0 = np.zeros((K,p,p))
 
-sol, info = PPDNA(S, l1opt, l2opt, reg, Omega_0, Theta_0 = Theta_0, sigma_0 = 10, max_iter = 20, \
-                                                    eps_ppdna = 1e-4 , verbose = True)
+sol, info = warmPPDNA(S, l1opt, l2opt, reg, Omega_0, Theta_0 = Theta_0, eps = 1e-5 , verbose = True)
 
 Theta_sol = sol['Theta']
 Omega_sol = sol['Omega']
@@ -87,14 +81,25 @@ fig,axs = plt.subplots(nrows = 1, ncols = 2)
 draw_group_heatmap(Theta, axs[0])
 draw_group_heatmap(Theta_sol, axs[1])
 
-for k in np.arange(K):
-    print(error(Theta_sol[k,:,:], Theta[k,:,:]))
 
 #%%
 # plot results
 
-plt.figure()
-plt.plot(FPR, TPR)
+with sns.axes_style("whitegrid"):
+    fig, ax = plt.subplots(1,1)
+    ax.plot(FPR.T, TPR.T, **plot_aes)
+
+    ax.set_xlim(-.01,1)
+    ax.set_ylim(-.01,1)
+    
+    ax.set_xlabel('False Positive Rate')
+    ax.set_ylabel('True Positive Rate')
+    #ax.legend(labels = ["l1 = " + "{:.2E}".format(l) for l in L1])
+    
+fig.suptitle('Discorvery rate for different regularization strengths')
+
+
+
 
 fig,axs = plt.subplots(nrows = 1, ncols = 3)
 sns.heatmap(TPR, annot = True, ax = axs[0])
@@ -104,11 +109,14 @@ sns.heatmap(AIC, annot = True, ax = axs[2])
 
 #%%
 # accuracy impact on total error analysis
-L1, L2 = lambda_grid(num1 = 1, num2 = 5, reg = reg)
+L1, L2 = lambda_grid(num1 = 1, num2 = 4, reg = reg)
 grid1 = L1.shape[0]
-grid2 = 7
 
+grid2 = 5
 EPS = np.logspace(start = -.5, stop = -5, num = grid2, base = 10)
+EPS = np.array([5e-1, 1e-1, 1e-2, 1e-3, 1e-4, 1e-5])
+
+grid2 = len(EPS)
 
 ERR = np.zeros((grid1, grid2))
 AIC = np.zeros((grid1, grid2))
@@ -126,7 +134,7 @@ for g1 in np.arange(grid1):
     for g2 in np.arange(grid2):
             
         start = time()
-        sol, info = PPDNA(S, L1[g1], L2[g1], reg, Omega_0, Theta_0 = Theta_0, X_0 = X_0, sigma_0 = 10, max_iter = 20, \
+        sol, info = PPDNA(S, L1[g1], L2[g1], reg, Omega_0, Theta_0 = Theta_0, X_0 = X_0, \
                                                         eps_ppdna = EPS[g2] , verbose = False)
         end = time()
         
@@ -145,24 +153,24 @@ for g1 in np.arange(grid1):
 
 
 #%%
-#fig = plt.figure()
-#ax = fig.gca(projection='3d')
-#
-#X,Y = np.meshgrid(EPS, L2)
-#Z = AIC
-#surf = ax.plot_surface(X, Y, Z, cmap=cm.coolwarm,
-#                       linewidth=0, antialiased=False)    
+
 pal = sns.color_palette("GnBu_d", grid1)
+plot_aes = get_default_plot_aes()
 
-#sns.set()
-fig, ax = plt.subplots(1,1)
-for l in np.arange(grid1):
-    ax.plot(EPS, ERR[l,:], c=pal[l] )
+with sns.axes_style("whitegrid"):
+    fig, ax = plt.subplots(1,1)
+    for l in np.arange(grid1):
+        ax.plot(EPS, ERR[l,:], c=pal[l],**plot_aes )
 
-ax.set_xlim(EPS.max(), EPS.min())
-ax.legend(labels = L2)
-ax.set_xscale('log')
-
+    ax.set_xlim(EPS.max()*2 , EPS.min()/2)
+    ax.set_ylim(0,0.3)
+    ax.set_xscale('log')
+    
+    ax.set_xlabel('Solution accuracy')
+    ax.set_ylabel('Total relative error')
+    ax.legend(labels = ["l2 = " + "{:.2E}".format(l) for l in L2])
+    
+fig.suptitle('Total error for different solution accuracies')
 
 
 

@@ -102,7 +102,7 @@ results['ADMM'] = {'Theta' : sol['Theta']}
 
 #%%
 start = time()
-ltgl = LatentTimeGraphicalLasso(alpha = lambda1, beta = lambda2, tau = 0, psi = 'l1', rho = 1, tol = 1e-5, max_iter=2000, verbose = True)
+ltgl = LatentTimeGraphicalLasso(alpha = N*lambda1, beta = N*lambda2, tau = N*0.1, psi = 'l1', rho = 1, tol = 1e-4, max_iter=2000, verbose = True)
 ltgl = ltgl.fit(sample.transpose(0,2,1))
 end = time()
 
