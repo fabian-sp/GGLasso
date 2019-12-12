@@ -109,12 +109,12 @@ sns.heatmap(AIC, annot = True, ax = axs[2])
 
 #%%
 # accuracy impact on total error analysis
-L1, L2 = lambda_grid(num1 = 1, num2 = 4, reg = reg)
+L1, L2 = lambda_grid(num1 = 1, num2 = 5, reg = reg)
 grid1 = L1.shape[0]
 
 grid2 = 5
 EPS = np.logspace(start = -.5, stop = -5, num = grid2, base = 10)
-EPS = np.array([5e-1, 1e-1, 1e-2, 1e-3, 1e-4, 1e-5])
+EPS = np.array([2e-1, 1e-1, 1e-2, 1e-3, 1e-4, 1e-5])
 
 grid2 = len(EPS)
 
