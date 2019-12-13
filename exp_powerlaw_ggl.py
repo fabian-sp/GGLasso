@@ -30,7 +30,7 @@ Sinv = np.linalg.pinv(S, hermitian = True)
 
 #%%
 # grid search for best lambda values with warm starts
-L1, L2 = lambda_grid(num1 = 2, num2 = 6, reg = reg)
+L1, L2 = lambda_grid(num1 = 2, num2 = 9, reg = reg)
 grid1 = L1.shape[0]; grid2 = L2.shape[1]
 
 ERR = np.zeros((grid1, grid2))
@@ -63,9 +63,10 @@ for g1 in np.arange(grid1):
         ERR[g1,g2] = error(Theta_sol, Theta)
         AIC[g1,g2] = aic(S,Theta_sol,N)
 
-#%%
 # get optimal lambda
 ix= np.unravel_index(AIC.argmin(), AIC.shape)
+
+#%%
 l1opt = L1[ix]
 l2opt = L2[ix]
 
@@ -84,10 +85,13 @@ draw_group_heatmap(Theta_sol, axs[1])
 
 #%%
 # plot results
+plot_aes = get_default_plot_aes()
 
 with sns.axes_style("whitegrid"):
     fig, ax = plt.subplots(1,1)
     ax.plot(FPR.T, TPR.T, **plot_aes)
+    
+    ax.plot(FPR[ix], TPR[ix], marker = 'o', fillstyle = 'none', markersize = 20, markeredgecolor = 'green')
 
     ax.set_xlim(-.01,1)
     ax.set_ylim(-.01,1)
@@ -96,7 +100,7 @@ with sns.axes_style("whitegrid"):
     ax.set_ylabel('True Positive Rate')
     #ax.legend(labels = ["l1 = " + "{:.2E}".format(l) for l in L1])
     
-fig.suptitle('Discorvery rate for different regularization strengths')
+fig.suptitle('Discovery rate for different regularization strengths')
 
 
 
@@ -109,7 +113,7 @@ sns.heatmap(AIC, annot = True, ax = axs[2])
 
 #%%
 # accuracy impact on total error analysis
-L1, L2 = lambda_grid(num1 = 1, num2 = 5, reg = reg)
+L1, L2 = lambda_grid(num1 = 1, num2 = 6, reg = reg)
 grid1 = L1.shape[0]
 
 grid2 = 5

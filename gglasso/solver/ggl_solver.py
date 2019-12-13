@@ -24,7 +24,7 @@ def get_ppdna_params(ppdna_params = None):
         assert ppdna_params['max_iter'] > 0
     
     if 'sigma_0' not in p0:
-        ppdna_params['sigma_0'] = 10
+        ppdna_params['sigma_0'] = 100
     else:
         assert ppdna_params['sigma_0'] > 0
         
@@ -37,7 +37,7 @@ def get_ppdna_params(ppdna_params = None):
 def get_ppa_sub_params_default():
     ppa_sub_params = {'lambda1' : .1 , 'lambda2' : .1, 'sigma_t' : 1e8, 
           'eta' : .5, 'tau' : .5, 'rho' : .5, 'mu' : .25,
-          'eps_t' : .5, 'delta_t' : .5} 
+          'eps_t' : .9, 'delta_t' : .9} 
     
     return ppa_sub_params
 
@@ -53,7 +53,7 @@ def check_ppa_sub_params(ppa_sub_params):
     assert ppa_sub_params['rho'] > 0 and ppa_sub_params['rho'] < 1
     
     assert ppa_sub_params['eps_t'] >= 0
-    assert ppa_sub_params['delta_t'] >= 0 and ppa_sub_params['delta_t'] < 1
+    assert ppa_sub_params['delta_t'] >= 0 #and ppa_sub_params['delta_t'] < 1
     
     return
 
