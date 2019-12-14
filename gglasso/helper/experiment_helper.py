@@ -23,7 +23,7 @@ def lambda_grid(num1 = 5, num2 = 2, reg = 'GGL'):
     creates a grid of lambda 1 lambda 1 values
     idea: the grid goes from smaller to higher values when going down/right
     """
-    l2 = 2*np.logspace(start = -4, stop = -1, num = num2, base = 10)
+    l2 = np.logspace(start = -4, stop = -1, num = num2, base = 10)
     
     if reg == 'GGL':
         w2 = np.linspace(0.2, 0.5, num1)
@@ -33,8 +33,9 @@ def lambda_grid(num1 = 5, num2 = 2, reg = 'GGL'):
     elif reg == 'FGL':
         l1 = np.logspace(start = -2, stop = -.5, num = num1, base = 10)
         L2, L1 = np.meshgrid(l2,l1)
+        w2 = None
         
-    return L1.squeeze(), L2.squeeze()
+    return L1.squeeze(), L2.squeeze(), w2
            
 def adjacency_matrix(S , t = 1e-5):
     A = (np.abs(S) >= t).astype(int)

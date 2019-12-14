@@ -113,7 +113,7 @@ def prox_PTV(X, l2):
             else:
                 M[:,i,j] = condat_method(X[:,i,j], l2)
     
-    assert abs(M - trp(M)).max() <= 1e-10
+    assert abs(M - trp(M)).max() <= 1e-5
     return M
 # general functions related to the regularizer P
     
@@ -152,7 +152,7 @@ def prox_p(X, l1, l2, reg):
             else:
                 M[:,i,j] = prox_phi(X[:,i,j], l1, l2 , reg)
     
-    assert abs(M - trp(M)).max() <= 1e-10
+    assert abs(M - trp(M)).max() <= 1e-5
     return M
   
 def moreau_P(X, l1, l2, reg):
