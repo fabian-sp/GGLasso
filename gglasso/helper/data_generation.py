@@ -17,6 +17,7 @@ from .experiment_helper import adjacency_matrix
 
 def power_law_network(p=100, M=10):
     
+    nxseed = 2340
     L = int(p/M)
     assert M*L == p
     
@@ -25,11 +26,13 @@ def power_law_network(p=100, M=10):
     
     for m in np.arange(M):
     
-        G_m = nx.generators.random_graphs.random_powerlaw_tree(n = L, gamma = 2.5, tries = max(5*p,1000))
+        G_m = nx.generators.random_graphs.random_powerlaw_tree(n = L, gamma = 2.8, tries = max(5*p,1000), seed = int(nxseed + m))
         A_m = nx.to_numpy_array(G_m)
         
         # generate random numbers for the nonzero entries
+        np.random.seed(1234)
         B1 = np.random.uniform(low = .1, high = .4, size = (L,L))
+        np.random.seed(1234)
         B2 = np.random.choice(a = [-1,1], p=[.5, .5], size = (L,L))
         
         A_m = A_m * (B1*B2)
@@ -142,8 +145,11 @@ def plot_degree_distribution(Theta):
     degrees = np.array([d for n,d in list(G.degree)])
     
     plt.figure()
-    sns.distplot(degrees, kde = False, hist_kws = {"range" : (0,10), "density" : True})
-    plt.plot(np.arange(10), 2.1**(-np.arange(10)))
+    #sns.distplot(degrees, kde = False, hist_kws = {"range" : (0,10)}, norm_hist = True)
+    M = degrees.max()
+    plt.hist(degrees, bins = np.arange(M), density = True, rwidth = 0.5, align = 'left')
+    plt.xticks = np.arange(M)
+    plt.plot(np.arange(M), 2.8**(-np.arange(M)))
     
     return degrees
     

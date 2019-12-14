@@ -10,7 +10,7 @@ import seaborn as sns
 
 from gglasso.solver.admm_solver import ADMM_MGL
 from gglasso.solver.ggl_solver import PPDNA, warmPPDNA
-from gglasso.helper.data_generation import group_power_network, sample_covariance_matrix
+from gglasso.helper.data_generation import group_power_network, sample_covariance_matrix, plot_degree_distribution
 from gglasso.helper.experiment_helper import lambda_parametrizer, lambda_grid, discovery_rate, aic, ebic, error, draw_group_heatmap, get_default_plot_aes
 
 
@@ -24,6 +24,8 @@ reg = 'GGL'
 Sigma, Theta = group_power_network(p, K, M)
 
 draw_group_heatmap(Theta)
+plot_degree_distribution(Theta)
+
 
 S,sample = sample_covariance_matrix(Sigma, N)
 Sinv = np.linalg.pinv(S, hermitian = True)
