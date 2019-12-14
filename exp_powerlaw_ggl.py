@@ -10,8 +10,8 @@ import seaborn as sns
 
 
 from gglasso.solver.ggl_solver import PPDNA, warmPPDNA
-from gglasso.helper.data_generation import time_varying_power_network, group_power_network, sample_covariance_matrix
-from gglasso.helper.experiment_helper import lambda_grid, discovery_rate, aic, error, draw_group_graph, draw_group_heatmap
+from gglasso.helper.data_generation import group_power_network, sample_covariance_matrix
+from gglasso.helper.experiment_helper import lambda_grid, discovery_rate, aic, ebic, error, draw_group_heatmap, get_default_plot_aes
 
 
 p = 100
@@ -37,6 +37,7 @@ ERR = np.zeros((grid1, grid2))
 FPR = np.zeros((grid1, grid2))
 TPR = np.zeros((grid1, grid2))
 AIC = np.zeros((grid1, grid2))
+BIC = np.zeros((grid1, grid2))
 
 Omega_0 = np.zeros((K,p,p))
 Theta_0 = np.zeros((K,p,p))
@@ -58,10 +59,11 @@ for g1 in np.arange(grid1):
         Omega_0 = Omega_sol.copy()
         Theta_0 = Theta_sol.copy()
         
-        TPR[g1,g2] = discovery_rate(Theta_sol, Theta, t = 1e-5)['TPR']
-        FPR[g1,g2] = discovery_rate(Theta_sol, Theta, t = 1e-5)['FPR']
+        TPR[g1,g2] = discovery_rate(Theta_sol, Theta)['TPR']
+        FPR[g1,g2] = discovery_rate(Theta_sol, Theta)['FPR']
         ERR[g1,g2] = error(Theta_sol, Theta)
         AIC[g1,g2] = aic(S,Theta_sol,N)
+        BIC[g1,g2] = ebic(S, Theta_sol, N, gamma = 0.5)
 
 # get optimal lambda
 ix= np.unravel_index(AIC.argmin(), AIC.shape)
@@ -70,10 +72,14 @@ ix= np.unravel_index(AIC.argmin(), AIC.shape)
 l1opt = L1[ix]
 l2opt = L2[ix]
 
+print("Optimal lambda values: (l1,l2) = ", (l1opt,l2opt))
+
 Omega_0 = np.zeros((K,p,p))
 Theta_0 = np.zeros((K,p,p))
 
 sol, info = warmPPDNA(S, l1opt, l2opt, reg, Omega_0, Theta_0 = Theta_0, eps = 1e-5 , verbose = True)
+
+#sol, info = ADMM_MGL(S, l1opt, l2opt, reg, Omega_0, Theta_0 = Theta_0, eps_admm = 1e-5 , verbose = True)
 
 Theta_sol = sol['Theta']
 Omega_sol = sol['Omega']
@@ -102,7 +108,7 @@ with sns.axes_style("whitegrid"):
     
 fig.suptitle('Discovery rate for different regularization strengths')
 
-
+#%%
 
 
 fig,axs = plt.subplots(nrows = 1, ncols = 3)

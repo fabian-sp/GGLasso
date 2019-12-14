@@ -112,7 +112,7 @@ print(f"Running time for LGTL was {end-start}  seconds")
 
 tmp1 = ltgl.precision_
 tmp2 = ltgl.latent_
-draw_group_heatmap(ltgl.precision_, t = 1e-4)
+draw_group_heatmap(ltgl.precision_)
 
 
 #%%
