@@ -16,7 +16,8 @@ from gglasso.helper.experiment_helper import lambda_parametrizer, lambda_grid, d
 
 p = 100
 K = 5
-N = 5000
+N = 80
+N_train = 5000
 M = 5
 
 reg = 'GGL'
@@ -26,8 +27,8 @@ Sigma, Theta = group_power_network(p, K, M)
 draw_group_heatmap(Theta)
 plot_degree_distribution(Theta)
 
-
-S,sample = sample_covariance_matrix(Sigma, N)
+S, sample = sample_covariance_matrix(Sigma, N)
+S_train, sample_train = sample_covariance_matrix(Sigma, N_train)
 Sinv = np.linalg.pinv(S, hermitian = True)
 
 #%%
@@ -53,7 +54,7 @@ for g1 in np.arange(grid1):
         #sol, info = PPDNA(S, lambda1, lambda2, reg, Omega_0, Theta_0 = Theta_0, sigma_0 = 10, max_iter = 20, \
         #                                            eps_ppdna = 1e-2 , verbose = False)
         
-        sol, info = warmPPDNA(S, lambda1, lambda2, reg, Omega_0, Theta_0 = Theta_0, eps = 1e-3, verbose = False, measure = False)
+        sol, info = warmPPDNA(S_train, lambda1, lambda2, reg, Omega_0, Theta_0 = Theta_0, eps = 1e-3, verbose = False, measure = False)
         Theta_sol = sol['Theta']
         Omega_sol = sol['Omega']
         
@@ -64,8 +65,8 @@ for g1 in np.arange(grid1):
         TPR[g1,g2] = discovery_rate(Theta_sol, Theta)['TPR']
         FPR[g1,g2] = discovery_rate(Theta_sol, Theta)['FPR']
         ERR[g1,g2] = error(Theta_sol, Theta)
-        AIC[g1,g2] = aic(S,Theta_sol,N)
-        BIC[g1,g2] = ebic(S, Theta_sol, N, gamma = 0.1)
+        AIC[g1,g2] = aic(S_train,Theta_sol, N_train)
+        BIC[g1,g2] = ebic(S_train, Theta_sol, N_train, gamma = 0.1)
 
 # get optimal lambda
 ix= np.unravel_index(BIC.argmin(), BIC.shape)
@@ -80,10 +81,10 @@ print("Optimal lambda values: (l1,l2) = ", (l1opt,l2opt))
 Omega_0 = np.zeros((K,p,p))
 Theta_0 = np.zeros((K,p,p))
 
-#sol, info = warmPPDNA(S, l1opt, l2opt, reg, Omega_0, Theta_0 = Theta_0, eps = 1e-5 , verbose = True)
+sol, info = warmPPDNA(S, l1opt, l2opt, reg, Omega_0, Theta_0 = Theta_0, eps = 1e-5 , verbose = True)
 
-sol, info = ADMM_MGL(S, l1opt, l2opt, reg , Omega_0 , Theta_0 = Theta_0, rho = 1, max_iter = 100, eps_admm = 1e-8, \
-                     verbose = True, measure = False)
+#sol, info = ADMM_MGL(S, l1opt, l2opt, reg , Omega_0 , Theta_0 = Theta_0, rho = 1, max_iter = 100, eps_admm = 1e-5, \
+#                     verbose = True, measure = False)
 
 Theta_sol = sol['Theta']
 Omega_sol = sol['Omega']
