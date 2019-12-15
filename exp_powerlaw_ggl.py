@@ -16,7 +16,7 @@ from gglasso.helper.experiment_helper import lambda_parametrizer, lambda_grid, d
 
 p = 100
 K = 5
-N = 80
+N = 2000
 N_train = 5000
 M = 5
 
@@ -65,7 +65,7 @@ for g1 in np.arange(grid1):
         TPR[g1,g2] = discovery_rate(Theta_sol, Theta)['TPR']
         FPR[g1,g2] = discovery_rate(Theta_sol, Theta)['FPR']
         ERR[g1,g2] = error(Theta_sol, Theta)
-        AIC[g1,g2] = aic(S_train,Theta_sol, N_train)
+        AIC[g1,g2] = aic(S_train, Theta_sol, N_train)
         BIC[g1,g2] = ebic(S_train, Theta_sol, N_train, gamma = 0.1)
 
 # get optimal lambda
