@@ -194,6 +194,36 @@ with sns.axes_style("whitegrid"):
 fig.suptitle('Total error for different solution accuracies')
 
 
+#%%
 
+N = (np.array([0.5,0.9, 2, 10, 20, 50]) * p).astype(int)
 
+l1 = 1e-2
+l2 = 1e-2
+Omega_0 = np.zeros((K,p,p))
 
+RT_ADMM = np.zeros(len(N))
+RT_PPA = np.zeros(len(N))
+
+for j in np.arange(len(N)):
+    
+    #Omega_0 = np.linalg.pinv(S, hermitian = True)
+    S, sample = sample_covariance_matrix(Sigma, N[j])
+    
+    start = time()
+    sol, info = ADMM_MGL(S, l1, l2, reg , Omega_0 , rho = 1, max_iter = 1000, \
+                             eps_admm = 1e-4, verbose = False, measure = True)
+    
+    end = time()
+    
+    RT_ADMM[j] = end-start
+    
+    start = time()
+    sol, info = warmPPDNA(S, l1, l2, reg, Omega_0, eps = 1e-4, verbose = False, measure = True)
+    end = time()
+    
+    RT_PPA[j] = end-start
+    
+    
+plt.plot(RT_ADMM)
+plt.plot(RT_PPA)

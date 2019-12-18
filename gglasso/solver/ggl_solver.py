@@ -270,7 +270,7 @@ def warmPPDNA(S, lambda1, lambda2, reg, Omega_0, Theta_0 = np.array([]), X_0 = n
         phase2 = True
     
     
-    sol1, info1 = ADMM_MGL(S, lambda1, lambda2, reg , Omega_0 , Theta_0, X_0, n_samples = None, rho = 1, max_iter = 100, eps_admm = eps_admm , verbose = verbose, measure = measure)
+    sol1, info1 = ADMM_MGL(S, lambda1, lambda2, reg , Omega_0 , Theta_0, X_0, n_samples = None, rho = 1, max_iter = 1000, eps_admm = eps_admm , verbose = verbose, measure = measure)
     
     assert info1['status'] == 'optimal'
     
