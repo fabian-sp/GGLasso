@@ -17,7 +17,7 @@ from gglasso.helper.experiment_helper import lambda_parametrizer, lambda_grid, d
 p = 100
 K = 5
 N = 2000
-N_train = 5000
+N_train = 2000
 M = 5
 
 reg = 'GGL'
@@ -196,14 +196,24 @@ fig.suptitle('Total error for different solution accuracies')
 
 #%%
 
-N = (np.array([0.5,0.9, 2, 10, 20, 50]) * p).astype(int)
+f = np.array([0.5,0.9, 1.5, 5, 10, 20])
+N = (f * p).astype(int)
 
-l1 = 1e-2
-l2 = 1e-2
+l1 = 1e-2 * np.ones(len(f))
+l2 = 1e-2 * np.ones(len(f))
+
+#mapf = lambda x: .1 + 1/(np.log(x+1))
+
+#l1 = mapf(f)*l1opt
+#l2 = mapf(f)*l2opt
+
 Omega_0 = np.zeros((K,p,p))
 
 RT_ADMM = np.zeros(len(N))
 RT_PPA = np.zeros(len(N))
+TPR = np.zeros(len(N))
+FPR = np.zeros(len(N))
+
 
 for j in np.arange(len(N)):
     
@@ -211,15 +221,17 @@ for j in np.arange(len(N)):
     S, sample = sample_covariance_matrix(Sigma, N[j])
     
     start = time()
-    sol, info = ADMM_MGL(S, l1, l2, reg , Omega_0 , rho = 1, max_iter = 1000, \
-                             eps_admm = 1e-4, verbose = False, measure = True)
+    sol, info = ADMM_MGL(S, l1[j], l2[j], reg , Omega_0 , rho = 1, max_iter = 1000, \
+                             eps_admm = 5e-5, verbose = False, measure = True)
     
     end = time()
     
     RT_ADMM[j] = end-start
+    TPR[j] = discovery_rate(sol['Theta'], Theta)['TPR']
+    FPR[j] = discovery_rate(sol['Theta'], Theta)['FPR']
     
     start = time()
-    sol, info = warmPPDNA(S, l1, l2, reg, Omega_0, eps = 1e-4, verbose = False, measure = True)
+    sol, info = warmPPDNA(S, l1[j], l2[j], reg, Omega_0, eps = 5e-5, verbose = False, measure = True)
     end = time()
     
     RT_PPA[j] = end-start

@@ -71,7 +71,7 @@ def discovery_rate(S_sol , S_true, t = 1e-5):
     # true negative edge ratio
     nd =  (A_true - A_sol == 1).sum(axis = (1,2)) / true_edges
     
-    res = {'TPR': tp.mean(), 'FPR' : fp.mean(), 'TNR' : nd.mean(), 'SP' : sparsity}
+    res = {'TPR': tp.mean(), 'FPR' : fp.mean(), 'TNR' : nd.mean(), 'SP' : sparsity.mean()}
     
     return res
 
@@ -137,7 +137,7 @@ def deviation(Theta):
     return d
 
 #################################################################################################################
-############################ DRAWING FUNCTIONS ################################################################################
+############################ DRAWING FUNCTIONS ##################################################################
 #################################################################################################################
 
 def get_default_plot_aes():
