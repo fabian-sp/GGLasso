@@ -35,7 +35,7 @@ def get_ppdna_params(ppdna_params = None):
          
 
 def get_ppa_sub_params_default():
-    ppa_sub_params = {'lambda1' : .1 , 'lambda2' : .1, 'sigma_t' : 1e8, 
+    ppa_sub_params = { 'sigma_t' : 1e3, 
           'eta' : .5, 'tau' : .5, 'rho' : .5, 'mu' : .25,
           'eps_t' : .9, 'delta_t' : .9} 
     

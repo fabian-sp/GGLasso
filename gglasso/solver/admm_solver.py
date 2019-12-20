@@ -9,7 +9,7 @@ from ..helper.basic_linalg import trp
 from .ggl_helper import prox_p, phiplus
 
 
-def ADMM_MGL(S, lambda1, lambda2, reg , Omega_0 , Theta_0 = np.array([]), X_0 = np.array([]), n_samples = None, rho = 1, max_iter = 100, eps_admm = 1e-5 , verbose = False, measure = False):
+def ADMM_MGL(S, lambda1, lambda2, reg , Omega_0 , Theta_0 = np.array([]), X_0 = np.array([]), n_samples = None, eps_admm = 1e-5 , verbose = False, measure = False, **kwargs):
     """
     This is an ADMM algorithm for solving the Multiple Graphical Lasso problem
     reg specifies the type of penalty, i.e. Group or Fused Graphical Lasso
@@ -23,14 +23,18 @@ def ADMM_MGL(S, lambda1, lambda2, reg , Omega_0 , Theta_0 = np.array([]), X_0 = 
         
     (K,p,p) = S.shape
     
+    if 'max_iter' not in kwargs.items():
+        max_iter = 1000
+    if 'rho' not in kwargs.items():
+        rho = 1
+    
     # n_samples None --> set them all to 1
     # n_samples integer --> all instances have same number of samples
     # else --> n_samples should be array with sample sizes
     if n_samples == None:
         nk = np.ones((K,1,1))
     elif type(n_samples) == int:
-        nk = n_samples * np.ones((K,1,1))
-        
+        nk = n_samples * np.ones((K,1,1)) 
     else:
         assert len(nk) == K
         nk = n_samples.reshape(K,1,1)
@@ -49,7 +53,6 @@ def ADMM_MGL(S, lambda1, lambda2, reg , Omega_0 , Theta_0 = np.array([]), X_0 = 
     if measure:
         runtime = np.zeros(max_iter)
         kkt_residual = np.zeros(max_iter)
-
     
     for iter_t in np.arange(max_iter):
         

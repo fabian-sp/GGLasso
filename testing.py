@@ -27,18 +27,17 @@ elif reg == 'FGL':
     Sigma, Theta = time_varying_power_network(p, K, M)
 #np.linalg.norm(np.eye(p) - Sigma@Theta)
 
-S = sample_covariance_matrix(Sigma, N)
+S, samples = sample_covariance_matrix(Sigma, N)
 
-lambda1= 0.1
-lambda2 = 0.1
+lambda1= 0.05
+lambda2 = 0.05
 
 Omega_0 = np.zeros((K,p,p))
 
 
-solPPDNA, info = PPDNA(S, lambda1, lambda2, reg, Omega_0, sigma_0 = 10, max_iter = 20, \
-                                            eps_ppdna = 1e-4 , verbose = True, measure = True)
+solPPDNA, info = PPDNA(S, lambda1, lambda2, reg, Omega_0, eps_ppdna = 1e-3 , verbose = True, measure = True)
 
-solADMM, info = ADMM_MGL(S, lambda1, lambda2, Omega_0, reg, n_samples = None, rho = 1, max_iter = 100, eps_admm = 1e-4 , verbose = True)
+solADMM, info = ADMM_MGL(S, lambda1, lambda2, reg, Omega_0, n_samples = None, eps_admm = 1e-4 , verbose = True)
 
 Theta_sol = solPPDNA['Theta']
 
