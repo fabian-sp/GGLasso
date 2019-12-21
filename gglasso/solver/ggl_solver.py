@@ -53,7 +53,7 @@ def check_ppa_sub_params(ppa_sub_params):
     assert ppa_sub_params['rho'] > 0 and ppa_sub_params['rho'] < 1
     
     assert ppa_sub_params['eps_t'] >= 0
-    assert ppa_sub_params['delta_t'] >= 0 #and ppa_sub_params['delta_t'] < 1
+    assert ppa_sub_params['delta_t'] >= 0 and ppa_sub_params['delta_t'] < 1
     
     return
 
@@ -183,16 +183,15 @@ def PPDNA(S, lambda1, lambda2, reg, Omega_0, Theta_0 = np.array([]), X_0 = np.ar
     ppa_sub_params['lambda1'] = lambda1
     ppa_sub_params['lambda2'] = lambda2
     
-    if measure:
-        runtime = np.zeros(max_iter)
-        kkt_residual = np.zeros(max_iter)
+    runtime = np.zeros(max_iter)
+    kkt_residual = np.zeros(max_iter)
     
     for iter_t in np.arange(max_iter):
         
         # check stopping criterion
         eta_P = PPDNA_stopping_criterion(Omega_t, Theta_t, X_t, S , ppa_sub_params, reg)
-        if measure:
-            kkt_residual[iter_t] = eta_P
+        kkt_residual[iter_t] = eta_P
+        
         if eta_P <= eps_ppdna:
             status = 'optimal'
             break

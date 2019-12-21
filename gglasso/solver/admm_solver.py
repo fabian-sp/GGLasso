@@ -9,13 +9,17 @@ from ..helper.basic_linalg import trp
 from .ggl_helper import prox_p, phiplus
 
 
-def ADMM_MGL(S, lambda1, lambda2, reg , Omega_0 , Theta_0 = np.array([]), X_0 = np.array([]), n_samples = None, eps_admm = 1e-5 , verbose = False, measure = False, **kwargs):
+def ADMM_MGL(S, lambda1, lambda2, reg , Omega_0 , \
+             Theta_0 = np.array([]), X_0 = np.array([]), n_samples = None, \
+             eps_admm = 1e-5 , verbose = False, measure = False, **kwargs):
     """
     This is an ADMM algorithm for solving the Multiple Graphical Lasso problem
     reg specifies the type of penalty, i.e. Group or Fused Graphical Lasso
     see also the article from Danaher et. al.
     
-    n_samples are the sample sizes for the K instances, can also be None or integer to be 
+    n_samples are the sample sizes for the K instances, can also be None or integer
+    max_iter and rho can be specified via kwargs
+    ADMM stop criterion after Boyd et al. can bes used when specifying eps_abs and eps_rel
     """
     assert Omega_0.shape == S.shape
     assert S.shape[1] == S.shape[2]
@@ -27,6 +31,8 @@ def ADMM_MGL(S, lambda1, lambda2, reg , Omega_0 , Theta_0 = np.array([]), X_0 = 
         max_iter = 1000
     if 'rho' not in kwargs.items():
         rho = 1
+    if 'eps_abs' in kwargs.items() and 'eps_rel' in kwargs.items():
+        use_boyd_criterion = True
     
     # n_samples None --> set them all to 1
     # n_samples integer --> all instances have same number of samples
@@ -49,16 +55,14 @@ def ADMM_MGL(S, lambda1, lambda2, reg , Omega_0 , Theta_0 = np.array([]), X_0 = 
 
     Theta_t = Theta_0.copy()
     X_t = X_0.copy()
-    
-    if measure:
-        runtime = np.zeros(max_iter)
-        kkt_residual = np.zeros(max_iter)
+     
+    runtime = np.zeros(max_iter)
+    kkt_residual = np.zeros(max_iter)
     
     for iter_t in np.arange(max_iter):
         
         eta_A = ADMM_stopping_criterion(Omega_t, Theta_t, X_t, S , lambda1, lambda2, nk, reg)
-        if measure:
-            kkt_residual[iter_t] = eta_A
+        kkt_residual[iter_t] = eta_A
             
         if eta_A <= eps_admm:
             status = 'optimal'
