@@ -8,6 +8,8 @@ import numpy as np
 from matplotlib import pyplot as plt
 import seaborn as sns
 
+from sklearn.covariance import GraphicalLasso
+
 from gglasso.solver.admm_solver import ADMM_MGL
 from gglasso.solver.ggl_solver import PPDNA, warmPPDNA
 from gglasso.helper.data_generation import group_power_network, sample_covariance_matrix, plot_degree_distribution
@@ -16,8 +18,8 @@ from gglasso.helper.experiment_helper import lambda_parametrizer, lambda_grid, d
 
 p = 100
 K = 5
-N = 2000
-N_train = 2000
+N = 5000
+N_train = 5000
 M = 5
 
 reg = 'GGL'
@@ -25,7 +27,7 @@ reg = 'GGL'
 Sigma, Theta = group_power_network(p, K, M)
 
 draw_group_heatmap(Theta)
-plot_degree_distribution(Theta)
+#plot_degree_distribution(Theta)
 
 S, sample = sample_covariance_matrix(Sigma, N)
 S_train, sample_train = sample_covariance_matrix(Sigma, N_train)
@@ -39,8 +41,15 @@ grid1 = L1.shape[0]; grid2 = L2.shape[1]
 ERR = np.zeros((grid1, grid2))
 FPR = np.zeros((grid1, grid2))
 TPR = np.zeros((grid1, grid2))
+DFPR = np.zeros((grid1, grid2))
+DTPR = np.zeros((grid1, grid2))
 AIC = np.zeros((grid1, grid2))
 BIC = np.zeros((grid1, grid2))
+
+FPR_GL = np.zeros((grid1, grid2))
+TPR_GL = np.zeros((grid1, grid2))
+DFPR_GL = np.zeros((grid1, grid2))
+DTPR_GL = np.zeros((grid1, grid2))
 
 Omega_0 = np.zeros((K,p,p))
 Theta_0 = np.zeros((K,p,p))
@@ -49,6 +58,19 @@ for g1 in np.arange(grid1):
     for g2 in np.arange(grid2):
         lambda1 = L1[g1,g2]
         lambda2 = L2[g1,g2]
+        
+        # first solve single GLASSO
+        singleGL = GraphicalLasso(alpha = lambda1 + lambda2/np.sqrt(2), tol = 1e-6, max_iter = 200, verbose = False)
+        singleGL_sol = np.zeros((K,p,p))
+        for k in np.arange(K):
+            #model = quic.fit(S[k,:,:], verbose = 1)
+            model = singleGL.fit(sample[k,:,:].T)
+            singleGL_sol[k,:,:] = model.precision_
+        
+        TPR_GL[g1,g2] = discovery_rate(singleGL_sol, Theta)['TPR']
+        FPR_GL[g1,g2] = discovery_rate(singleGL_sol, Theta)['FPR']
+        DTPR_GL[g1,g2] = discovery_rate(singleGL_sol, Theta)['TPR_DIFF']
+        DFPR_GL[g1,g2] = discovery_rate(singleGL_sol, Theta)['FPR_DIFF']
     
         
         #sol, info = PPDNA(S, lambda1, lambda2, reg, Omega_0, Theta_0 = Theta_0, sigma_0 = 10, max_iter = 20, \
@@ -64,6 +86,8 @@ for g1 in np.arange(grid1):
         
         TPR[g1,g2] = discovery_rate(Theta_sol, Theta)['TPR']
         FPR[g1,g2] = discovery_rate(Theta_sol, Theta)['FPR']
+        DTPR[g1,g2] = discovery_rate(Theta_sol, Theta)['TPR_DIFF']
+        DFPR[g1,g2] = discovery_rate(Theta_sol, Theta)['FPR_DIFF']
         ERR[g1,g2] = error(Theta_sol, Theta)
         AIC[g1,g2] = aic(S_train, Theta_sol, N_train)
         BIC[g1,g2] = ebic(S_train, Theta_sol, N_train, gamma = 0.1)
@@ -78,6 +102,19 @@ l2opt = L2[ix]
 
 print("Optimal lambda values: (l1,l2) = ", (l1opt,l2opt))
 
+singleGL = GraphicalLasso(alpha = 3*l1opt, tol = 1e-6, max_iter = 200, verbose = True)
+singleGL_sol = np.zeros((K,p,p))
+
+for k in np.arange(K):
+    #model = quic.fit(S[k,:,:], verbose = 1)
+    model = singleGL.fit(sample[k,:,:].T)
+    
+    singleGL_sol[k,:,:] = model.precision_
+    
+discovery_rate(singleGL_sol, Theta)
+
+draw_group_heatmap(Theta_sol, method = 'GLASSO')
+#%%
 Omega_0 = np.zeros((K,p,p))
 Theta_0 = np.zeros((K,p,p))
 
@@ -89,40 +126,68 @@ sol, info = warmPPDNA(S, l1opt, l2opt, reg, Omega_0, Theta_0 = Theta_0, eps = 1e
 Theta_sol = sol['Theta']
 Omega_sol = sol['Omega']
 
-fig,axs = plt.subplots(nrows = 1, ncols = 2)
-draw_group_heatmap(Theta, axs[0])
-draw_group_heatmap(Theta_sol, axs[1])
-
-
-#%%
-# plot results
-plot_aes = get_default_plot_aes()
-
-with sns.axes_style("whitegrid"):
-    fig, ax = plt.subplots(1,1)
-    ax.plot(FPR.T, TPR.T, **plot_aes)
-    
-    ax.plot(FPR[ix], TPR[ix], marker = 'o', fillstyle = 'none', markersize = 20, markeredgecolor = 'red')
-    ax.plot(FPR[ix2], TPR[ix2], marker = 'o', fillstyle = 'none', markersize = 20, markeredgecolor = 'orangered')
-
-    ax.set_xlim(-.01,1)
-    ax.set_ylim(-.01,1)
-    
-    ax.set_xlabel('False Positive Rate')
-    ax.set_ylabel('True Positive Rate')
-    ax.legend(labels = W2)
-    
-fig.suptitle('Discovery rate for different regularization strengths')
+with sns.axes_style("white"):
+    fig,axs = plt.subplots(nrows = 1, ncols = 3, figsize = (10,3))
+    draw_group_heatmap(Theta, method = 'truth', ax = axs[0])
+    draw_group_heatmap(Theta_sol, method = 'PPDNA', ax = axs[1])
+    draw_group_heatmap(singleGL_sol, method = 'GLASSO', ax = axs[2])
 
 #%%
+def plot_fpr_tpr(FPR, TPR, W2, ix, ix2):
+    """
+    plots the FPR vs. TPR pathes
+    ix and ix2 are the lambda values with optimal eBIC/AIC
+    """
+    plot_aes = get_default_plot_aes()
 
+    with sns.axes_style("whitegrid"):
+        fig, ax = plt.subplots(1,1)
+        ax.plot(FPR.T, TPR.T, **plot_aes)
+        #ax.plot(FPR_GL.T, TPR_GL.T, c = 'grey', **plot_aes)
+        
+        ax.plot(FPR[ix], TPR[ix], marker = 'o', fillstyle = 'none', markersize = 20, markeredgecolor = '#12cf90')
+        ax.plot(FPR[ix2], TPR[ix2], marker = 'o', fillstyle = 'none', markersize = 20, markeredgecolor = '#cf3112')
+    
+        ax.set_xlim(-.01,1)
+        ax.set_ylim(-.01,1)
+        
+        ax.set_xlabel('False Positive Rate')
+        ax.set_ylabel('True Positive Rate')
+        ax.legend(labels = [f"w2 = {w}" for w in W2], loc = 'lower right')
+        
+    fig.suptitle('Discovery rate for different regularization strengths')
+    
+    return
 
-fig,axs = plt.subplots(nrows = 1, ncols = 3)
-sns.heatmap(TPR, annot = True, ax = axs[0])
-sns.heatmap(ERR, annot = True, ax = axs[1])
-sns.heatmap(AIC, annot = True, ax = axs[2])
+def plot_diff_fpr_tpr(DFPR, DTPR, DFPR_GL, DTPR_GL, W2, ix, ix2):
+    """
+    plots the FPR vs. TPR pathes 
+    _GL indicates the solution of single Graphical Lasso
+    ix and ix2 are the lambda values with optimal eBIC/AIC
+    """
+    plot_aes = get_default_plot_aes()
 
+    with sns.axes_style("whitegrid"):
+        fig, ax = plt.subplots(1,1)
+        ax.plot(DFPR.T, DTPR.T, **plot_aes)
+        ax.plot(DFPR_GL.T, DTPR_GL.T, c = 'grey', **plot_aes)
+        
+        ax.plot(DFPR[ix], DTPR[ix], marker = 'o', fillstyle = 'none', markersize = 20, markeredgecolor = '#12cf90')
+        ax.plot(DFPR[ix2], DTPR[ix2], marker = 'o', fillstyle = 'none', markersize = 20, markeredgecolor = '#cf3112')
+    
+        ax.set_xlim(-.01,1)
+        ax.set_ylim(-.01,1)
+        
+        ax.set_xlabel('False Positive Rate')
+        ax.set_ylabel('True Positive Rate')
+        ax.legend(labels = [f"w2 = {w}" for w in W2], loc = 'lower right')
+        
+    fig.suptitle('Discovery rate for different regularization strengths')
+    
+    return
 
+plot_fpr_tpr(FPR, TPR, W2, ix, ix2)
+plot_diff_fpr_tpr(DFPR, DTPR, DFPR_GL, DTPR_GL, W2, ix, ix2)
 #%%
 # accuracy impact on total error analysis
 #L1, L2 = lambda_grid(num1 = 1, num2 = 6, reg = reg)

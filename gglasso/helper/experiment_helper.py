@@ -71,7 +71,14 @@ def discovery_rate(S_sol , S_true, t = 1e-5):
     # true negative edge ratio
     nd =  (A_true - A_sol == 1).sum(axis = (1,2)) / true_edges
     
-    res = {'TPR': tp.mean(), 'FPR' : fp.mean(), 'TNR' : nd.mean(), 'SP' : sparsity.mean()}
+    # differential edges
+    diff_true = (A_true.sum(axis = 0) < K).astype(int) * (A_true.sum(axis = 0) > 1).astype(int)
+    diff_sol = (A_sol.sum(axis = 0) < K).astype(int) * (A_sol.sum(axis = 0) > 1).astype(int)
+    
+    tp_diff = (diff_sol + diff_true == 2).sum() / diff_true.sum() 
+    fp_diff = (diff_sol - diff_true == 1).sum() / diff_sol.sum() 
+    
+    res = {'TPR': tp.mean(), 'FPR' : fp.mean(), 'TNR' : nd.mean(), 'SP' : sparsity.mean(), 'TPR_DIFF' : tp_diff, 'FPR_DIFF' : fp_diff}
     
     return res
 
@@ -187,15 +194,18 @@ def draw_group_graph(Theta , t = 1e-9):
     
     return fig
 
-def draw_group_heatmap(Theta, ax = None, t = 1e-5):
+def draw_group_heatmap(Theta, method = 'truth', ax = None, t = 1e-5):
     (K,p,p) = Theta.shape
     A = adjacency_matrix(Theta, t)
     mask = A.sum(axis=0) == 0
     
+    col = get_default_color_coding()[method]
+    this_cmap = sns.light_palette(col, as_cmap=True)
+    
     if ax == None:
         fig,ax = plt.subplots(nrows = 1, ncols = 1)
     with sns.axes_style("white"):
-        sns.heatmap(A.sum(axis=0), mask = mask, ax = ax, square = True, cmap = 'Blues', vmin = 0, vmax = K, linewidths=.5, cbar_kws={"shrink": .5})
+        sns.heatmap(A.sum(axis=0), mask = mask, ax = ax, square = True, cmap = this_cmap, vmin = 0, vmax = K, linewidths=.5, cbar_kws={"shrink": .5})
 
 def plot_block_evolution(ax, start, stop, Theta, method, color_dict):
     (K,p,p) = Theta.shape
