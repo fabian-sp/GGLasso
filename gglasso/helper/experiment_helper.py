@@ -93,10 +93,10 @@ def aic(S,Theta, N):
     (K,p,p) = S.shape
     
     A = adjacency_matrix(Theta , t = 1e-5)
-    nonzero_count = A.sum(axis=(1,2))
+    nonzero_count = A.sum(axis=(1,2))/2
     aic = 0
     for k in np.arange(K):
-        aic += N*Sdot(S[k,:,:], Theta[k,:,:]) - N*np.log(np.linalg.det(Theta[k,:,:])) + nonzero_count[k]
+        aic += N*Sdot(S[k,:,:], Theta[k,:,:]) - N*np.log(np.linalg.det(Theta[k,:,:])) + 2*nonzero_count[k]
         
     return aic
 
