@@ -76,7 +76,7 @@ def discovery_rate(S_sol , S_true, t = 1e-5):
     diff_sol = (A_sol.sum(axis = 0) < K).astype(int) * (A_sol.sum(axis = 0) >= 1).astype(int)
     
     tp_diff = (diff_sol + diff_true == 2).sum() / diff_true.sum() 
-    fp_diff = (diff_sol - diff_true == 1).sum() / diff_sol.sum() 
+    fp_diff = (diff_sol - diff_true == 1).sum() / diff_true.sum() 
     
     res = {'TPR': tp.mean(), 'FPR' : fp.mean(), 'TNR' : nd.mean(), 'SP' : sparsity.mean(), 'TPR_DIFF' : tp_diff, 'FPR_DIFF' : fp_diff}
     
@@ -152,7 +152,7 @@ path_fgl = 'plots//fgl_powerlaw//'
 
 
 def get_default_plot_aes():
-    plot_aes = {'marker' : 'o', 'linestyle' : '-', 'markersize' : 5}
+    plot_aes = {'marker' : 'o', 'markersize' : 5}
     
     return plot_aes
 
@@ -161,7 +161,7 @@ def get_default_color_coding():
     mypal = sns.color_palette("Set2")
     
     color_dict = {}    
-    color_dict['truth'] = 'midnightblue'#mypal[0]
+    color_dict['truth'] = 'darkblue'#mypal[0]
     color_dict['GLASSO'] = mypal[1]
     color_dict['ADMM'] = mypal[2]
     color_dict['PPDNA'] = mypal[3]
@@ -224,7 +224,7 @@ def plot_block_evolution(ax, start, stop, Theta, method, color_dict):
     ax.set_ylim(0,0.5)
     return
 
-def plot_evolution(results, block = None, L = None, start = None, stop = None):
+def plot_evolution(results, block = None, L = None, start = None, stop = None, save = False):
     """
     plots the evolution of edges for block
     alternatively specify start and stop index of the matrix
@@ -246,9 +246,12 @@ def plot_evolution(results, block = None, L = None, start = None, stop = None):
         plot_block_evolution(axs[1,1], start, stop, results.get('GLASSO').get('Theta'), 'GLASSO', color_dict)
     
     fig.suptitle('Precision matrix entries - evolution over time')
+    
+    if save:
+        fig.savefig(path_fgl + 'evolution.pdf')
     return
 
-def plot_deviation(results):
+def plot_deviation(results, save = False):
     """
     plots the temporal deviation
     """
@@ -265,6 +268,9 @@ def plot_deviation(results):
         ax.set_ylabel('Temporal Deviation')
         ax.set_xlabel('Time (k=1,...,K)')
         ax.legend(labels = list(results.keys()))
+    
+    if save:
+        fig.savefig(path_fgl + 'deviation.pdf')
 
     return
 

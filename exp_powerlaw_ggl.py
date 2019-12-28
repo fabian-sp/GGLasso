@@ -20,7 +20,7 @@ p = 100
 K = 5
 N = 5000
 N_train = 5000
-M = 5
+M = 10
 
 reg = 'GGL'
 
@@ -132,7 +132,7 @@ def plot_fpr_tpr(FPR, TPR, W2, ix, ix2):
     with sns.axes_style("whitegrid"):
         fig, ax = plt.subplots(1,1)
         ax.plot(FPR.T, TPR.T, **plot_aes)
-        ax.plot(FPR_GL, TPR_GL, c = 'grey', **plot_aes)
+        ax.plot(FPR_GL, TPR_GL, c = 'grey', linestyle = '--', **plot_aes)
         
         ax.plot(FPR[ix], TPR[ix], marker = 'o', fillstyle = 'none', markersize = 20, markeredgecolor = '#12cf90')
         ax.plot(FPR[ix2], TPR[ix2], marker = 'o', fillstyle = 'none', markersize = 20, markeredgecolor = '#cf3112')
@@ -156,11 +156,11 @@ def plot_diff_fpr_tpr(DFPR, DTPR, DFPR_GL, DTPR_GL, W2, ix, ix2):
     ix and ix2 are the lambda values with optimal eBIC/AIC
     """
     plot_aes = get_default_plot_aes()
-
+    
     with sns.axes_style("whitegrid"):
         fig, ax = plt.subplots(1,1)
         ax.plot(DFPR.T, DTPR.T, **plot_aes)
-        ax.plot(DFPR_GL, DTPR_GL, c = 'grey', **plot_aes)
+        ax.plot(DFPR_GL, DTPR_GL, c = 'grey', linestyle = '--', **plot_aes)
         
         ax.plot(DFPR[ix], DTPR[ix], marker = 'o', fillstyle = 'none', markersize = 20, markeredgecolor = '#12cf90')
         ax.plot(DFPR[ix2], DTPR[ix2], marker = 'o', fillstyle = 'none', markersize = 20, markeredgecolor = '#cf3112')
