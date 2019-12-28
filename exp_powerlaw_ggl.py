@@ -13,8 +13,8 @@ from sklearn.covariance import GraphicalLasso
 from gglasso.solver.admm_solver import ADMM_MGL
 from gglasso.solver.ggl_solver import PPDNA, warmPPDNA
 from gglasso.helper.data_generation import group_power_network, sample_covariance_matrix, plot_degree_distribution
-from gglasso.helper.experiment_helper import lambda_parametrizer, lambda_grid, discovery_rate, aic, ebic, error, draw_group_heatmap, get_default_plot_aes
-
+from gglasso.helper.experiment_helper import lambda_parametrizer, lambda_grid, discovery_rate, aic, ebic, error
+from gglasso.helper.experiment_helper import draw_group_heatmap, plot_runtime, get_default_plot_aes
 
 p = 100
 K = 5
@@ -46,11 +46,6 @@ DTPR = np.zeros((grid1, grid2))
 AIC = np.zeros((grid1, grid2))
 BIC = np.zeros((grid1, grid2))
 
-FPR_GL = np.zeros((grid1, grid2))
-TPR_GL = np.zeros((grid1, grid2))
-DFPR_GL = np.zeros((grid1, grid2))
-DTPR_GL = np.zeros((grid1, grid2))
-
 Omega_0 = np.zeros((K,p,p))
 Theta_0 = np.zeros((K,p,p))
 
@@ -58,21 +53,7 @@ for g1 in np.arange(grid1):
     for g2 in np.arange(grid2):
         lambda1 = L1[g1,g2]
         lambda2 = L2[g1,g2]
-        
-        # first solve single GLASSO
-        singleGL = GraphicalLasso(alpha = lambda1 + lambda2/np.sqrt(2), tol = 1e-6, max_iter = 200, verbose = False)
-        singleGL_sol = np.zeros((K,p,p))
-        for k in np.arange(K):
-            #model = quic.fit(S[k,:,:], verbose = 1)
-            model = singleGL.fit(sample[k,:,:].T)
-            singleGL_sol[k,:,:] = model.precision_
-        
-        TPR_GL[g1,g2] = discovery_rate(singleGL_sol, Theta)['TPR']
-        FPR_GL[g1,g2] = discovery_rate(singleGL_sol, Theta)['FPR']
-        DTPR_GL[g1,g2] = discovery_rate(singleGL_sol, Theta)['TPR_DIFF']
-        DFPR_GL[g1,g2] = discovery_rate(singleGL_sol, Theta)['FPR_DIFF']
-    
-        
+              
         #sol, info = PPDNA(S, lambda1, lambda2, reg, Omega_0, Theta_0 = Theta_0, sigma_0 = 10, max_iter = 20, \
         #                                            eps_ppdna = 1e-2 , verbose = False)
         
@@ -97,24 +78,33 @@ ix= np.unravel_index(BIC.argmin(), BIC.shape)
 ix2= np.unravel_index(AIC.argmin(), AIC.shape)
 
 #%%
+# solve single GLASSO
+ALPHA = 2*np.logspace(start = -3, stop = -1, num = 10, base = 10)
+
+FPR_GL = np.zeros(len(ALPHA))
+TPR_GL = np.zeros(len(ALPHA))
+DFPR_GL = np.zeros(len(ALPHA))
+DTPR_GL = np.zeros(len(ALPHA))
+
+for a in np.arange(len(ALPHA)):
+    singleGL = GraphicalLasso(alpha = ALPHA[a], tol = 1e-6, max_iter = 200, verbose = False)
+    singleGL_sol = np.zeros((K,p,p))
+    for k in np.arange(K):
+        #model = quic.fit(S[k,:,:], verbose = 1)
+        model = singleGL.fit(sample[k,:,:].T)
+        singleGL_sol[k,:,:] = model.precision_
+
+    TPR_GL[a] = discovery_rate(singleGL_sol, Theta)['TPR']
+    FPR_GL[a] = discovery_rate(singleGL_sol, Theta)['FPR']
+    DTPR_GL[a] = discovery_rate(singleGL_sol, Theta)['TPR_DIFF']
+    DFPR_GL[a] = discovery_rate(singleGL_sol, Theta)['FPR_DIFF']
+    
+
+#%%
 l1opt = L1[ix]
 l2opt = L2[ix]
 
 print("Optimal lambda values: (l1,l2) = ", (l1opt,l2opt))
-
-singleGL = GraphicalLasso(alpha = 3*l1opt, tol = 1e-6, max_iter = 200, verbose = True)
-singleGL_sol = np.zeros((K,p,p))
-
-for k in np.arange(K):
-    #model = quic.fit(S[k,:,:], verbose = 1)
-    model = singleGL.fit(sample[k,:,:].T)
-    
-    singleGL_sol[k,:,:] = model.precision_
-    
-discovery_rate(singleGL_sol, Theta)
-
-draw_group_heatmap(Theta_sol, method = 'GLASSO')
-#%%
 Omega_0 = np.zeros((K,p,p))
 Theta_0 = np.zeros((K,p,p))
 
@@ -127,10 +117,9 @@ Theta_sol = sol['Theta']
 Omega_sol = sol['Omega']
 
 with sns.axes_style("white"):
-    fig,axs = plt.subplots(nrows = 1, ncols = 3, figsize = (10,3))
+    fig,axs = plt.subplots(nrows = 1, ncols = 2, figsize = (10,3))
     draw_group_heatmap(Theta, method = 'truth', ax = axs[0])
     draw_group_heatmap(Theta_sol, method = 'PPDNA', ax = axs[1])
-    draw_group_heatmap(singleGL_sol, method = 'GLASSO', ax = axs[2])
 
 #%%
 def plot_fpr_tpr(FPR, TPR, W2, ix, ix2):
@@ -143,7 +132,7 @@ def plot_fpr_tpr(FPR, TPR, W2, ix, ix2):
     with sns.axes_style("whitegrid"):
         fig, ax = plt.subplots(1,1)
         ax.plot(FPR.T, TPR.T, **plot_aes)
-        #ax.plot(FPR_GL.T, TPR_GL.T, c = 'grey', **plot_aes)
+        ax.plot(FPR_GL, TPR_GL, c = 'grey', **plot_aes)
         
         ax.plot(FPR[ix], TPR[ix], marker = 'o', fillstyle = 'none', markersize = 20, markeredgecolor = '#12cf90')
         ax.plot(FPR[ix2], TPR[ix2], marker = 'o', fillstyle = 'none', markersize = 20, markeredgecolor = '#cf3112')
@@ -153,7 +142,8 @@ def plot_fpr_tpr(FPR, TPR, W2, ix, ix2):
         
         ax.set_xlabel('False Positive Rate')
         ax.set_ylabel('True Positive Rate')
-        ax.legend(labels = [f"w2 = {w}" for w in W2], loc = 'lower right')
+        labels = [f"w2 = {w}" for w in W2] + ["single GL"]
+        ax.legend(labels = labels, loc = 'lower right')
         
     fig.suptitle('Discovery rate for different regularization strengths')
     
@@ -170,19 +160,20 @@ def plot_diff_fpr_tpr(DFPR, DTPR, DFPR_GL, DTPR_GL, W2, ix, ix2):
     with sns.axes_style("whitegrid"):
         fig, ax = plt.subplots(1,1)
         ax.plot(DFPR.T, DTPR.T, **plot_aes)
-        ax.plot(DFPR_GL.T, DTPR_GL.T, c = 'grey', **plot_aes)
+        ax.plot(DFPR_GL, DTPR_GL, c = 'grey', **plot_aes)
         
         ax.plot(DFPR[ix], DTPR[ix], marker = 'o', fillstyle = 'none', markersize = 20, markeredgecolor = '#12cf90')
         ax.plot(DFPR[ix2], DTPR[ix2], marker = 'o', fillstyle = 'none', markersize = 20, markeredgecolor = '#cf3112')
-    
+                
         ax.set_xlim(-.01,1)
         ax.set_ylim(-.01,1)
         
-        ax.set_xlabel('False Positive Rate')
-        ax.set_ylabel('True Positive Rate')
-        ax.legend(labels = [f"w2 = {w}" for w in W2], loc = 'lower right')
+        ax.set_xlabel('FPR Differential Edges')
+        ax.set_ylabel('TPR Differential Edges')
+        labels = [f"w2 = {w}" for w in W2] + ["single GL"]
+        ax.legend(labels = labels, loc = 'lower right')
         
-    fig.suptitle('Discovery rate for different regularization strengths')
+    fig.suptitle('Discovery rate of differential edges')
     
     return
 
@@ -260,47 +251,43 @@ fig.suptitle('Total error for different solution accuracies')
 
 
 #%%
+# runtime analysis ADMM vs. PPDNA on diff. sample sizes
 
 f = np.array([0.5,0.9, 1.5, 5, 10, 20])
-N = (f * p).astype(int)
+vecN = (f * p).astype(int)
 
-l1 = 1e-2 * np.ones(len(f))
-l2 = 1e-2 * np.ones(len(f))
+l1 = 5e-2 * np.ones(len(f))
+l2 = 5e-2 * np.ones(len(f))
 
 #mapf = lambda x: .1 + 1/(np.log(x+1))
-
 #l1 = mapf(f)*l1opt
 #l2 = mapf(f)*l2opt
 
 Omega_0 = np.zeros((K,p,p))
 
-RT_ADMM = np.zeros(len(N))
-RT_PPA = np.zeros(len(N))
-TPR = np.zeros(len(N))
-FPR = np.zeros(len(N))
+RT_ADMM = np.zeros(len(vecN))
+RT_PPA = np.zeros(len(vecN))
+TPR = np.zeros(len(vecN))
+FPR = np.zeros(len(vecN))
 
 
-for j in np.arange(len(N)):
-    
+for j in np.arange(len(vecN)):  
     #Omega_0 = np.linalg.pinv(S, hermitian = True)
-    S, sample = sample_covariance_matrix(Sigma, N[j])
+    S, sample = sample_covariance_matrix(Sigma, vecN[j])
     
     start = time()
     sol, info = ADMM_MGL(S, l1[j], l2[j], reg , Omega_0 , rho = 1, max_iter = 1000, \
                              eps_admm = 5e-5, verbose = False, measure = True)
-    
     end = time()
-    
     RT_ADMM[j] = end-start
+    
     TPR[j] = discovery_rate(sol['Theta'], Theta)['TPR']
     FPR[j] = discovery_rate(sol['Theta'], Theta)['FPR']
     
     start = time()
     sol, info = warmPPDNA(S, l1[j], l2[j], reg, Omega_0, eps = 5e-5, verbose = False, measure = True)
     end = time()
-    
     RT_PPA[j] = end-start
-    
-    
-plt.plot(RT_ADMM)
-plt.plot(RT_PPA)
+
+
+plot_runtime(f, RT_ADMM, RT_PPA, save = False)

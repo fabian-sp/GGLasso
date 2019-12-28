@@ -72,8 +72,8 @@ def discovery_rate(S_sol , S_true, t = 1e-5):
     nd =  (A_true - A_sol == 1).sum(axis = (1,2)) / true_edges
     
     # differential edges
-    diff_true = (A_true.sum(axis = 0) < K).astype(int) * (A_true.sum(axis = 0) > 1).astype(int)
-    diff_sol = (A_sol.sum(axis = 0) < K).astype(int) * (A_sol.sum(axis = 0) > 1).astype(int)
+    diff_true = (A_true.sum(axis = 0) < K).astype(int) * (A_true.sum(axis = 0) >= 1).astype(int)
+    diff_sol = (A_sol.sum(axis = 0) < K).astype(int) * (A_sol.sum(axis = 0) >= 1).astype(int)
     
     tp_diff = (diff_sol + diff_true == 2).sum() / diff_true.sum() 
     fp_diff = (diff_sol - diff_true == 1).sum() / diff_sol.sum() 
@@ -147,6 +147,10 @@ def deviation(Theta):
 ############################ DRAWING FUNCTIONS ##################################################################
 #################################################################################################################
 
+path_ggl = 'plots//ggl_powerlaw//'
+path_fgl = 'plots//fgl_powerlaw//'
+
+
 def get_default_plot_aes():
     plot_aes = {'marker' : 'o', 'linestyle' : '-', 'markersize' : 5}
     
@@ -157,7 +161,7 @@ def get_default_color_coding():
     mypal = sns.color_palette("Set2")
     
     color_dict = {}    
-    color_dict['truth'] = mypal[0]
+    color_dict['truth'] = 'midnightblue'#mypal[0]
     color_dict['GLASSO'] = mypal[1]
     color_dict['ADMM'] = mypal[2]
     color_dict['PPDNA'] = mypal[3]
@@ -264,6 +268,23 @@ def plot_deviation(results):
 
     return
 
+def plot_runtime(f, RT_ADMM, RT_PPDNA, save = False):
+    plot_aes = get_default_plot_aes()
+    color_dict = get_default_color_coding()
+    
+    with sns.axes_style("whitegrid"):
+        fig, ax = plt.subplots(1,1)
+        ax.plot(f, RT_ADMM, c = color_dict['ADMM'], **plot_aes)
+        ax.plot(f, RT_PPDNA, c = color_dict['PPDNA'], **plot_aes)
+        
+        ax.set_xlabel('N/p')
+        ax.set_ylabel('runtime [sec]')
+        ax.legend(labels = ['ADMM', 'PPDNA'])
+    
+    if save:
+        fig.savefig(path_ggl + 'runtime.pdf')
+        
+    return
 #################################################################################################################
 ############################ GIF ################################################################################
 #################################################################################################################
