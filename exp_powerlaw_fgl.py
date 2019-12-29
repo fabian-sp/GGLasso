@@ -120,7 +120,7 @@ results['PPDNA'] = {'Theta' : sol['Theta']}
 # solve with general ADMM
 start = time()
 sol, info = ADMM_MGL(S, lambda1, lambda2, reg, Omega_0, Theta_0 = Theta_0, X_0 = X_0, rho = 1, max_iter = 100, \
-                                                        eps_admm = 1e-4, verbose = True, measure = True)
+                                                        eps_admm = 1e-8, verbose = True, measure = True)
 end = time()
 
 print(f"Running time for ADMM was {end-start} seconds")
@@ -139,7 +139,7 @@ results['ADMM'] = {'Theta' : sol['Theta']}
 start = time()
 #ltgl = LatentTimeGraphicalLasso(alpha = N*lambda1, beta = N*lambda2, tau = N*0.1, psi = 'l1', rho = 1, tol = 1e-4, max_iter=2000, verbose = True)
 ltgl = TimeGraphicalLasso(alpha = N*lambda1, beta = N*lambda2, psi = 'l1', \
-                          rho = 1., tol = 1e-4, rtol = 1e-4,  max_iter = 1000, verbose = True)
+                          rho = 1., tol = 1e-6, rtol = 1e-6,  max_iter = 2000, verbose = True)
 ltgl = ltgl.fit(sample.transpose(0,2,1))
 end = time()
 
@@ -150,8 +150,11 @@ results['LGTL'] = {'Theta' : ltgl.precision_}
 #%%
 Theta_admm = results.get('ADMM').get('Theta')
 Theta_ppdna = results.get('PPDNA').get('Theta')
+Theta_lgtl = results.get('LGTL').get('Theta')
 Theta_glasso = results.get('GLASSO').get('Theta')
 
+
+print(np.linalg.norm(Theta_lgtl - Theta_admm)/ np.linalg.norm(Theta_admm))
 
 plot_evolution(results, block = 0, L = L)
 plot_deviation(results)
