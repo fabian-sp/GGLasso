@@ -13,8 +13,8 @@ from sklearn.covariance import GraphicalLasso
 from gglasso.solver.ggl_solver import PPDNA, warmPPDNA
 from gglasso.solver.admm_solver import ADMM_MGL
 from gglasso.helper.data_generation import time_varying_power_network, sample_covariance_matrix
-from gglasso.helper.experiment_helper import lambda_grid, discovery_rate, aic, error
-from gglasso.helper.experiment_helper import draw_group_heatmap, plot_evolution, plot_deviation, get_default_color_coding, multiple_heatmap_animation
+from gglasso.helper.experiment_helper import lambda_grid, discovery_rate, aic, ebic, error
+from gglasso.helper.experiment_helper import draw_group_heatmap, plot_evolution, plot_deviation, get_default_color_coding, plot_fpr_tpr, multiple_heatmap_animation, single_heatmap_animation
 
 #from tvgl3.TVGL3 import TVGLwrapper
 from regain.covariance import LatentTimeGraphicalLasso
@@ -32,10 +32,9 @@ Sigma, Theta = time_varying_power_network(p, K, M)
 
 draw_group_heatmap(Theta)
 
-S,sample = sample_covariance_matrix(Sigma, N)
+S, sample = sample_covariance_matrix(Sigma, N)
+S_train, sample_train = sample_covariance_matrix(Sigma, N)
 Sinv = np.linalg.pinv(S, hermitian = True)
-
-
 
 lambda1 = 0.05
 lambda2 = 0.1
@@ -47,20 +46,62 @@ results = {}
 results['truth'] = {'Theta' : Theta}
 
 #%%
+# grid search for best lambda values with warm starts
+L1, L2, _ = lambda_grid(num1 = 7, num2 = 5, reg = reg)
+grid1 = L1.shape[0]; grid2 = L2.shape[1]
+
+ERR = np.zeros((grid1, grid2))
+FPR = np.zeros((grid1, grid2))
+TPR = np.zeros((grid1, grid2))
+DFPR = np.zeros((grid1, grid2))
+DTPR = np.zeros((grid1, grid2))
+AIC = np.zeros((grid1, grid2))
+BIC = np.zeros((grid1, grid2))
+
+Omega_0 = np.zeros((K,p,p))
+Theta_0 = np.zeros((K,p,p))
+
+for g1 in np.arange(grid1):
+    for g2 in np.arange(grid2):
+        lambda1 = L1[g1,g2]
+        lambda2 = L2[g1,g2]
+              
+        sol, info = warmPPDNA(S_train, lambda1, lambda2, reg, Omega_0, Theta_0 = Theta_0, eps = 1e-3, verbose = False, measure = False)
+        Theta_sol = sol['Theta']
+        Omega_sol = sol['Omega']
+        
+        # warm start
+        Omega_0 = Omega_sol.copy()
+        Theta_0 = Theta_sol.copy()
+        
+        TPR[g1,g2] = discovery_rate(Theta_sol, Theta)['TPR']
+        FPR[g1,g2] = discovery_rate(Theta_sol, Theta)['FPR']
+        DTPR[g1,g2] = discovery_rate(Theta_sol, Theta)['TPR_DIFF']
+        DFPR[g1,g2] = discovery_rate(Theta_sol, Theta)['FPR_DIFF']
+        ERR[g1,g2] = error(Theta_sol, Theta)
+        AIC[g1,g2] = aic(S_train, Theta_sol, N)
+        BIC[g1,g2] = ebic(S_train, Theta_sol, N, gamma = 0.1)
+
+# get optimal lambda
+ix= np.unravel_index(BIC.argmin(), BIC.shape)
+ix2= np.unravel_index(AIC.argmin(), AIC.shape)
+lambda1 = L1[ix]
+lambda2 = L2[ix]
+
+print("Optimal lambda values: (l1,l2) = ", (lambda1,lambda2))
+plot_fpr_tpr(FPR, TPR,  ix, ix2)
+#%%
 # solve with QUIC/single Glasso
 #from inverse_covariance import QuicGraphicalLasso
-
-#quic = QuicGraphicalLasso(lam = .2, tol = 1e-6)
+#quic = QuicGraphicalLasso(lam = 1.5*lambda1, tol = 1e-6)
 singleGL = GraphicalLasso(alpha = 1.5*lambda1, tol = 1e-6, max_iter = 200, verbose = True)
 
 res = np.zeros((K,p,p))
-
 for k in np.arange(K):
     #model = quic.fit(S[k,:,:], verbose = 1)
     model = singleGL.fit(sample[k,:,:].T)
     
     res[k,:,:] = model.precision_
-
 
 results['GLASSO'] = {'Theta' : res}
 
@@ -71,9 +112,7 @@ Theta_0 = Omega_0.copy()
 X_0 = np.zeros((K,p,p))
 
 start = time()
-#sol, info = PPDNA(S, lambda1, lambda2, reg, Omega_0, Theta_0 = Theta_0, X_0 = X_0, eps_ppdna = 1e-3, verbose = True)
-
-sol, info = warmPPDNA(S, lambda1, lambda2, reg, Omega_0, Theta_0 = Theta_0, X_0 = X_0, admm_params = None, ppdna_params = None, eps = 1e-4 , verbose = True, measure = True)
+sol, info = warmPPDNA(S, lambda1, lambda2, reg, Omega_0, Theta_0 = Theta_0, X_0 = X_0, eps = 1e-4 , verbose = True, measure = True)
 end = time()
 
 print(f"Running time for PPDNA was {end-start} seconds")
@@ -91,7 +130,6 @@ print(f"Running time for ADMM was {end-start} seconds")
 results['ADMM'] = {'Theta' : sol['Theta']}
 
 #print(np.linalg.norm(results.get('ADMM').get('Theta') - results.get('PPDNA').get('Theta')))
-
 
 #%%
 # solve with TVGL
@@ -125,6 +163,8 @@ plot_evolution(results, block = 0, L = L)
 
 plot_deviation(results)
 
+
+single_heatmap_animation(Theta_admm, method = 'ADMM', save = False)
 multiple_heatmap_animation(Theta, results, save = False)
 
 

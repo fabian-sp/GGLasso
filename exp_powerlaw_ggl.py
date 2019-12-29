@@ -14,7 +14,7 @@ from gglasso.solver.admm_solver import ADMM_MGL
 from gglasso.solver.ggl_solver import PPDNA, warmPPDNA
 from gglasso.helper.data_generation import group_power_network, sample_covariance_matrix, plot_degree_distribution
 from gglasso.helper.experiment_helper import lambda_parametrizer, lambda_grid, discovery_rate, aic, ebic, error
-from gglasso.helper.experiment_helper import draw_group_heatmap, plot_runtime, get_default_plot_aes
+from gglasso.helper.experiment_helper import draw_group_heatmap, plot_fpr_tpr, plot_diff_fpr_tpr, plot_runtime, get_default_plot_aes
 
 p = 100
 K = 5
@@ -122,63 +122,9 @@ with sns.axes_style("white"):
     draw_group_heatmap(Theta_sol, method = 'PPDNA', ax = axs[1])
 
 #%%
-def plot_fpr_tpr(FPR, TPR, W2, ix, ix2):
-    """
-    plots the FPR vs. TPR pathes
-    ix and ix2 are the lambda values with optimal eBIC/AIC
-    """
-    plot_aes = get_default_plot_aes()
+plot_fpr_tpr(FPR, TPR, ix, ix2, FPR_GL, TPR_GL, W2)
+plot_diff_fpr_tpr(DFPR, DTPR, ix, ix2, DFPR_GL, DTPR_GL, W2)
 
-    with sns.axes_style("whitegrid"):
-        fig, ax = plt.subplots(1,1)
-        ax.plot(FPR.T, TPR.T, **plot_aes)
-        ax.plot(FPR_GL, TPR_GL, c = 'grey', linestyle = '--', **plot_aes)
-        
-        ax.plot(FPR[ix], TPR[ix], marker = 'o', fillstyle = 'none', markersize = 20, markeredgecolor = '#12cf90')
-        ax.plot(FPR[ix2], TPR[ix2], marker = 'o', fillstyle = 'none', markersize = 20, markeredgecolor = '#cf3112')
-    
-        ax.set_xlim(-.01,1)
-        ax.set_ylim(-.01,1)
-        
-        ax.set_xlabel('False Positive Rate')
-        ax.set_ylabel('True Positive Rate')
-        labels = [f"w2 = {w}" for w in W2] + ["single GL"]
-        ax.legend(labels = labels, loc = 'lower right')
-        
-    fig.suptitle('Discovery rate for different regularization strengths')
-    
-    return
-
-def plot_diff_fpr_tpr(DFPR, DTPR, DFPR_GL, DTPR_GL, W2, ix, ix2):
-    """
-    plots the FPR vs. TPR pathes 
-    _GL indicates the solution of single Graphical Lasso
-    ix and ix2 are the lambda values with optimal eBIC/AIC
-    """
-    plot_aes = get_default_plot_aes()
-    
-    with sns.axes_style("whitegrid"):
-        fig, ax = plt.subplots(1,1)
-        ax.plot(DFPR.T, DTPR.T, **plot_aes)
-        ax.plot(DFPR_GL, DTPR_GL, c = 'grey', linestyle = '--', **plot_aes)
-        
-        ax.plot(DFPR[ix], DTPR[ix], marker = 'o', fillstyle = 'none', markersize = 20, markeredgecolor = '#12cf90')
-        ax.plot(DFPR[ix2], DTPR[ix2], marker = 'o', fillstyle = 'none', markersize = 20, markeredgecolor = '#cf3112')
-                
-        ax.set_xlim(-.01,1)
-        ax.set_ylim(-.01,1)
-        
-        ax.set_xlabel('FPR Differential Edges')
-        ax.set_ylabel('TPR Differential Edges')
-        labels = [f"w2 = {w}" for w in W2] + ["single GL"]
-        ax.legend(labels = labels, loc = 'lower right')
-        
-    fig.suptitle('Discovery rate of differential edges')
-    
-    return
-
-plot_fpr_tpr(FPR, TPR, W2, ix, ix2)
-plot_diff_fpr_tpr(DFPR, DTPR, DFPR_GL, DTPR_GL, W2, ix, ix2)
 #%%
 # accuracy impact on total error analysis
 #L1, L2 = lambda_grid(num1 = 1, num2 = 6, reg = reg)
