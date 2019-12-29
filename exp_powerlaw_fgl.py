@@ -17,7 +17,7 @@ from gglasso.helper.experiment_helper import lambda_grid, discovery_rate, aic, e
 from gglasso.helper.experiment_helper import draw_group_heatmap, plot_evolution, plot_deviation, get_default_color_coding, plot_fpr_tpr, multiple_heatmap_animation, single_heatmap_animation
 
 #from tvgl3.TVGL3 import TVGLwrapper
-from regain.covariance import LatentTimeGraphicalLasso
+from regain.covariance import LatentTimeGraphicalLasso, TimeGraphicalLasso
 
 p = 100
 K = 10
@@ -36,8 +36,6 @@ S, sample = sample_covariance_matrix(Sigma, N)
 S_train, sample_train = sample_covariance_matrix(Sigma, N)
 Sinv = np.linalg.pinv(S, hermitian = True)
 
-lambda1 = 0.05
-lambda2 = 0.1
 
 methods = ['PPDNA', 'ADMM', 'GLASSO']
 color_dict = get_default_color_coding()
@@ -129,7 +127,6 @@ print(f"Running time for ADMM was {end-start} seconds")
 
 results['ADMM'] = {'Theta' : sol['Theta']}
 
-#print(np.linalg.norm(results.get('ADMM').get('Theta') - results.get('PPDNA').get('Theta')))
 
 #%%
 # solve with TVGL
@@ -140,18 +137,15 @@ results['ADMM'] = {'Theta' : sol['Theta']}
 
 #%%
 start = time()
-ltgl = LatentTimeGraphicalLasso(alpha = N*lambda1, beta = N*lambda2, tau = N*0.1, psi = 'l1', rho = 1, tol = 1e-4, max_iter=2000, verbose = True)
+#ltgl = LatentTimeGraphicalLasso(alpha = N*lambda1, beta = N*lambda2, tau = N*0.1, psi = 'l1', rho = 1, tol = 1e-4, max_iter=2000, verbose = True)
+ltgl = TimeGraphicalLasso(alpha = N*lambda1, beta = N*lambda2, psi = 'l1', \
+                          rho = 1., tol = 1e-4, rtol = 1e-4,  max_iter = 1000, verbose = True)
 ltgl = ltgl.fit(sample.transpose(0,2,1))
 end = time()
 
 print(f"Running time for LGTL was {end-start}  seconds")
 
-#results['LGTL'] = {'Theta' : ltgl.precision_}
-
-tmp1 = ltgl.precision_
-tmp2 = ltgl.latent_
-draw_group_heatmap(ltgl.precision_)
-
+results['LGTL'] = {'Theta' : ltgl.precision_}
 
 #%%
 Theta_admm = results.get('ADMM').get('Theta')
@@ -160,11 +154,10 @@ Theta_glasso = results.get('GLASSO').get('Theta')
 
 
 plot_evolution(results, block = 0, L = L)
-
 plot_deviation(results)
 
 
-single_heatmap_animation(Theta_admm, method = 'ADMM', save = False)
+single_heatmap_animation(Theta_glasso, method = 'GLASSO', save = False)
 multiple_heatmap_animation(Theta, results, save = False)
 
 
