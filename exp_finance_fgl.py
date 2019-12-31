@@ -93,7 +93,7 @@ print("Optimal lambda values: (l1,l2) = ", (lambda1,lambda2))
 
 
 #%%
-singleGL = GraphicalLasso(alpha = 1.5*lambda1, tol = 1e-3, max_iter = 2000, verbose = True)
+singleGL = GraphicalLasso(alpha = 1.5*lambda1, tol = 1e-2, max_iter = 4000, verbose = True)
 
 res = np.zeros((K,p,p))
 for k in np.arange(K):
