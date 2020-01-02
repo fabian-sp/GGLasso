@@ -13,8 +13,9 @@ from sklearn.covariance import GraphicalLasso
 from gglasso.solver.admm_solver import ADMM_MGL
 from gglasso.solver.ggl_solver import PPDNA, warmPPDNA
 from gglasso.helper.experiment_helper import lambda_parametrizer, lambda_grid, discovery_rate, aic, ebic, error
+from gglasso.helper.experiment_helper import plot_evolution, plot_deviation, single_heatmap_animation
 
-from gglasso.helper.experiment_helper import plot_evolution, plot_deviation
+from regain.covariance import LatentTimeGraphicalLasso, TimeGraphicalLasso
 
 #df = pd.read_csv('../DaxConstituents.csv')
 #df = df.drop(0, axis = 0)
@@ -25,7 +26,7 @@ from gglasso.helper.experiment_helper import plot_evolution, plot_deviation
 
 px = pd.read_csv('data/dax_constituents.csv', index_col = 0)
 px.index = pd.to_datetime(px.index)
-ret = 100 * np.log(px/px.shift(1)).dropna()
+ret = 100*np.log(px/px.shift(1)).dropna()
 
 #%%
 p = len(px.columns)
@@ -61,7 +62,26 @@ def filter_by_month(ret):
     
     return S, samples, n, K
 
-S, samples, n, K = filter_by_month(ret)
+def filter_by_start(ret, start_date, K = 12, N = 22):
+    """
+    constructs one timestamp for each K intervals of N days 
+    first interval starts at satrt_date
+    """
+    ret = ret[ret.index >= start_date]
+    S = np.zeros((K,p,p))
+    n = N * np.ones(K)
+    samples = np.zeros((K,N,p))
+    for k in np.arange(K):
+        samples[k,:,:] = ret.iloc[k*N:(k+1)*N, :]
+        S[k,:,:] = np.cov(samples[k], rowvar = False, bias = True)
+        
+    return S, samples, n
+
+K = 20
+N = 23
+S, samples, n = filter_by_start(ret, start_date = '2005-01-02', K = K, N = N)
+
+#S, samples, n, K = filter_by_month(ret)
 
 Sinv = np.linalg.pinv(S, hermitian = True)
 #%%
@@ -81,11 +101,17 @@ for g1 in np.arange(grid1):
         
         sol, info = ADMM_MGL(S,lambda1, lambda2, reg, Omega_0, eps_admm = 1e-3, verbose = False)
         Theta_sol = sol['Theta']
+        Omega_sol = sol['Omega']
+        
+        # warm start
+        Omega_0 = Omega_sol.copy()
+        Theta_0 = Theta_sol.copy()
+        
         AIC[g1,g2] = aic(S, Theta_sol, n.mean())
         BIC[g1,g2] = ebic(S, Theta_sol, n.mean(), gamma = 0.1)
 
-ix= np.unravel_index(BIC.argmin(), BIC.shape)
-ix2= np.unravel_index(AIC.argmin(), AIC.shape)
+ix= np.unravel_index(np.nanargmin(BIC), BIC.shape)
+ix2= np.unravel_index(np.nanargmin(AIC), AIC.shape)
 lambda1 = L1[ix]
 lambda2 = L2[ix]
 
@@ -98,7 +124,7 @@ singleGL = GraphicalLasso(alpha = 1.5*lambda1, tol = 1e-2, max_iter = 4000, verb
 res = np.zeros((K,p,p))
 for k in np.arange(K):
     #model = quic.fit(S[k,:,:], verbose = 1)
-    model = singleGL.fit(samples[k])
+    model = singleGL.fit(samples[k,:,:])
     
     res[k,:,:] = model.precision_
 
@@ -114,11 +140,23 @@ print(f"Running time for ADMM was {end-start} seconds")
 
 results['ADMM'] = {'Theta' : sol['Theta']}
 
+#%%
+alpha = lambda1 * N
+beta = lambda2 * N
+tau = 1
+eta = 1
+ltgl = LatentTimeGraphicalLasso(alpha = alpha, beta = beta, tau = tau, eta = eta, psi = 'l1', phi = 'l1',\
+                                rho = 1, tol = 1e-4, max_iter=2000, verbose = True)
+
+ltgl = ltgl.fit(samples)
+
+results['LGTL'] = {'Theta' : ltgl.precision_, 'L' : ltgl.latent_}
+
 
 
 plot_deviation(results)
 
-
+single_heatmap_animation(results.get('LGTL').get('Theta'), method = 'ADMM', save = False)
 
 
 

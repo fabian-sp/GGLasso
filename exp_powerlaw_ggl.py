@@ -74,8 +74,8 @@ for g1 in np.arange(grid1):
         BIC[g1,g2] = ebic(S_train, Theta_sol, N_train, gamma = 0.1)
 
 # get optimal lambda
-ix= np.unravel_index(BIC.argmin(), BIC.shape)
-ix2= np.unravel_index(AIC.argmin(), AIC.shape)
+ix= np.unravel_index(np.nanargmin(BIC), BIC.shape)
+ix2= np.unravel_index(np.nanargmin(AIC), AIC.shape)
 
 #%%
 # solve single GLASSO

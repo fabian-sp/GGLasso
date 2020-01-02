@@ -23,16 +23,16 @@ def lambda_grid(num1 = 5, num2 = 2, reg = 'GGL'):
     creates a grid of lambda 1 lambda 1 values
     idea: the grid goes from smaller to higher values when going down/right
     """
-    #l2 = np.logspace(start = -4, stop = -1, num = num2, base = 10)
-    l2 = np.logspace(start = -3, stop = -1, num = num2, base = 10)
-    
+    #l2 = np.logspace(start = -4, stop = -1, num = num2, base = 10)   
     if reg == 'GGL':
+        l2 = np.logspace(start = -3, stop = -1, num = num2, base = 10)
         w2 = np.linspace(0.2, 0.5, num1)
         l2grid, w2grid = np.meshgrid(l2,w2)
         L1 = lambda_parametrizer(l2grid, w2grid)
         L2 = l2grid.copy()
     elif reg == 'FGL':
-        l1 = np.logspace(start = -2.5, stop = -1, num = num1, base = 10)
+        l2 = 5*np.logspace(start = -2, stop = -1, num = num2, base = 10)
+        l1 = 5*np.logspace(start = -2.5, stop = -1, num = num1, base = 10)
         L2, L1 = np.meshgrid(l2,l1)
         w2 = None
         
@@ -139,7 +139,7 @@ def deviation(Theta):
     (K,p,p) = Theta.shape
     d = np.zeros(K-1)
     for k in np.arange(K-1):
-        d[k] = l1norm_od(Theta[k+1,:,:] - Theta[k,:,:])
+        d[k] = l1norm_od(Theta[k+1,:,:] - Theta[k,:,:]) / l1norm_od(Theta[k,:,:])
         
     return d
 
