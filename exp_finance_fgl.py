@@ -142,17 +142,15 @@ results['ADMM'] = {'Theta' : sol['Theta']}
 alpha = lambda1 * N
 beta = lambda2 * N
 tau = 1 * N
-eta = 1 * N
+eta = .1 * N
 ltgl = LatentTimeGraphicalLasso(alpha = alpha, beta = beta, tau = tau, eta = eta, psi = 'l1', phi = 'l1',\
                                 rho = 1, tol = 1e-4, max_iter=2000, verbose = True)
 
 ltgl = ltgl.fit(samples)
-
+print(np.linalg.matrix_rank(ltgl.latent_))
 results['LGTL'] = {'Theta' : ltgl.precision_, 'L' : ltgl.latent_}
-
-
-
-plot_deviation(results)
+#%%
+plot_deviation(results, latent = results.get('LGTL').get('L'))
 
 single_heatmap_animation(results.get('LGTL').get('Theta'), method = 'ADMM', save = False)
 

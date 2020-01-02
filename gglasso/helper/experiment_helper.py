@@ -252,7 +252,7 @@ def plot_evolution(results, block = None, L = None, start = None, stop = None, s
         fig.savefig(path_fgl + 'evolution.pdf')
     return
 
-def plot_deviation(results, save = False):
+def plot_deviation(results, latent = None, save = False):
     """
     plots the temporal deviation
     """
@@ -266,10 +266,16 @@ def plot_deviation(results, save = False):
             d = deviation(results.get(m).get('Theta'))
             ax.plot(d, c = color_dict[m], **plot_aesthetics)
                 
-        ax.set_ylabel('Temporal Deviation')
+        ax.set_ylabel('Temporal Deviation Theta')
         ax.set_xlabel('Time (k=1,...,K)')
-        ax.legend(labels = list(results.keys()))
-    
+        labels = list(results.keys())
+        ax.legend(labels = labels, loc = 'upper left')
+        if latent is not None:
+            ax2 = ax.twinx()
+            ax2.plot(deviation(latent), linestyle = '--', **plot_aesthetics)
+            ax2.set_ylabel('Temporal Deviation Latent variables')
+            ax2.legend(labels = ['Latent variables'], loc = 'upper right')
+        
     if save:
         fig.savefig(path_fgl + 'deviation.pdf')
 
