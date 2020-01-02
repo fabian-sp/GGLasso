@@ -108,18 +108,29 @@ print("Optimal lambda values: (l1,l2) = ", (l1opt,l2opt))
 Omega_0 = np.zeros((K,p,p))
 Theta_0 = np.zeros((K,p,p))
 
-sol, info = warmPPDNA(S, l1opt, l2opt, reg, Omega_0, Theta_0 = Theta_0, eps = 1e-5 , verbose = True)
+solP, infoP = warmPPDNA(S, l1opt, l2opt, reg, Omega_0, Theta_0 = Theta_0, eps = 1e-5 , verbose = True, measure = True)
 
-#sol, info = ADMM_MGL(S, l1opt, l2opt, reg , Omega_0 , Theta_0 = Theta_0, rho = 1, max_iter = 100, eps_admm = 1e-5, \
-#                     verbose = True, measure = False)
+solA, infoA = ADMM_MGL(S, l1opt, l2opt, reg , Omega_0 , Theta_0 = Theta_0, rho = 1, max_iter = 100, eps_admm = 1e-5, \
+                     verbose = True, measure = True)
 
-Theta_sol = sol['Theta']
-Omega_sol = sol['Omega']
+Theta_sol = solP['Theta']
+Omega_sol = solP['Omega']
 
 with sns.axes_style("white"):
     fig,axs = plt.subplots(nrows = 1, ncols = 2, figsize = (10,3))
     draw_group_heatmap(Theta, method = 'truth', ax = axs[0])
     draw_group_heatmap(Theta_sol, method = 'PPDNA', ax = axs[1])
+
+with sns.axes_style("whitegrid"):
+    fig,ax = plt.subplots(nrows = 1, ncols = 1)
+    ax.plot(infoA['kkt_residual'])
+    ax.plot(infoP['kkt_residual'])
+    ax.set_yscale('log')
+    ax.set_ylim(1e-10,0.2)
+    ax2 = ax.twinx()
+    ax2.plot(infoA['runtime'].cumsum(), linestyle = '--')
+    ax2.plot(infoP['runtime'].cumsum(), linestyle = '--')
+    ax.vlines(infoP['iter_admm'], 0,0.2)
 
 #%%
 plot_fpr_tpr(FPR, TPR, ix, ix2, FPR_GL, TPR_GL, W2)

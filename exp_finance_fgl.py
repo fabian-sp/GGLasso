@@ -81,8 +81,6 @@ K = 20
 N = 23
 S, samples, n = filter_by_start(ret, start_date = '2005-01-02', K = K, N = N)
 
-#S, samples, n, K = filter_by_month(ret)
-
 Sinv = np.linalg.pinv(S, hermitian = True)
 #%%
 L1, L2, _ = lambda_grid(num1 = 7, num2 = 5, reg = reg)
@@ -143,8 +141,8 @@ results['ADMM'] = {'Theta' : sol['Theta']}
 #%%
 alpha = lambda1 * N
 beta = lambda2 * N
-tau = 1
-eta = 1
+tau = 1 * N
+eta = 1 * N
 ltgl = LatentTimeGraphicalLasso(alpha = alpha, beta = beta, tau = tau, eta = eta, psi = 'l1', phi = 'l1',\
                                 rho = 1, tol = 1e-4, max_iter=2000, verbose = True)
 
