@@ -14,7 +14,7 @@ from gglasso.solver.admm_solver import ADMM_MGL
 from gglasso.solver.ggl_solver import PPDNA, warmPPDNA
 from gglasso.helper.data_generation import group_power_network, sample_covariance_matrix, plot_degree_distribution
 from gglasso.helper.experiment_helper import lambda_parametrizer, lambda_grid, discovery_rate, aic, ebic, error
-from gglasso.helper.experiment_helper import draw_group_heatmap, plot_fpr_tpr, plot_diff_fpr_tpr, plot_runtime, get_default_plot_aes
+from gglasso.helper.experiment_helper import draw_group_heatmap, plot_fpr_tpr, plot_diff_fpr_tpr, plot_runtime, plot_error_accuracy, get_default_plot_aes
 
 p = 100
 K = 5
@@ -141,7 +141,7 @@ plot_diff_fpr_tpr(DFPR, DTPR, ix, ix2, DFPR_GL, DTPR_GL, W2)
 #L1, L2 = lambda_grid(num1 = 1, num2 = 6, reg = reg)
 
 L2 = l2opt*np.linspace(-.5,.5,5) + l2opt
-L1 = lambda_parametrizer(L2, w2 = 0.35)
+L1 = lambda_parametrizer(L2, w2 = 0.5)
 grid1 = L1.shape[0]
 
 grid2 = 5
@@ -186,26 +186,7 @@ for g1 in np.arange(grid1):
         RT[g1,g2] = end-start
 
 
-#%%
-
-pal = sns.color_palette("GnBu_d", grid1)
-plot_aes = get_default_plot_aes()
-
-with sns.axes_style("whitegrid"):
-    fig, ax = plt.subplots(1,1)
-    for l in np.arange(grid1):
-        ax.plot(EPS, ERR[l,:], c=pal[l],**plot_aes )
-
-    ax.set_xlim(EPS.max()*2 , EPS.min()/2)
-    ax.set_ylim(0,0.3)
-    ax.set_xscale('log')
-    
-    ax.set_xlabel('Solution accuracy')
-    ax.set_ylabel('Total relative error')
-    ax.legend(labels = ["l2 = " + "{:.2E}".format(l) for l in L2])
-    
-fig.suptitle('Total error for different solution accuracies')
-
+plot_error_accuracy(EPS, ERR, L2, save = False)
 
 #%%
 # runtime analysis ADMM vs. PPDNA on diff. sample sizes

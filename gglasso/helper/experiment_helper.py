@@ -199,7 +199,7 @@ def draw_group_graph(Theta , t = 1e-9):
     
     return fig
 
-def draw_group_heatmap(Theta, method = 'truth', ax = None, t = 1e-5):
+def draw_group_heatmap(Theta, method = 'truth', ax = None, t = 1e-5, save = False):
     (K,p,p) = Theta.shape
     A = adjacency_matrix(Theta, t)
     mask = A.sum(axis=0) == 0
@@ -211,7 +211,11 @@ def draw_group_heatmap(Theta, method = 'truth', ax = None, t = 1e-5):
         fig,ax = plt.subplots(nrows = 1, ncols = 1)
     with sns.axes_style("white"):
         sns.heatmap(A.sum(axis=0), mask = mask, ax = ax, square = True, cmap = this_cmap, vmin = 0, vmax = K, linewidths=.5, cbar_kws={"shrink": .5})
-
+    if save:
+        fig.savefig(path_ggl + 'diff_fpr_tpr.pdf')
+       
+    return
+        
 def plot_block_evolution(ax, start, stop, Theta, method, color_dict):
     (K,p,p) = Theta.shape
     plot_aes = get_default_plot_aes()
@@ -299,7 +303,7 @@ def plot_runtime(f, RT_ADMM, RT_PPDNA, save = False):
         
     return
 
-def plot_fpr_tpr(FPR, TPR, ix, ix2, FPR_GL = None, TPR_GL = None, W2 = []):
+def plot_fpr_tpr(FPR, TPR, ix, ix2, FPR_GL = None, TPR_GL = None, W2 = [], save = False):
     """
     plots the FPR vs. TPR pathes
     ix and ix2 are the lambda values with optimal eBIC/AIC
@@ -326,10 +330,12 @@ def plot_fpr_tpr(FPR, TPR, ix, ix2, FPR_GL = None, TPR_GL = None, W2 = []):
         ax.legend(labels = labels, loc = 'lower right')
         
     fig.suptitle('Discovery rate for different regularization strengths')
+    if save:
+        fig.savefig(path_ggl + 'fpr_tpr.pdf')
     
     return
 
-def plot_diff_fpr_tpr(DFPR, DTPR, ix, ix2, DFPR_GL = None, DTPR_GL = None, W2 = []):
+def plot_diff_fpr_tpr(DFPR, DTPR, ix, ix2, DFPR_GL = None, DTPR_GL = None, W2 = [], save = False):
     """
     plots the FPR vs. TPR pathes 
     _GL indicates the solution of single Graphical Lasso
@@ -357,9 +363,34 @@ def plot_diff_fpr_tpr(DFPR, DTPR, ix, ix2, DFPR_GL = None, DTPR_GL = None, W2 = 
         ax.legend(labels = labels, loc = 'lower right')
         
     fig.suptitle('Discovery rate of differential edges')
+    if save:
+        fig.savefig(path_ggl + 'diff_fpr_tpr.pdf')
     
     return
 
+
+def plot_error_accuracy(EPS, ERR, L2, save = False):
+    pal = sns.color_palette("GnBu_d", len(L2))
+    plot_aes = get_default_plot_aes()
+    
+    with sns.axes_style("whitegrid"):
+        fig, ax = plt.subplots(1,1)
+        for l in np.arange(len(L2)):
+            ax.plot(EPS, ERR[l,:], c=pal[l],**plot_aes )
+    
+        ax.set_xlim(EPS.max()*2 , EPS.min()/2)
+        ax.set_ylim(0,0.3)
+        ax.set_xscale('log')
+        
+        ax.set_xlabel('Solution accuracy')
+        ax.set_ylabel('Total relative error')
+        ax.legend(labels = ["l2 = " + "{:.2E}".format(l) for l in L2])
+        
+    fig.suptitle('Total error for different solution accuracies')
+    if save:
+        fig.savefig(path_ggl + 'error.pdf')
+    
+    return
 #################################################################################################################
 ############################ GIF ################################################################################
 #################################################################################################################
