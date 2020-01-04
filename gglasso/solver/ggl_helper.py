@@ -13,20 +13,49 @@ from .fgl_helper import condat_method
 def prox_1norm(v, l): 
     return np.sign(v) * np.maximum(abs(v) - l, 0)
 
+@jit(nopython=True)
 def prox_od_1norm(A, l):
     """
-    calculates the prox of the off-diagonal 1norm at a matrix A
+    calculates the prox of the off-diagonal 1norm at a point A
     """
-    (d1,d2) = A.shape
-    res = np.zeros((d1,d2))
-    for i in np.arange(d1):
-        for j in np.arange(d2):
+    if len(A.shape) == 2:
+        A = A[np.newaxis,:,:]
+        
+    (d1,d2,d3) = A.shape
+    res = np.zeros((d1,d2,d3))
+    for i in np.arange(d2):
+        for j in np.arange(d3):
             if i == j:
-                res[i,j] = A[i,j]
+                res[:,i,j] = A[:,i,j]
             else:
-                res[i,j] = prox_1norm(A[i,j], l)
+                res[:,i,j] = np.sign(A[:,i,j]) * np.maximum(abs(A[:,i,j]) - l, 0)
+    if d1 == 1:
+        res = res[0,:,:]
     
     return res
+
+@jit(nopython=True)
+def prox_od_2norm(A, l):
+    """
+    calculates the prox of the off-diagonal 2norm at point A
+    """
+    if len(A.shape) == 2:
+        A = A[np.newaxis,:,:]
+        
+    (d1,d2,d3) = A.shape
+    res = np.zeros((d1,d2,d3))
+    for i in np.arange(d2):
+        for j in np.arange(d3):
+            if i == j:
+                res[:,i,j] = A[:,i,j]
+            else:
+                a = max(np.linalg.norm(A[:,i,j],2) , l)
+                res[:,i,j] = A[:,i,j] * (a - l) / a
+    if d1 == 1:
+        res = res[0,:,:]
+    
+    return res
+
                 
 def prox_2norm(v,l):
     a = max(np.linalg.norm(v,2) , l)
