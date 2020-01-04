@@ -19,7 +19,6 @@ def ADMM_MGL(S, lambda1, lambda2, reg , Omega_0 , \
     
     n_samples are the sample sizes for the K instances, can also be None or integer
     max_iter and rho can be specified via kwargs
-    ADMM stop criterion after Boyd et al. can bes used when specifying eps_abs and eps_rel
     """
     assert Omega_0.shape == S.shape
     assert S.shape[1] == S.shape[2]
@@ -74,7 +73,7 @@ def ADMM_MGL(S, lambda1, lambda2, reg , Omega_0 , \
             
         # Omega Xpdate
         W_t = Theta_t - X_t - (nk/rho) * S
-        eigD, eigQ = np.linalg.eig(W_t)
+        eigD, eigQ = np.linalg.eigh(W_t)
         
         for k in np.arange(K):
             Omega_t[k,:,:] = phiplus(W_t[k,:,:], beta = nk[k,0,0]/rho, D = eigD[k,:], Q = eigQ[k,:,:])

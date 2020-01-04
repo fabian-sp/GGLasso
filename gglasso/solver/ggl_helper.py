@@ -12,7 +12,22 @@ from .fgl_helper import condat_method
 # functions specifically related to the GGL regularizer
 def prox_1norm(v, l): 
     return np.sign(v) * np.maximum(abs(v) - l, 0)
+
+def prox_od_1norm(A, l):
+    """
+    calculates the prox of the off-diagonal 1norm at a matrix A
+    """
+    (d1,d2) = A.shape
+    res = np.zeros((d1,d2))
+    for i in np.arange(d1):
+        for j in np.arange(d2):
+            if i == j:
+                res[i,j] = A[i,j]
+            else:
+                res[i,j] = prox_1norm(A[i,j], l)
     
+    return res
+                
 def prox_2norm(v,l):
     a = max(np.linalg.norm(v,2) , l)
     return v * (a - l) / a
