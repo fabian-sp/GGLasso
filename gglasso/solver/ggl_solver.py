@@ -158,7 +158,7 @@ def PPDNA(S, lambda1, lambda2, reg, Omega_0, Theta_0 = np.array([]), X_0 = np.ar
     assert Omega_0.shape == S.shape
     assert S.shape[1] == S.shape[2]
     assert reg in ['GGL', 'FGL']
-    
+    assert min(lambda1, lambda2) > 0
     (K,p,p) = S.shape
     
     # initialize 

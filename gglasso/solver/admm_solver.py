@@ -23,14 +23,21 @@ def ADMM_MGL(S, lambda1, lambda2, reg , Omega_0 , \
     assert Omega_0.shape == S.shape
     assert S.shape[1] == S.shape[2]
     assert reg in ['GGL', 'FGL']
+    assert min(lambda1, lambda2) > 0
         
     (K,p,p) = S.shape
     
-    if 'max_iter' not in kwargs.items():
+    if 'max_iter' in kwargs.keys():
+        max_iter = kwargs.get('max_iter')
+    else:
         max_iter = 1000
-    if 'rho' not in kwargs.items():
-        rho = 1
-    if 'eps_abs' in kwargs.items() and 'eps_rel' in kwargs.items():
+    if 'rho' in kwargs.keys():
+        assert kwargs.get('rho') > 0
+        rho = kwargs.get('rho')
+    else:
+        rho = 1.
+        
+    if 'eps_abs' in kwargs.keys() and 'eps_rel' in kwargs.keys():
         use_boyd_criterion = True
     
     # n_samples None --> set them all to 1

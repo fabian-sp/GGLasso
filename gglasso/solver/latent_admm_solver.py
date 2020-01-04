@@ -21,14 +21,20 @@ def latent_ADMM_GGL(S, lambda1, lambda2, mu1, mu2, R_0, \
     """
     assert R_0.shape == S.shape
     assert S.shape[1] == S.shape[2]
+    assert min(lambda1, lambda2) > 0
     
     (K,p,p) = S.shape
     
-    if 'max_iter' not in kwargs.items():
+    if 'max_iter' in kwargs.keys():
+        max_iter = kwargs.get('max_iter')
+    else:
         max_iter = 1000
-    if 'rho' not in kwargs.items():
-        rho = 1
-    
+    if 'rho' in kwargs.keys():
+        assert kwargs.get('rho') > 0
+        rho = kwargs.get('rho')
+    else:
+        rho = 1.
+
     # n_samples None --> set them all to 1
     # n_samples integer --> all instances have same number of samples
     # else --> n_samples should be array with sample sizes
@@ -59,10 +65,10 @@ def latent_ADMM_GGL(S, lambda1, lambda2, mu1, mu2, R_0, \
         
         # R step
         A_t = Theta_t - L_t + X0_t
-        V_t = (A_t + trp(A_t))/2 - (1/rho) * S
-        eigD, eigQ = np.linalg.eigh(V_t) 
+        H1_t = (A_t + trp(A_t))/2 - (1/rho) * S
+        eigD, eigQ = np.linalg.eigh(H1_t) 
         for k in np.arange(K):
-            R_t[k,:,:] = phiplus(V_t, 1/rho, D = eigD[k,:], Q = eigQ[k,:,:])
+            R_t[k,:,:] = phiplus(H1_t[k,:,:], 1/rho, D = eigD[k,:], Q = eigQ[k,:,:])
             
         # Theta step
         B_t = (R_t + L_t - X0_t  + Z_t - X1_t) / 2
@@ -70,6 +76,10 @@ def latent_ADMM_GGL(S, lambda1, lambda2, mu1, mu2, R_0, \
         
         # L step
         C_t = (X0_t + Theta_t - R_t + W_t - X2_t) / 2
+        H2_t = (C_t + trp(C_t))/2
+        eigD, eigQ = np.linalg.eigh(H2_t)
+        for k in np.arange(K):
+            L_t[k,:,:] = prox_rank_norm(H2_t[k,:,:], mu1/rho, D = eigD[k,:,:], Q = eigQ[k,:,:])
         
         # Z step
         Z_t = prox_od_2norm(Theta_t + X1_t, lambda2/rho)
@@ -77,14 +87,19 @@ def latent_ADMM_GGL(S, lambda1, lambda2, mu1, mu2, R_0, \
         # W step
         W_t = prox_od_2norm(L_t + X2_t, mu2/rho)
         
-        
-        
-        
     return
                 
             
             
-            
+def prox_rank_norm(A, beta, D = np.array([]), Q = np.array([])):
+
+    if len(D) != A.shape[0]:
+        D, Q = np.linalg.eigh(A)
+        print("Single eigendecomposition is executed in prox_rank_norm")
+    
+    B = Q @ np.diag(np.maximum(D-beta, 0)) @ Q.T
+    return B
+         
                 
         
         
