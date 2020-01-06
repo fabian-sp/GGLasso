@@ -151,9 +151,10 @@ def deviation(Theta):
 path_ggl = 'plots//ggl_powerlaw//'
 path_fgl = 'plots//fgl_powerlaw//'
 
+default_size = (8,5)
 
 def get_default_plot_aes():
-    plot_aes = {'marker' : 'o', 'markersize' : 5}
+    plot_aes = {'marker' : 'o', 'markersize' : 4}
     
     return plot_aes
 
@@ -312,13 +313,13 @@ def plot_fpr_tpr(FPR, TPR, ix, ix2, FPR_GL = None, TPR_GL = None, W2 = [], save 
     plot_aes = get_default_plot_aes()
 
     with sns.axes_style("whitegrid"):
-        fig, ax = plt.subplots(1,1,figsize = (12,8))
+        fig, ax = plt.subplots(1,1,figsize = default_size)
         ax.plot(FPR.T, TPR.T, **plot_aes)
         if FPR_GL is not None:
             ax.plot(FPR_GL, TPR_GL, c = 'grey', linestyle = '--', **plot_aes)
         
-        ax.plot(FPR[ix], TPR[ix], marker = 'o', fillstyle = 'none', markersize = 15, markeredgecolor = 'grey')
-        ax.plot(FPR[ix2], TPR[ix2], marker = 'D', fillstyle = 'none', markersize = 15, markeredgecolor = 'grey')
+        ax.plot(FPR[ix], TPR[ix], marker = 'o', fillstyle = 'none', markersize = 12, markeredgecolor = 'grey')
+        ax.plot(FPR[ix2], TPR[ix2], marker = 'D', fillstyle = 'none', markersize = 12, markeredgecolor = 'grey')
     
         ax.set_xlim(-.01,1)
         ax.set_ylim(-.01,1)
@@ -332,7 +333,7 @@ def plot_fpr_tpr(FPR, TPR, ix, ix2, FPR_GL = None, TPR_GL = None, W2 = [], save 
         
     fig.suptitle('Discovery rate for different regularization strengths')
     if save:
-        fig.savefig(path_ggl + 'fpr_tpr.pdf')
+        fig.savefig(path_ggl + 'fpr_tpr.pdf', dpi = 300)
     
     return
 
@@ -345,13 +346,13 @@ def plot_diff_fpr_tpr(DFPR, DTPR, ix, ix2, DFPR_GL = None, DTPR_GL = None, W2 = 
     plot_aes = get_default_plot_aes()
     
     with sns.axes_style("whitegrid"):
-        fig, ax = plt.subplots(1,1, figsize = (12,8))
+        fig, ax = plt.subplots(1,1, figsize = default_size)
         ax.plot(DFPR.T, DTPR.T, **plot_aes)
         if DFPR_GL is not None:
             ax.plot(DFPR_GL, DTPR_GL, c = 'grey', linestyle = '--', **plot_aes)
         
-        ax.plot(DFPR[ix], DTPR[ix], marker = 'o', fillstyle = 'none', markersize = 15, markeredgecolor = 'grey')
-        ax.plot(DFPR[ix2], DTPR[ix2], marker = 'D', fillstyle = 'none', markersize = 15, markeredgecolor = 'grey')
+        ax.plot(DFPR[ix], DTPR[ix], marker = 'o', fillstyle = 'none', markersize = 12, markeredgecolor = 'grey')
+        ax.plot(DFPR[ix2], DTPR[ix2], marker = 'D', fillstyle = 'none', markersize = 12, markeredgecolor = 'grey')
                 
         #ax.set_xlim(-.01,1)
         #ax.set_ylim(-.01,1)
@@ -365,7 +366,7 @@ def plot_diff_fpr_tpr(DFPR, DTPR, ix, ix2, DFPR_GL = None, DTPR_GL = None, W2 = 
         
     fig.suptitle('Discovery of differential edges')
     if save:
-        fig.savefig(path_ggl + 'diff_fpr_tpr.pdf')
+        fig.savefig(path_ggl + 'diff_fpr_tpr.pdf', dpi = 300)
     
     return
 
@@ -375,7 +376,7 @@ def plot_error_accuracy(EPS, ERR, L2, save = False):
     plot_aes = get_default_plot_aes()
     
     with sns.axes_style("whitegrid"):
-        fig, ax = plt.subplots(1,1,figsize = (12,8))
+        fig, ax = plt.subplots(1,1,figsize = default_size)
         for l in np.arange(len(L2)):
             ax.plot(EPS, ERR[l,:], c=pal[l],**plot_aes )
     
@@ -389,7 +390,7 @@ def plot_error_accuracy(EPS, ERR, L2, save = False):
         
     fig.suptitle('Total error for different solution accuracies')
     if save:
-        fig.savefig(path_ggl + 'error.pdf')
+        fig.savefig(path_ggl + 'error.pdf', dpi = 300)
     
     return
 #################################################################################################################
