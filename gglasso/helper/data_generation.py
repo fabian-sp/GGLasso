@@ -112,7 +112,7 @@ def group_power_network(p=100, K=10, M=10):
     Sigma_0 = power_law_network(p = p, M = M)
     # contains the number of the block disappearing for each k=1,..,K
     block = np.random.randint(M, size = K)
-    
+   
     for k in np.arange(K):
         
         Sigma_k = Sigma_0.copy()           

@@ -23,10 +23,11 @@ N_train = 5000
 M = 10
 
 reg = 'GGL'
+save = True
 
 Sigma, Theta = group_power_network(p, K, M)
 
-draw_group_heatmap(Theta)
+draw_group_heatmap(Theta, save = save)
 #plot_degree_distribution(Theta)
 
 S, sample = sample_covariance_matrix(Sigma, N)
@@ -108,10 +109,9 @@ print("Optimal lambda values: (l1,l2) = ", (l1opt,l2opt))
 Omega_0 = np.zeros((K,p,p))
 Theta_0 = np.zeros((K,p,p))
 
-solP, infoP = warmPPDNA(S, l1opt, l2opt, reg, Omega_0, Theta_0 = Theta_0, eps = 1e-5 , verbose = True, measure = True)
+solP, infoP = warmPPDNA(S, l1opt, l2opt, reg, Omega_0, Theta_0 = Theta_0, eps = 5e-5 , verbose = True, measure = True)
 
-solA, infoA = ADMM_MGL(S, l1opt, l2opt, reg , Omega_0 , Theta_0 = Theta_0, rho = 1, max_iter = 100, eps_admm = 1e-5, \
-                     verbose = True, measure = True)
+solA, infoA = ADMM_MGL(S, l1opt, l2opt, reg , Omega_0 , Theta_0 = Theta_0, eps_admm = 5e-5, verbose = True, measure = True)
 
 Theta_sol = solP['Theta']
 Omega_sol = solP['Omega']
@@ -126,15 +126,15 @@ with sns.axes_style("whitegrid"):
     ax.plot(infoA['kkt_residual'])
     ax.plot(infoP['kkt_residual'])
     ax.set_yscale('log')
-    ax.set_ylim(1e-10,0.2)
+    ax.set_ylim(1e-6,0.2)
     ax2 = ax.twinx()
     ax2.plot(infoA['runtime'].cumsum(), linestyle = '--')
     ax2.plot(infoP['runtime'].cumsum(), linestyle = '--')
     ax.vlines(infoP['iter_admm'], 0,0.2)
 
 #%%
-plot_fpr_tpr(FPR, TPR, ix, ix2, FPR_GL, TPR_GL, W2)
-plot_diff_fpr_tpr(DFPR, DTPR, ix, ix2, DFPR_GL, DTPR_GL, W2)
+plot_fpr_tpr(FPR, TPR, ix, ix2, FPR_GL, TPR_GL, W2, save = save)
+plot_diff_fpr_tpr(DFPR, DTPR, ix, ix2, DFPR_GL, DTPR_GL, W2, save = save)
 
 #%%
 # accuracy impact on total error analysis
@@ -186,7 +186,7 @@ for g1 in np.arange(grid1):
         RT[g1,g2] = end-start
 
 
-plot_error_accuracy(EPS, ERR, L2, save = False)
+plot_error_accuracy(EPS, ERR, L2, save = save)
 
 #%%
 # runtime analysis ADMM vs. PPDNA on diff. sample sizes

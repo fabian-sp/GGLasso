@@ -75,8 +75,9 @@ def discovery_rate(S_sol , S_true, t = 1e-5):
     diff_true = (A_true.sum(axis = 0) < K).astype(int) * (A_true.sum(axis = 0) >= 1).astype(int)
     diff_sol = (A_sol.sum(axis = 0) < K).astype(int) * (A_sol.sum(axis = 0) >= 1).astype(int)
     
-    tp_diff = (diff_sol + diff_true == 2).sum() / diff_true.sum() 
-    fp_diff = (diff_sol - diff_true == 1).sum() / diff_true.sum() 
+    tp_diff = (diff_sol + diff_true == 2).sum() #/ diff_true.sum() 
+    # divide by true npn-differential edges
+    fp_diff = (diff_sol - diff_true == 1).sum() #/ (p*(p-1) - diff_true.sum())
     
     res = {'TPR': tp.mean(), 'FPR' : fp.mean(), 'TNR' : nd.mean(), 'SP' : sparsity.mean(), 'TPR_DIFF' : tp_diff, 'FPR_DIFF' : fp_diff}
     
@@ -158,14 +159,14 @@ def get_default_plot_aes():
 
 
 def get_default_color_coding():
-    mypal = sns.color_palette("Set2")
+    mypal = sns.color_palette("Dark2", 10)
     
     color_dict = {}    
-    color_dict['truth'] = 'darkblue'#mypal[0]
-    color_dict['GLASSO'] = mypal[1]
-    color_dict['ADMM'] = mypal[2]
-    color_dict['PPDNA'] = mypal[3]
-    color_dict['LGTL'] = mypal[4]
+    color_dict['truth'] = sns.color_palette("YlGnBu", 10)[-1] #'darkblue'
+    color_dict['GLASSO'] = mypal[7]
+    color_dict['ADMM'] = mypal[0]
+    color_dict['PPDNA'] = mypal[1]
+    color_dict['LGTL'] = mypal[5]
 
     return color_dict
 
@@ -208,11 +209,11 @@ def draw_group_heatmap(Theta, method = 'truth', ax = None, t = 1e-5, save = Fals
     this_cmap = sns.light_palette(col, as_cmap=True)
     
     if ax == None:
-        fig,ax = plt.subplots(nrows = 1, ncols = 1)
+        fig,ax = plt.subplots(nrows = 1, ncols = 1,figsize = (12,8))
     with sns.axes_style("white"):
         sns.heatmap(A.sum(axis=0), mask = mask, ax = ax, square = True, cmap = this_cmap, vmin = 0, vmax = K, linewidths=.5, cbar_kws={"shrink": .5})
     if save:
-        fig.savefig(path_ggl + 'diff_fpr_tpr.pdf')
+        fig.savefig(path_ggl + method +'_heatmap.pdf')
        
     return
         
@@ -244,7 +245,7 @@ def plot_evolution(results, block = None, L = None, start = None, stop = None, s
         stop = (block+1)*L
     
     with sns.axes_style("whitegrid"):
-        fig,axs = plt.subplots(nrows = 2, ncols = 2)
+        fig,axs = plt.subplots(nrows = 2, ncols = 2,figsize = (12,8))
         plot_block_evolution(axs[0,0], start, stop, results.get('truth').get('Theta'), 'truth', color_dict)
         plot_block_evolution(axs[0,1], start, stop, results.get('PPDNA').get('Theta'), 'PPDNA', color_dict)
         plot_block_evolution(axs[1,0], start, stop, results.get('LGTL').get('Theta'), 'LGTL', color_dict)
@@ -264,7 +265,7 @@ def plot_deviation(results, latent = None, save = False):
     plot_aesthetics = get_default_plot_aes()
     
     with sns.axes_style("whitegrid"):
-        fig,ax = plt.subplots(nrows=1,ncols=1)
+        fig,ax = plt.subplots(nrows=1,ncols=1,figsize = (12,8))
     
         for m in list(results.keys()):
             d = deviation(results.get(m).get('Theta'))
@@ -290,7 +291,7 @@ def plot_runtime(f, RT_ADMM, RT_PPDNA, save = False):
     color_dict = get_default_color_coding()
     
     with sns.axes_style("whitegrid"):
-        fig, ax = plt.subplots(1,1)
+        fig, ax = plt.subplots(1,1,figsize = (12,8))
         ax.plot(f, RT_ADMM, c = color_dict['ADMM'], **plot_aes)
         ax.plot(f, RT_PPDNA, c = color_dict['PPDNA'], **plot_aes)
         
@@ -311,13 +312,13 @@ def plot_fpr_tpr(FPR, TPR, ix, ix2, FPR_GL = None, TPR_GL = None, W2 = [], save 
     plot_aes = get_default_plot_aes()
 
     with sns.axes_style("whitegrid"):
-        fig, ax = plt.subplots(1,1)
+        fig, ax = plt.subplots(1,1,figsize = (12,8))
         ax.plot(FPR.T, TPR.T, **plot_aes)
         if FPR_GL is not None:
             ax.plot(FPR_GL, TPR_GL, c = 'grey', linestyle = '--', **plot_aes)
         
-        ax.plot(FPR[ix], TPR[ix], marker = 'o', fillstyle = 'none', markersize = 20, markeredgecolor = '#12cf90')
-        ax.plot(FPR[ix2], TPR[ix2], marker = 'o', fillstyle = 'none', markersize = 20, markeredgecolor = '#cf3112')
+        ax.plot(FPR[ix], TPR[ix], marker = 'o', fillstyle = 'none', markersize = 15, markeredgecolor = 'grey')
+        ax.plot(FPR[ix2], TPR[ix2], marker = 'D', fillstyle = 'none', markersize = 15, markeredgecolor = 'grey')
     
         ax.set_xlim(-.01,1)
         ax.set_ylim(-.01,1)
@@ -344,25 +345,25 @@ def plot_diff_fpr_tpr(DFPR, DTPR, ix, ix2, DFPR_GL = None, DTPR_GL = None, W2 = 
     plot_aes = get_default_plot_aes()
     
     with sns.axes_style("whitegrid"):
-        fig, ax = plt.subplots(1,1)
+        fig, ax = plt.subplots(1,1, figsize = (12,8))
         ax.plot(DFPR.T, DTPR.T, **plot_aes)
         if DFPR_GL is not None:
             ax.plot(DFPR_GL, DTPR_GL, c = 'grey', linestyle = '--', **plot_aes)
         
-        ax.plot(DFPR[ix], DTPR[ix], marker = 'o', fillstyle = 'none', markersize = 20, markeredgecolor = '#12cf90')
-        ax.plot(DFPR[ix2], DTPR[ix2], marker = 'o', fillstyle = 'none', markersize = 20, markeredgecolor = '#cf3112')
+        ax.plot(DFPR[ix], DTPR[ix], marker = 'o', fillstyle = 'none', markersize = 15, markeredgecolor = 'grey')
+        ax.plot(DFPR[ix2], DTPR[ix2], marker = 'D', fillstyle = 'none', markersize = 15, markeredgecolor = 'grey')
                 
-        ax.set_xlim(-.01,1)
-        ax.set_ylim(-.01,1)
+        #ax.set_xlim(-.01,1)
+        #ax.set_ylim(-.01,1)
         
-        ax.set_xlabel('FPR Differential Edges')
-        ax.set_ylabel('TPR Differential Edges')
+        ax.set_xlabel('FP Differential Edges')
+        ax.set_ylabel('TP Differential Edges')
         labels = [f"w2 = {w}" for w in W2]
         if DFPR_GL is not None:
             labels.append("single GL")
         ax.legend(labels = labels, loc = 'lower right')
         
-    fig.suptitle('Discovery rate of differential edges')
+    fig.suptitle('Discovery of differential edges')
     if save:
         fig.savefig(path_ggl + 'diff_fpr_tpr.pdf')
     
@@ -374,7 +375,7 @@ def plot_error_accuracy(EPS, ERR, L2, save = False):
     plot_aes = get_default_plot_aes()
     
     with sns.axes_style("whitegrid"):
-        fig, ax = plt.subplots(1,1)
+        fig, ax = plt.subplots(1,1,figsize = (12,8))
         for l in np.arange(len(L2)):
             ax.plot(EPS, ERR[l,:], c=pal[l],**plot_aes )
     
