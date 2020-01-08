@@ -8,6 +8,13 @@ import networkx as nx
 from .basic_linalg import Sdot
 
 
+def get_K_identity(K, p):
+    res = np.zeros((K,p,p))
+    for k in np.arange(K):
+        res[k,:,:] = np.eye(p)
+    
+    return res
+
 def lambda_parametrizer(l2 = 0.05, w2 = 0.5):
     
     w1 = l2/(w2*np.sqrt(2))

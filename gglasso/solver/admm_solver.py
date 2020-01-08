@@ -67,6 +67,9 @@ def ADMM_MGL(S, lambda1, lambda2, reg , Omega_0 , \
     
     for iter_t in np.arange(max_iter):
         
+        if measure:
+            start = time.time()
+            
         eta_A = ADMM_stopping_criterion(Omega_t, Theta_t, X_t, S , lambda1, lambda2, nk, reg)
         kkt_residual[iter_t] = eta_A
             
@@ -75,9 +78,7 @@ def ADMM_MGL(S, lambda1, lambda2, reg , Omega_0 , \
             break
         if verbose:
             print(f"------------Iteration {iter_t} of the ADMM Algorithm----------------")
-        if measure:
-            start = time.time()
-            
+        
         # Omega Xpdate
         W_t = Theta_t - X_t - (nk/rho) * S
         eigD, eigQ = np.linalg.eigh(W_t)
@@ -126,7 +127,7 @@ def ADMM_stopping_criterion(Omega, Theta, X, S , lambda1, lambda2, nk, reg):
     term2 = np.linalg.norm(Theta - Omega) / (1 + np.linalg.norm(Theta))
     
     proxK = np.zeros((K,p,p))
-    eigD, eigQ = np.linalg.eig(Omega - nk*S - X)
+    eigD, eigQ = np.linalg.eigh(Omega - nk*S - X)
     for k in np.arange(K):       
         proxK[k,:,:] = phiplus(A = Omega[k,:,:] - nk[k,0,0]*S[k,:,:] - X[k,:,:], beta = nk[k,0,0], D = eigD[k,:], Q = eigQ[k,:,:])
         

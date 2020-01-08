@@ -188,6 +188,9 @@ def PPDNA(S, lambda1, lambda2, reg, Omega_0, Theta_0 = np.array([]), X_0 = np.ar
     
     for iter_t in np.arange(max_iter):
         
+        if measure:
+            start = time.time()
+            
         # check stopping criterion
         eta_P = PPDNA_stopping_criterion(Omega_t, Theta_t, X_t, S , ppa_sub_params, reg)
         kkt_residual[iter_t] = eta_P
@@ -198,9 +201,6 @@ def PPDNA(S, lambda1, lambda2, reg, Omega_0, Theta_0 = np.array([]), X_0 = np.ar
         
         if verbose:
             print(f"------------Iteration {iter_t} of the Proximal Point Algorithm----------------")
-        
-        if measure:
-            start = time.time()
         
         Omega_t, Theta_t, X_t = PPA_subproblem(Omega_t, Theta_t, X_t, S, reg = reg, ppa_sub_params = ppa_sub_params, verbose = verbose)
         
@@ -255,7 +255,7 @@ def PPDNA_stopping_criterion(Omega, Theta, X, S , ppa_sub_params, reg):
     return max(term1, term2, term3)
 
 
-def warmPPDNA(S, lambda1, lambda2, reg, Omega_0, Theta_0 = np.array([]), X_0 = np.array([]), admm_params = None, ppdna_params = None, eps = 1e-5 , verbose = False, measure = False):
+def warmPPDNA(S, lambda1, lambda2, reg, Omega_0, Theta_0 = np.array([]), X_0 = np.array([]), admm_params = None, ppdna_params = None, eps = 1e-5 , eps_admm = 1e-3, verbose = False, measure = False):
     """
     function for solving a MGL problem with PPDNA but using ADMM as a warm start (i.e. solve to low accuracy with ADMM first)
     """
@@ -264,7 +264,6 @@ def warmPPDNA(S, lambda1, lambda2, reg, Omega_0, Theta_0 = np.array([]), X_0 = n
         eps_admm = eps
         phase2 = False
     else:
-        eps_admm = 1e-3
         eps_ppdna = eps
         phase2 = True
     

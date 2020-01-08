@@ -121,17 +121,6 @@ with sns.axes_style("white"):
     draw_group_heatmap(Theta, method = 'truth', ax = axs[0])
     draw_group_heatmap(Theta_sol, method = 'PPDNA', ax = axs[1])
 
-with sns.axes_style("whitegrid"):
-    fig,ax = plt.subplots(nrows = 1, ncols = 1)
-    ax.plot(infoA['kkt_residual'])
-    ax.plot(infoP['kkt_residual'])
-    ax.set_yscale('log')
-    ax.set_ylim(1e-6,0.2)
-    ax2 = ax.twinx()
-    ax2.plot(infoA['runtime'].cumsum(), linestyle = '--')
-    ax2.plot(infoP['runtime'].cumsum(), linestyle = '--')
-    ax.vlines(infoP['iter_admm'], 0,0.2)
-
 #%%
 plot_fpr_tpr(FPR, TPR, ix, ix2, FPR_GL, TPR_GL, W2, save = save)
 plot_diff_fpr_tpr(DFPR, DTPR, ix, ix2, DFPR_GL, DTPR_GL, W2, save = save)
