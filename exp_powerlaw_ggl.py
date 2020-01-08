@@ -14,7 +14,7 @@ from gglasso.solver.admm_solver import ADMM_MGL
 from gglasso.solver.ggl_solver import PPDNA, warmPPDNA
 from gglasso.helper.data_generation import group_power_network, sample_covariance_matrix, plot_degree_distribution
 from gglasso.helper.experiment_helper import lambda_parametrizer, lambda_grid, discovery_rate, aic, ebic, error
-from gglasso.helper.experiment_helper import draw_group_heatmap, plot_fpr_tpr, plot_diff_fpr_tpr, plot_runtime, plot_error_accuracy, get_default_plot_aes
+from gglasso.helper.experiment_helper import draw_group_heatmap, plot_fpr_tpr, plot_diff_fpr_tpr, plot_error_accuracy, get_default_plot_aes
 
 p = 100
 K = 5
@@ -177,44 +177,3 @@ for g1 in np.arange(grid1):
 
 plot_error_accuracy(EPS, ERR, L2, save = save)
 
-#%%
-# runtime analysis ADMM vs. PPDNA on diff. sample sizes
-
-f = np.array([0.5,0.9, 1.5, 5, 10, 20])
-vecN = (f * p).astype(int)
-
-l1 = 5e-2 * np.ones(len(f))
-l2 = 5e-2 * np.ones(len(f))
-
-#mapf = lambda x: .1 + 1/(np.log(x+1))
-#l1 = mapf(f)*l1opt
-#l2 = mapf(f)*l2opt
-
-Omega_0 = np.zeros((K,p,p))
-
-RT_ADMM = np.zeros(len(vecN))
-RT_PPA = np.zeros(len(vecN))
-TPR = np.zeros(len(vecN))
-FPR = np.zeros(len(vecN))
-
-
-for j in np.arange(len(vecN)):  
-    #Omega_0 = np.linalg.pinv(S, hermitian = True)
-    S, sample = sample_covariance_matrix(Sigma, vecN[j])
-    
-    start = time()
-    sol, info = ADMM_MGL(S, l1[j], l2[j], reg , Omega_0 , rho = 1, max_iter = 1000, \
-                             eps_admm = 5e-5, verbose = False, measure = True)
-    end = time()
-    RT_ADMM[j] = end-start
-    
-    TPR[j] = discovery_rate(sol['Theta'], Theta)['TPR']
-    FPR[j] = discovery_rate(sol['Theta'], Theta)['FPR']
-    
-    start = time()
-    sol, info = warmPPDNA(S, l1[j], l2[j], reg, Omega_0, eps = 5e-5, verbose = False, measure = True)
-    end = time()
-    RT_PPA[j] = end-start
-
-
-plot_runtime(f, RT_ADMM, RT_PPA, save = False)

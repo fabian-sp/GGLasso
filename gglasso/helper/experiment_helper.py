@@ -294,23 +294,23 @@ def plot_deviation(results, latent = None, save = False):
 
     return
 
-def plot_runtime(f, RT_ADMM, RT_PPDNA, save = False):
-    plot_aes = get_default_plot_aes()
-    color_dict = get_default_color_coding()
-    
-    with sns.axes_style("whitegrid"):
-        fig, ax = plt.subplots(1,1,figsize = (12,8))
-        ax.plot(f, RT_ADMM, c = color_dict['ADMM'], **plot_aes)
-        ax.plot(f, RT_PPDNA, c = color_dict['PPDNA'], **plot_aes)
-        
-        ax.set_xlabel('N/p')
-        ax.set_ylabel('runtime [sec]')
-        ax.legend(labels = ['ADMM', 'PPDNA'])
-    
-    if save:
-        fig.savefig(path_ggl + 'runtime.pdf')
-        
-    return
+#def plot_runtime(f, RT_ADMM, RT_PPDNA, save = False):
+#    plot_aes = get_default_plot_aes()
+#    color_dict = get_default_color_coding()
+#    
+#    with sns.axes_style("whitegrid"):
+#        fig, ax = plt.subplots(1,1,figsize = (12,8))
+#        ax.plot(f, RT_ADMM, c = color_dict['ADMM'], **plot_aes)
+#        ax.plot(f, RT_PPDNA, c = color_dict['PPDNA'], **plot_aes)
+#        
+#        ax.set_xlabel('N/p')
+#        ax.set_ylabel('runtime [sec]')
+#        ax.legend(labels = ['ADMM', 'PPDNA'])
+#    
+#    if save:
+#        fig.savefig(path_ggl + 'runtime.pdf')
+#        
+#    return
 
 def plot_fpr_tpr(FPR, TPR, ix, ix2, FPR_GL = None, TPR_GL = None, W2 = [], save = False):
     """

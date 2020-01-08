@@ -229,7 +229,8 @@ def PPDNA(S, lambda1, lambda2, reg, Omega_0, Theta_0 = np.array([]), X_0 = np.ar
     
     sol = {'Omega': Omega_t, 'Theta': Theta_t, 'X': X_t}
     if measure:
-        info = {'status': status , 'runtime': runtime[:iter_t +1], 'kkt_residual': kkt_residual[:iter_t +1]}
+        # last runtime irrelevant (as break) and first residual irrelevant
+        info = {'status': status , 'runtime': runtime[:iter_t], 'kkt_residual': kkt_residual[1:iter_t + 1]}
     else:
         info = {'status': status}
     return sol, info
@@ -251,7 +252,7 @@ def PPDNA_stopping_criterion(Omega, Theta, X, S , ppa_sub_params, reg):
         proxK[k,:,:] = phiplus(A = Omega[k,:,:] - S[k,:,:] - X[k,:,:], beta = 1, D = eigD[k,:], Q = eigQ[k,:,:])
     
     term3 = np.linalg.norm(Omega - proxK) / (1 + np.linalg.norm(Omega))
-
+    
     return max(term1, term2, term3)
 
 

@@ -109,7 +109,7 @@ def ADMM_MGL(S, lambda1, lambda2, reg , Omega_0 , \
     
     sol = {'Omega': Omega_t, 'Theta': Theta_t, 'X': X_t}
     if measure:
-        info = {'status': status , 'runtime': runtime[:iter_t +1], 'kkt_residual': kkt_residual[:iter_t +1]}
+        info = {'status': status , 'runtime': runtime[:iter_t], 'kkt_residual': kkt_residual[1:iter_t +1]}
     else:
         info = {'status': status}
                
