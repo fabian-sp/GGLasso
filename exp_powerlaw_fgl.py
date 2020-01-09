@@ -13,7 +13,7 @@ from sklearn.covariance import GraphicalLasso
 from gglasso.solver.ggl_solver import PPDNA, warmPPDNA
 from gglasso.solver.admm_solver import ADMM_MGL
 from gglasso.helper.data_generation import time_varying_power_network, sample_covariance_matrix
-from gglasso.helper.experiment_helper import lambda_grid, discovery_rate, aic, ebic, error
+from gglasso.helper.experiment_helper import get_K_identity, lambda_grid, discovery_rate, aic, ebic, error
 from gglasso.helper.experiment_helper import draw_group_heatmap, plot_evolution, plot_deviation, get_default_color_coding, plot_fpr_tpr, multiple_heatmap_animation, single_heatmap_animation
 
 #from tvgl3.TVGL3 import TVGLwrapper
@@ -56,8 +56,8 @@ DTPR = np.zeros((grid1, grid2))
 AIC = np.zeros((grid1, grid2))
 BIC = np.zeros((grid1, grid2))
 
-Omega_0 = np.zeros((K,p,p))
-Theta_0 = np.zeros((K,p,p))
+Omega_0 = get_K_identity(K,p)
+Theta_0 = get_K_identity(K,p)
 
 for g1 in np.arange(grid1):
     for g2 in np.arange(grid2):

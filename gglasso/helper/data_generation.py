@@ -39,8 +39,10 @@ def power_law_network(p=100, M=10):
         
         A[m*L:(m+1)*L, m*L:(m+1)*L] = A_m
     
-    
-    row_sum_od = 1.7 * abs(A).sum(axis = 1)
+    if p > 100:
+        row_sum_od = 2.3 * abs(A).sum(axis = 1)
+    else:
+        row_sum_od = 1.7 * abs(A).sum(axis = 1)
     # broadcasting in order to divide ROW-wise
     A = A / row_sum_od[:,np.newaxis]
     
@@ -51,7 +53,7 @@ def power_law_network(p=100, M=10):
     assert all(np.diag(A)==1), "Expected 1s on diagonal"
     
     D,_ = np.linalg.eigh(A)
-    assert D.min() > 0, "generated matrix A is not positive definite"
+    assert D.min() > 0, f"generated matrix A is not positive definite, min EV is {D.min()}"
     
     Ainv = np.linalg.pinv(A, hermitian = True)
     
@@ -63,7 +65,7 @@ def power_law_network(p=100, M=10):
                 Sigma[i,j] = 0.6 * Ainv[i,j]/np.sqrt(Ainv[i,i] * Ainv[j,j])
      
     assert abs(Sigma.T - Sigma).max() <= 1e-8
-    D,_ = np.linalg.eig(Sigma)
+    D,_ = np.linalg.eigh(Sigma)
     assert D.min() > 0, "generated matrix Sigma is not positive definite"
          
     return Sigma

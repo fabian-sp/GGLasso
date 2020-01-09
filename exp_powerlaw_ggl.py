@@ -13,7 +13,7 @@ from sklearn.covariance import GraphicalLasso
 from gglasso.solver.admm_solver import ADMM_MGL
 from gglasso.solver.ggl_solver import PPDNA, warmPPDNA
 from gglasso.helper.data_generation import group_power_network, sample_covariance_matrix, plot_degree_distribution
-from gglasso.helper.experiment_helper import lambda_parametrizer, lambda_grid, discovery_rate, aic, ebic, error
+from gglasso.helper.experiment_helper import get_K_identity, lambda_parametrizer, lambda_grid, discovery_rate, aic, ebic, error
 from gglasso.helper.experiment_helper import draw_group_heatmap, plot_fpr_tpr, plot_diff_fpr_tpr, plot_error_accuracy, get_default_plot_aes
 
 p = 100
@@ -47,8 +47,8 @@ DTPR = np.zeros((grid1, grid2))
 AIC = np.zeros((grid1, grid2))
 BIC = np.zeros((grid1, grid2))
 
-Omega_0 = np.zeros((K,p,p))
-Theta_0 = np.zeros((K,p,p))
+Omega_0 = get_K_identity(K,p)
+Theta_0 = get_K_identity(K,p)
 
 for g1 in np.arange(grid1):
     for g2 in np.arange(grid2):
@@ -106,8 +106,8 @@ l1opt = L1[ix]
 l2opt = L2[ix]
 
 print("Optimal lambda values: (l1,l2) = ", (l1opt,l2opt))
-Omega_0 = np.zeros((K,p,p))
-Theta_0 = np.zeros((K,p,p))
+Omega_0 = get_K_identity(K,p)
+Theta_0 = get_K_identity(K,p)
 
 solP, infoP = warmPPDNA(S, l1opt, l2opt, reg, Omega_0, Theta_0 = Theta_0, eps = 5e-5 , verbose = True, measure = True)
 
@@ -176,4 +176,3 @@ for g1 in np.arange(grid1):
 
 
 plot_error_accuracy(EPS, ERR, L2, save = save)
-

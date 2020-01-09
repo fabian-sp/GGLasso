@@ -55,6 +55,12 @@ def adjacency_matrix(S , t = 1e-5):
         np.fill_diagonal(A, 0)
     return A
 
+def sparsity(S):
+    (K,p,p) = S.shape
+    A = adjacency_matrix(S)
+    sparsity = A.sum(axis = (1,2))/(p**2-p)
+    return sparsity.mean()
+
 
 def discovery_rate(S_sol , S_true, t = 1e-5):
     if len(S_true.shape) == 2:
