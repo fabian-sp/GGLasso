@@ -6,7 +6,7 @@ import numpy as np
 import time
 
 from ..helper.basic_linalg import trp
-from .ggl_helper import prox_p, phiplus, prox_od_1norm, prox_od_2norm
+from .ggl_helper import prox_p, phiplus, prox_od_2norm
 
 
 def latent_ADMM_GGL(S, lambda1, lambda2, mu1, mu2, R_0, \
@@ -54,7 +54,7 @@ def latent_ADMM_GGL(S, lambda1, lambda2, mu1, mu2, R_0, \
     L_t = np.zeros((K,p,p))
     X0_t = np.zeros((K,p,p))
     X1_t = np.zeros((K,p,p))
-    X2_t = np.zeros((K,p,p))
+    #X2_t = np.zeros((K,p,p))
     Z_t = np.zeros((K,p,p))
     W_t = np.zeros((K,p,p))
     
@@ -64,28 +64,32 @@ def latent_ADMM_GGL(S, lambda1, lambda2, mu1, mu2, R_0, \
     for iter_t in np.arange(max_iter):
         
         # R step
-        A_t = Theta_t - L_t + X0_t
+        A_t = Theta_t - L_t - X0_t
         H1_t = (A_t + trp(A_t))/2 - (1/rho) * S
         eigD, eigQ = np.linalg.eigh(H1_t) 
         for k in np.arange(K):
             R_t[k,:,:] = phiplus(H1_t[k,:,:], 1/rho, D = eigD[k,:], Q = eigQ[k,:,:])
             
         # Theta step
-        B_t = (R_t + L_t - X0_t  + Z_t - X1_t) / 2
-        Theta_t = prox_od_1norm(B_t, lambda1/(2*rho))
+        B_t = (R_t + L_t + X0_t) / 2
+        #Theta_t = prox_od_1norm(B_t, lambda1/rho)
+        Theta_t = prox_p(B_t, lambda1/rho, lambda2/rho, reg = 'GGL')
+        
         
         # L step
-        C_t = (X0_t + Theta_t - R_t + W_t - X2_t) / 2
+        C_t = (Theta_t - X0_t - R_t + W_t + X1_t) / 2
         H2_t = (C_t + trp(C_t))/2
         eigD, eigQ = np.linalg.eigh(H2_t)
         for k in np.arange(K):
-            L_t[k,:,:] = prox_rank_norm(H2_t[k,:,:], mu1/rho, D = eigD[k,:,:], Q = eigQ[k,:,:])
+            L_t[k,:,:] = prox_rank_norm(H2_t[k,:,:], mu1/(2*rho), D = eigD[k,:,:], Q = eigQ[k,:,:])
         
-        # Z step
-        Z_t = prox_od_2norm(Theta_t + X1_t, lambda2/rho)
         
         # W step
-        W_t = prox_od_2norm(L_t + X2_t, mu2/rho)
+        W_t = prox_od_2norm(L_t + X1_t, mu2/rho)
+        
+        # dual variables
+        X0_t += R_t - Theta_t + L_t
+        X1_t += W_t - L_t
         
     return
                 
