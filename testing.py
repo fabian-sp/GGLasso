@@ -10,7 +10,7 @@ from gglasso.solver.ggl_solver import PPDNA
 from gglasso.solver.admm_solver import ADMM_MGL
 from gglasso.solver.latent_admm_solver import latent_ADMM_GGL
 from gglasso.helper.data_generation import time_varying_power_network, group_power_network,sample_covariance_matrix
-
+from gglasso.helper.experiment_helper import get_K_identity
 
 p = 20
 K = 5
@@ -27,6 +27,8 @@ elif reg == 'FGL':
 
 S, samples = sample_covariance_matrix(Sigma, N)
 
+S = get_K_identity(K,p)
+
 lambda1= 0.05
 lambda2 = 0.05
 
@@ -37,7 +39,7 @@ solPPDNA, info = PPDNA(S, lambda1, lambda2, reg, Omega_0, eps_ppdna = 1e-3 , ver
 
 solADMM, info = ADMM_MGL(S, lambda1, lambda2, reg, Omega_0, n_samples = None, eps_admm = 1e-4 , verbose = True)
 
-solADMM, info = latent_ADMM_GGL(S, lambda1, lambda2, 1e-2, 1e-2, Omega_0, n_samples = None, eps_admm = 1e-3 , verbose = True, measure = False)
+solADMM, info = latent_ADMM_GGL(S, lambda1, lambda2, 1e-2, 1e-2, Omega_0, n_samples = None, eps_admm = 1e-3 , verbose = True, measure = False, max_iter = 20)
 
 
 #Theta_sol = solPPDNA['Theta']

@@ -118,7 +118,7 @@ def latent_ADMM_GGL(S, lambda1, lambda2, mu1, mu2, R_0, \
     assert abs(trp(Theta_t)- Theta_t).max() <= 1e-5, "Solution is not symmetric"
     assert abs(trp(L_t)- L_t).max() <= 1e-5, "Solution is not symmetric"
     
-    sol = {'T': R_t, 'Theta': Theta_t, 'L': L_t, 'X0': X0_t, 'X1': X1_t}
+    sol = {'R': R_t, 'Theta': Theta_t, 'L': L_t, 'X0': X0_t, 'X1': X1_t}
     if measure:
         info = {'status': status , 'runtime': runtime[:iter_t], 'kkt_residual': kkt_residual[1:iter_t +1]}
     else:
