@@ -34,11 +34,11 @@ def prox_od_1norm(A, l):
     
     return res
 
-@jit(nopython=True)
-def prox_od_2norm(A, l):
+def prox_chi(A, l):
     """
     calculates the prox of the off-diagonal 2norm at point A
     """
+    assert l > 0 
     if len(A.shape) == 2:
         A = A[np.newaxis,:,:]
         
@@ -196,7 +196,7 @@ def prox_p(X, l1, l2, reg):
             else:
                 M[:,i,j] = prox_phi(X[:,i,j], l1, l2 , reg)
     
-    assert abs(M - trp(M)).max() <= 1e-5
+    assert abs(M - trp(M)).max() <= 1e-5, f"symmetry failed by  {abs(M - trp(M)).max()}"
     return M
   
 def moreau_P(X, l1, l2, reg):
