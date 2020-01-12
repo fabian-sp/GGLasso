@@ -81,7 +81,7 @@ def latent_ADMM_GGL(S, lambda1, lambda2, mu1, mu2, R_0, \
             R_t[k,:,:] = phiplus(H1_t[k,:,:], 1/rho, D = eigD[k,:], Q = eigQ[k,:,:])
             
         # Theta step
-        B_t = (R_t + L_t + X0_t) / 2
+        B_t = (R_t + L_t + X0_t) 
         #Theta_t = prox_od_1norm(B_t, lambda1/rho)
         Theta_t = prox_p(B_t, lambda1/rho, lambda2/rho, reg = 'GGL')
         
@@ -95,7 +95,7 @@ def latent_ADMM_GGL(S, lambda1, lambda2, mu1, mu2, R_0, \
         
         
         # W step
-        W_t = prox_chi(L_t + X1_t, mu2/rho)
+        W_t = prox_chi(L_t - X1_t, mu2/rho)
         
         # dual variables
         X0_t += R_t - Theta_t + L_t
