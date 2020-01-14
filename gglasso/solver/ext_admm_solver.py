@@ -4,6 +4,8 @@ author: Fabian Schaipp
 
 import numpy as np
 import time
+import copy
+from numba import jit
 
 from ..helper.basic_linalg import trp
 from .ggl_helper import prox_p, phiplus, prox_od_1norm
@@ -25,7 +27,7 @@ def ext_ADMM_MGL(S, lambda1, lambda2, reg , Omega_0, \
     assert min(lambda1, lambda2) > 0
         
     K = len(S.keys())
-    p = np.zeros(K)
+    p = np.zeros(K, dtype= int)
     for k in np.arange(K):
         p[k] = S[k].shape[0]
         
@@ -160,6 +162,9 @@ def check_G(G, p):
     
     return
 
+
+
+
 def prox_2norm_G(X, G, l2):
     """
     calculates the proximal operator at points X for the group penalty induced by G
@@ -168,18 +173,65 @@ def prox_2norm_G(X, G, l2):
     X: dictionary with X^k at key k, each X[k] is assumed to be symmetric
     """
     assert l2 > 0
-    
-    K = len(S.keys())
+    K = len(X.keys())
     for  k in np.arange(K):
         assert abs(X[k] - X[k].T).max() <= 1e-5, "X[k] has to be symmteric"
+    
+    d = G.shape
+    assert d[0] == 2
+    assert d[2] == K
+    L = d[1]
+    
+    X1 = copy.deepcopy(X)
+    
+    for l in np.arange(L):
+        # for each group construct v, calculate prox, and insert the result. Ignore NaN entries of G
+        v0 = np.zeros(K)
+        for k in np.arange(K):
+            if G[0,l,k] == np.nan:
+                v0[k] = 0
+            else:
+                v0[k] = X[k][G[0,l,k], G[1,l,k]]
         
-    
-    
-    
-    
-    
+        #v = v0[~np.isnan(v0)]
+        a = max(np.linalg.norm(v0,2) , l2)
+        z = v0 * (a - l2) / a
+        
+        for k in np.arange(K):
+            if G[0,l,k] == np.nan:
+                continue
+            else:
+                X1[k][G[0,l,k], G[1,l,k]] = z[k]
+                # lower triangular
+                X1[k][G[1,l,k], G[0,l,k]] = z[k]
+             
+    return X1
 
 
+        
+########################################################################
+p = 1000
+K= 5
+
+l = .1
+
+X = {}
+refX = np.zeros((K,p,p))
+for k in np.arange(K):
+    A = np.random.randn(p,p)
+    X[k] = A.T @ A
+    refX[k,:,:] = X[k].copy()
+    
+    
+X1 = prox_2norm_G(X, G, l)
+
+X1arr = np.zeros((K,p,p))
+for k in np.arange(K):
+    X1arr[k,:,:] = X1[k].copy()
+
+refY = prox_chi(refX, l)    
+
+np.linalg.norm(refY-X1arr)
 
 
     
