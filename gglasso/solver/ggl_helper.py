@@ -163,10 +163,10 @@ def prox_PTV(X, l2):
     
 def P_val(X, l1, l2, reg):
     assert min(l1,l2) > 0, "lambda 1 and lambda2 have to be positive"
-    d = X.shape
+    (K,p,p) = X.shape
     res = 0
-    for i in np.arange(d[1]):
-        for j in np.arange(start = i + 1 , stop = d[2]):
+    for i in np.arange(p):
+        for j in np.arange(start = i + 1 , stop = p):
             if reg == 'GGL':
                 res += l1 * np.linalg.norm(X[:,i,j] , 1) + l2 * np.linalg.norm(X[:,i,j] , 2)
             elif reg == 'FGL':
@@ -187,10 +187,10 @@ def prox_phi(v, l1, l2, reg):
     
 def prox_p(X, l1, l2, reg):
     assert min(l1,l2) > 0, "lambda 1 and lambda2 have to be positive"
-    d = X.shape
-    M = np.zeros(d)
-    for i in np.arange(d[1]):
-        for j in np.arange(d[2]):
+    (K,p,p) = X.shape
+    M = np.zeros((K,p,p))
+    for i in np.arange(p):
+        for j in np.arange(p):
             if i == j:
                 M[:,i,j] = X[:,i,j]
             else:
