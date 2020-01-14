@@ -28,11 +28,11 @@ px = pd.read_csv('data/dax_constituents.csv', index_col = 0)
 px.index = pd.to_datetime(px.index)
 ret = 100*np.log(px/px.shift(1)).dropna()
 
-#%%
 p = len(px.columns)
 reg = 'FGL'
 results = {}
 
+#%%
 
 def filter_by_year(ret):
     K = 10
@@ -41,10 +41,12 @@ def filter_by_year(ret):
     years = np.arange(start = 2003, stop = 2013)
     samples = {}
     for k in np.arange(K):
-        samples_k = ret[ret.index.year == years[k]].values
-        samples[k] = samples_k
-        n[k] = len(samples_k)
-        S[k,:,:] = np.cov(samples_k, rowvar = False, bias = True)
+        dt = ret[ret.index.year == years[k]].values
+        # demean to zero
+        dt = dt - dt.mean(axis=0)
+        samples[k] = dt.copy()
+        n[k] = len(dt)
+        S[k,:,:] = np.cov(dt, rowvar = False, bias = True)
     
     return S, samples, n, K
 
@@ -72,18 +74,21 @@ def filter_by_start(ret, start_date, K = 12, N = 22):
     n = N * np.ones(K)
     samples = np.zeros((K,N,p))
     for k in np.arange(K):
-        samples[k,:,:] = ret.iloc[k*N:(k+1)*N, :]
+        dt = ret.iloc[k*N:(k+1)*N, :]
+        # demean to zero
+        dt = dt - dt.mean(axis=0)
+        samples[k,:,:] = dt
         S[k,:,:] = np.cov(samples[k], rowvar = False, bias = True)
         
     return S, samples, n
 
-K = 20
-N = 23
-S, samples, n = filter_by_start(ret, start_date = '2005-01-02', K = K, N = N)
+K = 13
+N = 250
+S, samples, n = filter_by_start(ret, start_date = '2002-01-02', K = K, N = N)
 
 Sinv = np.linalg.pinv(S, hermitian = True)
 #%%
-L1, L2, _ = lambda_grid(num1 = 7, num2 = 5, reg = reg)
+L1, L2, _ = lambda_grid(num1 = 7, num2 = 3, reg = reg)
 grid1 = L1.shape[0]; grid2 = L2.shape[1]
 
 AIC = np.zeros((grid1, grid2))
