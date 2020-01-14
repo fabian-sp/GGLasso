@@ -5,7 +5,6 @@ author: Fabian Schaipp
 import numpy as np
 import time
 import copy
-from numba import jit
 
 from ..helper.basic_linalg import trp
 from .ggl_helper import prox_p, phiplus, prox_od_1norm
@@ -158,7 +157,7 @@ def check_G(G, p):
     
     assert np.all(G >=0), "No negative indices allowed"
     
-    assert np.all(G.max(axis = (0,1)) <= p), "indices larger as dimension were found"
+    assert np.all(G.max(axis = (0,1)) < p), "indices larger as dimension were found"
     
     return
 
@@ -207,8 +206,7 @@ def prox_2norm_G(X, G, l2):
              
     return X1
 
-
-        
+    
 ########################################################################
 p = 1000
 K= 5
