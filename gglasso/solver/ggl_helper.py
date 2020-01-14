@@ -18,20 +18,16 @@ def prox_od_1norm(A, l):
     """
     calculates the prox of the off-diagonal 1norm at a point A
     """
-    if len(A.shape) == 2:
-        A = A[np.newaxis,:,:]
-        
-    (d1,d2,d3) = A.shape
-    res = np.zeros((d1,d2,d3))
-    for i in np.arange(d2):
-        for j in np.arange(d3):
-            if i == j:
-                res[:,i,j] = A[:,i,j]
-            else:
-                res[:,i,j] = np.sign(A[:,i,j]) * np.maximum(abs(A[:,i,j]) - l, 0)
-    if d1 == 1:
-        res = res[0,:,:]
     
+    (d1,d2) = A.shape
+    res = np.zeros((d1,d2))
+    for i in np.arange(d1):
+        for j in np.arange(d2):
+            if i == j:
+                res[i,j] = A[i,j]
+            else:
+                res[i,j] = np.sign(A[i,j]) * np.maximum(abs(A[i,j]) - l, 0)
+
     return res
 
 @jit(nopython=True)
