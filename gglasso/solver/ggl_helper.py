@@ -34,13 +34,12 @@ def prox_od_1norm(A, l):
     
     return res
 
+@jit(nopython=True)
 def prox_chi(A, l):
     """
     calculates the prox of the off-diagonal 2norm at point A
     """
     assert l > 0 
-    if len(A.shape) == 2:
-        A = A[np.newaxis,:,:]
         
     (d1,d2,d3) = A.shape
     res = np.zeros((d1,d2,d3))
@@ -51,9 +50,7 @@ def prox_chi(A, l):
             else:
                 a = max(np.linalg.norm(A[:,i,j],2) , l)
                 res[:,i,j] = A[:,i,j] * (a - l) / a
-    if d1 == 1:
-        res = res[0,:,:]
-    
+
     return res
 
                 
