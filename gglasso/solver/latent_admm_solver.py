@@ -22,6 +22,8 @@ def latent_ADMM_GGL(S, lambda1, lambda2, mu1, mu2, R_0, \
     assert R_0.shape == S.shape
     assert S.shape[1] == S.shape[2]
     assert min(lambda1, lambda2) > 0
+    assert mu1 > 0
+    assert mu2 >= 0
     
     (K,p,p) = S.shape
     

@@ -18,29 +18,24 @@ def prox_od_1norm(A, l):
     """
     calculates the prox of the off-diagonal 1norm at a point A
     """
-    if len(A.shape) == 2:
-        A = A[np.newaxis,:,:]
-        
-    (d1,d2,d3) = A.shape
-    res = np.zeros((d1,d2,d3))
-    for i in np.arange(d2):
-        for j in np.arange(d3):
-            if i == j:
-                res[:,i,j] = A[:,i,j]
-            else:
-                res[:,i,j] = np.sign(A[:,i,j]) * np.maximum(abs(A[:,i,j]) - l, 0)
-    if d1 == 1:
-        res = res[0,:,:]
     
+    (d1,d2) = A.shape
+    res = np.zeros((d1,d2))
+    for i in np.arange(d1):
+        for j in np.arange(d2):
+            if i == j:
+                res[i,j] = A[i,j]
+            else:
+                res[i,j] = np.sign(A[i,j]) * np.maximum(abs(A[i,j]) - l, 0)
+
     return res
 
+@jit(nopython=True)
 def prox_chi(A, l):
     """
     calculates the prox of the off-diagonal 2norm at point A
     """
     assert l > 0 
-    if len(A.shape) == 2:
-        A = A[np.newaxis,:,:]
         
     (d1,d2,d3) = A.shape
     res = np.zeros((d1,d2,d3))
@@ -51,9 +46,7 @@ def prox_chi(A, l):
             else:
                 a = max(np.linalg.norm(A[:,i,j],2) , l)
                 res[:,i,j] = A[:,i,j] * (a - l) / a
-    if d1 == 1:
-        res = res[0,:,:]
-    
+
     return res
 
                 
@@ -163,10 +156,10 @@ def prox_PTV(X, l2):
     
 def P_val(X, l1, l2, reg):
     assert min(l1,l2) > 0, "lambda 1 and lambda2 have to be positive"
-    d = X.shape
+    (K,p,p) = X.shape
     res = 0
-    for i in np.arange(d[1]):
-        for j in np.arange(start = i + 1 , stop = d[2]):
+    for i in np.arange(p):
+        for j in np.arange(start = i + 1 , stop = p):
             if reg == 'GGL':
                 res += l1 * np.linalg.norm(X[:,i,j] , 1) + l2 * np.linalg.norm(X[:,i,j] , 2)
             elif reg == 'FGL':
@@ -187,10 +180,10 @@ def prox_phi(v, l1, l2, reg):
     
 def prox_p(X, l1, l2, reg):
     assert min(l1,l2) > 0, "lambda 1 and lambda2 have to be positive"
-    d = X.shape
-    M = np.zeros(d)
-    for i in np.arange(d[1]):
-        for j in np.arange(d[2]):
+    (K,p,p) = X.shape
+    M = np.zeros((K,p,p))
+    for i in np.arange(p):
+        for j in np.arange(p):
             if i == j:
                 M[:,i,j] = X[:,i,j]
             else:

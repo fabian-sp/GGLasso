@@ -17,6 +17,9 @@ def ADMM_MGL(S, lambda1, lambda2, reg , Omega_0 , \
     reg specifies the type of penalty, i.e. Group or Fused Graphical Lasso
     see also the article from Danaher et. al.
     
+    Omega_0 : start point -- must be specified as a (K,p,p) array
+    S : empirical covariance matrices -- must be specified as a (K,p,p) array
+    
     n_samples are the sample sizes for the K instances, can also be None or integer
     max_iter and rho can be specified via kwargs
     """
@@ -37,8 +40,6 @@ def ADMM_MGL(S, lambda1, lambda2, reg , Omega_0 , \
     else:
         rho = 1.
         
-    if 'eps_abs' in kwargs.keys() and 'eps_rel' in kwargs.keys():
-        use_boyd_criterion = True
     
     # n_samples None --> set them all to 1
     # n_samples integer --> all instances have same number of samples
@@ -79,16 +80,17 @@ def ADMM_MGL(S, lambda1, lambda2, reg , Omega_0 , \
         if verbose:
             print(f"------------Iteration {iter_t} of the ADMM Algorithm----------------")
         
-        # Omega Xpdate
+        # Omega Update
         W_t = Theta_t - X_t - (nk/rho) * S
         eigD, eigQ = np.linalg.eigh(W_t)
         
         for k in np.arange(K):
             Omega_t[k,:,:] = phiplus(W_t[k,:,:], beta = nk[k,0,0]/rho, D = eigD[k,:], Q = eigQ[k,:,:])
         
-        # Theta Xpdate
+        # Theta Update
         Theta_t = prox_p(Omega_t + X_t, (1/rho)*lambda1, (1/rho)*lambda2, reg)
-        # X Xpdate
+        
+        # X Update
         X_t = X_t + Omega_t - Theta_t
         
         if measure:
