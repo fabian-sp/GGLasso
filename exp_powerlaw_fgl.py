@@ -140,8 +140,9 @@ results['ADMM'] = {'Theta' : sol['Theta']}
 
 #%%
 start = time()
-#ltgl = LatentTimeGraphicalLasso(alpha = N*lambda1, beta = N*lambda2, tau = N*0.1, psi = 'l1', rho = 1, tol = 1e-4, max_iter=2000, verbose = True)
-ltgl = TimeGraphicalLasso(alpha = N*lambda1, beta = N*lambda2, psi = 'l1', \
+alpha = N*lambda1
+beta = N*lambda2 
+ltgl = TimeGraphicalLasso(alpha = alpha, beta = beta , psi = 'l1', \
                           rho = 1., tol = 1e-3, rtol = 1e-4,  max_iter = 2000, verbose = True)
 ltgl = ltgl.fit(sample.transpose(0,2,1))
 end = time()
@@ -161,7 +162,8 @@ print(np.linalg.norm(Theta_lgtl - Theta_admm)/ np.linalg.norm(Theta_admm))
 
 
 save = True
-plot_evolution(results, block = 2, L = L, save = save)
+
+plot_evolution(results, block = 0, L = L, save = save)
 plot_deviation(results, save = save)
 
 

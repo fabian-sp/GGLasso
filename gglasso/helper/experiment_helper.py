@@ -233,7 +233,7 @@ def plot_evolution(results, block = None, L = None, start = None, stop = None, s
     fig.suptitle('Precision matrix entries - evolution over time')
     
     if save:
-        fig.savefig(path_fgl + 'evolution.pdf')
+        fig.savefig(path_fgl + 'block_' + str(block) + '_evolution.pdf')
     return
 
 def plot_deviation(results, latent = None, save = False):
