@@ -28,6 +28,16 @@ def Gdot(X, Y):
 def Sdot(X,Y):
     return np.trace( X.T @ Y )
 
+def adjacency_matrix(S , t = 1e-5):
+    A = (np.abs(S) >= t).astype(int)
+    # do not count diagonal entries as edges
+    if len(S.shape) == 3:
+        for k in np.arange(S.shape[0]):
+            np.fill_diagonal(A[k,:,:], 0)
+    else:
+        np.fill_diagonal(A, 0)
+    return A
+
 def cg_general(lin, dot, b, eps = 1e-6, kwargs = {}, verbose = False):
     """
     This is the CG method for a general selfadjoint linear operator "lin" and a general scalar product "dot"

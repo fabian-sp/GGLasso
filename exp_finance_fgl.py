@@ -12,8 +12,9 @@ from sklearn.covariance import GraphicalLasso
 
 from gglasso.solver.admm_solver import ADMM_MGL
 from gglasso.solver.ggl_solver import PPDNA, warmPPDNA
-from gglasso.helper.experiment_helper import lambda_parametrizer, lambda_grid, discovery_rate, aic, ebic, error
+from gglasso.helper.experiment_helper import lambda_parametrizer, lambda_grid, discovery_rate, error
 from gglasso.helper.experiment_helper import plot_evolution, plot_deviation, single_heatmap_animation
+from gglasso.helper.model_selection import aic, ebic
 
 from regain.covariance import LatentTimeGraphicalLasso, TimeGraphicalLasso
 

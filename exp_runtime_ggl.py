@@ -12,8 +12,9 @@ import seaborn as sns
 from gglasso.solver.admm_solver import ADMM_MGL
 from gglasso.solver.ggl_solver import PPDNA, warmPPDNA
 from gglasso.helper.data_generation import group_power_network, sample_covariance_matrix
-from gglasso.helper.experiment_helper import get_K_identity, lambda_parametrizer, discovery_rate, aic, ebic, error, sparsity
+from gglasso.helper.experiment_helper import get_K_identity, lambda_parametrizer, discovery_rate, error, sparsity
 from gglasso.helper.experiment_helper import draw_group_heatmap
+from gglasso.helper.model_selection import aic, ebic
 
 p = 100
 K = 5
