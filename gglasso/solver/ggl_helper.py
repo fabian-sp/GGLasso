@@ -315,7 +315,7 @@ def eval_jacobian_phiplus(B, Gamma, Q):
         
     res = Q @ (Gamma * (trp(Q) @ B @ Q)) @ trp(Q)
     
-    assert abs(res - trp(res)).max() <= 1e-5
+    assert abs(res - trp(res)).max() <= 1e-4, f"symmetry failed by  {abs(res - trp(res)).max()}"
     return res
       
 

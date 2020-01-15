@@ -22,7 +22,7 @@ from regain.covariance import LatentTimeGraphicalLasso, TimeGraphicalLasso
 
 p = 100
 K = 10
-N = 2000
+N = 5000
 M = 5
 L = int(p/M)
 
@@ -31,7 +31,7 @@ reg = 'FGL'
 Sigma, Theta = time_varying_power_network(p, K, M)
 #np.linalg.norm(np.eye(p) - Sigma@Theta)/np.linalg.norm(np.eye(p))
 
-draw_group_heatmap(Theta)
+#single_heatmap_animation(Theta)
 
 S, sample = sample_covariance_matrix(Sigma, N)
 S_train, sample_train = sample_covariance_matrix(Sigma, N)
@@ -46,7 +46,7 @@ results['truth'] = {'Theta' : Theta}
 
 #%%
 # grid search for best lambda values with warm starts
-L1, L2, _ = lambda_grid(num1 = 7, num2 = 5, reg = reg)
+L1, L2, _ = lambda_grid(num1 = 5, num2 = 3, reg = reg)
 grid1 = L1.shape[0]; grid2 = L2.shape[1]
 
 ERR = np.zeros((grid1, grid2))
@@ -88,11 +88,13 @@ lambda1 = L1[ix]
 lambda2 = L2[ix]
 
 print("Optimal lambda values: (l1,l2) = ", (lambda1,lambda2))
-plot_fpr_tpr(FPR, TPR,  ix, ix2)
+plot_fpr_tpr(FPR.T, TPR.T,  ix[::-1], ix2[::-1])
+
 #%%
 # solve with QUIC/single Glasso
 #from inverse_covariance import QuicGraphicalLasso
 #quic = QuicGraphicalLasso(lam = 1.5*lambda1, tol = 1e-6)
+
 singleGL = GraphicalLasso(alpha = 1.5*lambda1, tol = 1e-6, max_iter = 200, verbose = True)
 
 res = np.zeros((K,p,p))
@@ -140,7 +142,7 @@ results['ADMM'] = {'Theta' : sol['Theta']}
 start = time()
 #ltgl = LatentTimeGraphicalLasso(alpha = N*lambda1, beta = N*lambda2, tau = N*0.1, psi = 'l1', rho = 1, tol = 1e-4, max_iter=2000, verbose = True)
 ltgl = TimeGraphicalLasso(alpha = N*lambda1, beta = N*lambda2, psi = 'l1', \
-                          rho = 1., tol = 1e-4, rtol = 1e-4,  max_iter = 2000, verbose = True)
+                          rho = 1., tol = 1e-3, rtol = 1e-4,  max_iter = 2000, verbose = True)
 ltgl = ltgl.fit(sample.transpose(0,2,1))
 end = time()
 
@@ -157,8 +159,10 @@ Theta_glasso = results.get('GLASSO').get('Theta')
 
 print(np.linalg.norm(Theta_lgtl - Theta_admm)/ np.linalg.norm(Theta_admm))
 
-plot_evolution(results, block = 0, L = L)
-plot_deviation(results)
+
+save = True
+plot_evolution(results, block = 2, L = L, save = save)
+plot_deviation(results, save = save)
 
 
 single_heatmap_animation(Theta_glasso, method = 'GLASSO', save = False)

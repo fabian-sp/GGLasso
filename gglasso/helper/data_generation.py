@@ -82,7 +82,7 @@ def time_varying_power_network(p=100, K=10, M=10):
     L = int(p/M)
     assert M*L == p
     
-    Sigma_0 = power_law_network(p = p, M = M)
+    Sigma_0 = power_law_network(p = p, M = M) 
     
     for k in np.arange(K):
         Sigma_k = Sigma_0.copy()
@@ -91,10 +91,18 @@ def time_varying_power_network(p=100, K=10, M=10):
             Sigma_k[L:2*L, L:2*L] = np.eye(L)
         else:
             Sigma_k[0:L, 0:L] = np.eye(L)
-        
+                  
         Sigma[k,:,:] = Sigma_k
-    
+        
     Theta = np.linalg.pinv(Sigma, hermitian = True)
+    
+    decay = np.exp(-.5 * np.arange(K)) 
+    helper = np.ones((K,L,L)) * decay[:,None,None]
+    for k in np.arange(K):
+        np.fill_diagonal(helper[k,:,:], 1)
+
+    Theta[:,2*L:3*L, 2*L:3*L] *= helper
+    
     Sigma, Theta = ensure_sparsity(Sigma, Theta)
     
     return Sigma, Theta

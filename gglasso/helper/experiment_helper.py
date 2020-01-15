@@ -129,7 +129,7 @@ def deviation(Theta):
 path_ggl = 'plots//ggl_powerlaw//'
 path_fgl = 'plots//fgl_powerlaw//'
 
-default_size = (8,5)
+default_size = (6,4)
 
 def get_default_plot_aes():
     plot_aes = {'marker' : 'o', 'markersize' : 4}
@@ -143,8 +143,8 @@ def get_default_color_coding():
     color_dict = {}    
     color_dict['truth'] = sns.color_palette("YlGnBu", 10)[-1] #'darkblue'
     color_dict['GLASSO'] = mypal[7]
-    color_dict['ADMM'] = mypal[0]
-    color_dict['PPDNA'] = mypal[1]
+    color_dict['ADMM'] = mypal[1]
+    color_dict['PPDNA'] = mypal[0]
     color_dict['LGTL'] = mypal[5]
 
     return color_dict
@@ -248,7 +248,11 @@ def plot_deviation(results, latent = None, save = False):
     
         for m in list(results.keys()):
             d = deviation(results.get(m).get('Theta'))
-            ax.plot(d, c = color_dict[m], **plot_aesthetics)
+            if m in ['truth', 'GLASSO']:
+                ls = '--'
+            else:
+                ls = '-'
+            ax.plot(d, c = color_dict[m], linestyle = ls, **plot_aesthetics)
                 
         ax.set_ylabel('Temporal Deviation Theta')
         ax.set_xlabel('Time (k=1,...,K)')
@@ -306,7 +310,7 @@ def plot_fpr_tpr(FPR, TPR, ix, ix2, FPR_GL = None, TPR_GL = None, W2 = [], save 
         ax.set_ylabel('True Positive Rate')
         labels = [f"w2 = {w}" for w in W2] 
         if FPR_GL is not None:
-            labels.append("single GL")
+            labels.append("GLASSO")
         ax.legend(labels = labels, loc = 'lower right')
         
     fig.suptitle('Discovery rate for different regularization strengths')
@@ -339,7 +343,7 @@ def plot_diff_fpr_tpr(DFPR, DTPR, ix, ix2, DFPR_GL = None, DTPR_GL = None, W2 = 
         ax.set_ylabel('TP Differential Edges')
         labels = [f"w2 = {w}" for w in W2]
         if DFPR_GL is not None:
-            labels.append("single GL")
+            labels.append("GLASSO")
         ax.legend(labels = labels, loc = 'lower right')
         
     fig.suptitle('Discovery of differential edges')
@@ -387,7 +391,7 @@ def plot_single_heatmap(k, Theta, method, ax):
     this_cmap = sns.light_palette(col, as_cmap=True)
     
     ax.cla()
-    sns.heatmap(A, mask = mask, ax = ax, square = True, cmap = this_cmap, vmin = 0, vmax = 1, linewidths=.5, cbar = False)
+    sns.heatmap(A*Theta[k,:,:], mask = mask, ax = ax, square = True, cmap = this_cmap, vmin = -.05, vmax = .05, linewidths=.5, cbar = False)
     ax.set_title(f"Precision matrix at timestamp {k}")
     
     return 
