@@ -6,7 +6,7 @@ import numpy as np
 import time
 import copy
 
-from .ggl_helper import phiplus, prox_od_1norm
+from .ggl_helper import phiplus, prox_od_1norm, prox_2norm
 
 
 def ext_ADMM_MGL(S, lambda1, lambda2, reg , Omega_0, G,\
@@ -190,7 +190,7 @@ def prox_2norm_G(X, G, l2):
     assert l2 > 0
     K = len(X.keys())
     for  k in np.arange(K):
-        assert abs(X[k] - X[k].T).max() <= 1e-5, "X[k] has to be symmteric"
+        assert abs(X[k] - X[k].T).max() <= 1e-5, "X[k] has to be symmetric"
     
     d = G.shape
     assert d[0] == 2
@@ -204,28 +204,29 @@ def prox_2norm_G(X, G, l2):
         v0 = np.zeros(K)
         for k in np.arange(K):
             if G[0,l,k] == -1:
-                v0[k] = 0
+                v0[k] = np.nan
             else:
                 v0[k] = X[k][G[0,l,k], G[1,l,k]]
         
-        #v = v0[~np.isnan(v0)]
-        a = max(np.linalg.norm(v0,2) , l2)
-        z = v0 * (a - l2) / a
+        v = v0[~np.isnan(v0)]
+        z0 = prox_2norm(v,l2)
+        v0[~np.isnan(v0)] = z0
         
         for k in np.arange(K):
             if G[0,l,k] == -1:
                 continue
             else:
-                X1[k][G[0,l,k], G[1,l,k]] = z[k]
+                X1[k][G[0,l,k], G[1,l,k]] = v0[k]
                 # lower triangular
-                X1[k][G[1,l,k], G[0,l,k]] = z[k]
+                X1[k][G[1,l,k], G[0,l,k]] = v0[k]
              
     return X1
 
     
 ########################################################################
 
-
+#K = 5
+#p = 10
 #l = .1
 #X = {}
 #refX = np.zeros((K,p,p))
