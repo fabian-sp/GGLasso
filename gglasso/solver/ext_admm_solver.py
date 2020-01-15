@@ -30,6 +30,7 @@ def ext_ADMM_MGL(S, lambda1, lambda2, reg , Omega_0, G,\
     for k in np.arange(K):
         p[k] = S[k].shape[0]
         
+    check_G(G, p)
     
     if 'max_iter' in kwargs.keys():
         max_iter = kwargs.get('max_iter')
@@ -157,9 +158,9 @@ def construct_G(p, K):
     for i in np.arange(p):
         for j in np.arange(start = i+1, stop =p):       
             ix = lambda i,j : i*p - int(i*(i+1)/2) + j - 1 - i*1
-            #print(ix(i,j))
             G[0, ix(i,j), :] = i
             G[1, ix(i,j), :] = j
+            
     return G
 
 def check_G(G, p):
@@ -172,7 +173,7 @@ def check_G(G, p):
     
     assert np.all(G[0,:,:] != G[1,:,:]), "G has entries on the diagonal!"
     
-    assert np.all(G >=0), "No negative indices allowed"
+    assert np.all(G >=-1), "No negative indices allowed (only -1 for indicating a missing feature)"
     
     assert np.all(G.max(axis = (0,1)) < p), "indices larger as dimension were found"
     
@@ -183,7 +184,7 @@ def prox_2norm_G(X, G, l2):
     """
     calculates the proximal operator at points X for the group penalty induced by G
     G: 2xLxK matrix where the -th row contains the (i,j)-index of the element in Theta^k which contains to group l
-       if G has a np.nan entry no element is contained in the group for this Theta^k
+       if G has a entry -1 no element is contained in the group for this Theta^k
     X: dictionary with X^k at key k, each X[k] is assumed to be symmetric
     """
     assert l2 > 0
@@ -199,10 +200,10 @@ def prox_2norm_G(X, G, l2):
     X1 = copy.deepcopy(X)
     
     for l in np.arange(L):
-        # for each group construct v, calculate prox, and insert the result. Ignore NaN entries of G
+        # for each group construct v, calculate prox, and insert the result. Ignore -1 entries of G
         v0 = np.zeros(K)
         for k in np.arange(K):
-            if G[0,l,k] == np.nan:
+            if G[0,l,k] == -1:
                 v0[k] = 0
             else:
                 v0[k] = X[k][G[0,l,k], G[1,l,k]]
@@ -212,7 +213,7 @@ def prox_2norm_G(X, G, l2):
         z = v0 * (a - l2) / a
         
         for k in np.arange(K):
-            if G[0,l,k] == np.nan:
+            if G[0,l,k] == -1:
                 continue
             else:
                 X1[k][G[0,l,k], G[1,l,k]] = z[k]

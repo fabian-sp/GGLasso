@@ -63,7 +63,7 @@ for k in np.arange(K):
 G = construct_G(p, K)
 
     
-sol, info = ext_ADMM_MGL(S, lambda1, lambda2, 'GGL' , Omega_0, G, eps_admm = 1e-5 , verbose = True, measure = False, max_iter = 10)
+sol, info = ext_ADMM_MGL(S, lambda1, lambda2, 'GGL' , Omega_0, G, eps_admm = 1e-5 , verbose = True, measure = False, max_iter = 30)
 
 Theta_sol = np.zeros((K,p,p))
 for k in np.arange(K):
