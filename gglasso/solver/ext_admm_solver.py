@@ -28,7 +28,7 @@ def ext_ADMM_MGL(S, lambda1, lambda2, reg , Omega_0, G,\
     for k in np.arange(K):
         p[k] = S[k].shape[0]
         
-    if type(lambda1) == np.float64:
+    if type(lambda1) == np.float64 or type(lambda1) == float:
         lambda1 = lambda1*np.ones(K)
         
     assert min(lambda1.min(), lambda2) > 0

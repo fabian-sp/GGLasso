@@ -29,10 +29,10 @@ def ext_ADMM_MGL(S, lambda1, lambda2, mu1, reg , R_0, G,\
     for k in np.arange(K):
         p[k] = S[k].shape[0]
         
-    if type(lambda1) == np.float64:
+    if type(lambda1) == np.float64 or type(lambda1) == float:
         lambda1 = lambda1*np.ones(K)
     
-    if type(mu1) == np.float64:
+    if type(mu1) == np.float64 or type(mu1) == float:
         mu1 = mu1*np.ones(K)
         
     assert min(lambda1.min(), lambda2) > 0
@@ -77,7 +77,7 @@ def ext_ADMM_MGL(S, lambda1, lambda2, mu1, reg , R_0, G,\
         if measure:
             start = time.time()
             
-        eta_A = latent_ADMM_stopping_criterion(R_t, Theta_t, L_t, Lambda_t, X0_t, X1_t, S, G, lambda1, lambda2, reg)
+        eta_A = latent_ADMM_stopping_criterion(R_t, Theta_t, L_t, Lambda_t, X0_t, X1_t, S, G, lambda1, lambda2, mu1)
         kkt_residual[iter_t] = eta_A
             
         if eta_A <= eps_admm:
@@ -140,7 +140,7 @@ def ext_ADMM_MGL(S, lambda1, lambda2, mu1, reg , R_0, G,\
                
     return sol, info
 
-def latent_ADMM_stopping_criterion(R, Theta, L, Lambda, X0, X1, S , G, lambda1, lambda2, mu1, reg):
+def latent_ADMM_stopping_criterion(R, Theta, L, Lambda, X0, X1, S , G, lambda1, lambda2, mu1):
     
     K = len(S.keys())
     term1 = np.zeros(K)
