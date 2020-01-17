@@ -8,7 +8,7 @@ import numpy as np
 
 from sklearn.covariance import GraphicalLasso
 
-from gglasso.solver.ggl_solver import PPDNA, warmPPDNA
+from gglasso.solver.ppdna_solver import PPDNA, warmPPDNA
 from gglasso.solver.admm_solver import ADMM_MGL
 from gglasso.helper.data_generation import time_varying_power_network, sample_covariance_matrix
 from gglasso.helper.experiment_helper import get_K_identity, lambda_grid, discovery_rate, error
