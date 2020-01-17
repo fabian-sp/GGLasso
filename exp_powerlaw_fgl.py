@@ -5,8 +5,6 @@ Sigma denotes the covariance matrix, Theta the precision matrix
 """
 from time import time
 import numpy as np
-from matplotlib import pyplot as plt
-import seaborn as sns
 
 from sklearn.covariance import GraphicalLasso
 
@@ -14,7 +12,7 @@ from gglasso.solver.ggl_solver import PPDNA, warmPPDNA
 from gglasso.solver.admm_solver import ADMM_MGL
 from gglasso.helper.data_generation import time_varying_power_network, sample_covariance_matrix
 from gglasso.helper.experiment_helper import get_K_identity, lambda_grid, discovery_rate, error
-from gglasso.helper.experiment_helper import draw_group_heatmap, plot_evolution, plot_deviation, get_default_color_coding, plot_fpr_tpr, multiple_heatmap_animation, single_heatmap_animation
+from gglasso.helper.experiment_helper import draw_group_heatmap, plot_evolution, plot_deviation, surface_plot, plot_fpr_tpr, multiple_heatmap_animation, single_heatmap_animation
 from gglasso.helper.model_selection import aic, ebic
 
 #from tvgl3.TVGL3 import TVGLwrapper
@@ -39,14 +37,13 @@ Sinv = np.linalg.pinv(S, hermitian = True)
 
 
 methods = ['PPDNA', 'ADMM', 'GLASSO']
-color_dict = get_default_color_coding()
 
 results = {}
 results['truth'] = {'Theta' : Theta}
 
 #%%
 # grid search for best lambda values with warm starts
-L1, L2, _ = lambda_grid(num1 = 5, num2 = 3, reg = reg)
+L1, L2, _ = lambda_grid(num1 = 10, num2 = 5, reg = reg)
 grid1 = L1.shape[0]; grid2 = L2.shape[1]
 
 ERR = np.zeros((grid1, grid2))
@@ -90,6 +87,8 @@ lambda2 = L2[ix]
 print("Optimal lambda values: (l1,l2) = ", (lambda1,lambda2))
 plot_fpr_tpr(FPR.T, TPR.T,  ix[::-1], ix2[::-1])
 
+surface_plot(L1, L2, BIC, name = 'eBIC', save = True)
+
 #%%
 # solve with QUIC/single Glasso
 #from inverse_covariance import QuicGraphicalLasso
@@ -113,7 +112,7 @@ Theta_0 = Omega_0.copy()
 X_0 = np.zeros((K,p,p))
 
 start = time()
-sol, info = warmPPDNA(S, lambda1, lambda2, reg, Omega_0, Theta_0 = Theta_0, X_0 = X_0, eps = 1e-4 , verbose = True, measure = True)
+sol, info = warmPPDNA(S, lambda1, lambda2, reg, Omega_0, Theta_0 = Theta_0, X_0 = X_0, eps = 5e-4 , verbose = True, measure = True)
 end = time()
 
 print(f"Running time for PPDNA was {end-start} seconds")
@@ -123,7 +122,7 @@ results['PPDNA'] = {'Theta' : sol['Theta']}
 # solve with general ADMM
 start = time()
 sol, info = ADMM_MGL(S, lambda1, lambda2, reg, Omega_0, Theta_0 = Theta_0, X_0 = X_0, rho = 1, max_iter = 100, \
-                                                        eps_admm = 1e-4, verbose = True, measure = True)
+                                                        eps_admm = 5e-4, verbose = True, measure = True)
 end = time()
 
 print(f"Running time for ADMM was {end-start} seconds")
@@ -133,7 +132,6 @@ results['ADMM'] = {'Theta' : sol['Theta']}
 
 #%%
 # solve with TVGL
-
 #start = time()
 #thetSet = TVGLwrapper(sample, lambda1, lambda2)
 #end = time()
@@ -143,7 +141,7 @@ start = time()
 alpha = N*lambda1
 beta = N*lambda2 
 ltgl = TimeGraphicalLasso(alpha = alpha, beta = beta , psi = 'l1', \
-                          rho = 1., tol = 1e-3, rtol = 1e-4,  max_iter = 2000, verbose = True)
+                          rho = 1., tol = 5e-4, rtol = 5e-4,  max_iter = 2000, verbose = True)
 ltgl = ltgl.fit(sample.transpose(0,2,1))
 end = time()
 
@@ -159,11 +157,15 @@ Theta_glasso = results.get('GLASSO').get('Theta')
 
 
 print(np.linalg.norm(Theta_lgtl - Theta_admm)/ np.linalg.norm(Theta_admm))
+print(np.linalg.norm(Theta_ppdna - Theta_admm)/ np.linalg.norm(Theta_admm))
 
 
 save = True
 
 plot_evolution(results, block = 0, L = L, save = save)
+plot_evolution(results, block = 2, L = L, save = save)
+
+del results['ADMM']
 plot_deviation(results, save = save)
 
 

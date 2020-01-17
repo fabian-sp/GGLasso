@@ -3,6 +3,7 @@ author: Fabian Schaipp
 """
 import numpy as np
 import matplotlib.pyplot as plt
+from mpl_toolkits.mplot3d import Axes3D
 from matplotlib.animation import FuncAnimation
 
 import seaborn as sns
@@ -41,8 +42,8 @@ def lambda_grid(num1 = 5, num2 = 2, reg = 'GGL'):
         L1 = lambda_parametrizer(l2grid, w2grid)
         L2 = l2grid.copy()
     elif reg == 'FGL':
-        l2 = 5*np.logspace(start = -2, stop = -1, num = num2, base = 10)
-        l1 = 5*np.logspace(start = -2.5, stop = -1, num = num1, base = 10)
+        l2 = 2*np.logspace(start = -3, stop = -1, num = num2, base = 10)
+        l1 = 2*np.logspace(start = -3, stop = -1, num = num1, base = 10)
         L2, L1 = np.meshgrid(l2,l1)
         w2 = None
         
@@ -129,7 +130,8 @@ def deviation(Theta):
 path_ggl = 'plots//ggl_powerlaw//'
 path_fgl = 'plots//fgl_powerlaw//'
 
-default_size = (6,4)
+default_size_big = (10,7)
+default_size_small = (6,5)
 
 def get_default_plot_aes():
     plot_aes = {'marker' : 'o', 'markersize' : 4}
@@ -188,7 +190,7 @@ def draw_group_heatmap(Theta, method = 'truth', ax = None, t = 1e-5, save = Fals
     this_cmap = sns.light_palette(col, as_cmap=True)
     
     if ax == None:
-        fig,ax = plt.subplots(nrows = 1, ncols = 1,figsize = (12,8))
+        fig,ax = plt.subplots(nrows = 1, ncols = 1, figsize = default_size_big)
     with sns.axes_style("white"):
         sns.heatmap(A.sum(axis=0), mask = mask, ax = ax, square = True, cmap = this_cmap, vmin = 0, vmax = K, linewidths=.5, cbar_kws={"shrink": .5})
     if save:
@@ -202,7 +204,7 @@ def plot_block_evolution(ax, start, stop, Theta, method, color_dict):
     for i in np.arange(start, stop):
         for j in np.arange(start = i+1, stop = stop):
             
-            x = np.arange(K)
+            x = np.arange(K) + 1
             ax.plot(x, abs(Theta[:,i,j]), c=color_dict[method], label = method if (i == start) & (j == start+1) else "", **plot_aes)
     
     ax.legend(labels = [method])   
@@ -224,7 +226,7 @@ def plot_evolution(results, block = None, L = None, start = None, stop = None, s
         stop = (block+1)*L
     
     with sns.axes_style("whitegrid"):
-        fig,axs = plt.subplots(nrows = 2, ncols = 2,figsize = (12,8))
+        fig,axs = plt.subplots(nrows = 2, ncols = 2, figsize = default_size_small)
         plot_block_evolution(axs[0,0], start, stop, results.get('truth').get('Theta'), 'truth', color_dict)
         plot_block_evolution(axs[0,1], start, stop, results.get('PPDNA').get('Theta'), 'PPDNA', color_dict)
         plot_block_evolution(axs[1,0], start, stop, results.get('LGTL').get('Theta'), 'LGTL', color_dict)
@@ -244,7 +246,7 @@ def plot_deviation(results, latent = None, save = False):
     plot_aesthetics = get_default_plot_aes()
     
     with sns.axes_style("whitegrid"):
-        fig,ax = plt.subplots(nrows=1,ncols=1,figsize = (12,8))
+        fig,ax = plt.subplots(nrows=1,ncols=1, figsize = default_size_big)
     
         for m in list(results.keys()):
             d = deviation(results.get(m).get('Theta'))
@@ -269,23 +271,47 @@ def plot_deviation(results, latent = None, save = False):
 
     return
 
-#def plot_runtime(f, RT_ADMM, RT_PPDNA, save = False):
-#    plot_aes = get_default_plot_aes()
-#    color_dict = get_default_color_coding()
-#    
-#    with sns.axes_style("whitegrid"):
-#        fig, ax = plt.subplots(1,1,figsize = (12,8))
-#        ax.plot(f, RT_ADMM, c = color_dict['ADMM'], **plot_aes)
-#        ax.plot(f, RT_PPDNA, c = color_dict['PPDNA'], **plot_aes)
-#        
-#        ax.set_xlabel('N/p')
-#        ax.set_ylabel('runtime [sec]')
-#        ax.legend(labels = ['ADMM', 'PPDNA'])
-#    
-#    if save:
-#        fig.savefig(path_ggl + 'runtime.pdf')
-#        
-#    return
+def plot_runtime(iA, iP, vecN, save = False):
+    """
+    plots runtime and KKT residual for PPDNA and ADMM method
+    """
+    color_dict = get_default_color_coding()
+    fig, axs = plt.subplots(nrows = 2, ncols = 2, figsize = default_size_big) 
+    
+    for j in np.arange(len(vecN)):       
+        ax = axs.reshape(-1)[j]
+        with sns.axes_style("whitegrid"):
+            
+            p1 = ax.plot(iA[j]['kkt_residual'], c = color_dict['ADMM'], label = 'ADMM residual')
+            p2 = ax.plot(iP[j]['kkt_residual'], c = color_dict['PPDNA'], marker = 'o', markersize = 3, label = 'PPDNA residual')
+            ax.set_yscale('log')
+            ax.set_xscale('log')
+            ax.set_ylim(1e-6,0.2)
+            
+            ax2 = ax.twinx()
+            ax2.set_xscale('log')
+            p3 = ax2.plot(iA[j]['runtime'].cumsum(), linestyle = '--', c = color_dict['ADMM'], alpha = 0.7, label = 'ADMM runtime')
+            p4 = ax2.plot(iP[j]['runtime'].cumsum(), linestyle = '--', c = color_dict['PPDNA'], marker = 'o', markersize = 3, alpha = 0.7, label = 'PPDNA runtime')
+            
+            ax.vlines(iP[j]['iter_admm'], 0, 0.2, 'grey')
+            ax.set_xlim(iP[j]['iter_admm'] - 5, )
+            
+            if j in [0,2]:
+                ax.set_ylabel('KKT residual')
+            if j in [1,3]:
+                ax2.set_ylabel('Cumulated runtime [sec]')
+            if j in [2,3]:
+                ax.set_xlabel('Iteration number')
+            
+            ax.set_title(f'Sample size = {vecN[j]}')
+            
+            lns = p1+p2+p3+p4
+            labs = [l.get_label() for l in lns]
+            fig.legend(lns, labs, loc=0)
+            
+        path_rt = 'plots//ggl_runtime//'  
+        if save:
+            fig.savefig(path_rt + 'runtimeN.pdf', dpi = 300)
 
 def plot_fpr_tpr(FPR, TPR, ix, ix2, FPR_GL = None, TPR_GL = None, W2 = [], save = False):
     """
@@ -295,7 +321,7 @@ def plot_fpr_tpr(FPR, TPR, ix, ix2, FPR_GL = None, TPR_GL = None, W2 = [], save 
     plot_aes = get_default_plot_aes()
 
     with sns.axes_style("whitegrid"):
-        fig, ax = plt.subplots(1,1,figsize = default_size)
+        fig, ax = plt.subplots(1,1,figsize = default_size_small)
         ax.plot(FPR.T, TPR.T, **plot_aes)
         if FPR_GL is not None:
             ax.plot(FPR_GL, TPR_GL, c = 'grey', linestyle = '--', **plot_aes)
@@ -328,7 +354,7 @@ def plot_diff_fpr_tpr(DFPR, DTPR, ix, ix2, DFPR_GL = None, DTPR_GL = None, W2 = 
     plot_aes = get_default_plot_aes()
     
     with sns.axes_style("whitegrid"):
-        fig, ax = plt.subplots(1,1, figsize = default_size)
+        fig, ax = plt.subplots(1,1, figsize = default_size_small)
         ax.plot(DFPR.T, DTPR.T, **plot_aes)
         if DFPR_GL is not None:
             ax.plot(DFPR_GL, DTPR_GL, c = 'grey', linestyle = '--', **plot_aes)
@@ -358,7 +384,7 @@ def plot_error_accuracy(EPS, ERR, L2, save = False):
     plot_aes = get_default_plot_aes()
     
     with sns.axes_style("whitegrid"):
-        fig, ax = plt.subplots(1,1,figsize = default_size)
+        fig, ax = plt.subplots(1,1,figsize = default_size_big)
         for l in np.arange(len(L2)):
             ax.plot(EPS, ERR[l,:], c=pal[l],**plot_aes )
     
@@ -375,6 +401,23 @@ def plot_error_accuracy(EPS, ERR, L2, save = False):
         fig.savefig(path_ggl + 'error.pdf', dpi = 300)
     
     return
+
+def surface_plot(L1, L2, C, name = 'eBIC', save = False):
+    fig = plt.figure(figsize = default_size_big)
+    ax = fig.gca(projection='3d')
+    
+    X = np.log10(L1)
+    Y = np.log10(L2)
+    Z = np.log(C)
+    with sns.axes_style("white"):
+        ax.plot_surface(X, Y, Z , cmap = plt.cm.ocean,linewidth=0, antialiased=False)
+    
+    ax.set_xlabel('lambda_1')
+    ax.set_ylabel('lambda_2')
+    ax.set_zlabel(name)
+    
+    if save:
+        fig.savefig(path_fgl + 'surface.pdf', dpi = 300)
 #################################################################################################################
 ############################ GIF ################################################################################
 #################################################################################################################

@@ -12,9 +12,8 @@ import seaborn as sns
 from gglasso.solver.admm_solver import ADMM_MGL
 from gglasso.solver.ggl_solver import PPDNA, warmPPDNA
 from gglasso.helper.data_generation import group_power_network, sample_covariance_matrix
-from gglasso.helper.experiment_helper import get_K_identity, lambda_parametrizer, discovery_rate, error, sparsity
-from gglasso.helper.experiment_helper import draw_group_heatmap
-from gglasso.helper.model_selection import aic, ebic
+from gglasso.helper.experiment_helper import get_K_identity, discovery_rate, error, sparsity
+from gglasso.helper.experiment_helper import draw_group_heatmap, plot_runtime
 
 p = 100
 K = 5
@@ -65,88 +64,54 @@ for j in np.arange(len(vecN)):
     iP[j] = infoP
 
 #%%
-    
-color_dict = get_default_color_coding()
-fig, axs = plt.subplots(nrows = 2, ncols = 2, figsize = (15,8)) 
 
-for j in np.arange(len(vecN)):
-    
-    ax = axs.reshape(-1)[j]
-    with sns.axes_style("whitegrid"):
-        
-        p1 = ax.plot(iA[j]['kkt_residual'], c = color_dict['ADMM'], label = 'ADMM residual')
-        p2 = ax.plot(iP[j]['kkt_residual'], c = color_dict['PPDNA'], marker = 'o', markersize = 3, label = 'PPDNA residual')
-        ax.set_yscale('log')
-        ax.set_xscale('log')
-        ax.set_ylim(1e-6,0.2)
-        
-        ax2 = ax.twinx()
-        ax2.set_xscale('log')
-        p3 = ax2.plot(iA[j]['runtime'].cumsum(), linestyle = '--', c = color_dict['ADMM'], alpha = 0.7, label = 'ADMM runtime')
-        p4 = ax2.plot(iP[j]['runtime'].cumsum(), linestyle = '--', c = color_dict['PPDNA'], marker = 'o', markersize = 3, alpha = 0.7, label = 'PPDNA runtime')
-        
-        ax.vlines(iP[j]['iter_admm'], 0, 0.2, 'grey')
-        ax.set_xlim(iP[j]['iter_admm'] - 5, )
-        
-        if j in [0,2]:
-            ax.set_ylabel('KKT residual')
-        if j in [1,3]:
-            ax2.set_ylabel('Cumulated runtime [sec]')
-        if j in [2,3]:
-            ax.set_xlabel('Iteration number')
-        
-        ax.set_title(f'Sample size = {vecN[j]}')
-        
-        lns = p1+p2+p3+p4
-        labs = [l.get_label() for l in lns]
-        fig.legend(lns, labs, loc=0)
-        
-    path_rt = 'plots//ggl_runtime//'  
-    fig.savefig(path_rt + 'runtimeN.pdf', dpi = 300)
+save = False
+
+plot_runtime(iA, iP, vecN, save = save)
         
 #%%
         
-vecP = np.array([20, 100, 200, 1000])
-vecM = np.array([2, 10, 10, 50])  
-
-#l1 = 5e-2 * np.ones(len(vecP))
-l2 = 5e-2 * np.ones(len(vecP))
-l1 = lambda_parametrizer(l2, w2=0.5)
-
-
-iA = {}
-RT_ADMM = np.zeros(len(vecP))
-TPR = np.zeros(len(vecP))
-FPR = np.zeros(len(vecP))
-
-for j in np.arange(len(vecP)):
-    
-    p = vecP[j]
-    K = 5
-    M = vecM[j]
-    N = p
-
-    Sigma, Theta = group_power_network(p, K, M)
-    print(f"Sparsity level: {sparsity(Theta)}")
-    Omega_0 = get_K_identity(K,p)
-    
-    S, sample = sample_covariance_matrix(Sigma, N)
-    
-    start = time()
-    solA, infoA = ADMM_MGL(S, l1[j], l2[j], reg , Omega_0 , eps_admm = 1e-4, verbose = True, measure = True)
-    end = time()
-    
-    TPR[j] = discovery_rate(solA['Theta'], Theta)['TPR']
-    FPR[j] = discovery_rate(solA['Theta'], Theta)['FPR']
-    
-    iA[j] = infoA
-    RT_ADMM[j] = end-start
-    
-
-#%%
-for j in np.arange(len(vecP)):
-    plt.plot(iA[j]['runtime'].cumsum())
-    
+#vecP = np.array([20, 100, 200, 1000])
+#vecM = np.array([2, 10, 10, 50])  
+#
+##l1 = 5e-2 * np.ones(len(vecP))
+#l2 = 5e-2 * np.ones(len(vecP))
+#l1 = lambda_parametrizer(l2, w2=0.5)
+#
+#
+#iA = {}
+#RT_ADMM = np.zeros(len(vecP))
+#TPR = np.zeros(len(vecP))
+#FPR = np.zeros(len(vecP))
+#
+#for j in np.arange(len(vecP)):
+#    
+#    p = vecP[j]
+#    K = 5
+#    M = vecM[j]
+#    N = p
+#
+#    Sigma, Theta = group_power_network(p, K, M)
+#    print(f"Sparsity level: {sparsity(Theta)}")
+#    Omega_0 = get_K_identity(K,p)
+#    
+#    S, sample = sample_covariance_matrix(Sigma, N)
+#    
+#    start = time()
+#    solA, infoA = ADMM_MGL(S, l1[j], l2[j], reg , Omega_0 , eps_admm = 1e-4, verbose = True, measure = True)
+#    end = time()
+#    
+#    TPR[j] = discovery_rate(solA['Theta'], Theta)['TPR']
+#    FPR[j] = discovery_rate(solA['Theta'], Theta)['FPR']
+#    
+#    iA[j] = infoA
+#    RT_ADMM[j] = end-start
+#    
+#
+##%%
+#for j in np.arange(len(vecP)):
+#    plt.plot(iA[j]['runtime'].cumsum())
+#    
     
     
 
