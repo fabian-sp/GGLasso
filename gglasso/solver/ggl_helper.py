@@ -30,6 +30,15 @@ def prox_od_1norm(A, l):
 
     return res
 
+def prox_rank_norm(A, beta, D = np.array([]), Q = np.array([])):
+
+    if len(D) != A.shape[0]:
+        D, Q = np.linalg.eigh(A)
+        print("Single eigendecomposition is executed in prox_rank_norm")
+    
+    B = Q @ np.diag(np.maximum(D-beta, 0)) @ Q.T
+    return B
+
 @jit(nopython=True)
 def prox_chi(A, l):
     """

@@ -6,7 +6,7 @@ import numpy as np
 import time
 
 from ..helper.basic_linalg import trp
-from .ggl_helper import prox_p, phiplus, prox_chi
+from .ggl_helper import prox_p, phiplus, prox_chi, prox_rank_norm
 
 
 def latent_ADMM_GGL(S, lambda1, lambda2, mu1, mu2, R_0, \
@@ -128,15 +128,6 @@ def latent_ADMM_GGL(S, lambda1, lambda2, mu1, mu2, R_0, \
         
     return sol, info
                 
-            
-def prox_rank_norm(A, beta, D = np.array([]), Q = np.array([])):
-
-    if len(D) != A.shape[0]:
-        D, Q = np.linalg.eigh(A)
-        print("Single eigendecomposition is executed in prox_rank_norm")
-    
-    B = Q @ np.diag(np.maximum(D-beta, 0)) @ Q.T
-    return B
          
 def latent_ADMM_stopping_criterion(R, Theta, L, W, X0, X1, S , lambda1, lambda2, mu1, mu2):
     

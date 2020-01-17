@@ -6,7 +6,9 @@ import numpy as np
 import pandas as pd
 from itertools import combinations
 
+from gglasso.helper.ext_admm_helper import create_group_array
 
+        
 def geometric_mean(x):
     a = np.log(x)
     return np.exp(a.sum()/len(a))
@@ -23,7 +25,7 @@ def log_transform(X):
     Z = np.log(X / g)
     return Z
 
-def load_and_transform(K = 26, min_inst = 5):
+def load_and_transform(K = 26, min_inst = 5, compute_G = False):
     all_csv = dict()
     all_ix = pd.Index([])
     num_csv = K
@@ -43,7 +45,8 @@ def load_and_transform(K = 26, min_inst = 5):
         ix_exist.loc[:,num] = exist
         ix_location.loc[exist,num] = locations
     
-    G = create_group_array(ix_exist, ix_location, min_inst)
+    if compute_G:
+        G = create_group_array(ix_exist, ix_location, min_inst)
     
     # finally do transformation
     for num in np.arange(num_csv):
@@ -63,47 +66,6 @@ def load_and_transform(K = 26, min_inst = 5):
 
 
 
-
-def create_group_array(ix_exist, ix_location, min_inst = 2):
-    
-    (p,K) = ix_exist.shape
-    all_ix = ix_exist.index
-    
-    filter_ix = all_ix[ix_exist.sum(axis = 1) >= min_inst]
-    n = len(filter_ix)
-    print(f"{0.5*(n**2 -n)} possible pairs were found")
-    all_pairs = list(combinations(filter_ix,2))
-
-    g1 = list()
-    g2 = list()
-    
-    for p in all_pairs:
-        # nonexisting features are marked with -1 
-        tmp1 = -1 * np.ones(K, dtype = int)
-        tmp2 = -1 * np.ones(K, dtype = int)
-        coexist = ix_exist.loc[p[0]] & ix_exist.loc[p[1]]
-        if coexist.sum() < 2:
-            continue  
-        else:
-            # if pair exists at at least two instances --> fill the location of the feature into G
-            tmp1[coexist] = ix_location.loc[p[0], coexist]
-            tmp2[coexist] = ix_location.loc[p[1], coexist]
-        
-            g1.append(tmp1)
-            g2.append(tmp2)
-            
-    G1 = np.vstack(g1)
-    G2 = np.vstack(g2)
-    
-    G = np.stack((G1,G2))
-    
-    return G
-    
-    
-    
-    
-
-G = create_group_array(ix_exist, ix_location, min_inst = 5)
 
 
 
