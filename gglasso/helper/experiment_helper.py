@@ -208,7 +208,7 @@ def plot_block_evolution(ax, start, stop, Theta, method, color_dict):
             ax.plot(x, abs(Theta[:,i,j]), c=color_dict[method], label = method if (i == start) & (j == start+1) else "", **plot_aes)
     
     ax.legend(labels = [method])   
-    ax.set_ylim(0,0.5)
+    ax.set_ylim(0,0.35)
     return
 
 def plot_evolution(results, block = None, L = None, start = None, stop = None, save = False):

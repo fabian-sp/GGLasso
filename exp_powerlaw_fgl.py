@@ -87,7 +87,7 @@ lambda2 = L2[ix]
 print("Optimal lambda values: (l1,l2) = ", (lambda1,lambda2))
 plot_fpr_tpr(FPR.T, TPR.T,  ix[::-1], ix2[::-1])
 
-surface_plot(L1, L2, BIC, name = 'eBIC', save = True)
+surface_plot(L1, L2, BIC, name = 'eBIC', save = False)
 
 #%%
 # solve with QUIC/single Glasso
