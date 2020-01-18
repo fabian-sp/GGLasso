@@ -47,7 +47,9 @@ def load_and_transform(K = 26, min_inst = 5, compute_G = False):
     
     if compute_G:
         G = create_group_array(ix_exist, ix_location, min_inst)
-    
+    else:
+        G = None
+        
     # finally do transformation
     for num in np.arange(num_csv):
         X = all_csv[num]

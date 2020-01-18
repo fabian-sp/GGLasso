@@ -22,7 +22,7 @@ def load_G(path):
     G2 = np.loadtxt(path + 'G2.txt')
 
     G = np.stack((G1,G2))
-    return G
+    return G.astype(int)
 
 def save_G(path, G):
     np.savetxt(path + 'G1.txt', G[0,:,:])

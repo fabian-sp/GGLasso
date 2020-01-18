@@ -10,12 +10,11 @@ from .ext_admm_solver import prox_2norm_G
 from ..helper.ext_admm_helper import check_G
 
 
-def ext_ADMM_MGL(S, lambda1, lambda2, mu1, reg , R_0, G,\
+def ext_ADMM_MGL(S, lambda1, lambda2, mu1, R_0, G,\
              eps_admm = 1e-5 , verbose = False, measure = False, **kwargs):
     """
     This is an ADMM algorithm for solving the Multiple Graphical Lasso problem with Latent Varibales
     where not all instances have the same number of dimensions
-    reg specifies the type of penalty, i.e. Group or Fused Graphical Lasso
     
     R_0: start point -- must be specified as a dictionary with the keys 0,...,K-1 (as integers)
     S: empirical covariance matrices -- must be specified as a dictionary with the keys 0,...,K-1 (as integers)
@@ -37,7 +36,6 @@ def ext_ADMM_MGL(S, lambda1, lambda2, mu1, reg , R_0, G,\
         
     assert min(lambda1.min(), lambda2) > 0
     assert mu1.min() > 0
-    assert reg in ['GGL']
    
     check_G(G, p)
     
@@ -88,7 +86,8 @@ def ext_ADMM_MGL(S, lambda1, lambda2, mu1, reg , R_0, G,\
         
         # R Update
         for k in np.arange(K):
-            W_t = Theta_t[k] - L_t[k] - X0_t[k] - (1/rho) * S[k]
+            W_t = Theta_t[k] - L_t[k] - X0_t[k] 
+            W_t = (W_t.T + W_t)/2 - (1/rho) * S[k]
             eigD, eigQ = np.linalg.eigh(W_t)
             R_t[k] = phiplus(W_t, beta = 1/rho, D = eigD, Q = eigQ)
         
@@ -100,6 +99,7 @@ def ext_ADMM_MGL(S, lambda1, lambda2, mu1, reg , R_0, G,\
         # L Update
         for k in np.arange(K):
             C_t = Theta_t[k] - X0_t[k] - R_t[k]
+            C_t = (C_t.T + C_t)/2
             eigD, eigQ = np.linalg.eigh(C_t)
             L_t[k] = prox_rank_norm(C_t, mu1[k]/rho, D = eigD, Q = eigQ)
             
@@ -111,7 +111,7 @@ def ext_ADMM_MGL(S, lambda1, lambda2, mu1, reg , R_0, G,\
         
         # X Update
         for k in np.arange(K):
-            X0_t[k] +=  R_t[k] - Theta_t[k] +L_t[k]
+            X0_t[k] +=  R_t[k] - Theta_t[k] + L_t[k]
             X1_t[k] +=  Theta_t[k] - Lambda_t[k]
         
         if measure:

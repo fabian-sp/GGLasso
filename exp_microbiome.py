@@ -17,11 +17,11 @@ K = 5
 lambda2 = 0.1
 lambda1 = lambda_parametrizer(lambda2, 0.5)
 
-all_csv, S, G, ix_location = load_and_transform(K, min_inst = 3, compute_G = True)
+all_csv, S, G, ix_location = load_and_transform(K, min_inst = 3, compute_G = False)
 
 
 #save_G('data/slr_data/', G)
-#load_G('data/slr_data/')
+G = load_G('data/slr_data/')
 
 p = np.zeros(K, dtype= int)
 for k in np.arange(K):
@@ -34,9 +34,9 @@ Omega_0 = get_K_identity(p)
 sol, info = ext_ADMM_MGL(S, lambda1, lambda2, 'GGL', Omega_0, G, eps_admm = 1e-3, verbose = True)
 
 
-#from gglasso.solver.ext_latent_admm_solver import ext_ADMM_MGL
-#mu1 = .1
-#sol, info = ext_ADMM_MGL(S, lambda1, lambda2, mu1, 'GGL', Omega_0, G, eps_admm = 1e-3, verbose = True)
+from gglasso.solver.ext_latent_admm_solver import ext_ADMM_MGL
+mu1 = .5
+sol, info = ext_ADMM_MGL(S, lambda1, lambda2, mu1, Omega_0, G, eps_admm = 1e-3, verbose = True)
 
 
 Theta = sol['Theta']
