@@ -14,7 +14,7 @@ from gglasso.solver.admm_solver import ADMM_MGL
 from gglasso.solver.ppdna_solver import PPDNA, warmPPDNA
 from gglasso.helper.data_generation import group_power_network, sample_covariance_matrix, plot_degree_distribution
 from gglasso.helper.experiment_helper import get_K_identity, lambda_parametrizer, lambda_grid, discovery_rate, error
-from gglasso.helper.experiment_helper import draw_group_heatmap, plot_fpr_tpr, plot_diff_fpr_tpr, plot_error_accuracy
+from gglasso.helper.experiment_helper import draw_group_heatmap, plot_fpr_tpr, plot_diff_fpr_tpr, plot_error_accuracy, surface_plot
 from gglasso.helper.model_selection import aic, ebic
 
 p = 100
@@ -125,6 +125,8 @@ with sns.axes_style("white"):
 #%%
 plot_fpr_tpr(FPR, TPR, ix, ix2, FPR_GL, TPR_GL, W2, save = save)
 plot_diff_fpr_tpr(DFPR, DTPR, ix, ix2, DFPR_GL, DTPR_GL, W2, save = save)
+
+surface_plot(L1, L2, BIC, name = 'eBIC', save = False)
 
 #%%
 # accuracy impact on total error analysis
