@@ -59,20 +59,26 @@ def check_G(G, p):
     
     return
 
+    
 def create_group_array(ix_exist, ix_location, min_inst = 2):
     
     (p,K) = ix_exist.shape
     all_ix = ix_exist.index
     
-    filter_ix = all_ix[ix_exist.sum(axis = 1) >= min_inst]
-    n = len(filter_ix)
-    print(f"{0.5*(n**2 -n)} possible pairs were found")
-    all_pairs = list(combinations(filter_ix,2))
-
-    g1 = list()
-    g2 = list()
+    A = ix_exist.values.astype(int) @ ix_exist.values.astype(int).T
+    np.fill_diagonal(A,0)
+    L = (A >= min_inst).sum()
+    all_pairs = np.argwhere(A >= min_inst)
     
-    for p in all_pairs:
+    G1 = np.zeros((L,K), dtype = int)
+    G2 = np.zeros((L,K), dtype = int)
+    bar = 0.1
+    
+    for l in np.arange(L):
+        if l/L >= bar:
+            print("Creation of bookeeping array: " + str(bar*100) + "% finished")
+            bar += .1
+        p = all_ix[all_pairs[l]]
         # nonexisting features are marked with -1 
         tmp1 = -1 * np.ones(K, dtype = int)
         tmp2 = -1 * np.ones(K, dtype = int)
@@ -84,14 +90,10 @@ def create_group_array(ix_exist, ix_location, min_inst = 2):
             tmp1[coexist] = ix_location.loc[p[0], coexist]
             tmp2[coexist] = ix_location.loc[p[1], coexist]
         
-            g1.append(tmp1)
-            g2.append(tmp2)
+            G1[l,:] = tmp1
+            G2[l,:] = tmp2
             
-    G1 = np.vstack(g1)
-    G2 = np.vstack(g2)
-    
     G = np.stack((G1,G2))
     
     return G
-    
 

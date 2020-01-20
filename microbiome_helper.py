@@ -64,7 +64,7 @@ def load_and_transform(K = 26, min_inst = 5, compute_G = False):
     for num in np.arange(num_csv):
         S[num] = np.cov(all_csv[num].values, bias = True)
         
-    return all_csv, S, G, ix_location
+    return all_csv, S, G, ix_location, ix_exist
 
 
 

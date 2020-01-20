@@ -5,6 +5,53 @@ author: Fabian Schaipp
 import numpy as np
 
 from .basic_linalg import Sdot, adjacency_matrix
+from .experiment_helper import lambda_grid
+from .experiment_helper import get_K_identity as id_array
+from .ext_admm_helper import get_K_identity as id_dict
+
+def model_select(solver, S, N, p, reg, method, G = None, gridsize1 = 3, gridsize2 = 6):
+    
+    assert reg in ['FGL', 'GGL']
+    if reg == 'GGL':
+        L1, L2, W2 = lambda_grid(num1 = gridsize1, num2 = gridsize2, reg = reg)
+    else:
+        L1, L2, _ = lambda_grid(num1 = gridsize2, num2 = gridsize1, reg = reg)
+    
+    grid1 = L1.shape[0]; grid2 = L2.shape[1]
+    SCORE = np.zeros((grid1, grid2)) 
+    kwargs = {'reg': reg, 'S': S, 'eps_admm': 1e-3, 'verbose': False, 'measure': True}
+    
+    if type(S) == dict:
+        K = len(S.keys())
+        Omega_0 = id_dict(K,p)
+        kwargs['G'] = G
+    elif type(S) == np.ndarray:
+        K = S.shape[0]
+        Omega_0 = id_array(K,p)
+        
+    kwargs['Omega_0'] = Omega_0
+    
+    
+    for g1 in np.arange(grid1):
+        for g2 in np.arange(grid2):
+            kwargs['lambda1'] = L1[g1,g2]
+            kwargs['lambda2'] = L2[g1,g2]
+
+            sol, info = solver(**kwargs)
+            Omega_sol = sol['Omega']
+            Theta_sol = sol['Theta']
+            
+            # warm start
+            Omega_0 = Omega_sol.copy()
+            
+            if method == 'AIC':
+                SCORE[g1,g2] = aic(S, Theta_sol, N)
+            elif method == 'EBIC':
+                SCORE[g1,g2] = ebic(S, Theta_sol, N, gamma = 0.1)
+    
+    # get optimal lambda
+    ix= np.unravel_index(np.nanargmin(SCORE), SCORE.shape)
+    return (L1[ix], L2[ix]), SCORE
 
 def aic(S, Theta, N):
     """
