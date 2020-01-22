@@ -51,12 +51,19 @@ def lambda_grid(num1 = 5, num2 = 2, reg = 'GGL'):
            
 
 def sparsity(S):
-    (K,p,p) = S.shape
+    (p,p) = S.shape
     A = adjacency_matrix(S)
-    sparsity = A.sum(axis = (1,2))/(p**2-p)
-    return sparsity.mean()
+    s = A.sum()/(p**2-p)
+    return s
 
-
+def mean_sparsity(S):
+    if type(S) == dict:
+        s = [sparsity(S[k]) for k in S.keys()]
+    elif type(S) == np.ndarray:
+        s = [sparsity(S[k,:,:]) for k in range(S.shape[0])]
+        
+    return np.mean(s)
+        
 def discovery_rate(S_sol , S_true, t = 1e-5):
     if len(S_true.shape) == 2:
         print("Warning: function designed for 3-dim arrays")
