@@ -7,7 +7,7 @@ This file contains the proximal point algorithm proposed by Zhang et al.
 import numpy as np
 import time
 
-from .ggl_helper import prox_p, phiplus, moreau_h, moreau_P, construct_gamma, construct_jacobian_prox_p, Y_t, hessian_Y,  Phi_t
+from .ggl_helper import prox_p, phiplus, moreau_h, moreau_P, construct_gamma, construct_jacobian_prox_p, Y_t, hessian_Y,  Phi_t, f, P_val
 from .admm_solver import ADMM_MGL
 from ..helper.basic_linalg import trp,Gdot, cg_general
 
@@ -185,6 +185,7 @@ def PPDNA(S, lambda1, lambda2, reg, Omega_0, Theta_0 = np.array([]), X_0 = np.ar
     
     runtime = np.zeros(max_iter)
     kkt_residual = np.zeros(max_iter)
+    objective = np.zeros(max_iter)
     
     for iter_t in np.arange(max_iter):
         
@@ -207,6 +208,8 @@ def PPDNA(S, lambda1, lambda2, reg, Omega_0, Theta_0 = np.array([]), X_0 = np.ar
         if measure:
             end = time.time()
             runtime[iter_t] = end-start
+            objective[iter_t] = f(Omega_t, S) + P_val(Omega_t, lambda1, lambda2, reg)
+            
         
         if not ppdna_params['sigma_fix']:
             ppa_sub_params['sigma_t'] = 1.3 * ppa_sub_params['sigma_t']
@@ -233,7 +236,7 @@ def PPDNA(S, lambda1, lambda2, reg, Omega_0, Theta_0 = np.array([]), X_0 = np.ar
     sol = {'Omega': Omega_t, 'Theta': Theta_t, 'X': X_t}
     if measure:
         # last runtime irrelevant (as break) and first residual irrelevant
-        info = {'status': status , 'runtime': runtime[:iter_t], 'kkt_residual': kkt_residual[1:iter_t + 1]}
+        info = {'status': status , 'runtime': runtime[:iter_t], 'kkt_residual': kkt_residual[1:iter_t + 1], 'objective': objective[:iter_t]}
     else:
         info = {'status': status}
     return sol, info
@@ -287,6 +290,7 @@ def warmPPDNA(S, lambda1, lambda2, reg, Omega_0, Theta_0 = np.array([]), X_0 = n
         if measure:
             info2['runtime'] = np.append(info1['runtime'], info2['runtime'])
             info2['kkt_residual'] = np.append(info1['kkt_residual'], info2['kkt_residual'])
+            info2['objective'] = np.append(info1['objective'], info2['objective'])
             info2['iter_admm'] = len(info1['runtime']) -1 
             
         return sol2, info2
