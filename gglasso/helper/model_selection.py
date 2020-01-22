@@ -51,7 +51,8 @@ def model_select(solver, S, N, p, reg, method, G = None, gridsize1 = 6, gridsize
     grid1 = L1.shape[0]; grid2 = L2.shape[1]
     assert grid1 == gridsize2
     assert grid2 == gridsize1
-    SCORE = np.zeros((grid1, grid2)) 
+    SCORE = np.zeros((grid1, grid2))
+    SCORE[:] = np.nan
     SKIP = np.zeros((grid1, grid2), dtype = bool)
     
     kwargs = {'reg': reg, 'S': S, 'eps_admm': 1e-3, 'verbose': False, 'measure': True}
@@ -77,6 +78,9 @@ def model_select(solver, S, N, p, reg, method, G = None, gridsize1 = 6, gridsize
             sol, info = solver(**kwargs)
             Omega_sol = sol['Omega']
             Theta_sol = sol['Theta']
+            
+            if mean_sparsity(Theta_sol) >= 0.15:
+                SKIP[g1:, g2:] = True
             
             # warm start
             Omega_0 = Omega_sol.copy()
