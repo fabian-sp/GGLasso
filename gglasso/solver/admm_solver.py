@@ -5,8 +5,8 @@ author: Fabian Schaipp
 import numpy as np
 import time
 
-from ..helper.basic_linalg import trp
-from .ggl_helper import prox_p, phiplus
+from ..helper.basic_linalg import trp, Gdot
+from .ggl_helper import prox_p, phiplus, f, P_val
 
 
 def ADMM_MGL(S, lambda1, lambda2, reg , Omega_0 , \
@@ -65,6 +65,7 @@ def ADMM_MGL(S, lambda1, lambda2, reg , Omega_0 , \
      
     runtime = np.zeros(max_iter)
     kkt_residual = np.zeros(max_iter)
+    objective = np.zeros(max_iter)
     
     for iter_t in np.arange(max_iter):
         
@@ -96,6 +97,7 @@ def ADMM_MGL(S, lambda1, lambda2, reg , Omega_0 , \
         if measure:
             end = time.time()
             runtime[iter_t] = end-start
+            objective[iter_t] = f(Omega_t, S) + P_val(Omega_t, lambda1, lambda2, reg)
             
         if verbose:
             print(f"Current accuracy: ", eta_A)
@@ -108,10 +110,13 @@ def ADMM_MGL(S, lambda1, lambda2, reg , Omega_0 , \
     
     assert abs(trp(Omega_t)- Omega_t).max() <= 1e-5, "Solution is not symmetric"
     assert abs(trp(Theta_t)- Theta_t).max() <= 1e-5, "Solution is not symmetric"
+    D,_ = np.linalg.eigh(Theta_t)
+    if D.min() <= 0:
+        print("WARNING: Theta is not positive definite. Solve to higher accuracy!")
     
     sol = {'Omega': Omega_t, 'Theta': Theta_t, 'X': X_t}
     if measure:
-        info = {'status': status , 'runtime': runtime[:iter_t], 'kkt_residual': kkt_residual[1:iter_t +1]}
+        info = {'status': status , 'runtime': runtime[:iter_t], 'kkt_residual': kkt_residual[1:iter_t +1], 'objective': objective[:iter_t]}
     else:
         info = {'status': status}
                

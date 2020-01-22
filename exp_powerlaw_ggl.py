@@ -24,7 +24,7 @@ N_train = 5000
 M = 10
 
 reg = 'GGL'
-save = True
+save = False
 
 Sigma, Theta = group_power_network(p, K, M)
 
