@@ -29,6 +29,8 @@ def load_and_transform(K = 26, min_inst = 5, compute_G = False):
     all_csv = dict()
     all_ix = pd.Index([])
     num_csv = K
+    num_samples = np.zeros(K, dtype = int)
+    p = np.zeros(K, dtype = int)
     
     for num in np.arange(num_csv):      
         file = "data/slr_data/OTU_data_" + str(num+1) + ".csv"
@@ -58,13 +60,22 @@ def load_and_transform(K = 26, min_inst = 5, compute_G = False):
         X = log_transform(X)
         
         all_csv[num] = X.copy()
+        # info of dimension and sample size
+        p[num] = X.shape[0]
+        num_samples[num] = X.shape[1]
     
     # compute covariance matrices
     S = dict()
     for num in np.arange(num_csv):
-        S[num] = np.cov(all_csv[num].values, bias = True)
+        S0 = np.cov(all_csv[num].values, bias = True)
         
-    return all_csv, S, G, ix_location, ix_exist
+        # scale covariances to correlations
+        scale = np.tile(np.sqrt(np.diag(S0)),(S0.shape[0],1))
+        scale = scale.T * scale
+        
+        S[num] = S0 / scale
+        
+    return all_csv, S, G, ix_location, ix_exist, p, num_samples
 
 
 

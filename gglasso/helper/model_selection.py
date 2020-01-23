@@ -25,7 +25,7 @@ def lambda_grid(num1 = 5, num2 = 2, reg = 'GGL'):
     idea: the grid goes from higher to smaller values when going down/right
     """   
     if reg == 'GGL':
-        l1 = np.logspace(start = -1, stop = -3, num = num1, base = 10)
+        l1 = 5*np.logspace(start = -1, stop = -2, num = num1, base = 10)
         w2 = np.linspace(0.5, 0.2, num2)
         l1grid, w2grid = np.meshgrid(l1,w2)
         L2 = lambda_parametrizer(l1grid, w2grid)
@@ -45,20 +45,25 @@ def model_select(solver, S, N, p, reg, method, G = None, gridsize1 = 6, gridsize
     gridsize2 = size of grid resp. to lambda2
     """
     
+    assert method in ['AIC', 'BIC']
     assert reg in ['FGL', 'GGL']
     L1, L2, W2 = lambda_grid(num1 = gridsize1, num2 = gridsize2, reg = reg)
     
     grid1 = L1.shape[0]; grid2 = L2.shape[1]
     assert grid1 == gridsize2
     assert grid2 == gridsize1
-    SCORE = np.zeros((grid1, grid2))
-    SCORE[:] = np.nan
+    AIC = np.zeros((grid1, grid2))
+    AIC[:] = np.nan
+    BIC = np.zeros((grid1, grid2))
+    BIC[:] = np.nan
+    SP = np.zeros((grid1, grid2))
+    SP[:] = np.nan
     SKIP = np.zeros((grid1, grid2), dtype = bool)
     
-    kwargs = {'reg': reg, 'S': S, 'eps_admm': 1e-3, 'verbose': False, 'measure': True}
+    kwargs = {'reg': reg, 'S': S, 'eps_admm': 1e-3, 'verbose': True, 'measure': True}
     if type(S) == dict:
         K = len(S.keys())
-        Omega_0 = id_dict(K,p)
+        Omega_0 = id_dict(p)
         kwargs['G'] = G
     elif type(S) == np.ndarray:
         K = S.shape[0]
@@ -70,7 +75,9 @@ def model_select(solver, S, N, p, reg, method, G = None, gridsize1 = 6, gridsize
     for g1 in np.arange(grid1):
         for g2 in np.arange(grid2):
             
+            print("Current grid point: ", (L1[g1,g2],L2[g1,g2]) )
             if SKIP[g1,g2]:
+                print("SKIP")
                 continue
             kwargs['lambda1'] = L1[g1,g2]
             kwargs['lambda2'] = L2[g1,g2]
@@ -85,14 +92,16 @@ def model_select(solver, S, N, p, reg, method, G = None, gridsize1 = 6, gridsize
             # warm start
             Omega_0 = Omega_sol.copy()
             
-            if method == 'AIC':
-                SCORE[g1,g2] = aic(S, Theta_sol, N)
-            elif method == 'EBIC':
-                SCORE[g1,g2] = ebic(S, Theta_sol, N, gamma = 0.1)
+            AIC[g1,g2] = aic(S, Theta_sol, N)
+            BIC[g1,g2] = ebic(S, Theta_sol, N, gamma = 0.1)
+            SP[g1,g2] = mean_sparsity(Theta_sol)
     
     # get optimal lambda
-    ix= np.unravel_index(np.nanargmin(SCORE), SCORE.shape)
-    return (L1[ix], L2[ix]), SCORE
+    if method == 'AIC':
+        ix= np.unravel_index(np.nanargmin(AIC), AIC.shape)
+    elif method == 'BIC':    
+        ix= np.unravel_index(np.nanargmin(BIC), BIC.shape)
+    return AIC, BIC, L1, L2, ix, SP, SKIP
 
 def aic(S, Theta, N):
     """
@@ -155,7 +164,7 @@ def ebic_dict(S, Theta, N, gamma):
     S, Theta are dictionaries
     N is array of sample sizes
     """
-    K = len(S.keys)
+    K = len(S.keys())
     bic = 0
     for k in np.arange(K):
         A = adjacency_matrix(Theta[k] , t = 1e-5)
@@ -170,7 +179,7 @@ def aic_dict(S, Theta, N):
     S, Theta are dictionaries
     N is array of sample sizes
     """
-    K = len(S.keys)
+    K = len(S.keys())
     aic = 0
     for k in np.arange(K):
         A = adjacency_matrix(Theta[k] , t = 1e-5)

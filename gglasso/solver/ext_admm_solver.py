@@ -68,9 +68,10 @@ def ext_ADMM_MGL(S, lambda1, lambda2, reg , Omega_0, G,\
         
         if measure:
             start = time.time()
-            
-        eta_A = ext_ADMM_stopping_criterion(Omega_t, Theta_t, Lambda_t, X0_t, X1_t, S , G, lambda1, lambda2, reg)
-        kkt_residual[iter_t] = eta_A
+        
+        if iter_t % 10 == 0:
+            eta_A = ext_ADMM_stopping_criterion(Omega_t, Theta_t, Lambda_t, X0_t, X1_t, S , G, lambda1, lambda2, reg)
+            kkt_residual[iter_t] = eta_A
             
         if eta_A <= eps_admm:
             status = 'optimal'
