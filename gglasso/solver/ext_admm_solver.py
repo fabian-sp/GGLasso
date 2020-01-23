@@ -117,6 +117,9 @@ def ext_ADMM_MGL(S, lambda1, lambda2, reg , Omega_0, G,\
     for k in np.arange(K):
         assert abs(Omega_t[k].T - Omega_t[k]).max() <= 1e-5, "Solution is not symmetric"
         assert abs(Theta_t[k].T - Theta_t[k]).max() <= 1e-5, "Solution is not symmetric"
+        D,_ = np.linalg.eigh(Theta_t[k])
+        if D.min() <= 1e-5:
+            print("WARNING: Theta may be not positive definite -- increase accuracy!")
     
     sol = {'Omega': Omega_t, 'Theta': Theta_t, 'X0': X0_t, 'X1': X1_t}
     if measure:

@@ -25,7 +25,7 @@ def lambda_grid(num1 = 5, num2 = 2, reg = 'GGL'):
     idea: the grid goes from higher to smaller values when going down/right
     """   
     if reg == 'GGL':
-        l1 = 5*np.logspace(start = -1, stop = -2, num = num1, base = 10)
+        l1 = 2*np.logspace(start = -1, stop = -1.5, num = num1, base = 10)
         w2 = np.linspace(0.5, 0.2, num2)
         l1grid, w2grid = np.meshgrid(l1,w2)
         L2 = lambda_parametrizer(l1grid, w2grid)
@@ -37,6 +37,11 @@ def lambda_grid(num1 = 5, num2 = 2, reg = 'GGL'):
         w2 = None
         
     return L1.squeeze(), L2.squeeze(), w2
+
+def log_steps(lmin, lmax, steps):
+     t = np.logspace(0,-5, num = steps, base = 10)
+     res = lmax + (1-t)*(lmin-lmax)
+     return res
 
 def model_select(solver, S, N, p, reg, method, G = None, gridsize1 = 6, gridsize2 = 3):
     """
@@ -69,7 +74,7 @@ def model_select(solver, S, N, p, reg, method, G = None, gridsize1 = 6, gridsize
         K = S.shape[0]
         Omega_0 = id_array(K,p)
         
-    kwargs['Omega_0'] = Omega_0
+    kwargs['Omega_0'] = Omega_0.copy()
     
     
     for g1 in np.arange(grid1):
@@ -90,7 +95,7 @@ def model_select(solver, S, N, p, reg, method, G = None, gridsize1 = 6, gridsize
                 SKIP[g1:, g2:] = True
             
             # warm start
-            Omega_0 = Omega_sol.copy()
+            kwargs['Omega_0'] = Omega_sol.copy()
             
             AIC[g1,g2] = aic(S, Theta_sol, N)
             BIC[g1,g2] = ebic(S, Theta_sol, N, gamma = 0.1)
