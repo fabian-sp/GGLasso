@@ -48,6 +48,7 @@ def model_select(solver, S, N, p, reg, method, G = None, gridsize1 = 6, gridsize
     method for doing model selection using grid search and AIC/eBIC
     gridsize1 = size of grid resp. to lambda1
     gridsize2 = size of grid resp. to lambda2
+    we work the grid columnwise, i.e. hold l1 constant and change l2
     """
     
     assert method in ['AIC', 'BIC']
@@ -76,10 +77,12 @@ def model_select(solver, S, N, p, reg, method, G = None, gridsize1 = 6, gridsize
         
     kwargs['Omega_0'] = Omega_0.copy()
     
-    
-    for g1 in np.arange(grid1):
-        for g2 in np.arange(grid2):
-            
+    curr_min = np.inf
+    curr_best = None
+    # run down the columns --> hence move g1 fastest
+    for g2 in np.arange(grid2):
+        for g1 in np.arange(grid1):
+      
             print("Current grid point: ", (L1[g1,g2],L2[g1,g2]) )
             if SKIP[g1,g2]:
                 print("SKIP")
@@ -100,13 +103,20 @@ def model_select(solver, S, N, p, reg, method, G = None, gridsize1 = 6, gridsize
             AIC[g1,g2] = aic(S, Theta_sol, N)
             BIC[g1,g2] = ebic(S, Theta_sol, N, gamma = 0.1)
             SP[g1,g2] = mean_sparsity(Theta_sol)
+            
+            print("Current eBIC grid:")
+            print(BIC)
+            
+            if BIC[g1,g2] < curr_min:
+                curr_min = BIC[g1,g2]
+                curr_best = sol.copy()
     
     # get optimal lambda
     if method == 'AIC':
         ix= np.unravel_index(np.nanargmin(AIC), AIC.shape)
     elif method == 'BIC':    
         ix= np.unravel_index(np.nanargmin(BIC), BIC.shape)
-    return AIC, BIC, L1, L2, ix, SP, SKIP
+    return AIC, BIC, L1, L2, ix, SP, SKIP, curr_best
 
 def aic(S, Theta, N):
     """

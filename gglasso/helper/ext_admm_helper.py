@@ -51,6 +51,8 @@ def check_G(G, p):
     
     assert np.all(G.sum(axis = 2) >= -K), "G has rows with only -1 entries"
     
+    #assert np.all((G[G==-1].sum(axis = 0) == -2) | (G[G==-1].sum(axis = 0) == 0))
+    
     assert np.all((G[0,:,:] + G[1,:,:] == -2) | (G[0,:,:] != G[1,:,:])), "G has entries on the diagonal!"
     
     assert np.all(G >=-1), "No negative indices allowed (only -1 for indicating a missing feature)"
