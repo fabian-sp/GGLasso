@@ -22,6 +22,8 @@ def ext_ADMM_MGL(S, lambda1, lambda2, reg , Omega_0, G,\
     lambda1: can be a vector of length K or a float
     G: array containing the group penalty indices
     max_iter and rho can be specified via kwargs
+    
+    In the code, X are the SCALED dual variables, for the KKT stop criterion they have to be unscaled again!
     """
     K = len(S.keys())
     p = np.zeros(K, dtype= int)
@@ -70,7 +72,7 @@ def ext_ADMM_MGL(S, lambda1, lambda2, reg , Omega_0, G,\
             start = time.time()
         
         if iter_t % 10 == 0:
-            eta_A = ext_ADMM_stopping_criterion(Omega_t, Theta_t, Lambda_t, X0_t, X1_t, S , G, lambda1, lambda2, reg)
+            eta_A = ext_ADMM_stopping_criterion(Omega_t, Theta_t, Lambda_t, rho*X0_t, rho*X1_t, S , G, lambda1, lambda2, reg)
             kkt_residual[iter_t] = eta_A
             
         if eta_A <= eps_admm:
@@ -121,7 +123,7 @@ def ext_ADMM_MGL(S, lambda1, lambda2, reg , Omega_0, G,\
         if D.min() <= 1e-5:
             print("WARNING: Theta may be not positive definite -- increase accuracy!")
     
-    sol = {'Omega': Omega_t, 'Theta': Theta_t, 'X0': X0_t, 'X1': X1_t}
+    sol = {'Omega': Omega_t, 'Theta': Theta_t, 'X0': rho*X0_t, 'X1': rho*X1_t}
     if measure:
         info = {'status': status , 'runtime': runtime[:iter_t], 'kkt_residual': kkt_residual[1:iter_t +1]}
     else:

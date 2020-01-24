@@ -22,6 +22,8 @@ def ADMM_MGL(S, lambda1, lambda2, reg , Omega_0 , \
     
     n_samples are the sample sizes for the K instances, can also be None or integer
     max_iter and rho can be specified via kwargs
+    
+    In the code, X are the SCALED dual variables, for the KKT stop criterion they have to be unscaled again!
     """
     assert Omega_0.shape == S.shape
     assert S.shape[1] == S.shape[2]
@@ -72,7 +74,7 @@ def ADMM_MGL(S, lambda1, lambda2, reg , Omega_0 , \
         if measure:
             start = time.time()
             
-        eta_A = ADMM_stopping_criterion(Omega_t, Theta_t, X_t, S , lambda1, lambda2, nk, reg)
+        eta_A = ADMM_stopping_criterion(Omega_t, Theta_t, rho*X_t, S , lambda1, lambda2, nk, reg)
         kkt_residual[iter_t] = eta_A
             
         if eta_A <= eps_admm:
@@ -114,7 +116,7 @@ def ADMM_MGL(S, lambda1, lambda2, reg , Omega_0 , \
     if D.min() <= 0:
         print("WARNING: Theta is not positive definite. Solve to higher accuracy!")
     
-    sol = {'Omega': Omega_t, 'Theta': Theta_t, 'X': X_t}
+    sol = {'Omega': Omega_t, 'Theta': Theta_t, 'X': rho*X_t}
     if measure:
         info = {'status': status , 'runtime': runtime[:iter_t], 'kkt_residual': kkt_residual[1:iter_t +1], 'objective': objective[:iter_t]}
     else:

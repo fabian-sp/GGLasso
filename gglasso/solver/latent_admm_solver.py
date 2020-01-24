@@ -16,7 +16,7 @@ def latent_ADMM_GGL(S, lambda1, lambda2, mu1, mu2, R_0, \
     
     n_samples are the sample sizes for the K instances, can also be None or integer (currently not used!)
     max_iter and rho can be specified via kwargs
-    X0,X1 denote the dual varibales
+    In the code, X0,X1 are the SCALED dual variables, for the KKT stop criterion they have to be unscaled again!
     W denotes the additional variables from reformulation
     """
     assert R_0.shape == S.shape
@@ -66,7 +66,7 @@ def latent_ADMM_GGL(S, lambda1, lambda2, mu1, mu2, R_0, \
         if measure:
             start = time.time()
             
-        eta_A = latent_ADMM_stopping_criterion(R_t, Theta_t, L_t, W_t, X0_t, X1_t, S , lambda1, lambda2, mu1, mu2)
+        eta_A = latent_ADMM_stopping_criterion(R_t, Theta_t, L_t, W_t, rho*X0_t, rho*X1_t, S , lambda1, lambda2, mu1, mu2)
         kkt_residual[iter_t] = eta_A
             
         if eta_A <= eps_admm:
@@ -120,7 +120,7 @@ def latent_ADMM_GGL(S, lambda1, lambda2, mu1, mu2, R_0, \
     assert abs(trp(Theta_t)- Theta_t).max() <= 1e-5, "Solution is not symmetric"
     assert abs(trp(L_t)- L_t).max() <= 1e-5, "Solution is not symmetric"
     
-    sol = {'R': R_t, 'Theta': Theta_t, 'L': L_t, 'X0': X0_t, 'X1': X1_t}
+    sol = {'R': R_t, 'Theta': Theta_t, 'L': L_t, 'X0': rho*X0_t, 'X1': rho*X1_t}
     if measure:
         info = {'status': status , 'runtime': runtime[:iter_t], 'kkt_residual': kkt_residual[1:iter_t +1]}
     else:
