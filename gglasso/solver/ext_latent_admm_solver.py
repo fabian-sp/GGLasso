@@ -77,7 +77,7 @@ def ext_ADMM_MGL(S, lambda1, lambda2, mu1, R_0, G,\
         if measure:
             start = time.time()
             
-        eta_A = latent_ADMM_stopping_criterion(R_t, Theta_t, L_t, Lambda_t, rho*X0_t, rho*X1_t, S, G, lambda1, lambda2, mu1)
+        eta_A = latent_ADMM_stopping_criterion(R_t, Theta_t, L_t, Lambda_t, dict((k, rho*v) for k,v in X0_t.items()), dict((k, rho*v) for k,v in X1_t.items()), S, G, lambda1, lambda2, mu1)
         kkt_residual[iter_t] = eta_A
             
         if eta_A <= eps_admm:
@@ -134,7 +134,7 @@ def ext_ADMM_MGL(S, lambda1, lambda2, mu1, R_0, G,\
         assert abs(Theta_t[k].T - Theta_t[k]).max() <= 1e-5, "Solution is not symmetric"
         assert abs(L_t[k].T - L_t[k]).max() <= 1e-5, "Solution is not symmetric"
     
-    sol = {'R': R_t, 'Theta': Theta_t, 'L': L_t, 'X0': rho*X0_t, 'X1': rho*X1_t}
+    sol = {'R': R_t, 'Theta': Theta_t, 'L': L_t, 'X0': X0_t, 'X1': X1_t}
     if measure:
         info = {'status': status , 'runtime': runtime[:iter_t], 'kkt_residual': kkt_residual[1:iter_t +1]}
     else:
