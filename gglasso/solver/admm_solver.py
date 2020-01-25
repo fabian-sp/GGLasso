@@ -116,7 +116,7 @@ def ADMM_MGL(S, lambda1, lambda2, reg , Omega_0 , \
     if D.min() <= 0:
         print("WARNING: Theta is not positive definite. Solve to higher accuracy!")
     
-    sol = {'Omega': Omega_t, 'Theta': Theta_t, 'X': rho*X_t}
+    sol = {'Omega': Omega_t, 'Theta': Theta_t, 'X': X_t}
     if measure:
         info = {'status': status , 'runtime': runtime[:iter_t], 'kkt_residual': kkt_residual[1:iter_t +1], 'objective': objective[:iter_t]}
     else:

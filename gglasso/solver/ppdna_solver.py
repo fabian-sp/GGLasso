@@ -274,14 +274,15 @@ def warmPPDNA(S, lambda1, lambda2, reg, Omega_0, Theta_0 = np.array([]), X_0 = n
         eps_ppdna = eps
         phase2 = True
     
-    
-    sol1, info1 = ADMM_MGL(S, lambda1, lambda2, reg , Omega_0 , Theta_0, X_0, n_samples = None, eps_admm = eps_admm , verbose = verbose, measure = measure)
+    rho = 1.
+    sol1, info1 = ADMM_MGL(S, lambda1, lambda2, reg , Omega_0 , Theta_0, X_0, n_samples = None, eps_admm = eps_admm , verbose = verbose, measure = measure, rho = rho)
     
     assert info1['status'] == 'optimal'
     
     Theta_0 = sol1['Theta']
     Omega_0 = sol1['Omega']
-    X_0 = sol1['X']
+    # ADMM returns scaled dual variables --> rescale
+    X_0 = rho*sol1['X']
     
     if phase2:
         sol2, info2 = PPDNA(S, lambda1, lambda2, reg, Omega_0 = Omega_0, Theta_0 = Theta_0, X_0 = X_0, ppdna_params = ppdna_params,  eps_ppdna = eps_ppdna , verbose = verbose, measure = measure)

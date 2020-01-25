@@ -11,7 +11,7 @@ from ..helper.ext_admm_helper import check_G
 
 
 def ext_ADMM_MGL(S, lambda1, lambda2, reg , Omega_0, G,\
-             eps_admm = 1e-5 , verbose = False, measure = False, **kwargs):
+             X0 = None, X1 = None, eps_admm = 1e-5 , verbose = False, measure = False, **kwargs):
     """
     This is an ADMM algorithm for solving the Multiple Graphical Lasso problem
     where not all instances have the same number of dimensions
@@ -55,12 +55,22 @@ def ext_ADMM_MGL(S, lambda1, lambda2, reg , Omega_0, G,\
     Theta_t = Omega_0.copy()
     Lambda_t = Omega_0.copy()
     
+    # helper and dual variables
     Z_t = dict()
-    X0_t = dict()
-    X1_t = dict()
-    for k in np.arange(K):
-        X0_t[k] = np.zeros((p[k],p[k]))
-        X1_t[k] = np.zeros((p[k],p[k]))
+    
+    if X0 == None:
+        X0_t = dict()
+        for k in np.arange(K):
+            X0_t[k] = np.zeros((p[k],p[k]))  
+    else:
+        X0_t = X0.copy()
+        
+    if X1 == None:   
+        X1_t = dict()
+        for k in np.arange(K):
+            X1_t[k] = np.zeros((p[k],p[k]))
+    else:
+        X1_t = X1.copy()
      
      
     runtime = np.zeros(max_iter)
@@ -72,7 +82,7 @@ def ext_ADMM_MGL(S, lambda1, lambda2, reg , Omega_0, G,\
             start = time.time()
         
         if iter_t % 10 == 0:
-            eta_A = ext_ADMM_stopping_criterion(Omega_t, Theta_t, Lambda_t, rho*X0_t, rho*X1_t, S , G, lambda1, lambda2, reg)
+            eta_A = ext_ADMM_stopping_criterion(Omega_t, Theta_t, Lambda_t, dict((k, rho*v) for k,v in X0_t.items()), dict((k, rho*v) for k,v in X1_t.items()), S , G, lambda1, lambda2, reg)
             kkt_residual[iter_t] = eta_A
             
         if eta_A <= eps_admm:
@@ -123,7 +133,7 @@ def ext_ADMM_MGL(S, lambda1, lambda2, reg , Omega_0, G,\
         if D.min() <= 1e-5:
             print("WARNING: Theta may be not positive definite -- increase accuracy!")
     
-    sol = {'Omega': Omega_t, 'Theta': Theta_t, 'X0': rho*X0_t, 'X1': rho*X1_t}
+    sol = {'Omega': Omega_t, 'Theta': Theta_t, 'X0': X0_t, 'X1': X1_t}
     if measure:
         info = {'status': status , 'runtime': runtime[:iter_t], 'kkt_residual': kkt_residual[1:iter_t +1]}
     else:
