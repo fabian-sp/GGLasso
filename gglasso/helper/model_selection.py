@@ -99,6 +99,8 @@ def model_select(solver, S, N, p, reg, method, G = None, gridsize1 = 6, gridsize
             
             # warm start
             kwargs['Omega_0'] = Omega_sol.copy()
+            kwargs['X0'] = sol['X0'].copy()
+            kwargs['X1'] = sol['X1'].copy()
             
             AIC[g1,g2] = aic(S, Theta_sol, N)
             BIC[g1,g2] = ebic(S, Theta_sol, N, gamma = 0.1)
@@ -106,6 +108,8 @@ def model_select(solver, S, N, p, reg, method, G = None, gridsize1 = 6, gridsize
             
             print("Current eBIC grid:")
             print(BIC)
+            print("Current Sparsity grid:")
+            print(SP)
             
             if BIC[g1,g2] < curr_min:
                 curr_min = BIC[g1,g2]
