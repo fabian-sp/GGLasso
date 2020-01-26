@@ -154,7 +154,7 @@ def get_default_color_coding():
     color_dict['GLASSO'] = mypal[7]
     color_dict['ADMM'] = mypal[1]
     color_dict['PPDNA'] = mypal[0]
-    color_dict['LGTL'] = mypal[5]
+    color_dict['LTGL'] = mypal[5]
 
     return color_dict
 
@@ -236,7 +236,7 @@ def plot_evolution(results, block = None, L = None, start = None, stop = None, s
         fig,axs = plt.subplots(nrows = 2, ncols = 2, figsize = default_size_small)
         plot_block_evolution(axs[0,0], start, stop, results.get('truth').get('Theta'), 'truth', color_dict)
         plot_block_evolution(axs[0,1], start, stop, results.get('PPDNA').get('Theta'), 'PPDNA', color_dict)
-        plot_block_evolution(axs[1,0], start, stop, results.get('LGTL').get('Theta'), 'LGTL', color_dict)
+        plot_block_evolution(axs[1,0], start, stop, results.get('LTGL').get('Theta'), 'LTGL', color_dict)
         plot_block_evolution(axs[1,1], start, stop, results.get('GLASSO').get('Theta'), 'GLASSO', color_dict)
     
     fig.suptitle('Precision matrix entries - evolution over time')
@@ -471,7 +471,7 @@ def plot_multiple_heatmap(k, Theta, results, axs):
     
     plot_single_heatmap(k, Theta, 'truth', axs[0,0])
     plot_single_heatmap(k, results.get('PPDNA').get('Theta'), 'PPDNA', axs[0,1])
-    plot_single_heatmap(k, results.get('LGTL').get('Theta'), 'ADMM', axs[1,0])
+    plot_single_heatmap(k, results.get('LTGL').get('Theta'), 'ADMM', axs[1,0])
     plot_single_heatmap(k, results.get('GLASSO').get('Theta'), 'GLASSO', axs[1,1])
     
     return

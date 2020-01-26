@@ -25,8 +25,8 @@ def lambda_grid(num1 = 5, num2 = 2, reg = 'GGL'):
     idea: the grid goes from higher to smaller values when going down/right
     """   
     if reg == 'GGL':
-        l1 = np.logspace(start = -1, stop = -1.5, num = num1, base = 10)
-        w2 = np.linspace(0.6, 0.3, num2)
+        l1 = np.logspace(start = -1, stop = -1.4, num = num1, base = 10)
+        w2 = np.linspace(0.4, 0.1, num2)
         l1grid, w2grid = np.meshgrid(l1,w2)
         L2 = lambda_parametrizer(l1grid, w2grid)
         L1 = l1grid.copy()

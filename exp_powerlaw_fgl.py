@@ -36,7 +36,6 @@ S_train, sample_train = sample_covariance_matrix(Sigma, N)
 Sinv = np.linalg.pinv(S, hermitian = True)
 
 
-methods = ['PPDNA', 'ADMM', 'GLASSO']
 
 results = {}
 results['truth'] = {'Theta' : Theta}
@@ -87,8 +86,6 @@ lambda2 = L2[ix]
 print("Optimal lambda values: (l1,l2) = ", (lambda1,lambda2))
 plot_fpr_tpr(FPR.T, TPR.T,  ix[::-1], ix2[::-1])
 
-surface_plot(L1, L2, BIC, name = 'eBIC', save = False)
-
 #%%
 # solve with QUIC/single Glasso
 #from inverse_covariance import QuicGraphicalLasso
@@ -131,12 +128,6 @@ results['ADMM'] = {'Theta' : sol['Theta']}
 
 
 #%%
-# solve with TVGL
-#start = time()
-#thetSet = TVGLwrapper(sample, lambda1, lambda2)
-#end = time()
-
-#%%
 start = time()
 alpha = N*lambda1
 beta = N*lambda2 
@@ -145,22 +136,24 @@ ltgl = TimeGraphicalLasso(alpha = alpha, beta = beta , psi = 'l1', \
 ltgl = ltgl.fit(sample.transpose(0,2,1))
 end = time()
 
-print(f"Running time for LGTL was {end-start}  seconds")
+print(f"Running time for LTGL was {end-start}  seconds")
 
-results['LGTL'] = {'Theta' : ltgl.precision_}
+results['LTGL'] = {'Theta' : ltgl.precision_}
 
 #%%
 Theta_admm = results.get('ADMM').get('Theta')
 Theta_ppdna = results.get('PPDNA').get('Theta')
-Theta_lgtl = results.get('LGTL').get('Theta')
+Theta_ltgl = results.get('LTGL').get('Theta')
 Theta_glasso = results.get('GLASSO').get('Theta')
 
 
-print(np.linalg.norm(Theta_lgtl - Theta_admm)/ np.linalg.norm(Theta_admm))
+print(np.linalg.norm(Theta_ltgl - Theta_admm)/ np.linalg.norm(Theta_admm))
 print(np.linalg.norm(Theta_ppdna - Theta_admm)/ np.linalg.norm(Theta_admm))
 
 
 save = True
+
+surface_plot(L1, L2, BIC, name = 'eBIC', save = save)
 
 plot_evolution(results, block = 0, L = L, save = save)
 plot_evolution(results, block = 2, L = L, save = save)

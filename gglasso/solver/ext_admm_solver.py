@@ -103,11 +103,12 @@ def ext_ADMM_MGL(S, lambda1, lambda2, reg , Omega_0, G,\
             Theta_t[k] = prox_od_1norm(V_t, lambda1[k]/(2*rho))
         
         # Lambda Update
+        print("Start Lambda Update")
         for k in np.arange(K): 
             Z_t[k] = Theta_t[k] + X1_t[k]
             
         Lambda_t = prox_2norm_G(Z_t, G, lambda2/rho)
-        
+        print("Lambda Update DOne")
         # X Update
         for k in np.arange(K):
             X0_t[k] +=  Omega_t[k] - Theta_t[k]
