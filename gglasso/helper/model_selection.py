@@ -25,8 +25,8 @@ def lambda_grid(num1 = 5, num2 = 2, reg = 'GGL'):
     idea: the grid goes from higher to smaller values when going down/right
     """   
     if reg == 'GGL':
-        l1 = 2*np.logspace(start = -1, stop = -1.5, num = num1, base = 10)
-        w2 = np.linspace(0.5, 0.2, num2)
+        l1 = np.logspace(start = -1, stop = -1.5, num = num1, base = 10)
+        w2 = np.linspace(0.6, 0.3, num2)
         l1grid, w2grid = np.meshgrid(l1,w2)
         L2 = lambda_parametrizer(l1grid, w2grid)
         L1 = l1grid.copy()
@@ -117,8 +117,10 @@ def model_select(solver, S, N, p, reg, method, G = None, gridsize1 = 6, gridsize
     
     # get optimal lambda
     if method == 'AIC':
+        AIC[AIC==-np.inf] = np.nan
         ix= np.unravel_index(np.nanargmin(AIC), AIC.shape)
     elif method == 'BIC':    
+        BIC[BIC==-np.inf] = np.nan
         ix= np.unravel_index(np.nanargmin(BIC), BIC.shape)
     return AIC, BIC, L1, L2, ix, SP, SKIP, curr_best
 
@@ -159,7 +161,7 @@ def aic_array(S,Theta, N):
     nonzero_count = A.sum(axis=(1,2))/2
     aic = 0
     for k in np.arange(K):
-        aic += N[k]*Sdot(S[k,:,:], Theta[k,:,:]) - N[k]*np.log(np.linalg.det(Theta[k,:,:])) + 2*nonzero_count[k]
+        aic += N[k]*Sdot(S[k,:,:], Theta[k,:,:]) - N[k]*robust_logdet(Theta[k,:,:]) + 2*nonzero_count[k]
         
     return aic
 
@@ -173,7 +175,7 @@ def ebic_array(S, Theta, N, gamma):
     
     bic = 0
     for k in np.arange(K):
-        bic += N[k]*Sdot(S[k,:,:], Theta[k,:,:]) - N[k]*np.log(np.linalg.det(Theta[k,:,:])) + nonzero_count[k] * (np.log(N[k])+ 4*np.log(p)*gamma)
+        bic += N[k]*Sdot(S[k,:,:], Theta[k,:,:]) - N[k]*robust_logdet(Theta[k,:,:]) + nonzero_count[k] * (np.log(N[k])+ 4*np.log(p)*gamma)
     
     return bic
 
@@ -188,7 +190,7 @@ def ebic_dict(S, Theta, N, gamma):
     for k in np.arange(K):
         A = adjacency_matrix(Theta[k] , t = 1e-5)
         p = S[k].shape[0]
-        bic += N[k]*Sdot(S[k], Theta[k]) - N[k]*np.log(np.linalg.det(Theta[k])) + A.sum()/2 * (np.log(N[k])+ 4*np.log(p)*gamma)
+        bic += N[k]*Sdot(S[k], Theta[k]) - N[k]*robust_logdet(Theta[k]) + A.sum()/2 * (np.log(N[k])+ 4*np.log(p)*gamma)
         
     return bic
         
@@ -202,6 +204,19 @@ def aic_dict(S, Theta, N):
     aic = 0
     for k in np.arange(K):
         A = adjacency_matrix(Theta[k] , t = 1e-5)
-        aic += N[k]*Sdot(S[k], Theta[k]) - N[k]*np.log(np.linalg.det(Theta[k])) + A.sum()
+        aic += N[k]*Sdot(S[k], Theta[k]) - N[k]*robust_logdet(Theta[k]) + A.sum()
         
     return aic
+
+def robust_logdet(A, t = 1e-6):
+    """
+    slogdet returns always a finite number if the lowest EV is not EXACTLY 0
+    because of numerical inaccuracies we want to avoid that behaviour but also avoid overflows
+    """
+    D,Q = np.linalg.eigh(A)
+    if D.min() <= t:
+        print("WARNING: solution may not be positive definite")
+        return -np.inf
+    else:
+        l = np.linalg.slogdet(A)
+        return l[0]*l[1]

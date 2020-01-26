@@ -11,7 +11,7 @@ from gglasso.solver.ext_admm_solver import ext_ADMM_MGL
 
 from gglasso.helper.experiment_helper import surface_plot
 from gglasso.helper.ext_admm_helper import get_K_identity, check_G, load_G, save_G
-from gglasso.helper.model_selection import model_select
+from gglasso.helper.model_selection import model_select, ebic
 
 K = 26
 reg = 'GGL'
@@ -26,7 +26,7 @@ check_G(G, p)
 
 #%%
 
-AIC, BIC, L1, L2, ix, SP, SKIP, sol = model_select(ext_ADMM_MGL, S, num_samples, p, reg, method = 'BIC', G = G, gridsize1 = 3, gridsize2 = 2)
+AIC, BIC, L1, L2, ix, SP, SKIP, sol = model_select(ext_ADMM_MGL, S, num_samples, p, reg, method = 'BIC', G = G, gridsize1 = 4, gridsize2 = 3)
 
 surface_plot(L1,L2, BIC)
 
