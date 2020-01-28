@@ -26,7 +26,7 @@ check_G(G, p)
 
 #%%
 
-AIC, BIC, L1, L2, ix, SP, SKIP, sol = model_select(ext_ADMM_MGL, S, num_samples, p, reg, method = 'BIC', G = G, gridsize1 = 4, gridsize2 = 3)
+AIC, BIC, L1, L2, ix, SP, SKIP, sol = model_select(ext_ADMM_MGL, S, num_samples, p, reg, method = 'BIC', G = G, gridsize1 = 5, gridsize2 = 4)
 
 surface_plot(L1,L2, BIC)
 

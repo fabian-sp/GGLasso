@@ -26,7 +26,9 @@ def lambda_grid(num1 = 5, num2 = 2, reg = 'GGL'):
     """   
     if reg == 'GGL':
         l1 = np.logspace(start = -1, stop = -1.4, num = num1, base = 10)
+        l1 = np.linspace(0.1, 0.05, num = num1)
         w2 = np.linspace(0.24, 0.01, num2)
+        w2 = np.logspace(-1, -4, num2)
         l1grid, w2grid = np.meshgrid(l1,w2)
         L2 = lambda_parametrizer(l1grid, w2grid)
         L1 = l1grid.copy()
@@ -55,6 +57,8 @@ def model_select(solver, S, N, p, reg, method, G = None, gridsize1 = 6, gridsize
     assert reg in ['FGL', 'GGL']
     L1, L2, W2 = lambda_grid(num1 = gridsize1, num2 = gridsize2, reg = reg)
     
+    print(L1)
+    print(L2)
     grid1 = L1.shape[0]; grid2 = L2.shape[1]
     assert grid1 == gridsize2
     assert grid2 == gridsize1
