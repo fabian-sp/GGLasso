@@ -32,14 +32,26 @@ surface_plot(L1,L2, BIC)
 
 
 #%%
-#for l in np.arange(G.shape[1]):
+L = G.shape[1]
+
+groupsize = G[G!=-1].sum(axis=2)
+
+nnz = np.zeros(L)
+Theta = sol['Theta']
+for l in np.arange(L):
+    for k in np.arange(K):
+        if G[0,l,k] == -1:
+            continue
+        else:
+            nnz[l] += abs(Theta[k][G[0,l,k], G[1,l,k]]) >= 1e-5
+                
 
 #%%
 Omega_0 = get_K_identity(p)
 
 
-lambda2 = 0.0223
-lambda1 = 0.0632
+lambda2 = 0.0116
+lambda1 = 0.0736
 sol, info = ext_ADMM_MGL(S, lambda1, lambda2, 'GGL', Omega_0, G, eps_admm = 1e-3, verbose = True)
 
 Theta = sol['Theta']

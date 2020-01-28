@@ -26,7 +26,7 @@ def lambda_grid(num1 = 5, num2 = 2, reg = 'GGL'):
     """   
     if reg == 'GGL':
         l1 = np.logspace(start = -1, stop = -1.4, num = num1, base = 10)
-        w2 = np.linspace(0.4, 0.1, num2)
+        w2 = np.linspace(0.24, 0.01, num2)
         l1grid, w2grid = np.meshgrid(l1,w2)
         L2 = lambda_parametrizer(l1grid, w2grid)
         L1 = l1grid.copy()
@@ -94,7 +94,7 @@ def model_select(solver, S, N, p, reg, method, G = None, gridsize1 = 6, gridsize
             Omega_sol = sol['Omega']
             Theta_sol = sol['Theta']
             
-            if mean_sparsity(Theta_sol) >= 0.15:
+            if mean_sparsity(Theta_sol) >= 0.18:
                 SKIP[g1:, g2:] = True
             
             # warm start
@@ -103,7 +103,7 @@ def model_select(solver, S, N, p, reg, method, G = None, gridsize1 = 6, gridsize
             kwargs['X1'] = sol['X1'].copy()
             
             AIC[g1,g2] = aic(S, Theta_sol, N)
-            BIC[g1,g2] = ebic(S, Theta_sol, N, gamma = 0.1)
+            BIC[g1,g2] = ebic(S, Theta_sol, N, gamma = 0.5)
             SP[g1,g2] = mean_sparsity(Theta_sol)
             
             print("Current eBIC grid:")
