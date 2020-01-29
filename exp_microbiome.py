@@ -58,10 +58,10 @@ Theta = sol['Theta']
 
 #%%
 
-info = pd.DataFrame(index = np.arange(K))
+info = pd.DataFrame(index = np.arange(K)+1)
 info['samples'] = num_samples
 info['OTUs'] = p
-info['off-diagonals'] = p*(p-1)/2
+info['off-diagonals'] = (p*(p-1)/2).astype(int)
 info['group entries'] = (G[1,:,:] != -1).sum(axis=0)
 
 info.to_csv('data/slr_results/info.csv')

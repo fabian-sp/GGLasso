@@ -86,6 +86,11 @@ def surface_plot(L1, L2, C, name = 'eBIC', save = False):
     fig = plt.figure(figsize = (8,7))
     ax = fig.gca(projection='3d')
     
+    xx = (~np.isnan(C.any(axis=0)))
+    L1 = L1[:,xx]
+    L2 = L2[:,xx]
+    C = C[:,xx]
+    
     X = np.log10(L1)
     Y = np.log10(L2)
     Z = np.log(C)
