@@ -5,6 +5,9 @@ author: Fabian Schaipp
 import numpy as np
 import pandas as pd
 from itertools import combinations
+import matplotlib.pyplot as plt
+from mpl_toolkits.mplot3d import Axes3D
+
 
 from gglasso.helper.ext_admm_helper import create_group_array
 
@@ -79,7 +82,21 @@ def load_and_transform(K = 26, min_inst = 5, compute_G = False):
 
 
 
-
+def surface_plot(L1, L2, C, name = 'eBIC', save = False):
+    fig = plt.figure(figsize = (8,7))
+    ax = fig.gca(projection='3d')
+    
+    X = np.log10(L1)
+    Y = np.log10(L2)
+    Z = np.log(C)
+    ax.plot_surface(X, Y, Z , cmap = plt.cm.ocean, linewidth=0, antialiased=True)
+    
+    ax.set_xlabel('lambda_1')
+    ax.set_ylabel('lambda_2')
+    ax.set_zlabel(name)
+    
+    if save:
+        fig.savefig('data/slr_results/surface.png', dpi = 300)
 
 
 
