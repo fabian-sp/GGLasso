@@ -17,12 +17,10 @@ from gglasso.helper.model_selection import model_select, ebic
 K = 26
 reg = 'GGL'
 
-all_csv, S, G, ix_location, ix_exist, p, num_samples = load_and_transform(K, min_inst = 5, compute_G = False)
+all_csv, S, G, ix_location, ix_exist, p, num_samples = load_and_transform(K, min_inst = 5, compute_G = True)
 
-
-
-#save_G('data/slr_data/', G)
-G = load_G('data/slr_data/')
+save_G('data/slr_results/', G)
+#G = load_G('data/slr_results/')
 check_G(G, p)
 
 #%%
@@ -59,6 +57,15 @@ Theta = sol['Theta']
 
 
 #%%
+
+info = pd.DataFrame(index = np.arange(K))
+info['samples'] = num_samples
+info['OTUs'] = p
+info['off-diagonals'] = p*(p-1)/2
+info['group entries'] = (G[1,:,:] != -1).sum(axis=0)
+
+info.to_csv('data/slr_results/info.csv')
+
 for k in np.arange(K):
     res_k = pd.DataFrame(sol['Theta'][k], index = all_csv[k].index, columns = all_csv[k].index)
     res_k.to_csv('data/slr_results/theta_' + str(k+1) + ".csv")

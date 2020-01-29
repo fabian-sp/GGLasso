@@ -59,6 +59,8 @@ def check_G(G, p):
     
     assert np.all(G.max(axis = (0,1)) < p), "indices larger as dimension were found"
     
+    assert np.all(G[0,:,:] <= G[1,:,:]), "Only upper diagonal entries should be contained in G"
+    
     return
 
     
@@ -68,7 +70,9 @@ def create_group_array(ix_exist, ix_location, min_inst = 2):
     all_ix = ix_exist.index
     
     A = ix_exist.values.astype(int) @ ix_exist.values.astype(int).T
+    # diagonal entries are not relevant, A is symmetric and we only need each pair once!
     np.fill_diagonal(A,0)
+    A = np.triu(A)
     L = (A >= min_inst).sum()
     all_pairs = np.argwhere(A >= min_inst)
     
