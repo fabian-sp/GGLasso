@@ -32,7 +32,6 @@ AIC, BIC, L1, L2, ix, SP, SKIP, sol = model_select(ext_ADMM_MGL, S, num_samples,
 
 surface_plot(L1,L2, BIC)
 
-
 #%%
 L = G.shape[1]
 
@@ -73,8 +72,8 @@ for k in np.arange(K):
     res_k = pd.DataFrame(sol['Theta'][k], index = all_csv[k].index, columns = all_csv[k].index)
     res_k.to_csv('data/slr_results/theta_' + str(k+1) + ".csv")
 
-
-np.savetxt('data/slr_results/BIC.csv', BIC)
+for j in np.arange(BIC.shape[0]):
+    np.savetxt('data/slr_results/BIC_' + str(j) + '.csv', BIC[j,:,:])
 np.savetxt('data/slr_results/AIC.csv', AIC)
 np.savetxt('data/slr_results/SP.csv', SP)
 np.savetxt('data/slr_results/L1.csv', L1)

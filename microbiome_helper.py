@@ -82,11 +82,30 @@ def load_and_transform(K = 26, min_inst = 5, compute_G = False):
 
 
 
-def surface_plot(L1, L2, C, name = 'eBIC', save = False):
-    fig = plt.figure(figsize = (8,7))
-    ax = fig.gca(projection='3d')
+#def surface_plot(L1, L2, C, name = 'eBIC', save = False):
+#    fig = plt.figure(figsize = (8,7))
+#    ax = fig.gca(projection='3d')
+#    
+#    xx = (~np.isnan(C.any(axis=0)))
+#    L1 = L1[:,xx]
+#    L2 = L2[:,xx]
+#    C = C[:,xx]
+#    
+#    X = np.log10(L1)
+#    Y = np.log10(L2)
+#    Z = np.log(C)
+#    ax.plot_surface(X, Y, Z , cmap = plt.cm.ocean, linewidth=0, antialiased=True)
+#    
+#    ax.set_xlabel('lambda_1')
+#    ax.set_ylabel('lambda_2')
+#    ax.set_zlabel(name)
+#    
+#    if save:
+#        fig.savefig('data/slr_results/surface.png', dpi = 300)
+
+def single_surface_plot(L1, L2, C, ax, name = 'eBIC'):
     
-    xx = (~np.isnan(C.any(axis=0)))
+    xx = (~np.isnan(C).any(axis=0))
     L1 = L1[:,xx]
     L2 = L2[:,xx]
     C = C[:,xx]
@@ -100,14 +119,29 @@ def surface_plot(L1, L2, C, name = 'eBIC', save = False):
     ax.set_ylabel('lambda_2')
     ax.set_zlabel(name)
     
+    return
+
+
+def surface_plot(L1, L2, C, name = 'eBIC', save = False):
+    
+    fig = plt.figure(figsize = (8,7))  
+    if len(C.shape) == 2:
+        ax = fig.gca(projection='3d')
+        single_surface_plot(L1, L2, C, ax, name = name)
+        
+    else:
+        for j in np.arange(C.shape[0]):
+            ax = fig.add_subplot(2, 2, j+1, projection='3d')
+            single_surface_plot(L1, L2, C[j,:,:], ax, name = name)
+            ax.set_title('')
+    
     if save:
-        fig.savefig('data/slr_results/surface.png', dpi = 300)
+        fig.savefig('data/slr_results/surface.png', dpi = 500)
+        
+    return
 
-
-
-
-
-
+            
+    
 
 
 
