@@ -64,8 +64,11 @@ def model_select(solver, S, N, p, reg, method, G = None, gridsize1 = 6, gridsize
     assert grid2 == gridsize1
     AIC = np.zeros((grid1, grid2))
     AIC[:] = np.nan
-    BIC = np.zeros((grid1, grid2))
+    
+    gammas = [0.2, 0.4, 0.5, 0.7]
+    BIC = np.zeros((len(gammas), grid1, grid2))
     BIC[:] = np.nan
+    
     SP = np.zeros((grid1, grid2))
     SP[:] = np.nan
     SKIP = np.zeros((grid1, grid2), dtype = bool)
@@ -107,7 +110,9 @@ def model_select(solver, S, N, p, reg, method, G = None, gridsize1 = 6, gridsize
             kwargs['X1'] = sol['X1'].copy()
             
             AIC[g1,g2] = aic(S, Theta_sol, N)
-            BIC[g1,g2] = ebic(S, Theta_sol, N, gamma = 0.5)
+            for j in np.arange(len(gammas)):
+                BIC[j, g1,g2] = ebic(S, Theta_sol, N, gamma = gammas[j])
+                
             SP[g1,g2] = mean_sparsity(Theta_sol)
             
             print("Current eBIC grid:")
@@ -115,8 +120,8 @@ def model_select(solver, S, N, p, reg, method, G = None, gridsize1 = 6, gridsize
             print("Current Sparsity grid:")
             print(SP)
             
-            if BIC[g1,g2] < curr_min:
-                curr_min = BIC[g1,g2]
+            if BIC[0,g1,g2].mean() < curr_min:
+                curr_min = BIC[0,g1,g2]
                 curr_best = sol.copy()
     
     # get optimal lambda
@@ -125,7 +130,7 @@ def model_select(solver, S, N, p, reg, method, G = None, gridsize1 = 6, gridsize
         ix= np.unravel_index(np.nanargmin(AIC), AIC.shape)
     elif method == 'BIC':    
         BIC[BIC==-np.inf] = np.nan
-        ix= np.unravel_index(np.nanargmin(BIC), BIC.shape)
+        ix= np.unravel_index(np.nanargmin(BIC[0,:,:]), BIC[0,:,:].shape)
     return AIC, BIC, L1, L2, ix, SP, SKIP, curr_best
 
 def aic(S, Theta, N):
