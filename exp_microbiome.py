@@ -30,7 +30,7 @@ w2 = np.logspace(-1, -4, 4)
 
 AIC, BIC, L1, L2, ix, SP, SKIP, sol = model_select(ext_ADMM_MGL, S, num_samples, p, reg, method = 'BIC', l1 = l1, w2 = w2, G = G)
 
-surface_plot(L1,L2, BIC)
+surface_plot(L1,L2, BIC, save = True)
 
 #%%
 L = G.shape[1]

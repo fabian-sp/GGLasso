@@ -134,6 +134,7 @@ def surface_plot(L1, L2, C, name = 'eBIC', save = False):
             ax = fig.add_subplot(2, 2, j+1, projection='3d')
             single_surface_plot(L1, L2, C[j,:,:], ax, name = name)
             ax.set_title('')
+            ax.view_init(30, 30)
     
     if save:
         fig.savefig('data/slr_results/surface.png', dpi = 500)
