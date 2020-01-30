@@ -446,7 +446,7 @@ def plot_single_heatmap(k, Theta, method, ax):
     this_cmap = sns.light_palette(col, as_cmap=True)
     
     ax.cla()
-    sns.heatmap(A*Theta[k,:,:], mask = mask, ax = ax, square = True, cmap = this_cmap, vmin = -.05, vmax = .05, linewidths=.5, cbar = False)
+    sns.heatmap(A*abs(Theta[k,:,:]), mask = mask, ax = ax, square = True, cmap = this_cmap, vmin = -.1, vmax = .1, linewidths=.5, cbar = False)
     ax.set_title(f"Precision matrix at timestamp {k}")
     
     return 
@@ -455,7 +455,7 @@ def single_heatmap_animation(Theta, method = 'truth', save = False):
     
     (K,p,p) = Theta.shape
     
-    fig, ax = plt.subplots(1,1)
+    fig, ax = plt.subplots(1,1, figsize=(10,10))
     fargs = (Theta, method, ax,)
     
     def init():
@@ -483,7 +483,7 @@ def plot_multiple_heatmap(k, Theta, results, axs):
 
 def multiple_heatmap_animation(Theta, results, save = False):
     (K,p,p) = Theta.shape
-    fig, axs = plt.subplots(nrows = 2, ncols=2)
+    fig, axs = plt.subplots(nrows = 2, ncols=2, figsize=(10,10))
 
     def init():
         for ax in axs.ravel():
