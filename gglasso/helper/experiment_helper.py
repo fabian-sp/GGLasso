@@ -101,7 +101,12 @@ def discovery_rate(S_sol , S_true, t = 1e-5):
 def error(S_sol , S_true):
     return np.linalg.norm(S_sol - S_true)/np.linalg.norm(S_true)
 
-
+def hamming_distance(X,Z):
+    A = adjacency_matrix(X)
+    B = adjacency_matrix(Z)
+    
+    return (A+B == 1).sum()
+    
 def l1norm_od(Theta):
     """
     calculates the off-diagonal l1-norm of a matrix
@@ -369,7 +374,7 @@ def plot_diff_fpr_tpr(DFPR, DTPR, ix, ix2, DFPR_GL = None, DTPR_GL = None, W2 = 
         ax.plot(DFPR[ix], DTPR[ix], marker = 'o', fillstyle = 'none', markersize = 12, markeredgecolor = 'grey')
         ax.plot(DFPR[ix2], DTPR[ix2], marker = 'D', fillstyle = 'none', markersize = 12, markeredgecolor = 'grey')
                 
-        #ax.set_xlim(-.01,1)
+        ax.set_xlim(-10,300)
         #ax.set_ylim(-.01,1)
         
         ax.set_xlabel('FP Differential Edges')

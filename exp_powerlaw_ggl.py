@@ -13,7 +13,7 @@ from sklearn.covariance import GraphicalLasso
 from gglasso.solver.admm_solver import ADMM_MGL
 from gglasso.solver.ppdna_solver import PPDNA, warmPPDNA
 from gglasso.helper.data_generation import group_power_network, sample_covariance_matrix, plot_degree_distribution
-from gglasso.helper.experiment_helper import get_K_identity, lambda_parametrizer, lambda_grid, discovery_rate, error, mean_sparsity
+from gglasso.helper.experiment_helper import get_K_identity, lambda_parametrizer, lambda_grid, discovery_rate, error, hamming_distance, mean_sparsity
 from gglasso.helper.experiment_helper import draw_group_heatmap, plot_fpr_tpr, plot_diff_fpr_tpr, plot_error_accuracy, surface_plot
 from gglasso.helper.model_selection import aic, ebic
 
@@ -24,7 +24,7 @@ N_train = 5000
 M = 10
 
 reg = 'GGL'
-save = False
+save = True
 
 Sigma, Theta = group_power_network(p, K, M)
 
@@ -81,7 +81,7 @@ ix2= np.unravel_index(np.nanargmin(AIC), AIC.shape)
 
 #%%
 # solve single GLASSO
-ALPHA = 2*np.logspace(start = -3, stop = -1, num = 10, base = 10)
+ALPHA = 2*np.logspace(start = -3, stop = -1, num = 15, base = 10)
 
 FPR_GL = np.zeros(len(ALPHA))
 TPR_GL = np.zeros(len(ALPHA))
@@ -143,7 +143,8 @@ EPS = np.array([2e-1, 1e-1, 1e-2, 1e-3, 1e-4, 1e-5])
 grid2 = len(EPS)
 
 ERR = np.zeros((grid1, grid2))
-AIC = np.zeros((grid1, grid2))
+HMD = np.zeros((grid1, grid2))
+BIC = np.zeros((grid1, grid2))
 RT = np.zeros((grid1, grid2))
 
 #Omega_0 = np.zeros((K,p,p)); Theta_0 = np.zeros((K,p,p)); X_0 = np.zeros((K,p,p))
@@ -174,7 +175,8 @@ for g1 in np.arange(grid1):
             Om_0_0 = Omega_sol.copy(); Th_0_0 = Theta_sol.copy(); X_0_0 = X_sol.copy()
         
         ERR[g1,g2] = error(Theta_sol, Theta)
-        AIC[g1,g2] = aic(S,Theta_sol,N)
+        HMD[g1,g2] = hamming_distance(Theta_sol, Theta)
+        BIC[g1,g2] = ebic(S, Theta_sol, N, gamma = 0.1)
         RT[g1,g2] = end-start
 
 
