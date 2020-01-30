@@ -17,15 +17,18 @@ from gglasso.helper.model_selection import model_select, ebic
 K = 26
 reg = 'GGL'
 
-all_csv, S, G, ix_location, ix_exist, p, num_samples = load_and_transform(K, min_inst = 5, compute_G = True)
+all_csv, S, G, ix_location, ix_exist, p, num_samples = load_and_transform(K, min_inst = 5, compute_G = False)
 
-save_G('data/slr_results/', G)
-#G = load_G('data/slr_results/')
+#save_G('data/slr_results/', G)
+G = load_G('data/slr_results/')
 check_G(G, p)
 
 #%%
 
-AIC, BIC, L1, L2, ix, SP, SKIP, sol = model_select(ext_ADMM_MGL, S, num_samples, p, reg, method = 'BIC', G = G, gridsize1 = 5, gridsize2 = 4)
+l1 = np.linspace(0.15, 0.05, 5)
+w2 = np.logspace(-1, -4, 4)
+
+AIC, BIC, L1, L2, ix, SP, SKIP, sol = model_select(ext_ADMM_MGL, S, num_samples, p, reg, method = 'BIC', l1 = l1, w2 = w2, G = G)
 
 surface_plot(L1,L2, BIC)
 

@@ -17,24 +17,19 @@ def lambda_parametrizer(l1 = 0.05, w2 = 0.5):
 
     return l2
 
-def lambda_grid(num1 = 5, num2 = 2, reg = 'GGL'):
+def lambda_grid(l1, l2 = None, w2 = None):
     """
-    num1: number of grid point for lambda 1
-    num2: number of grid point for lambda 2
-    reg: grid for GGL or FGL (interpretation changes)
+    l1, l2, w2: values for the grid
+    either l2 or w2 has to be spcified
     idea: the grid goes from higher to smaller values when going down/right
     """   
-    if reg == 'GGL':
-        #l1 = np.logspace(start = -1, stop = -1.4, num = num1, base = 10)
-        l1 = np.linspace(0.15, 0.05, num = num1)
-        #w2 = np.linspace(0.24, 0.01, num2)
-        w2 = np.logspace(-1, -4, num2)
+    
+    assert np.all(l2!=None) | np.all(w2!=None), "Either a range of lambda2 or w2 values have to be specified"
+    if np.all(w2!=None):
         l1grid, w2grid = np.meshgrid(l1,w2)
         L2 = lambda_parametrizer(l1grid, w2grid)
         L1 = l1grid.copy()
-    elif reg == 'FGL':
-        l2 = 2*np.logspace(start = -1, stop = -3, num = num2, base = 10)
-        l1 = 2*np.logspace(start = -1, stop = -3, num = num1, base = 10)
+    elif np.all(l2!=None):
         L1, L2 = np.meshgrid(l1,l2)
         w2 = None
         
@@ -45,23 +40,19 @@ def log_steps(lmin, lmax, steps):
      res = lmax + (1-t)*(lmin-lmax)
      return res
 
-def model_select(solver, S, N, p, reg, method, G = None, gridsize1 = 6, gridsize2 = 3):
+def model_select(solver, S, N, p, reg, method, l1, l2 = None, w2 = None, G = None):
     """
     method for doing model selection using grid search and AIC/eBIC
-    gridsize1 = size of grid resp. to lambda1
-    gridsize2 = size of grid resp. to lambda2
     we work the grid columnwise, i.e. hold l1 constant and change l2
     """
     
     assert method in ['AIC', 'BIC']
     assert reg in ['FGL', 'GGL']
-    L1, L2, W2 = lambda_grid(num1 = gridsize1, num2 = gridsize2, reg = reg)
+    L1, L2, W2 = lambda_grid(l1, l2, w2)
     
     print(L1)
     print(L2)
     grid1 = L1.shape[0]; grid2 = L2.shape[1]
-    assert grid1 == gridsize2
-    assert grid2 == gridsize1
     AIC = np.zeros((grid1, grid2))
     AIC[:] = np.nan
     
