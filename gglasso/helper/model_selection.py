@@ -3,6 +3,8 @@ author: Fabian Schaipp
 """
 
 import numpy as np
+import matplotlib.pyplot as plt
+from mpl_toolkits.mplot3d import Axes3D
 
 from .basic_linalg import Sdot, adjacency_matrix
 from .experiment_helper import mean_sparsity
@@ -220,3 +222,42 @@ def robust_logdet(A, t = 1e-6):
     else:
         l = np.linalg.slogdet(A)
         return l[0]*l[1]
+    
+    
+def single_surface_plot(L1, L2, C, ax, name = 'eBIC'):
+    
+    xx = (~np.isnan(C).any(axis=0))
+    L1 = L1[:,xx]
+    L2 = L2[:,xx]
+    C = C[:,xx]
+    
+    X = np.log10(L1)
+    Y = np.log10(L2)
+    Z = np.log(C)
+    ax.plot_surface(X, Y, Z , cmap = plt.cm.ocean, linewidth=0, antialiased=True)
+    
+    ax.set_xlabel('lambda_1')
+    ax.set_ylabel('lambda_2')
+    ax.set_zlabel(name)
+    ax.view_init(elev = 20, azim = 60)
+    
+    return
+
+def surface_plot(L1, L2, C, name = 'eBIC', save = False):
+    
+    fig = plt.figure(figsize = (8,7))  
+    if len(C.shape) == 2:
+        ax = fig.gca(projection='3d')
+        single_surface_plot(L1, L2, C, ax, name = name)
+        
+        
+    else:
+        for j in np.arange(C.shape[0]):
+            ax = fig.add_subplot(2, 2, j+1, projection='3d')
+            single_surface_plot(L1, L2, C[j,:,:], ax, name = name)
+            ax.set_title('')
+    
+    if save:
+        fig.savefig('data/slr_results/surface.png', dpi = 500)
+        
+    return

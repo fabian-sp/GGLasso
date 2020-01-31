@@ -173,18 +173,6 @@ def ext_ADMM_stopping_criterion(Omega, Theta, Lambda, X0, X1, S , G, lambda1, la
     return res
 
 
-#def boyd_stopping_criterion(new, old):
-#    assert new.keys() == old.keys()
-#    
-#    K = len(new['Omega'].keys())
-#    r = 0
-#    s = 0
-#    for k in np.arange(K):
-#        r += np.linalg.norm(new['Omega'][k] - new['Theta'][k])**2 + np.linalg.norm(new['Theta'][k] - new['Lambda'][k])**2
-#        
-#        s += rho* (np.linalg.norm(new['Omega'][k] - old['Omega'][k])**2 + np.linalg.norm(new['Theta'][k] - old['Theta'][k])**2 + np.linalg.norm(new['Lambda'][k] - old['Lambda'][k])**2)
-#    
-
 def prox_2norm_G(X, G, l2):
     """
     calculates the proximal operator at points X for the group penalty induced by G
