@@ -109,9 +109,9 @@ def ADMM_stopping_criterion(Omega, Theta, X, S , lambda1):
     assert Omega.shape == Theta.shape == S.shape
     assert S.shape[0] == S.shape[1]
     
-    (K,p,p) = S.shape
+    (p,p) = S.shape
     
-    term1 = np.linalg.norm(Theta- prox_od_1norm(Theta + X , l1 = lambda1)) / (1 + np.linalg.norm(Theta))
+    term1 = np.linalg.norm(Theta- prox_od_1norm(Theta + X , l = lambda1)) / (1 + np.linalg.norm(Theta))
     
     term2 = np.linalg.norm(Theta - Omega) / (1 + np.linalg.norm(Theta))
     

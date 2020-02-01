@@ -9,6 +9,7 @@ from matplotlib import pyplot as plt
 
 from microbiome_helper import load_and_transform
 from gglasso.solver.ext_admm_solver import ext_ADMM_MGL
+from gglasso.solver.single_admm_solver import ADMM_SGL
 
 
 from gglasso.helper.ext_admm_helper import get_K_identity, check_G, load_G, save_G
@@ -30,11 +31,11 @@ w2 = np.logspace(-1, -5, 4)
 
 AIC, BIC, L1, L2, ix, SP, SKIP, sol = model_select(ext_ADMM_MGL, S, num_samples, p, reg, method = 'BIC', l1 = l1, w2 = w2, G = G)
 
+res_multiple = sol['Theta']
 surface_plot(L1,L2, BIC, save = False)
 
 #%%
 L = G.shape[1]
-
 groupsize = (G!=-1).sum(axis=2)[0]
 
 nnz = np.zeros(L)
@@ -46,18 +47,25 @@ for l in np.arange(L):
         else:
             nnz[l] += abs(Theta[k][G[0,l,k], G[1,l,k]]) >= 1e-5
     
-                
-
+    
 #%%
+
 Omega_0 = get_K_identity(p)
-
-
 lambda1 = 0.0875
 lambda2 = 0.00003
 sol, info = ext_ADMM_MGL(S, lambda1, lambda2, 'GGL', Omega_0, G, eps_admm = 1e-3, verbose = True)
 
-Theta = sol['Theta']
+res_multiple = sol['Theta']
 
+#%%
+# compute single GL solution
+
+res_single = dict()
+for k in np.arange(K):
+    Omega_0 = np.eye(p[k])
+    sol1, info1 = ADMM_SGL(S[k], lambda1, Omega_0, eps_admm = 1e-3, verbose = True)
+    
+    res_single[k] = sol1['Theta']
 
 #%%
 # section for saving results
@@ -70,9 +78,17 @@ info['group entries'] = (G[1,:,:] != -1).sum(axis=0)
 
 info.to_csv('data/slr_results/info.csv')
 
-for k in np.arange(K):
-    res_k = pd.DataFrame(sol['Theta'][k], index = all_csv[k].index, columns = all_csv[k].index)
-    res_k.to_csv('data/slr_results/theta_' + str(k+1) + ".csv")
+def save_result(res, typ):
+    path = 'data/slr_results/res_' + typ
+    K = len(res.keys())
+    for k in np.arange(K):
+        res_k = pd.DataFrame(res[k], index = all_csv[k].index, columns = all_csv[k].index)
+        res_k.to_csv(path + '/theta_' + str(k+1) + ".csv")
+    print("All files saved")
+    return
+
+save_result(res_multiple, 'multiple')
+save_result(res_single, 'single')
 
 for j in np.arange(BIC.shape[0]):
     np.savetxt('data/slr_results/BIC_' + str(j) + '.csv', BIC[j,:,:])
