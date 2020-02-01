@@ -30,12 +30,12 @@ w2 = np.logspace(-1, -5, 4)
 
 AIC, BIC, L1, L2, ix, SP, SKIP, sol = model_select(ext_ADMM_MGL, S, num_samples, p, reg, method = 'BIC', l1 = l1, w2 = w2, G = G)
 
-surface_plot(L1,L2, BIC, save = True)
+surface_plot(L1,L2, BIC, save = False)
 
 #%%
 L = G.shape[1]
 
-groupsize = (G!=-1).sum(axis=2)
+groupsize = (G!=-1).sum(axis=2)[0]
 
 nnz = np.zeros(L)
 Theta = sol['Theta']
@@ -45,14 +45,15 @@ for l in np.arange(L):
             continue
         else:
             nnz[l] += abs(Theta[k][G[0,l,k], G[1,l,k]]) >= 1e-5
+    
                 
 
 #%%
 Omega_0 = get_K_identity(p)
 
 
-lambda1 = 0.1
-lambda2 = 0.00014
+lambda1 = 0.0875
+lambda2 = 0.00003
 sol, info = ext_ADMM_MGL(S, lambda1, lambda2, 'GGL', Omega_0, G, eps_admm = 1e-3, verbose = True)
 
 Theta = sol['Theta']

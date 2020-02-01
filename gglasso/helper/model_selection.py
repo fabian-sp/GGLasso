@@ -240,6 +240,7 @@ def single_surface_plot(L1, L2, C, ax, name = 'eBIC'):
     ax.set_ylabel('lambda_2')
     ax.set_zlabel(name)
     ax.view_init(elev = 20, azim = 60)
+    #ax.set_zlim(Z.min(),np.quantile(Z,0.9))
     
     return
 
