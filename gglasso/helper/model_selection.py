@@ -259,10 +259,11 @@ def robust_logdet(A, t = 1e-6):
     
 def single_surface_plot(L1, L2, C, ax, name = 'eBIC'):
     
-    xx = (~np.isnan(C).any(axis=0))
-    L1 = L1[:,xx]
-    L2 = L2[:,xx]
-    C = C[:,xx]
+    #xx = (~np.isnan(C).any(axis=0))
+    #L1 = L1[:,xx]
+    #L2 = L2[:,xx]
+    #C = C[:,xx]
+    C[np.isnan(C)] = np.nanmax(C)*1.2
     
     X = np.log10(L1)
     Y = np.log10(L2)
