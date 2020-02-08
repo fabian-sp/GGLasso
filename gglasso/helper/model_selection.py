@@ -58,7 +58,9 @@ def model_select(solver, S, N, p, reg, method, l1, l2 = None, w2 = None, G = Non
     AIC = np.zeros((grid1, grid2))
     AIC[:] = np.nan
     
-    gammas = [0.2, 0.4, 0.5, 0.7]
+    gammas = [0.1, 0.3, 0.5, 0.7]
+    # determine the gamma you want for the returned estimate
+    gamma_ix = 2
     BIC = np.zeros((len(gammas), grid1, grid2))
     BIC[:] = np.nan
     
@@ -113,8 +115,8 @@ def model_select(solver, S, N, p, reg, method, l1, l2 = None, w2 = None, G = Non
             print("Current Sparsity grid:")
             print(SP)
             
-            if BIC[0,g1,g2].mean() < curr_min:
-                curr_min = BIC[0,g1,g2]
+            if BIC[gamma_ix,g1,g2].mean() < curr_min:
+                curr_min = BIC[gamma_ix,g1,g2]
                 curr_best = sol.copy()
     
     # get optimal lambda
@@ -123,9 +125,32 @@ def model_select(solver, S, N, p, reg, method, l1, l2 = None, w2 = None, G = Non
         ix= np.unravel_index(np.nanargmin(AIC), AIC.shape)
     elif method == 'BIC':    
         BIC[BIC==-np.inf] = np.nan
-        ix= np.unravel_index(np.nanargmin(BIC[0,:,:]), BIC[0,:,:].shape)
+        ix= np.unravel_index(np.nanargmin(BIC[gamma_ix,:,:]), BIC[gamma_ix,:,:].shape)
     return AIC, BIC, L1, L2, ix, SP, SKIP, curr_best
 
+#def single_range(S, ):
+#    
+#    if type(S) == dict:
+#        K = len(S.keys())
+#        Omega_0 = id_dict(p)
+#    elif type(S) == np.ndarray:
+#        K = S.shape[0]
+#        Omega_0 = id_array(K,p)
+#    
+#    L = len(l1)
+#    
+#    gammas = [0.1, 0.3, 0.5, 0.7]
+#    # determine the gamma you want for the returned estimate
+#    gamma_ix = 2
+#    BIC = np.zeros((len(gammas), K, L))
+#    BIC[:] = np.nan
+#    
+#    SP = np.zeros((K, L))
+#    SP[:] = np.nan
+#    
+#    for k in np.arnage(K):
+#        for 
+    
 def aic(S, Theta, N):
     """
     AIC information criterion after Danaher et al.
@@ -166,6 +191,14 @@ def aic_array(S,Theta, N):
         aic += N[k]*Sdot(S[k,:,:], Theta[k,:,:]) - N[k]*robust_logdet(Theta[k,:,:]) + 2*nonzero_count[k]
         
     return aic
+
+def ebic_single(S,Theta, N, gamma):
+    (p,p) = S.shape
+    A = adjacency_matrix(Theta , t = 1e-5)
+    bic = N*Sdot(S, Theta) - N*robust_logdet(Theta) + A.sum()/2 * (np.log(N)+ 4*np.log(p)*gamma)
+    
+    return bic
+    
 
 def ebic_array(S, Theta, N, gamma):
     (K,p,p) = S.shape

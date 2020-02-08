@@ -26,7 +26,9 @@ check_G(G, p)
 
 #%%
 
-l1 = np.linspace(0.2, 0.05, 5)
+
+l1 = np.linspace(1, 0.4, 3)
+l1 = np.append(l1, np.linspace(0.2, 0.05, 5))
 w2 = np.logspace(-1, -5, 4)
 
 AIC, BIC, L1, L2, ix, SP, SKIP, sol = model_select(ext_ADMM_MGL, S, num_samples, p, reg, method = 'BIC', l1 = l1, w2 = w2, G = G)
