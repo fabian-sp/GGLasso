@@ -94,7 +94,7 @@ def ADMM_SGL(S, lambda1, Omega_0 , \
     assert abs((Theta_t).T- Theta_t).max() <= 1e-5, "Solution is not symmetric"
     D,_ = np.linalg.eigh(Theta_t)
     if D.min() <= 0:
-        print("WARNING: Theta is not positive definite. Solve to higher accuracy!")
+        print(f"WARNING: Theta is not positive definite. Solve to higher accuracy! (min EV is {D.min()})")
     
     sol = {'Omega': Omega_t, 'Theta': Theta_t, 'X': X_t}
     if measure:

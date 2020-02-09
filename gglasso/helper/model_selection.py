@@ -7,10 +7,11 @@ import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
 
 from .basic_linalg import Sdot, adjacency_matrix
-from .experiment_helper import mean_sparsity
+from .experiment_helper import mean_sparsity, sparsity
 
 from .experiment_helper import get_K_identity as id_array
 from .ext_admm_helper import get_K_identity as id_dict
+from ..solver.single_admm_solver import ADMM_SGL
 
 def lambda_parametrizer(l1 = 0.05, w2 = 0.5):
     """transforms given l1 and w2 into the respective l2"""
@@ -37,12 +38,7 @@ def lambda_grid(l1, l2 = None, w2 = None):
         
     return L1.squeeze(), L2.squeeze(), w2
 
-def log_steps(lmin, lmax, steps):
-     t = np.logspace(0,-5, num = steps, base = 10)
-     res = lmax + (1-t)*(lmin-lmax)
-     return res
-
-def model_select(solver, S, N, p, reg, method, l1, l2 = None, w2 = None, G = None):
+def grid_search(solver, S, N, p, reg, l1, method= 'eBIC', l2 = None, w2 = None, G = None):
     """
     method for doing model selection using grid search and AIC/eBIC
     we work the grid columnwise, i.e. hold l1 constant and change l2
@@ -123,34 +119,85 @@ def model_select(solver, S, N, p, reg, method, l1, l2 = None, w2 = None, G = Non
     if method == 'AIC':
         AIC[AIC==-np.inf] = np.nan
         ix= np.unravel_index(np.nanargmin(AIC), AIC.shape)
-    elif method == 'BIC':    
+    elif method == 'eBIC':    
         BIC[BIC==-np.inf] = np.nan
         ix= np.unravel_index(np.nanargmin(BIC[gamma_ix,:,:]), BIC[gamma_ix,:,:].shape)
     return AIC, BIC, L1, L2, ix, SP, SKIP, curr_best
 
-#def single_range(S, ):
-#    
-#    if type(S) == dict:
-#        K = len(S.keys())
-#        Omega_0 = id_dict(p)
-#    elif type(S) == np.ndarray:
-#        K = S.shape[0]
-#        Omega_0 = id_array(K,p)
-#    
-#    L = len(l1)
-#    
-#    gammas = [0.1, 0.3, 0.5, 0.7]
-#    # determine the gamma you want for the returned estimate
-#    gamma_ix = 2
-#    BIC = np.zeros((len(gammas), K, L))
-#    BIC[:] = np.nan
-#    
-#    SP = np.zeros((K, L))
-#    SP[:] = np.nan
-#    
-#    for k in np.arnage(K):
-#        for 
+def single_range_search(S, L, N, method = 'eBIC'):
+    """
+    method for doing model selection for sungle Graphical Lasso estimation
+    it returns two estimates, one with the individual optimal reg. param. for each instance and one with the uniform optimal
+    N: vector with sample sizes for each instance
+    """
     
+    if type(S) == dict:
+        K = len(S.keys())
+    elif type(S) == np.ndarray:
+        K = S.shape[0]
+        
+    r = len(L)
+    
+    gammas = [0.1, 0.3, 0.5, 0.7]
+    # determine the gamma you want for the returned estimate
+    gamma_ix = 2
+    BIC = np.zeros((len(gammas), K, r))
+    BIC[:] = np.nan
+    
+    AIC = np.zeros((K, r))
+    AIC[:] = np.nan
+    
+    SP = np.zeros((K, r))
+    SP[:] = np.nan
+    
+    estimates = dict()
+    
+    kwargs = {'eps_admm': 1e-3, 'verbose': True, 'measure': False}
+    
+    for k in np.arange(K):
+        print(f"------------Range search for instance {k}------------")
+        
+        if type(S) == dict:
+            S_k = S[k].copy()
+            kwargs['S'] = S_k.copy()
+        elif type(S) == np.ndarray:
+            S_k = S[k,:,:].copy()
+            kwargs['S'] = S_k.copy()
+            
+        p_k = S_k.shape[0]
+        kwargs['Omega_0'] = np.eye(p_k)
+        kwargs['X_0'] = np.eye(p_k)
+        estimates[k] = np.zeros((r,p_k,p_k))
+        
+        # start range search    
+        for j in np.arange(r):
+            kwargs['lambda1'] = L[j]
+            sol, info = ADMM_SGL(**kwargs)
+            
+            Theta_sol = sol['Theta']
+            estimates[k][j,:,:] = Theta_sol.copy()
+        
+            # warm start
+            kwargs['Omega_0'] = sol['Omega'].copy()
+            kwargs['X_0'] = sol['X'].copy()
+            
+            AIC[k,j] = aic_single(S_k, Theta_sol, N[k])
+            for l in np.arange(len(gammas)):
+                BIC[l, k, j] = ebic_single(S_k, Theta_sol, N[k], gamma = gammas[l])
+                
+            SP[k,j] = sparsity(Theta_sol)
+         
+    # get optimal lambda
+    if method == 'AIC':
+        AIC[AIC==-np.inf] = np.nan
+        ix = np.unravel_index(np.nanargmin(AIC), AIC.shape)
+    elif method == 'eBIC':    
+        BIC[BIC==-np.inf] = np.nan
+        ix = np.unravel_index(np.nanargmin(BIC[gamma_ix,:,:]), BIC[gamma_ix,:,:].shape)        
+    
+    return AIC, BIC, ix, SP, estimates
+
+
 def aic(S, Theta, N):
     """
     AIC information criterion after Danaher et al.
@@ -191,6 +238,14 @@ def aic_array(S,Theta, N):
         aic += N[k]*Sdot(S[k,:,:], Theta[k,:,:]) - N[k]*robust_logdet(Theta[k,:,:]) + 2*nonzero_count[k]
         
     return aic
+
+def aic_single(S,Theta, N):
+    (p,p) = S.shape
+    A = adjacency_matrix(Theta , t = 1e-5)
+    aic = N*Sdot(S, Theta) - N*robust_logdet(Theta) + A.sum()
+    
+    return aic
+
 
 def ebic_single(S,Theta, N, gamma):
     (p,p) = S.shape

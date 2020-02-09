@@ -13,7 +13,7 @@ from gglasso.solver.single_admm_solver import ADMM_SGL
 
 
 from gglasso.helper.ext_admm_helper import get_K_identity, check_G, load_G, save_G
-from gglasso.helper.model_selection import model_select, ebic, surface_plot
+from gglasso.helper.model_selection import grid_search, single_range_search, ebic, surface_plot
 
 K = 26
 reg = 'GGL'
@@ -31,24 +31,31 @@ l1 = np.linspace(1, 0.4, 3)
 l1 = np.append(l1, np.linspace(0.2, 0.05, 5))
 w2 = np.logspace(-1, -5, 4)
 
-AIC, BIC, L1, L2, ix, SP, SKIP, sol = model_select(ext_ADMM_MGL, S, num_samples, p, reg, method = 'BIC', l1 = l1, w2 = w2, G = G)
+AIC, BIC, L1, L2, ix, SP, SKIP, sol = grid_search(ext_ADMM_MGL, S, num_samples, p, reg, l1 = l1, method = 'eBIC', w2 = w2, G = G)
 
 res_multiple = sol['Theta']
 surface_plot(L1,L2, BIC, save = False)
 
-#%%
-L = G.shape[1]
-groupsize = (G!=-1).sum(axis=2)[0]
 
-nnz = np.zeros(L)
-Theta = sol['Theta']
-for l in np.arange(L):
-    for k in np.arange(K):
-        if G[0,l,k] == -1:
-            continue
-        else:
-            nnz[l] += abs(Theta[k][G[0,l,k], G[1,l,k]]) >= 1e-5
-    
+#%%
+
+l1 = np.linspace(1,0.2,2)
+sAIC, sBIC, six, sSP, estimates = single_range_search(S, l1, num_samples)
+
+
+#%%
+#L = G.shape[1]
+#groupsize = (G!=-1).sum(axis=2)[0]
+#
+#nnz = np.zeros(L)
+#Theta = sol['Theta']
+#for l in np.arange(L):
+#    for k in np.arange(K):
+#        if G[0,l,k] == -1:
+#            continue
+#        else:
+#            nnz[l] += abs(Theta[k][G[0,l,k], G[1,l,k]]) >= 1e-5
+#    
     
 #%%
 
