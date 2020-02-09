@@ -39,7 +39,9 @@ surface_plot(L1,L2, BIC, save = False)
 
 #%%
 
-l1 = np.linspace(0.5, 0.1, 2)
+l1 = np.linspace(0.2, 0.05, 5)
+l1 = 5*np.logspace(-1, -2.5, 6)
+
 sAIC, sBIC, sSP, sol2, sol3 = single_range_search(S, l1, num_samples)
 
 
@@ -66,15 +68,6 @@ sol, info = ext_ADMM_MGL(S, lambda1, lambda2, 'GGL', Omega_0, G, eps_admm = 1e-3
 
 res_multiple = sol['Theta']
 
-#%%
-# compute single GL solution
-
-res_single = dict()
-for k in np.arange(K):
-    Omega_0 = np.eye(p[k])
-    sol1, info1 = ADMM_SGL(S[k], lambda1, Omega_0, eps_admm = 1e-3, verbose = True)
-    
-    res_single[k] = sol1['Theta']
 
 #%%
 # section for saving results
@@ -97,14 +90,24 @@ def save_result(res, typ):
     return
 
 save_result(res_multiple, 'multiple')
-save_result(res_single, 'single')
 
 for j in np.arange(BIC.shape[0]):
-    np.savetxt('data/slr_results/BIC_' + str(j) + '.csv', BIC[j,:,:])
-np.savetxt('data/slr_results/AIC.csv', AIC)
-np.savetxt('data/slr_results/SP.csv', SP)
-np.savetxt('data/slr_results/L1.csv', L1)
-np.savetxt('data/slr_results/L2.csv', L2)
+    np.savetxt('data/slr_results/res_multiple/BIC_' + str(j) + '.csv', BIC[j,:,:])
+np.savetxt('data/slr_results/res_multiple/AIC.csv', AIC)
+np.savetxt('data/slr_results/res_multiple/SP.csv', SP)
+np.savetxt('data/slr_results/res_multiple/L1.csv', L1)
+np.savetxt('data/slr_results/res_multiple/L2.csv', L2)
+
+
+#%%
+save_result(sol2, 'single_unif')
+save_result(sol3, 'single')
+
+for j in np.arange(sBIC.shape[0]):
+    np.savetxt('data/slr_results/res_single/BIC_' + str(j) + '.csv', sBIC[j,:,:])
+np.savetxt('data/slr_results/res_single/AIC.csv', sAIC)
+np.savetxt('data/slr_results/res_single/SP.csv', sSP)
+
 
 #%%
 # section for loading results
