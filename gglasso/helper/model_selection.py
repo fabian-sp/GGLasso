@@ -152,7 +152,7 @@ def single_range_search(S, L, N, method = 'eBIC'):
     
     estimates = dict()
     
-    kwargs = {'eps_admm': 1e-3, 'verbose': True, 'measure': False}
+    kwargs = {'eps_admm': 1e-4, 'verbose': False, 'measure': False}
     
     for k in np.arange(K):
         print(f"------------Range search for instance {k}------------")
@@ -190,12 +190,22 @@ def single_range_search(S, L, N, method = 'eBIC'):
     # get optimal lambda
     if method == 'AIC':
         AIC[AIC==-np.inf] = np.nan
-        ix = np.unravel_index(np.nanargmin(AIC), AIC.shape)
+        ix_uniform = np.nanargmin(AIC.sum(axis=0))
+        ix_indv = np.nanargmin(AIC, axis = 1)
+        
     elif method == 'eBIC':    
         BIC[BIC==-np.inf] = np.nan
-        ix = np.unravel_index(np.nanargmin(BIC[gamma_ix,:,:]), BIC[gamma_ix,:,:].shape)        
+        ix_uniform = np.nanargmin(BIC[gamma_ix,:,:].sum(axis=0))
+        ix_indv = np.nanargmin(BIC[gamma_ix,:,:], axis = 1)
     
-    return AIC, BIC, ix, SP, estimates
+    # crete the two estimators
+    est_uniform = dict()
+    est_indv = dict()
+    for k in np.arange(K):
+        est_uniform[k] = estimates[k][ix_uniform,:,:]
+        est_indv[k] = estimates[k][ix_indv[k], :, :]
+        
+    return AIC, BIC, SP, est_uniform, est_indv
 
 
 def aic(S, Theta, N):

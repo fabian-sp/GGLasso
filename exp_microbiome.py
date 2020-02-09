@@ -31,16 +31,16 @@ l1 = np.linspace(1, 0.4, 3)
 l1 = np.append(l1, np.linspace(0.2, 0.05, 5))
 w2 = np.logspace(-1, -5, 4)
 
-AIC, BIC, L1, L2, ix, SP, SKIP, sol = grid_search(ext_ADMM_MGL, S, num_samples, p, reg, l1 = l1, method = 'eBIC', w2 = w2, G = G)
+AIC, BIC, L1, L2, ix, SP, SKIP, sol1 = grid_search(ext_ADMM_MGL, S, num_samples, p, reg, l1 = l1, method = 'eBIC', w2 = w2, G = G)
 
-res_multiple = sol['Theta']
+res_multiple = sol1['Theta']
 surface_plot(L1,L2, BIC, save = False)
 
 
 #%%
 
-l1 = np.linspace(1,0.2,2)
-sAIC, sBIC, six, sSP, estimates = single_range_search(S, l1, num_samples)
+l1 = np.linspace(0.5, 0.1, 2)
+sAIC, sBIC, sSP, sol2, sol3 = single_range_search(S, l1, num_samples)
 
 
 #%%
