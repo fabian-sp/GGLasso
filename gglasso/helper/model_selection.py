@@ -44,7 +44,7 @@ def grid_search(solver, S, N, p, reg, l1, method= 'eBIC', l2 = None, w2 = None, 
     we work the grid columnwise, i.e. hold l1 constant and change l2
     """
     
-    assert method in ['AIC', 'BIC']
+    assert method in ['AIC', 'eBIC']
     assert reg in ['FGL', 'GGL']
     L1, L2, W2 = lambda_grid(l1, l2, w2)
     
@@ -92,8 +92,8 @@ def grid_search(solver, S, N, p, reg, l1, method= 'eBIC', l2 = None, w2 = None, 
             Omega_sol = sol['Omega']
             Theta_sol = sol['Theta']
             
-            if mean_sparsity(Theta_sol) >= 0.18:
-                SKIP[g1:, g2:] = True
+            #if mean_sparsity(Theta_sol) >= 0.18:
+            #    SKIP[g1:, g2:] = True
             
             # warm start
             kwargs['Omega_0'] = Omega_sol.copy()
@@ -198,14 +198,14 @@ def single_range_search(S, L, N, method = 'eBIC'):
         ix_uniform = np.nanargmin(BIC[gamma_ix,:,:].sum(axis=0))
         ix_indv = np.nanargmin(BIC[gamma_ix,:,:], axis = 1)
     
-    # crete the two estimators
+    # create the two estimators
     est_uniform = dict()
     est_indv = dict()
     for k in np.arange(K):
         est_uniform[k] = estimates[k][ix_uniform,:,:]
         est_indv[k] = estimates[k][ix_indv[k], :, :]
         
-    return AIC, BIC, SP, est_uniform, est_indv
+    return AIC, BIC, SP, est_uniform, est_indv, ix_uniform
 
 
 def aic(S, Theta, N):
@@ -324,11 +324,11 @@ def robust_logdet(A, t = 1e-6):
     
 def single_surface_plot(L1, L2, C, ax, name = 'eBIC'):
     
-    #xx = (~np.isnan(C).any(axis=0))
-    #L1 = L1[:,xx]
-    #L2 = L2[:,xx]
-    #C = C[:,xx]
-    C[np.isnan(C)] = np.nanmax(C)*1.2
+    xx = (~np.isnan(C).any(axis=0))
+    L1 = L1[:,xx]
+    L2 = L2[:,xx]
+    C = C[:,xx]
+    #C[np.isnan(C)] = np.nanmax(C)*1.2
     
     X = np.log10(L1)
     Y = np.log10(L2)
@@ -338,14 +338,14 @@ def single_surface_plot(L1, L2, C, ax, name = 'eBIC'):
     ax.set_xlabel('lambda_1')
     ax.set_ylabel('lambda_2')
     ax.set_zlabel(name)
-    ax.view_init(elev = 20, azim = 60)
+    ax.view_init(elev = 25, azim = 80)
     #ax.set_zlim(Z.min(),np.quantile(Z,0.9))
     
     return
 
 def surface_plot(L1, L2, C, name = 'eBIC', save = False):
     
-    fig = plt.figure(figsize = (8,7))  
+    fig = plt.figure(figsize = (9,7))  
     if len(C.shape) == 2:
         ax = fig.gca(projection='3d')
         single_surface_plot(L1, L2, C, ax, name = name)
@@ -358,6 +358,6 @@ def surface_plot(L1, L2, C, name = 'eBIC', save = False):
             ax.set_title('')
     
     if save:
-        fig.savefig('data/slr_results/surface.png', dpi = 500)
+        fig.savefig('data/slr_results/res_multiple/surface.png', dpi = 500)
         
     return

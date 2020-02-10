@@ -42,7 +42,7 @@ surface_plot(L1,L2, BIC, save = False)
 l1 = np.linspace(0.2, 0.05, 5)
 l1 = 5*np.logspace(-1, -2.5, 6)
 
-sAIC, sBIC, sSP, sol2, sol3 = single_range_search(S, l1, num_samples)
+sAIC, sBIC, sSP, sol2, sol3, ix_uniform = single_range_search(S, l1, num_samples)
 
 
 #%%
@@ -62,8 +62,8 @@ sAIC, sBIC, sSP, sol2, sol3 = single_range_search(S, l1, num_samples)
 #%%
 
 Omega_0 = get_K_identity(p)
-lambda1 = 0.0875
-lambda2 = 0.00003
+lambda1 = 0.1625
+lambda2 = 3e-6
 sol, info = ext_ADMM_MGL(S, lambda1, lambda2, 'GGL', Omega_0, G, eps_admm = 1e-3, verbose = True)
 
 res_multiple = sol['Theta']
