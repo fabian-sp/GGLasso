@@ -33,7 +33,7 @@ w2 = np.logspace(-1, -5, 4)
 
 AIC, BIC, L1, L2, ix, SP, SKIP, sol1 = grid_search(ext_ADMM_MGL, S, num_samples, p, reg, l1 = l1, method = 'eBIC', w2 = w2, G = G)
 
-res_multiple = sol1['Theta']
+sol1 = sol1['Theta']
 surface_plot(L1,L2, BIC, save = False)
 
 
@@ -45,20 +45,7 @@ surface_plot(L1,L2, BIC, save = False)
 sAIC, sBIC, sSP, sol2, sol3, ix_uniform = single_range_search(S, l1, num_samples)
 
 
-#%%
-#L = G.shape[1]
-#groupsize = (G!=-1).sum(axis=2)[0]
-#
-#nnz = np.zeros(L)
-#Theta = sol['Theta']
-#for l in np.arange(L):
-#    for k in np.arange(K):
-#        if G[0,l,k] == -1:
-#            continue
-#        else:
-#            nnz[l] += abs(Theta[k][G[0,l,k], G[1,l,k]]) >= 1e-5
-#    
-    
+
 #%%
 
 Omega_0 = get_K_identity(p)
@@ -80,7 +67,7 @@ def save_result(res, typ):
     print("All files saved")
     return
 
-save_result(res_multiple, 'multiple')
+save_result(sol1, 'multiple')
 
 for j in np.arange(BIC.shape[0]):
     np.savetxt('data/slr_results/res_multiple/BIC_' + str(j) + '.csv', BIC[j,:,:])
@@ -120,11 +107,35 @@ info['samples'] = num_samples
 info['OTUs'] = p
 info['group entry ratio'] = (G[1,:,:] != -1).sum(axis=0) / (p*(p-1)/2)
 
-info['sparsity GGL'] = [sparsity(sol1['Theta'][k]) for k in sol1['Theta'].keys()]
+info['sparsity GGL'] = [sparsity(sol1[k]) for k in sol1.keys()]
 info['sparsity single/uniform'] = [sparsity(sol2[k]) for k in sol2.keys()]
 info['sparsity single/indv'] = [sparsity(sol3[k]) for k in sol3.keys()]
 
 
 info.to_csv('data/slr_results/info.csv')
 
+#%%
+def consensus(sol, G):
+    L = G.shape[1]
+    #groupsize = (G!=-1).sum(axis=2)[0]
+    
+    nnz = np.zeros(L)
+    for l in np.arange(L):
+        for k in np.arange(K):
+            if G[0,l,k] == -1:
+                continue
+            else:
+                nnz[l] += abs(sol[k][G[0,l,k], G[1,l,k]]) >= 1e-5
+                
+    return nnz
+    
+nnz1 = consensus(sol1,G)
+nnz2 = consensus(sol2,G)
+nnz3 = consensus(sol3,G)
+
+
+plt.figure()
+sns.kdeplot(nnz1, shade = True, gridsize = 10)
+sns.kdeplot(nnz2, shade = True, gridsize = 10)
+sns.kdeplot(nnz3, shade = True, gridsize = 10)
     
