@@ -11,7 +11,7 @@ from microbiome_helper import load_and_transform
 from gglasso.solver.ext_admm_solver import ext_ADMM_MGL
 from gglasso.solver.single_admm_solver import ADMM_SGL
 
-
+from gglasso.helper.experiment_helper import sparsity
 from gglasso.helper.ext_admm_helper import get_K_identity, check_G, load_G, save_G
 from gglasso.helper.model_selection import grid_search, single_range_search, ebic, surface_plot
 
@@ -39,8 +39,8 @@ surface_plot(L1,L2, BIC, save = False)
 
 #%%
 
-l1 = np.linspace(0.2, 0.05, 5)
-l1 = 5*np.logspace(-1, -2.5, 6)
+#l1 = np.linspace(0.2, 0.05, 5)
+#l1 = 5*np.logspace(-1, -2.5, 6)
 
 sAIC, sBIC, sSP, sol2, sol3, ix_uniform = single_range_search(S, l1, num_samples)
 
@@ -71,15 +71,6 @@ res_multiple = sol['Theta']
 
 #%%
 # section for saving results
-
-info = pd.DataFrame(index = np.arange(K)+1)
-info['samples'] = num_samples
-info['OTUs'] = p
-info['off-diagonals'] = (p*(p-1)/2).astype(int)
-info['group entries'] = (G[1,:,:] != -1).sum(axis=0)
-
-info.to_csv('data/slr_results/info.csv')
-
 def save_result(res, typ):
     path = 'data/slr_results/res_' + typ
     K = len(res.keys())
@@ -119,3 +110,21 @@ L2 = np.loadtxt('data/slr_results/L2.csv')
 BIC = np.zeros((4, L1.shape[0], L1.shape[1]))
 for j in np.arange(4):
     BIC[j,:,:] = np.loadtxt('data/slr_results/BIC_' + str(j) + '.csv')
+    
+    
+#%%
+########## EVALUATION ########################    
+  
+info = pd.DataFrame(index = np.arange(K)+1)
+info['samples'] = num_samples
+info['OTUs'] = p
+info['group entry ratio'] = (G[1,:,:] != -1).sum(axis=0) / (p*(p-1)/2)
+
+info['sparsity GGL'] = [sparsity(sol1['Theta'][k]) for k in sol1['Theta'].keys()]
+info['sparsity single/uniform'] = [sparsity(sol2[k]) for k in sol2.keys()]
+info['sparsity single/indv'] = [sparsity(sol3[k]) for k in sol3.keys()]
+
+
+info.to_csv('data/slr_results/info.csv')
+
+    
