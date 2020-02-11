@@ -340,17 +340,19 @@ def single_surface_plot(L1, L2, C, ax, name = 'eBIC'):
     Z = np.log(C)
     ax.plot_surface(X, Y, Z , cmap = plt.cm.ocean, linewidth=0, antialiased=True)
     
-    ax.set_xlabel('lambda_1')
-    ax.set_ylabel('lambda_2')
+    #ax.set_xlabel('lambda_1')
+    #ax.set_ylabel('lambda_2')
+    ax.set_xlabel('w_1')
+    ax.set_ylabel('w_2')
     ax.set_zlabel(name)
-    ax.view_init(elev = 25, azim = 80)
+    ax.view_init(elev = 25, azim = 110)
     #ax.set_zlim(Z.min(),np.quantile(Z,0.9))
     
     return
 
 def surface_plot(L1, L2, C, name = 'eBIC', save = False):
     
-    fig = plt.figure(figsize = (9,7))  
+    fig = plt.figure(figsize = (11,7))  
     if len(C.shape) == 2:
         ax = fig.gca(projection='3d')
         single_surface_plot(L1, L2, C, ax, name = name)

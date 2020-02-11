@@ -37,12 +37,12 @@ AIC, BIC, L1, L2, ix, SP, SKIP, sol1 = grid_search(ext_ADMM_MGL, S, num_samples,
 
 W1 = map_l_to_w(L1,L2)[0]
 W2 = map_l_to_w(L1,L2)[1]
-surface_plot(W1,W2, BIC, save = False)
 
+#surface_plot(L1,L2, BIC, save = False)
+surface_plot(W1,W2, BIC, save = True)
 
 
 sol1 = sol1['Theta']
-surface_plot(L1,L2, BIC, save = False)
 
 #%%
 
@@ -148,9 +148,23 @@ plt.figure()
 sns.kdeplot(nnz1, shade = True, gridsize = 10)
 sns.kdeplot(nnz2, shade = True, gridsize = 10)
 sns.kdeplot(nnz3, shade = True, gridsize = 10)
-    
+   
+#%% 
 all_tax = load_tax_data(K)
 
-[assortativity(sol1[k], all_tax, level = 'Rank2')[0]  for k in sol1.keys()]
-[assortativity(sol2[k], all_tax, level = 'Rank2')[0]  for k in sol2.keys()]
-[assortativity(sol3[k], all_tax, level = 'Rank2')[0]  for k in sol3.keys()]
+def all_assort_coeff(sol, all_csv, all_tax):
+    K = len(sol.keys())
+    ass = np.zeros(K)
+    for k in np.arange(K):
+        sol_df_k = pd.DataFrame(sol[k], index = all_csv[k].index, columns = all_csv[k].index)
+        ass[k] = assortativity(sol_df_k, all_tax, level = 'Rank2')[0]
+    
+    return ass
+
+df_assort = pd.DataFrame(index = np.arange(K))
+
+df_assort['GGL'] = all_assort_coeff(sol1, all_csv, all_tax)
+df_assort['single/uniform'] = all_assort_coeff(sol2, all_csv, all_tax)
+df_assort['single/indv'] = all_assort_coeff(sol3, all_csv, all_tax)
+
+df_assort.to_csv('data/slr_results/assort.csv')

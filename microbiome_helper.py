@@ -98,7 +98,7 @@ def assortativity(Theta, all_tax, level = 'Rank2'):
     """ computes assortativity coefficient for a single network
     Theta: DataFrame with precision matrix
     """
-    
+        
     # pandas columns may be strings --> convert to int
     Theta.columns = [int(c) for c in Theta.columns]
     A = adjacency_matrix(Theta.values)
