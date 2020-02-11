@@ -13,7 +13,7 @@ from gglasso.solver.single_admm_solver import ADMM_SGL
 
 from gglasso.helper.experiment_helper import sparsity
 from gglasso.helper.ext_admm_helper import get_K_identity, check_G, load_G, save_G
-from gglasso.helper.model_selection import grid_search, single_range_search, ebic, surface_plot
+from gglasso.helper.model_selection import grid_search, single_range_search, ebic, surface_plot, map_l_to_w
 
 K = 26
 reg = 'GGL'
@@ -28,10 +28,17 @@ check_G(G, p)
 
 
 l1 = np.linspace(1, 0.4, 3)
-l1 = np.append(l1, np.linspace(0.2, 0.05, 5))
-w2 = np.logspace(-1, -5, 4)
+l1 = np.append(l1, np.linspace(0.2, 0.05, 7))
+#w2 = np.logspace(-1, -5, 4)
+w2 = np.linspace(0.2, 0.01, 4)
 
 AIC, BIC, L1, L2, ix, SP, SKIP, sol1 = grid_search(ext_ADMM_MGL, S, num_samples, p, reg, l1 = l1, method = 'eBIC', w2 = w2, G = G)
+
+W1 = map_l_to_w(L1,L2)[0]
+W2 = map_l_to_w(L1,L2)[1]
+surface_plot(W1,W2, BIC, save = False)
+
+
 
 sol1 = sol1['Theta']
 surface_plot(L1,L2, BIC, save = False)
@@ -133,6 +140,9 @@ nnz1 = consensus(sol1,G)
 nnz2 = consensus(sol2,G)
 nnz3 = consensus(sol3,G)
 
+(nnz1 > 6).sum()
+(nnz2 > 6).sum()
+(nnz3 > 6).sum()
 
 plt.figure()
 sns.kdeplot(nnz1, shade = True, gridsize = 10)

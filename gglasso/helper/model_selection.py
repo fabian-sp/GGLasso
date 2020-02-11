@@ -20,6 +20,12 @@ def lambda_parametrizer(l1 = 0.05, w2 = 0.5):
 
     return l2
 
+def map_l_to_w(l1, l2):
+    w1 = l1 + (1/np.sqrt(2)) *l2
+    w2 = l2/(w1*np.sqrt(2))
+    
+    return (w1,w2)
+    
 def lambda_grid(l1, l2 = None, w2 = None):
     """
     l1, l2, w2: values for the grid
@@ -324,11 +330,10 @@ def robust_logdet(A, t = 1e-6):
     
 def single_surface_plot(L1, L2, C, ax, name = 'eBIC'):
     
-    xx = (~np.isnan(C).any(axis=0))
-    L1 = L1[:,xx]
-    L2 = L2[:,xx]
-    C = C[:,xx]
-    #C[np.isnan(C)] = np.nanmax(C)*1.2
+    #xx = (~np.isnan(C).any(axis=0))
+    #L1 = L1[:,xx]
+    #L2 = L2[:,xx]
+    #C = C[:,xx]
     
     X = np.log10(L1)
     Y = np.log10(L2)

@@ -81,8 +81,19 @@ def load_and_transform(K = 26, min_inst = 5, compute_G = False):
 
 
 
-
-            
+def load_tax_data(K=26):
+    all_tax = pd.DataFrame
+    num_csv = K
+    for num in np.arange(num_csv):      
+        file = "data/slr_data/TAX_data_" + str(num+1) + ".csv"
+        dt = pd.read_csv(file, index_col = 0).sort_index()
+        
+        all_tax = pd.concat(all_tax, dt)
+        
+    all_tax.drop_duplicates()
+    
+    return all_tax
+         
     
 
 
