@@ -62,7 +62,7 @@ def grid_search(solver, S, N, p, reg, l1, method= 'eBIC', l2 = None, w2 = None, 
     
     gammas = [0.1, 0.3, 0.5, 0.7]
     # determine the gamma you want for the returned estimate
-    gamma_ix = 2
+    gamma_ix = 1
     BIC = np.zeros((len(gammas), grid1, grid2))
     BIC[:] = np.nan
     
@@ -146,7 +146,7 @@ def single_range_search(S, L, N, method = 'eBIC'):
     
     gammas = [0.1, 0.3, 0.5, 0.7]
     # determine the gamma you want for the returned estimate
-    gamma_ix = 2
+    gamma_ix = 1
     BIC = np.zeros((len(gammas), K, r))
     BIC[:] = np.nan
     

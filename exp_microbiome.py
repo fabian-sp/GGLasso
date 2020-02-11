@@ -27,10 +27,11 @@ check_G(G, p)
 #%%
 
 
-l1 = np.linspace(1, 0.4, 3)
+l1 = np.linspace(1, 0.4, 2)
 l1 = np.append(l1, np.linspace(0.2, 0.05, 7))
+#l1 = np.linspace(0.135, 0.12, 5)
 #w2 = np.logspace(-1, -5, 4)
-w2 = np.linspace(0.2, 0.01, 4)
+w2 = np.linspace(0.02, 0.01, 5)
 
 AIC, BIC, L1, L2, ix, SP, SKIP, sol1 = grid_search(ext_ADMM_MGL, S, num_samples, p, reg, l1 = l1, method = 'eBIC', w2 = w2, G = G)
 
@@ -43,15 +44,12 @@ surface_plot(W1,W2, BIC, save = False)
 sol1 = sol1['Theta']
 surface_plot(L1,L2, BIC, save = False)
 
-
 #%%
 
 #l1 = np.linspace(0.2, 0.05, 5)
 #l1 = 5*np.logspace(-1, -2.5, 6)
 
 sAIC, sBIC, sSP, sol2, sol3, ix_uniform = single_range_search(S, l1, num_samples)
-
-
 
 #%%
 
