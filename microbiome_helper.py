@@ -9,7 +9,7 @@ from itertools import combinations
 
 
 from gglasso.helper.ext_admm_helper import create_group_array
-
+from gglasso.helper.basic_linalg import Sdot, adjacency_matrix
         
 def geometric_mean(x):
     a = np.log(x)
@@ -82,22 +82,44 @@ def load_and_transform(K = 26, min_inst = 5, compute_G = False):
 
 
 def load_tax_data(K=26):
-    all_tax = pd.DataFrame
+    all_tax = pd.DataFrame()
     num_csv = K
     for num in np.arange(num_csv):      
         file = "data/slr_data/TAX_data_" + str(num+1) + ".csv"
-        dt = pd.read_csv(file, index_col = 0).sort_index()
+        dt = pd.read_csv(file, index_col = 0).sort_index()  
+        all_tax = pd.concat([all_tax, dt])
         
-        all_tax = pd.concat(all_tax, dt)
-        
-    all_tax.drop_duplicates()
+    all_tax = all_tax.loc[~all_tax.index.duplicated(keep='first')].sort_index()
     
     return all_tax
          
     
+def assortativity(Theta, all_tax, level = 'Rank2'):
+    """ computes assortativity coefficient for a single network
+    Theta: DataFrame with precision matrix
+    """
+    
+    # pandas columns may be strings --> convert to int
+    Theta.columns = [int(c) for c in Theta.columns]
+    A = adjacency_matrix(Theta.values)
+    tmp = pd.DataFrame(A, columns = Theta.columns, index = Theta.index)
+    
+    # overwrite with taxonomic labels
+    tmp.index = all_tax.loc[tmp.index, level]
+    tmp.columns = all_tax.loc[tmp.columns, level]
+    
+    # count and create assortativity table
+    tmp2 = tmp.reset_index().melt(id_vars = level, var_name = level+'_1')
+    res = tmp2.groupby([level, level+'_1'])['value'].sum().unstack(level=0)
+    
+    # formula: https://igraph.org/r/doc/assortativity.html
+    E = res.sum().sum()
+    a = res.sum(axis = 0) / E
+    b = res.sum(axis = 1) / E
+    
+    c = np.diag(res).sum() / E
+    assort = ( c - (a*b).sum()) / (1- (a*b).sum())
 
-
-
-
+    return assort, res
 
 

@@ -7,7 +7,7 @@ import pandas as pd
 import seaborn as sns
 from matplotlib import pyplot as plt
 
-from microbiome_helper import load_and_transform
+from microbiome_helper import load_and_transform, assortativity, load_tax_data
 from gglasso.solver.ext_admm_solver import ext_ADMM_MGL
 from gglasso.solver.single_admm_solver import ADMM_SGL
 
@@ -104,8 +104,10 @@ L2 = np.loadtxt('data/slr_results/L2.csv')
 BIC = np.zeros((4, L1.shape[0], L1.shape[1]))
 for j in np.arange(4):
     BIC[j,:,:] = np.loadtxt('data/slr_results/BIC_' + str(j) + '.csv')
-    
-    
+
+sol1 = dict()  
+for k in np.arange(K):
+    sol1[k] = pd.read_csv('data/slr_results/res_multiple/theta_' + str(k+1) + '.csv', index_col = 0)
 #%%
 ########## EVALUATION ########################    
   
@@ -149,3 +151,8 @@ sns.kdeplot(nnz1, shade = True, gridsize = 10)
 sns.kdeplot(nnz2, shade = True, gridsize = 10)
 sns.kdeplot(nnz3, shade = True, gridsize = 10)
     
+all_tax = load_tax_data(K)
+
+[assortativity(sol1[k], all_tax, level = 'Rank2')[0]  for k in sol1.keys()]
+[assortativity(sol2[k], all_tax, level = 'Rank2')[0]  for k in sol2.keys()]
+[assortativity(sol3[k], all_tax, level = 'Rank2')[0]  for k in sol3.keys()]
