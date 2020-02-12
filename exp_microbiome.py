@@ -7,7 +7,7 @@ import pandas as pd
 import seaborn as sns
 from matplotlib import pyplot as plt
 
-from microbiome_helper import load_and_transform, assortativity, load_tax_data
+from microbiome_helper import load_and_transform, load_tax_data, all_assort_coeff, consensus
 from gglasso.solver.ext_admm_solver import ext_ADMM_MGL
 from gglasso.solver.single_admm_solver import ADMM_SGL
 
@@ -94,14 +94,14 @@ np.savetxt('data/slr_results/res_single/SP.csv', sSP)
 
 #%%
 # section for loading results
-AIC = np.loadtxt('data/slr_results/AIC.csv')
-SP = np.loadtxt('data/slr_results/SP.csv')
-L1 = np.loadtxt('data/slr_results/L1.csv')
-L2 = np.loadtxt('data/slr_results/L2.csv')
+AIC = np.loadtxt('data/slr_results/res_multiple/AIC.csv')
+SP = np.loadtxt('data/slr_results/res_multiple/SP.csv')
+L1 = np.loadtxt('data/slr_results/res_multiple/L1.csv')
+L2 = np.loadtxt('data/slr_results/res_multiple/L2.csv')
 
 BIC = np.zeros((4, L1.shape[0], L1.shape[1]))
 for j in np.arange(4):
-    BIC[j,:,:] = np.loadtxt('data/slr_results/BIC_' + str(j) + '.csv')
+    BIC[j,:,:] = np.loadtxt('data/slr_results/res_multiple/BIC_' + str(j) + '.csv')
 
 sol1 = dict()  
 for k in np.arange(K):
@@ -122,19 +122,7 @@ info['sparsity single/indv'] = [sparsity(sol3[k]) for k in sol3.keys()]
 info.to_csv('data/slr_results/info.csv')
 
 #%%
-def consensus(sol, G):
-    L = G.shape[1]
-    #groupsize = (G!=-1).sum(axis=2)[0]
-    
-    nnz = np.zeros(L)
-    for l in np.arange(L):
-        for k in np.arange(K):
-            if G[0,l,k] == -1:
-                continue
-            else:
-                nnz[l] += abs(sol[k][G[0,l,k], G[1,l,k]]) >= 1e-5
-                
-    return nnz
+
     
 nnz1 = consensus(sol1,G)
 nnz2 = consensus(sol2,G)
@@ -152,14 +140,6 @@ sns.kdeplot(nnz3, shade = True, gridsize = 10)
 #%% 
 all_tax = load_tax_data(K)
 
-def all_assort_coeff(sol, all_csv, all_tax):
-    K = len(sol.keys())
-    ass = np.zeros(K)
-    for k in np.arange(K):
-        sol_df_k = pd.DataFrame(sol[k], index = all_csv[k].index, columns = all_csv[k].index)
-        ass[k] = assortativity(sol_df_k, all_tax, level = 'Rank2')[0]
-    
-    return ass
 
 df_assort = pd.DataFrame(index = np.arange(K))
 

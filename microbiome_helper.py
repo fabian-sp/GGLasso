@@ -113,13 +113,38 @@ def assortativity(Theta, all_tax, level = 'Rank2'):
     res = tmp2.groupby([level, level+'_1'])['value'].sum().unstack(level=0)
     
     # formula: https://igraph.org/r/doc/assortativity.html
-    E = res.sum().sum()
-    a = res.sum(axis = 0) / E
-    b = res.sum(axis = 1) / E
+    E = np.triu(res.values).sum()
+    a = (res.sum(axis = 0) - np.diag(res.values)) / E
+    b = (res.sum(axis = 1) - np.diag(res.values)) / E
     
     c = np.diag(res).sum() / E
-    assort = ( c - (a*b).sum()) / (1- (a*b).sum())
+    assort = ( c - (a*b).sum()) / (1 - (a*b).sum())
 
     return assort, res
 
+def all_assort_coeff(sol, all_csv, all_tax):
+    """ copmutes assortativity coeffcient for each network in the dictionary sol"""
+    K = len(sol.keys())
+    ass = np.zeros(K)
+    for k in np.arange(K):
+        if type(sol[k]) == pd.DataFrame:
+            sol_df_k = sol[k].copy()
+        else:
+            sol_df_k = pd.DataFrame(sol[k], index = all_csv[k].index, columns = all_csv[k].index)
+        ass[k] = assortativity(sol_df_k, all_tax, level = 'Rank2')[0]
+    
+    return ass
 
+def consensus(sol, G):
+    L = G.shape[1]
+    #groupsize = (G!=-1).sum(axis=2)[0]
+    K = G.shape[2]
+    nnz = np.zeros(L)
+    for l in np.arange(L):
+        for k in np.arange(K):
+            if G[0,l,k] == -1:
+                continue
+            else:
+                nnz[l] += abs(sol[k][G[0,l,k], G[1,l,k]]) >= 1e-5
+                
+    return nnz
