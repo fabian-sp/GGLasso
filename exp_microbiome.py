@@ -105,7 +105,15 @@ for j in np.arange(4):
 
 sol1 = dict()  
 for k in np.arange(K):
-    sol1[k] = pd.read_csv('data/slr_results/res_multiple/theta_' + str(k+1) + '.csv', index_col = 0)
+    sol1[k] = pd.read_csv('data/slr_results/res_multiple/theta_' + str(k+1) + '.csv', index_col = 0).values
+    
+sol2 = dict()  
+for k in np.arange(K):
+    sol2[k] = pd.read_csv('data/slr_results/res_single_unif/theta_' + str(k+1) + '.csv', index_col = 0).values
+    
+sol3 = dict()  
+for k in np.arange(K):
+    sol3[k] = pd.read_csv('data/slr_results/res_single/theta_' + str(k+1) + '.csv', index_col = 0).values
 #%%
 ########## EVALUATION ########################    
   
@@ -114,9 +122,9 @@ info['samples'] = num_samples
 info['OTUs'] = p
 info['group entry ratio'] = (G[1,:,:] != -1).sum(axis=0) / (p*(p-1)/2)
 
-info['sparsity GGL'] = [sparsity(sol1[k]) for k in sol1.keys()]
-info['sparsity single/uniform'] = [sparsity(sol2[k]) for k in sol2.keys()]
-info['sparsity single/indv'] = [sparsity(sol3[k]) for k in sol3.keys()]
+info['sparsity GGL'] = [np.round(sparsity(sol1[k]), 4) for k in sol1.keys()]
+info['sparsity single/uniform'] = [np.round(sparsity(sol2[k]), 4) for k in sol2.keys()]
+info['sparsity single/indv'] = [np.round(sparsity(sol3[k]), 4) for k in sol3.keys()]
 
 
 info.to_csv('data/slr_results/info.csv')
