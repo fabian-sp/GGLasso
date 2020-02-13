@@ -120,11 +120,11 @@ for k in np.arange(K):
 info = pd.DataFrame(index = np.arange(K)+1)
 info['samples'] = num_samples
 info['OTUs'] = p
-info['group entry ratio'] = (G[1,:,:] != -1).sum(axis=0) / (p*(p-1)/2)
+info['group entry ratio'] = np.round((G[1,:,:] != -1).sum(axis=0) / (p*(p-1)/2),4)
 
 info['sparsity GGL'] = [np.round(sparsity(sol1[k]), 4) for k in sol1.keys()]
-info['sparsity single/uniform'] = [np.round(sparsity(sol2[k]), 4) for k in sol2.keys()]
-info['sparsity single/indv'] = [np.round(sparsity(sol3[k]), 4) for k in sol3.keys()]
+info['sparsity s/u'] = [np.round(sparsity(sol2[k]), 4) for k in sol2.keys()]
+info['sparsity s/i'] = [np.round(sparsity(sol3[k]), 4) for k in sol3.keys()]
 
 
 info.to_csv('data/slr_results/info.csv')
