@@ -28,7 +28,7 @@ draw_group_heatmap(Theta)
 #%%
 # runtime analysis ADMM vs. PPDNA on diff. sample sizes
 
-f = np.array([0.5, 0.9, 2, 20])
+f = np.array([0.3, 0.7, 2, 20])
 vecN = (f * p).astype(int)
 
 l1 = 2e-2 * np.ones(len(f))
@@ -58,14 +58,14 @@ for j in np.arange(len(vecN)):
     FPR[j] = discovery_rate(solA['Theta'], Theta)['FPR']
     
     #start = time()
-    solP, infoP = warmPPDNA(S, l1[j], l2[j], reg, Omega_0, eps = 5e-5, eps_admm = 1e-3, verbose = False, measure = True)
+    solP, infoP = warmPPDNA(S, l1[j], l2[j], reg, Omega_0, eps = 5e-5, eps_admm = 1e-2, verbose = False, measure = True)
     #end = time()
     #RT_PPA[j] = end-start
     iP[j] = infoP
 
 #%%
 
-save = False
+save = True
 
 plot_runtime(iA, iP, vecN, save = save)
         

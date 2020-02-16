@@ -5,6 +5,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
 from matplotlib.animation import FuncAnimation
+import matplotlib.ticker
 
 import seaborn as sns
 import networkx as nx
@@ -288,7 +289,7 @@ def plot_runtime(iA, iP, vecN, save = False):
     plots runtime and KKT residual for PPDNA and ADMM method
     """
     color_dict = get_default_color_coding()
-    fig, axs = plt.subplots(nrows = 2, ncols = 2, figsize = default_size_big) 
+    fig, axs = plt.subplots(nrows = 2, ncols = 2, figsize = (11,7)) 
     
     for j in np.arange(len(vecN)):       
         ax = axs.reshape(-1)[j]
@@ -296,6 +297,8 @@ def plot_runtime(iA, iP, vecN, save = False):
             
             p1 = ax.plot(iA[j]['kkt_residual'], c = color_dict['ADMM'], label = 'ADMM residual')
             p2 = ax.plot(iP[j]['kkt_residual'], c = color_dict['PPDNA'], marker = 'o', markersize = 3, label = 'PPDNA residual')
+            
+            #ax.tick_params(axis='both', which='major', labelsize=7)
             ax.set_yscale('log')
             ax.set_xscale('log')
             ax.set_ylim(1e-6,0.2)
@@ -307,6 +310,9 @@ def plot_runtime(iA, iP, vecN, save = False):
             
             ax.vlines(iP[j]['iter_admm'], 0, 0.2, 'grey')
             ax.set_xlim(iP[j]['iter_admm'] - 5, )
+            
+            #ax.get_xaxis().set_major_formatter(matplotlib.ticker.ScalarFormatter())
+            #ax2.get_xaxis().set_major_formatter(matplotlib.ticker.ScalarFormatter())
             
             if j in [0,2]:
                 ax.set_ylabel('KKT residual')
