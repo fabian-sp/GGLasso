@@ -414,6 +414,22 @@ def plot_error_accuracy(EPS, ERR, L2, save = False):
     
     return
 
+def plot_gamma_influence(gammas, GTPR, GFPR, save = False):
+    fig, ax = plt.subplots(1,1, figsize = default_size_big)   
+    ax2 = ax.twinx() 
+    ax.plot(gammas, GTPR, c = 'green', label = 'TPR')
+    ax2.plot(gammas, GFPR, c = 'red', label = 'FPR')
+    
+    ax.grid(linestyle = '--') 
+    ax.set_ylabel('TPR')
+    ax2.set_ylabel('FPR')
+    fig.legend()
+    
+    if save:
+        fig.savefig(path_ggl + 'gamma.pdf', dpi = 300)
+        
+    return 
+
 def surface_plot(L1, L2, C, name = 'eBIC', save = False):
     fig = plt.figure(figsize = default_size_big)
     ax = fig.gca(projection='3d')

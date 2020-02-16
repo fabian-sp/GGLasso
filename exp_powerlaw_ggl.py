@@ -14,13 +14,13 @@ from gglasso.solver.admm_solver import ADMM_MGL
 from gglasso.solver.ppdna_solver import PPDNA, warmPPDNA
 from gglasso.helper.data_generation import group_power_network, sample_covariance_matrix, plot_degree_distribution
 from gglasso.helper.experiment_helper import get_K_identity, lambda_parametrizer, lambda_grid, discovery_rate, error, hamming_distance, mean_sparsity
-from gglasso.helper.experiment_helper import draw_group_heatmap, plot_fpr_tpr, plot_diff_fpr_tpr, plot_error_accuracy, surface_plot
+from gglasso.helper.experiment_helper import draw_group_heatmap, plot_fpr_tpr, plot_diff_fpr_tpr, plot_error_accuracy, surface_plot, plot_gamma_influence
 from gglasso.helper.model_selection import aic, ebic
 
 p = 100
 K = 5
 N = 5000
-N_train = 5000
+N_train = 1000
 M = 10
 
 reg = 'GGL'
@@ -48,6 +48,9 @@ DTPR = np.zeros((grid1, grid2))
 AIC = np.zeros((grid1, grid2))
 BIC = np.zeros((grid1, grid2))
 
+gammas = np.linspace(0,1,20)
+GAM = np.zeros((len(gammas), grid1, grid2))
+
 Omega_0 = get_K_identity(K,p)
 Theta_0 = get_K_identity(K,p)
 
@@ -74,10 +77,29 @@ for g1 in np.arange(grid1):
         ERR[g1,g2] = error(Theta_sol, Theta)
         AIC[g1,g2] = aic(S_train, Theta_sol, N_train)
         BIC[g1,g2] = ebic(S_train, Theta_sol, N_train, gamma = 0.1)
+        
+        for l in np.arange(len(gammas)):
+            GAM[l, g1, g2] = ebic(S_train, Theta_sol, N_train, gamma = gammas[l])
+            
 
 # get optimal lambda
 ix= np.unravel_index(np.nanargmin(BIC), BIC.shape)
 ix2= np.unravel_index(np.nanargmin(AIC), AIC.shape)
+
+
+#%%
+
+GTPR = np.zeros(len(gammas))
+GFPR = np.zeros(len(gammas))
+
+for l in np.arange(len(gammas)):
+    gix= np.unravel_index(np.nanargmin(GAM[l,:,:]), GAM[l,:,:].shape)
+    print(gix)
+    GTPR[l] = TPR[gix]
+    GFPR[l] = FPR[gix]
+
+
+plot_gamma_influence(gammas, GTPR, GFPR, save = True)
 
 #%%
 # solve single GLASSO
