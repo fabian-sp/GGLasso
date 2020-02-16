@@ -20,11 +20,11 @@ from gglasso.helper.model_selection import aic, ebic
 p = 100
 K = 5
 N = 5000
-N_train = 1000
+N_train = 5000
 M = 10
 
 reg = 'GGL'
-save = True
+save = False
 
 Sigma, Theta = group_power_network(p, K, M)
 
