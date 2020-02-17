@@ -152,9 +152,9 @@ surface_plot(L1, L2, BIC, name = 'eBIC', save = False)
 
 #%%
 # accuracy impact on total error analysis
-#L1, L2 = lambda_grid(num1 = 1, num2 = 6, reg = reg)
 
-L2 = l2opt*np.linspace(-.5,.5,5) + l2opt
+#L2 = l2opt*np.linspace(-.5,.5,5) + l2opt
+L2 = l2opt * np.linspace(.2, 1.2,6)
 L1 = lambda_parametrizer(L2, w2 = 0.5)
 grid1 = L1.shape[0]
 
