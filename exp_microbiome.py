@@ -54,11 +54,11 @@ sAIC, sBIC, sSP, sol2, sol3, ix_uniform = single_range_search(S, l1, num_samples
 #%%
 
 Omega_0 = get_K_identity(p)
-lambda1 = 0.1625
-lambda2 = 3e-6
+lambda1 = 0.125
+lambda2 = 0.04419 # w2 = 0.2
 sol, info = ext_ADMM_MGL(S, lambda1, lambda2, 'GGL', Omega_0, G, eps_admm = 1e-3, verbose = True)
 
-res_multiple = sol['Theta']
+res_multiple2 = sol['Theta']
 
 
 #%%
@@ -81,6 +81,8 @@ np.savetxt('data/slr_results/res_multiple/SP.csv', SP)
 np.savetxt('data/slr_results/res_multiple/L1.csv', L1)
 np.savetxt('data/slr_results/res_multiple/L2.csv', L2)
 
+
+#save_result(res_multiple2, 'multiple2')
 
 #%%
 save_result(sol2, 'single_unif')
@@ -106,6 +108,7 @@ for j in np.arange(4):
 sol1 = dict()  
 for k in np.arange(K):
     sol1[k] = pd.read_csv('data/slr_results/res_multiple/theta_' + str(k+1) + '.csv', index_col = 0).values
+    #sol1[k] = pd.read_csv('data/slr_results/res_multiple2/theta_' + str(k+1) + '.csv', index_col = 0).values
     
 sol2 = dict()  
 for k in np.arange(K):
@@ -129,22 +132,26 @@ info['sparsity s/i'] = [np.round(sparsity(sol3[k]), 4) for k in sol3.keys()]
 
 info.to_csv('data/slr_results/info.csv')
 
-#%%
-
-    
+#%% 
 nnz1 = consensus(sol1,G)
 nnz2 = consensus(sol2,G)
 nnz3 = consensus(sol3,G)
 
-(nnz1 > 6).sum()
-(nnz2 > 6).sum()
-(nnz3 > 6).sum()
+consensus_min = 6
+
+(nnz1 >=  consensus_min).sum()
+(nnz2 >= consensus_min).sum()
+(nnz3 >= consensus_min).sum()
 
 plt.figure()
 sns.kdeplot(nnz1, shade = True, gridsize = 10)
 sns.kdeplot(nnz2, shade = True, gridsize = 10)
 sns.kdeplot(nnz3, shade = True, gridsize = 10)
-   
+
+  
+plt.hist(nnz1, bins = np.arange(26), alpha = 0.5, width = 1, log = True)
+plt.hist(nnz2, bins = np.arange(26), alpha = 0.5, width = 1, log = True)
+plt.hist(nnz3, bins = np.arange(26), alpha = 0.5, width = 1, log = True)
 #%% 
 all_tax = load_tax_data(K)
 
