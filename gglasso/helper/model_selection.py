@@ -7,11 +7,12 @@ import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
 
 from .basic_linalg import Sdot, adjacency_matrix
-from .experiment_helper import mean_sparsity, sparsity
+from .experiment_helper import mean_sparsity, sparsity, consensus
 
 from .experiment_helper import get_K_identity as id_array
 from .ext_admm_helper import get_K_identity as id_dict
 from ..solver.single_admm_solver import ADMM_SGL
+
 
 def lambda_parametrizer(l1 = 0.05, w2 = 0.5):
     """transforms given l1 and w2 into the respective l2"""
@@ -70,6 +71,8 @@ def grid_search(solver, S, N, p, reg, l1, method= 'eBIC', l2 = None, w2 = None, 
     SP[:] = np.nan
     SKIP = np.zeros((grid1, grid2), dtype = bool)
     
+    UQED = np.zeros((grid1, grid2))
+    
     kwargs = {'reg': reg, 'S': S, 'eps_admm': 1e-3, 'verbose': True, 'measure': True}
     if type(S) == dict:
         K = len(S.keys())
@@ -112,6 +115,11 @@ def grid_search(solver, S, N, p, reg, l1, method= 'eBIC', l2 = None, w2 = None, 
                 
             SP[g1,g2] = mean_sparsity(Theta_sol)
             
+            if np.all(G!= None):
+                nnz = consensus(Theta_sol, G)
+                UQED[g1,g2] = (nnz >= 1).sum()
+                
+            
             print("Current eBIC grid:")
             print(BIC)
             print("Current Sparsity grid:")
@@ -128,7 +136,7 @@ def grid_search(solver, S, N, p, reg, l1, method= 'eBIC', l2 = None, w2 = None, 
     elif method == 'eBIC':    
         BIC[BIC==-np.inf] = np.nan
         ix= np.unravel_index(np.nanargmin(BIC[gamma_ix,:,:]), BIC[gamma_ix,:,:].shape)
-    return AIC, BIC, L1, L2, ix, SP, SKIP, curr_best
+    return AIC, BIC, L1, L2, ix, SP, UQED, curr_best
 
 def single_range_search(S, L, N, method = 'eBIC'):
     """

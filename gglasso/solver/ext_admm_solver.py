@@ -189,6 +189,7 @@ def prox_2norm_G(X, G, l2):
     L = d[1]
     
     X1 = copy.deepcopy(X)
+    group_size = (G[0,:,:] != -1).sum(axis = 1)
     
     for l in np.arange(L):
         # for each group construct v, calculate prox, and insert the result. Ignore -1 entries of G
@@ -200,7 +201,8 @@ def prox_2norm_G(X, G, l2):
                 v0[k] = X[k][G[0,l,k], G[1,l,k]]
         
         v = v0[~np.isnan(v0)]
-        z0 = prox_2norm(v,l2)
+        # scale with square root of the group size
+        z0 = prox_2norm(v,l2 * np.sqrt(group_size[l]))
         v0[~np.isnan(v0)] = z0
         
         for k in np.arange(K):

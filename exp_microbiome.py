@@ -7,11 +7,11 @@ import pandas as pd
 import seaborn as sns
 from matplotlib import pyplot as plt
 
-from microbiome_helper import load_and_transform, load_tax_data, all_assort_coeff, consensus
+from microbiome_helper import load_and_transform, load_tax_data, all_assort_coeff
 from gglasso.solver.ext_admm_solver import ext_ADMM_MGL
 from gglasso.solver.single_admm_solver import ADMM_SGL
 
-from gglasso.helper.experiment_helper import sparsity
+from gglasso.helper.experiment_helper import sparsity, consensus
 from gglasso.helper.ext_admm_helper import get_K_identity, check_G, load_G, save_G
 from gglasso.helper.model_selection import grid_search, single_range_search, ebic, surface_plot, map_l_to_w
 
@@ -29,11 +29,11 @@ check_G(G, p)
 
 l1 = np.linspace(1, 0.4, 2)
 l1 = np.append(l1, np.linspace(0.2, 0.05, 7))
-#l1 = np.linspace(0.135, 0.12, 5)
-#w2 = np.logspace(-1, -5, 4)
-w2 = np.linspace(0.02, 0.01, 5)
+l1 = np.linspace(0.14, 0.11, 5)
+w2 = np.logspace(-1, -2, 4)
+#w2 = np.linspace(0.02, 0.01, 5)
 
-AIC, BIC, L1, L2, ix, SP, SKIP, sol1 = grid_search(ext_ADMM_MGL, S, num_samples, p, reg, l1 = l1, method = 'eBIC', w2 = w2, G = G)
+AIC, BIC, L1, L2, ix, SP, UQED, sol1 = grid_search(ext_ADMM_MGL, S, num_samples, p, reg, l1 = l1, method = 'eBIC', w2 = w2, G = G)
 
 W1 = map_l_to_w(L1,L2)[0]
 W2 = map_l_to_w(L1,L2)[1]
