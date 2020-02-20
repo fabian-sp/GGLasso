@@ -113,11 +113,17 @@ def assortativity(Theta, all_tax, level = 'Rank2'):
     res = tmp2.groupby([level, level+'_1'])['value'].sum().unstack(level=0)
     
     # formula: https://igraph.org/r/doc/assortativity.html
-    E = np.triu(res.values).sum()
-    a = (res.sum(axis = 0) - np.diag(res.values)) / E
-    b = (res.sum(axis = 1) - np.diag(res.values)) / E
+    # res has number of edges from categroy i to j on offdiag and 2*number from i to i a+on diagonal
+    # E = edge ratio, on off-diagonal with factor 1/2 --> E.sum().sum() ==1
+    E = res/(res.sum().sum())
     
-    c = np.diag(res).sum() / E
+    c = np.diag(E).sum()
+    a = E.sum(axis = 0)
+    b = E.sum(axis = 1)
+    
+    assert np.abs(a.sum() -1.) <= 1e-5
+    assert np.abs(b.sum() -1.) <= 1e-5
+    
     assort = ( c - (a*b).sum()) / (1 - (a*b).sum())
 
     return assort, res

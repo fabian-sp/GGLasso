@@ -11,7 +11,7 @@ from microbiome_helper import load_and_transform, load_tax_data, all_assort_coef
 from gglasso.solver.ext_admm_solver import ext_ADMM_MGL
 from gglasso.solver.single_admm_solver import ADMM_SGL
 
-from gglasso.helper.experiment_helper import sparsity, consensus
+from gglasso.helper.experiment_helper import adjacency_matrix, sparsity, consensus
 from gglasso.helper.ext_admm_helper import get_K_identity, check_G, load_G, save_G
 from gglasso.helper.model_selection import grid_search, single_range_search, ebic, surface_plot, map_l_to_w
 
@@ -40,6 +40,8 @@ W2 = map_l_to_w(L1,L2)[1]
 
 #surface_plot(L1,L2, BIC, save = False)
 surface_plot(W1,W2, BIC, save = False)
+
+surface_plot(W1,W2, UQED+1, save = False)
 
 
 sol1 = sol1['Theta']
@@ -80,7 +82,7 @@ np.savetxt('data/slr_results/res_multiple/AIC.csv', AIC)
 np.savetxt('data/slr_results/res_multiple/SP.csv', SP)
 np.savetxt('data/slr_results/res_multiple/L1.csv', L1)
 np.savetxt('data/slr_results/res_multiple/L2.csv', L2)
-
+np.savetxt('data/slr_results/res_multiple/UQED.csv', UQED)
 
 #save_result(res_multiple2, 'multiple2')
 
@@ -107,8 +109,8 @@ for j in np.arange(4):
 
 sol1 = dict()  
 for k in np.arange(K):
-    sol1[k] = pd.read_csv('data/slr_results/res_multiple/theta_' + str(k+1) + '.csv', index_col = 0).values
-    #sol1[k] = pd.read_csv('data/slr_results/res_multiple2/theta_' + str(k+1) + '.csv', index_col = 0).values
+    #sol1[k] = pd.read_csv('data/slr_results/res_multiple/theta_' + str(k+1) + '.csv', index_col = 0).values
+    sol1[k] = pd.read_csv('data/slr_results/res_multiple2/theta_' + str(k+1) + '.csv', index_col = 0).values
     
 sol2 = dict()  
 for k in np.arange(K):
@@ -133,9 +135,9 @@ info['sparsity s/i'] = [np.round(sparsity(sol3[k]), 4) for k in sol3.keys()]
 info.to_csv('data/slr_results/info.csv')
 
 #%% 
-nnz1 = consensus(sol1,G)
-nnz2 = consensus(sol2,G)
-nnz3 = consensus(sol3,G)
+nnz1, adj1 = consensus(sol1,G)
+nnz2, adj2 = consensus(sol2,G)
+nnz3, adj3 = consensus(sol3,G)
 
 consensus_min = 6
 
@@ -143,12 +145,20 @@ consensus_min = 6
 (nnz2 >= consensus_min).sum()
 (nnz3 >= consensus_min).sum()
 
-plt.figure()
-sns.kdeplot(nnz1, shade = True, gridsize = 10)
-sns.kdeplot(nnz2, shade = True, gridsize = 10)
-sns.kdeplot(nnz3, shade = True, gridsize = 10)
 
-  
+x1 = (adj1 == 1).sum(axis=0)
+y1 = np.array([adjacency_matrix(sol1[k]).sum()/2 for k in sol1.keys()])
+
+x2 = (adj2 == 1).sum(axis=0)
+y2 = np.array([adjacency_matrix(sol2[k]).sum()/2 for k in sol2.keys()])
+
+plt.scatter(x1, y1)
+plt.scatter(x2, y2)
+
+
+plt.hist(nnz1, 26, density=True, histtype='step', cumulative=True, label='Empirical')
+plt.hist(nnz2, 26, density=True, histtype='step', cumulative=True, label='Empirical')
+
 plt.hist(nnz1, bins = np.arange(26), alpha = 0.5, width = 1, log = True)
 plt.hist(nnz2, bins = np.arange(26), alpha = 0.5, width = 1, log = True)
 plt.hist(nnz3, bins = np.arange(26), alpha = 0.5, width = 1, log = True)
