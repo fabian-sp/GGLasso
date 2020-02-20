@@ -135,9 +135,9 @@ info['sparsity s/i'] = [np.round(sparsity(sol3[k]), 4) for k in sol3.keys()]
 info.to_csv('data/slr_results/info.csv')
 
 #%% 
-nnz1, adj1 = consensus(sol1,G)
-nnz2, adj2 = consensus(sol2,G)
-nnz3, adj3 = consensus(sol3,G)
+nnz1, adj1, val1 = consensus(sol1,G)
+nnz2, adj2, val2 = consensus(sol2,G)
+nnz3, adj3, val3 = consensus(sol3,G)
 
 consensus_min = 6
 
@@ -146,22 +146,26 @@ consensus_min = 6
 (nnz3 >= consensus_min).sum()
 
 
-x1 = (adj1 == 1).sum(axis=0)
-y1 = np.array([adjacency_matrix(sol1[k]).sum()/2 for k in sol1.keys()])
-
-x2 = (adj2 == 1).sum(axis=0)
-y2 = np.array([adjacency_matrix(sol2[k]).sum()/2 for k in sol2.keys()])
-
-plt.scatter(x1, y1)
-plt.scatter(x2, y2)
+def mean_size_per_nnz(nnz, val, adj):
+    df1 = pd.DataFrame()
+    df1['nnz'] = nnz
+    df1['size'] = np.nanmean(abs(val), axis = 1) # / nnz
+    return df1.groupby('nnz')['size'].mean()
 
 
-plt.hist(nnz1, 26, density=True, histtype='step', cumulative=True, label='Empirical')
-plt.hist(nnz2, 26, density=True, histtype='step', cumulative=True, label='Empirical')
+plt.plot(mean_size_per_nnz(nnz1, val1, adj1))
+plt.plot(mean_size_per_nnz(nnz2, val2, adj2))
+plt.plot(mean_size_per_nnz(nnz3, val3, adj3))
 
-plt.hist(nnz1, bins = np.arange(26), alpha = 0.5, width = 1, log = True)
-plt.hist(nnz2, bins = np.arange(26), alpha = 0.5, width = 1, log = True)
-plt.hist(nnz3, bins = np.arange(26), alpha = 0.5, width = 1, log = True)
+
+plt.figure()
+plt.hist(nnz1, 26, density=True, histtype='step', cumulative=True, linestyle = '-', lw = 1.5, label='GGL')
+plt.hist(nnz2, 26, density=True, histtype='step', cumulative=True, linestyle = '--', lw = 1.5, label='s/u')
+#plt.hist(nnz3, 26, density=True, histtype='step', cumulative=True, label='s/i')
+plt.xlabel('Nonzero entries in group')
+plt.yscale('log')
+
+
 #%% 
 all_tax = load_tax_data(K)
 
