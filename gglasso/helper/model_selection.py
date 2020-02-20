@@ -354,7 +354,14 @@ def single_surface_plot(L1, L2, C, ax, name = 'eBIC'):
     ax.set_ylabel('w_2')
     ax.set_zlabel(name)
     ax.view_init(elev = 25, azim = 110)
-    #ax.set_zlim(Z.min(),np.quantile(Z,0.9))
+    
+    plt.xticks(fontsize = 10)
+    plt.yticks(fontsize = 10)
+    
+    for label in ax.xaxis.get_ticklabels()[::2]:
+        label.set_visible(False)
+    for label in ax.yaxis.get_ticklabels()[::2]:
+        label.set_visible(False)
     
     return
 

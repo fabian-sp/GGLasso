@@ -27,10 +27,10 @@ check_G(G, p)
 #%%
 
 
-l1 = np.linspace(1, 0.4, 2)
-l1 = np.append(l1, np.linspace(0.2, 0.05, 7))
-l1 = np.linspace(0.14, 0.11, 5)
-w2 = np.logspace(-1, -2, 4)
+l1 = np.linspace(1, 0.2, 3)
+l1 = np.append(l1, np.linspace(0.12, 0.01, 7))
+#l1 = np.linspace(0.14, 0.11, 5)
+w2 = np.logspace(-1, -3, 4)
 #w2 = np.linspace(0.02, 0.01, 5)
 
 AIC, BIC, L1, L2, ix, SP, UQED, sol1 = grid_search(ext_ADMM_MGL, S, num_samples, p, reg, l1 = l1, method = 'eBIC', w2 = w2, G = G)
@@ -39,7 +39,7 @@ W1 = map_l_to_w(L1,L2)[0]
 W2 = map_l_to_w(L1,L2)[1]
 
 #surface_plot(L1,L2, BIC, save = False)
-surface_plot(W1,W2, BIC, save = True)
+surface_plot(W1,W2, BIC, save = False)
 
 
 sol1 = sol1['Theta']
@@ -54,8 +54,8 @@ sAIC, sBIC, sSP, sol2, sol3, ix_uniform = single_range_search(S, l1, num_samples
 #%%
 
 Omega_0 = get_K_identity(p)
-lambda1 = 0.125
-lambda2 = 0.04419 # w2 = 0.2
+lambda1 = 0.12
+lambda2 = 0.00346 # w2 = 0.02
 sol, info = ext_ADMM_MGL(S, lambda1, lambda2, 'GGL', Omega_0, G, eps_admm = 1e-3, verbose = True)
 
 res_multiple2 = sol['Theta']
