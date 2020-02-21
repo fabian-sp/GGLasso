@@ -119,6 +119,8 @@ for k in np.arange(K):
 sol3 = dict()  
 for k in np.arange(K):
     sol3[k] = pd.read_csv('data/slr_results/res_single/theta_' + str(k+1) + '.csv', index_col = 0).values
+    
+    
 #%%
 ########## EVALUATION ########################    
   
@@ -146,16 +148,35 @@ consensus_min = 6
 (nnz3 >= consensus_min).sum()
 
 
-def mean_size_per_nnz(nnz, val, adj):
-    df1 = pd.DataFrame()
-    df1['nnz'] = nnz
-    df1['size'] = np.nanmean(abs(val), axis = 1) # / nnz
-    return df1.groupby('nnz')['size'].mean()
+info2 = pd.DataFrame(index = ['GGL', 's/u', 's/i'])
+info2['edges within groups'] = [nnz1.sum(), nnz2.sum(), nnz3.sum()]
+info2['consensus edges'] = [(nnz1 >=  consensus_min).sum(), (nnz2 >=  consensus_min).sum(), (nnz3 >=  consensus_min).sum()]
+info2.to_csv('data/slr_results/info2.csv')
 
+#%%
 
-plt.plot(mean_size_per_nnz(nnz1, val1, adj1))
-plt.plot(mean_size_per_nnz(nnz2, val2, adj2))
-plt.plot(mean_size_per_nnz(nnz3, val3, adj3))
+fig, axs = plt.subplots(5,6)
+
+for k in np.arange(30):
+    ax = axs.ravel()[k]
+    
+    if k >= K:
+        ax.axis('off')
+        continue
+
+    d = sol1[k] - sol2[k]
+    d = abs(sol1[k]) - abs(sol2[k])
+    
+    np.fill_diagonal(d,0)
+    d = d.ravel()
+    d = d[d!=0]
+    sns.distplot(d, ax = ax, hist_kws = {'normed':True})
+    ax.set_xlim(-0.05,0.05)
+    ax.vlines(d.mean(), 0, ax.get_ylim()[1])
+    #ax.set_title(f"k = {k}")
+    
+    
+    
 
 
 plt.figure()
@@ -163,6 +184,8 @@ plt.hist(nnz1, 26, density=True, histtype='step', cumulative=True, linestyle = '
 plt.hist(nnz2, 26, density=True, histtype='step', cumulative=True, linestyle = '--', lw = 1.5, label='s/u')
 #plt.hist(nnz3, 26, density=True, histtype='step', cumulative=True, label='s/i')
 plt.xlabel('Nonzero entries in group')
+plt.ylabel('Cumulative density')
+plt.legend()
 plt.yscale('log')
 
 
