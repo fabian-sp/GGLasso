@@ -29,7 +29,11 @@ def save_G(path, G):
     np.savetxt(path + 'G2.txt', G[1,:,:])
     return 
 
-def construct_G(p, K):
+def construct_trivial_G(p, K):
+    """
+    this functions construct the array G for the trivial case, i.e. all variables present in all instances
+    only needed for checks and testing
+    """
     L = int(p*(p-1)/2)
     G = np.zeros((2,L,K), dtype = int)
     for i in np.arange(p):

@@ -177,8 +177,6 @@ for k in np.arange(30):
     
     
     
-
-
 plt.figure()
 plt.hist(nnz1, 26, density=True, histtype='step', cumulative=True, linestyle = '-', lw = 1.5, label='GGL')
 plt.hist(nnz2, 26, density=True, histtype='step', cumulative=True, linestyle = '--', lw = 1.5, label='s/u')

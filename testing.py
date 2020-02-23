@@ -6,7 +6,7 @@ Sigma denotes the covariance matrix, Theta the precision matrix
 
 import numpy as np
 
-from gglasso.solver.ppdna_solver import PPDNA
+from gglasso.solver.ppdna_solver import PPDNA, warmPPDNA
 from gglasso.solver.admm_solver import ADMM_MGL
 from gglasso.solver.latent_admm_solver import latent_ADMM_GGL
 from gglasso.helper.data_generation import time_varying_power_network, group_power_network,sample_covariance_matrix
@@ -26,46 +26,41 @@ elif reg == 'FGL':
 #np.linalg.norm(np.eye(p) - Sigma@Theta)
 
 S, samples = sample_covariance_matrix(Sigma, N)
-
-S = get_K_identity(K,p)
+#S = get_K_identity(K,p)
 
 lambda1= 0.05
 lambda2 = 0.05
 
-Omega_0 = np.zeros((K,p,p))
+Omega_0 = get_K_identity(K,p)
 
 
-solPPDNA, info = PPDNA(S, lambda1, lambda2, reg, Omega_0, eps_ppdna = 1e-3 , verbose = True, measure = True)
+solPPDNA, info = warmPPDNA(S, lambda1, lambda2, reg, Omega_0, eps = 1e-4 , verbose = True, measure = True)
 
 solADMM, info = ADMM_MGL(S, lambda1, lambda2, reg, Omega_0, n_samples = None, eps_admm = 1e-4 , verbose = True)
 
-solADMM, info = latent_ADMM_GGL(S, lambda1, lambda2, 1e-5, 1e-5, Omega_0, n_samples = None, eps_admm = 1e-5 , verbose = True, measure = False, max_iter = 100)
+#solADMM, info = latent_ADMM_GGL(S, lambda1, lambda2, 1e-5, 1e-5, Omega_0, n_samples = None, eps_admm = 1e-5 , verbose = True, measure = False, max_iter = 100)
 
 
 
 #%%
+# tests for the extended ADMM version
 
-from gglasso.solver.ext_admm_solver import ext_ADMM_MGL, construct_G
+from gglasso.solver.ext_admm_solver import ext_ADMM_MGL
+from gglasso.helper.ext_admm_helper import construct_trivial_G
 
-p = 10
-K = 5
-lambda1 = .01
-lambda2 = .01
-
-S = dict()
+Sdict = dict()
 Omega_0 = dict()
 
 for k in np.arange(K):
-    tmp = .1*np.random.rand(p,p)
-    S[k] = np.eye(p) + (tmp.T@tmp)
-    Omega_0[k] = np.zeros((p,p))
-    
-G = construct_G(p, K)
+    Sdict[k] = S[k,:,:].copy()
+    Omega_0[k] = np.eye(p)
 
-    
-sol, info = ext_ADMM_MGL(S, lambda1, lambda2, 'GGL' , Omega_0, G, eps_admm = 1e-5 , verbose = True, measure = False, max_iter = 30)
+# constructs the "trivial" groups, i.e. all variables present in all instances  
+G = construct_trivial_G(p, K)
 
-Theta_sol = np.zeros((K,p,p))
+solext, info = ext_ADMM_MGL(Sdict, lambda1, lambda2/np.sqrt(K), 'GGL' , Omega_0, G, eps_admm = 1e-4 , verbose = True, measure = False, max_iter = 50)
+
 for k in np.arange(K):
-    Theta_sol[k] = sol['Theta'][k]
+    print(np.linalg.norm(solext['Theta'][k] - solADMM['Theta'][k,:,:]))
+       
 
