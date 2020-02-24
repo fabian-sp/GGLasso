@@ -141,7 +141,7 @@ nnz1, adj1, val1 = consensus(sol1,G)
 nnz2, adj2, val2 = consensus(sol2,G)
 nnz3, adj3, val3 = consensus(sol3,G)
 
-consensus_min = 6
+consensus_min = 5
 
 (nnz1 >=  consensus_min).sum()
 (nnz2 >= consensus_min).sum()
@@ -151,6 +151,8 @@ consensus_min = 6
 info2 = pd.DataFrame(index = ['GGL', 's/u', 's/i'])
 info2['edges within groups'] = [nnz1.sum(), nnz2.sum(), nnz3.sum()]
 info2['consensus edges'] = [(nnz1 >=  consensus_min).sum(), (nnz2 >=  consensus_min).sum(), (nnz3 >=  consensus_min).sum()]
+
+info2 = info2.astype(int)
 info2.to_csv('data/slr_results/info2.csv')
 
 #%%
