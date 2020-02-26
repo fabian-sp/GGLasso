@@ -64,8 +64,8 @@ for j in np.arange(len(vecN)):
     iP[j] = infoP
 
 #%%
-
-save = True
+# plotting
+save = False
 
 plot_runtime(iA, iP, vecN, save = save)
         
@@ -108,11 +108,7 @@ plot_runtime(iA, iP, vecN, save = save)
 #    RT_ADMM[j] = end-start
 #    
 #
-##%%
-#for j in np.arange(len(vecP)):
-#    plt.plot(iA[j]['runtime'].cumsum())
-#    
-    
+ 
     
 
 

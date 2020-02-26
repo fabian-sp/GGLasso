@@ -12,10 +12,9 @@ from gglasso.solver.ppdna_solver import PPDNA, warmPPDNA
 from gglasso.solver.admm_solver import ADMM_MGL
 from gglasso.helper.data_generation import time_varying_power_network, sample_covariance_matrix
 from gglasso.helper.experiment_helper import get_K_identity, lambda_grid, discovery_rate, error
-from gglasso.helper.experiment_helper import draw_group_heatmap, plot_evolution, plot_deviation, surface_plot, plot_fpr_tpr, multiple_heatmap_animation, single_heatmap_animation
+from gglasso.helper.experiment_helper import plot_evolution, plot_deviation, surface_plot, plot_fpr_tpr, multiple_heatmap_animation, single_heatmap_animation
 from gglasso.helper.model_selection import aic, ebic
 
-#from tvgl3.TVGL3 import TVGLwrapper
 from regain.covariance import LatentTimeGraphicalLasso, TimeGraphicalLasso
 
 p = 100
@@ -34,7 +33,6 @@ Sigma, Theta = time_varying_power_network(p, K, M)
 S, sample = sample_covariance_matrix(Sigma, N)
 S_train, sample_train = sample_covariance_matrix(Sigma, N)
 Sinv = np.linalg.pinv(S, hermitian = True)
-
 
 
 results = {}
@@ -126,8 +124,9 @@ print(f"Running time for ADMM was {end-start} seconds")
 
 results['ADMM'] = {'Theta' : sol['Theta']}
 
-
 #%%
+# solve with ragin (LTGL)
+
 start = time()
 alpha = N*lambda1
 beta = N*lambda2 
@@ -141,6 +140,7 @@ print(f"Running time for LTGL was {end-start}  seconds")
 results['LTGL'] = {'Theta' : ltgl.precision_}
 
 #%%
+# plotting
 Theta_admm = results.get('ADMM').get('Theta')
 Theta_ppdna = results.get('PPDNA').get('Theta')
 Theta_ltgl = results.get('LTGL').get('Theta')
@@ -156,12 +156,15 @@ save = True
 surface_plot(L1, L2, BIC, name = 'eBIC', save = save)
 
 plot_evolution(results, block = 0, L = L, save = save)
+
 plot_evolution(results, block = 2, L = L, save = save)
 
 del results['ADMM']
+
 plot_deviation(results, save = save)
 
 
+# animate truth and solution
 single_heatmap_animation(Theta_glasso, method = 'GLASSO', save = False)
 multiple_heatmap_animation(Theta, results, save = False)
 

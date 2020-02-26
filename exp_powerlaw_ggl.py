@@ -12,7 +12,7 @@ from sklearn.covariance import GraphicalLasso
 
 from gglasso.solver.admm_solver import ADMM_MGL
 from gglasso.solver.ppdna_solver import PPDNA, warmPPDNA
-from gglasso.helper.data_generation import group_power_network, sample_covariance_matrix, plot_degree_distribution
+from gglasso.helper.data_generation import group_power_network, sample_covariance_matrix
 from gglasso.helper.experiment_helper import get_K_identity, lambda_parametrizer, lambda_grid, discovery_rate, error, hamming_distance, mean_sparsity
 from gglasso.helper.experiment_helper import draw_group_heatmap, plot_fpr_tpr, plot_diff_fpr_tpr, plot_error_accuracy, surface_plot, plot_gamma_influence
 from gglasso.helper.model_selection import aic, ebic
@@ -29,7 +29,6 @@ save = False
 Sigma, Theta = group_power_network(p, K, M)
 
 draw_group_heatmap(Theta, save = save)
-#plot_degree_distribution(Theta)
 
 S, sample = sample_covariance_matrix(Sigma, N)
 S_train, sample_train = sample_covariance_matrix(Sigma, N_train)
@@ -88,7 +87,7 @@ ix2= np.unravel_index(np.nanargmin(AIC), AIC.shape)
 
 
 #%%
-
+# investigate influence of gamma choice
 GTPR = np.zeros(len(gammas))
 GFPR = np.zeros(len(gammas))
 
@@ -99,7 +98,7 @@ for l in np.arange(len(gammas)):
     GFPR[l] = FPR[gix]
 
 
-plot_gamma_influence(gammas, GTPR, GFPR, save = True)
+plot_gamma_influence(gammas, GTPR, GFPR, save = False)
 
 #%%
 # solve single GLASSO
@@ -125,6 +124,7 @@ for a in np.arange(len(ALPHA)):
     
 
 #%%
+# solve again for optimal (l1, l2)
 l1opt = L1[ix]
 l2opt = L2[ix]
 
@@ -145,13 +145,16 @@ with sns.axes_style("white"):
     draw_group_heatmap(Theta_sol, method = 'PPDNA', ax = axs[1])
 
 #%%
+# plotting (set save = False if plot should not be saved)
+    
 plot_fpr_tpr(FPR, TPR, ix, ix2, FPR_GL, TPR_GL, W2, save = save)
+
 plot_diff_fpr_tpr(DFPR, DTPR, ix, ix2, DFPR_GL, DTPR_GL, W2, save = save)
 
-surface_plot(L1, L2, BIC, name = 'eBIC', save = False)
+surface_plot(L1, L2, BIC, name = 'eBIC', save = save)
 
 #%%
-# accuracy impact on total error analysis
+# accuracy/model selection impact on total error analysis
 
 #L2 = l2opt*np.linspace(-.5,.5,5) + l2opt
 L2 = l2opt * np.linspace(.2, 1.2,6)
@@ -169,7 +172,6 @@ HMD = np.zeros((grid1, grid2))
 BIC = np.zeros((grid1, grid2))
 RT = np.zeros((grid1, grid2))
 
-#Omega_0 = np.zeros((K,p,p)); Theta_0 = np.zeros((K,p,p)); X_0 = np.zeros((K,p,p))
 Om_0_0 = np.zeros((K,p,p)); Th_0_0 = np.zeros((K,p,p)); X_0_0 = np.zeros((K,p,p))
 
 for g1 in np.arange(grid1):
@@ -202,4 +204,5 @@ for g1 in np.arange(grid1):
         RT[g1,g2] = end-start
 
 
+# plotting
 plot_error_accuracy(EPS, ERR, L2, save = save)
