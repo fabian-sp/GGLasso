@@ -21,6 +21,10 @@ Make sure that all packages are installed or run
 
 alternatively.
 
+In order to install a local version which you want to edit, run
+
+    python setup.py clean --all develop clean --all
+
 For testing and in order to understand how to call the solvers, run `example.py`
 
 Experiments for Group and Fused GL recovery rates are in `exp_powerlaw_ggl` `exp_powerlaw_fgl`. Experiments for runtime comparison between ADMM and PPDNA are in `exp_runtime_ggl`. They also produce the figures shown in the thesis.<br>
