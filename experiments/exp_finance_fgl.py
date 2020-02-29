@@ -25,7 +25,7 @@ from regain.covariance import LatentTimeGraphicalLasso, TimeGraphicalLasso
 #df.columns = [t.split(' - ')[0] for t in df.columns]
 #df.to_csv('data/dax_constituents.csv')
 
-px = pd.read_csv('data/dax_constituents.csv', index_col = 0)
+px = pd.read_csv('../data/dax_constituents.csv', index_col = 0)
 px.index = pd.to_datetime(px.index)
 ret = 100*np.log(px/px.shift(1)).dropna()
 
