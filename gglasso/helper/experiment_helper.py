@@ -160,8 +160,8 @@ def consensus(sol, G):
 ############################ DRAWING FUNCTIONS ##################################################################
 #################################################################################################################
 
-path_ggl = 'plots//ggl_powerlaw//'
-path_fgl = 'plots//fgl_powerlaw//'
+path_ggl = 'plots/ggl_powerlaw/'
+path_fgl = 'plots/fgl_powerlaw/'
 
 default_size_big = (10,7)
 default_size_small = (6,5)
