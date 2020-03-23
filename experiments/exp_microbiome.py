@@ -51,7 +51,7 @@ sol1 = sol1['Theta']
 #l1 = np.linspace(0.2, 0.05, 5)
 #l1 = 5*np.logspace(-1, -2.5, 6)
 
-sAIC, sBIC, sSP, sol2, sol3, ix_uniform = single_range_search(S, l1, num_samples)
+sAIC, sBIC, sSP, sol2, sol3, ix_uniform,_,_ = single_range_search(S, l1, num_samples)
 
 #%%
 

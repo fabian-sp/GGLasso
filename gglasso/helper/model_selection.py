@@ -6,12 +6,12 @@ import numpy as np
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
 
-from .basic_linalg import Sdot, adjacency_matrix
-from .experiment_helper import mean_sparsity, sparsity, consensus
+from gglasso.helper.basic_linalg import Sdot, adjacency_matrix
+from gglasso.helper.experiment_helper import mean_sparsity, sparsity, consensus
 
-from .experiment_helper import get_K_identity as id_array
-from .ext_admm_helper import get_K_identity as id_dict
-from ..solver.single_admm_solver import ADMM_SGL
+from gglasso.helper.experiment_helper import get_K_identity as id_array
+from gglasso.helper.ext_admm_helper import get_K_identity as id_dict
+from gglasso.solver.single_admm_solver import ADMM_SGL
 
 
 def lambda_parametrizer(l1 = 0.05, w2 = 0.5):
@@ -168,14 +168,14 @@ def single_range_search(S, L, N, method = 'eBIC', latent = False, mu = None):
     gammas = [0.1, 0.3, 0.5, 0.7]
     # determine the gamma you want for the returned estimate
     gamma_ix = 1
-    tmpBIC = np.zeros((len(gammas), K, r, M))
-    tmpBIC[:] = np.nan
+    BIC = np.zeros((len(gammas), K, r, M))
+    BIC[:] = np.nan
     
-    tmpAIC = np.zeros((K, r, M))
-    tmpAIC[:] = np.nan
+    AIC = np.zeros((K, r, M))
+    AIC[:] = np.nan
     
-    tmpSP = np.zeros((K, r, M))
-    tmpSP[:] = np.nan
+    SP = np.zeros((K, r, M))
+    SP[:] = np.nan
     
     estimates = dict()
     
@@ -212,50 +212,54 @@ def single_range_search(S, L, N, method = 'eBIC', latent = False, mu = None):
                 kwargs['Omega_0'] = sol['Omega'].copy()
                 kwargs['X_0'] = sol['X'].copy()
                 
-                tmpAIC[k,j,m] = aic_single(S_k, Theta_sol, N[k])
+                AIC[k,j,m] = aic_single(S_k, Theta_sol, N[k])
                 for l in np.arange(len(gammas)):
-                    tmpBIC[l, k, j, m] = ebic_single(S_k, Theta_sol, N[k], gamma = gammas[l])
+                    BIC[l, k, j, m] = ebic_single(S_k, Theta_sol, N[k], gamma = gammas[l])
                     
-                tmpSP[k,j,m] = sparsity(Theta_sol)
+                SP[k,j,m] = sparsity(Theta_sol)
                 
     # get optimal low rank for each lambda
-    if M > 1:
-        BIC = np.zeros((len(gammas), K, r))
-        BIC[:] = np.nan
-        AIC = np.zeros((K, r))
-        AIC[:] = np.nan
-       
-        for k in np.arange(K):
-            for j in np.arange(r):
-                ixx = np.nanargmin(tmpAIC[k,j,:])
-                AIC[k,j] = tmpAIC[k,j,ixx]
-                for l in np.arange(len(gammas)):
-                    ixx = np.nanargmin(tmpBIC[l,k,j,:])
-                    BIC[l,k,j] = tmpBIC[l,k,j,ixx]
-    else:
-        BIC = tmpBIC.squeeze()
-        AIC = tmpAIC.squeeze()     
+    tmpBIC = np.zeros((len(gammas), K, r))
+    tmpBIC[:] = np.nan
+    tmpAIC = np.zeros((K, r))
+    tmpAIC[:] = np.nan
+    
+    ix_mu = np.zeros((K,r), dtype = int)
+    
+    # for eachk,lambda get optimal mu
+    for k in np.arange(K):
+        for j in np.arange(r):
+            
+            if method == 'AIC':
+                ix_mu[k,j] = np.nanargmin(AIC[k,j,:])
+                
+            elif method == 'eBIC':
+                ix_mu[k,j] = np.nanargmin(BIC[gamma_ix,k,j,:])
+                
+            tmpAIC[k,j] = AIC[k,j,ix_mu[k,j]]
+            for l in np.arange(len(gammas)):
+                tmpBIC[l,k,j] = BIC[l,k,j,ix_mu[k,j]]
         
-    SP = tmpSP.copy()
     # get optimal lambda
     if method == 'AIC':
-        AIC[AIC==-np.inf] = np.nan
-        ix_uniform = np.nanargmin(AIC.sum(axis=0))
-        ix_indv = np.nanargmin(AIC, axis = 1)
+        tmpAIC[tmpAIC==-np.inf] = np.nan
+        ix_uniform = np.nanargmin(tmpAIC.sum(axis=0))
+        ix_indv = np.nanargmin(tmpAIC, axis = 1)
         
     elif method == 'eBIC':    
-        BIC[BIC==-np.inf] = np.nan
-        ix_uniform = np.nanargmin(BIC[gamma_ix,:,:].sum(axis=0))
-        ix_indv = np.nanargmin(BIC[gamma_ix,:,:], axis = 1)
+        tmpBIC[tmpBIC==-np.inf] = np.nan
+        ix_uniform = np.nanargmin(tmpBIC[gamma_ix,:,:].sum(axis=0))
+        ix_indv = np.nanargmin(tmpBIC[gamma_ix,:,:], axis = 1)
         
     # create the two estimators
     est_uniform = dict()
     est_indv = dict()
     for k in np.arange(K):
-        est_uniform[k] = estimates[k][ix_uniform,:,:]
-        est_indv[k] = estimates[k][ix_indv[k], :, :]
-        
-    return AIC, BIC, SP, est_uniform, est_indv, ix_uniform
+        est_uniform[k] = estimates[k][ix_uniform, ix_mu[k,ix_uniform] , :,:]
+        est_indv[k] = estimates[k][ix_indv[k], ix_mu[k,ix_indv[k]], :, :]
+    
+    
+    return AIC, BIC[gamma_ix,:,:,:], SP, est_uniform, est_indv, ix_uniform, ix_indv, ix_mu
 
 
 def aic(S, Theta, N):

@@ -33,7 +33,7 @@ lambda1= 0.05
 lambda2 = 0.05
 L = np.logspace(-1,-3,5)
 
-single_range_search(S, L, N, method = 'eBIC', latent = False, mu = None)
+aic, bic, sp, est_uniform, est_indv, ix_uniform, ix_indv, ix_mu = single_range_search(S, L, N, method = 'eBIC', latent = True, mu = L[:-2])
 
 Omega_0 = get_K_identity(K,p)
 
