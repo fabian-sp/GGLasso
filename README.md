@@ -27,5 +27,5 @@ In order to install a local version which you want to edit, run
 
 For testing and in order to understand how to call the solvers, run `example.py`
 
-Experiments for Group and Fused GL recovery rates are in `exp_powerlaw_ggl` `exp_powerlaw_fgl`. Experiments for runtime comparison between ADMM and PPDNA are in `exp_runtime_ggl`. They also produce the figures shown in the thesis.<br>
-In order to run these, open the files in a Python IDE (e.g. Spyder) and set the working directory to `...\GGLasso` (i.e. the directory where the scripts are located).
+Experiments for Group and Fused GL recovery rates are in `experiments/exp_powerlaw_ggl` `experiments/exp_powerlaw_fgl`. Experiments for runtime comparison between ADMM and PPDNA are in `experiments/exp_runtime_ggl`. They use synthetic data and produce the figures shown in the thesis.<br>
+In order to run these and save the figures, set the working directory to the directory where the scripts are located.
