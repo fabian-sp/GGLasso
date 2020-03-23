@@ -11,6 +11,7 @@ from gglasso.solver.admm_solver import ADMM_MGL
 from gglasso.solver.latent_admm_solver import latent_ADMM_GGL
 from gglasso.helper.data_generation import time_varying_power_network, group_power_network,sample_covariance_matrix
 from gglasso.helper.experiment_helper import get_K_identity
+from gglasso.helper.model_selection import single_range_search
 
 p = 20
 K = 5
@@ -30,6 +31,9 @@ S, samples = sample_covariance_matrix(Sigma, N)
 
 lambda1= 0.05
 lambda2 = 0.05
+L = np.logspace(-1,-3,5)
+
+aic, bic, sp, est_uniform, est_indv, ix_uniform, ix_indv, ix_mu = single_range_search(S, L, N, method = 'eBIC', latent = True, mu = L[:-2])
 
 Omega_0 = get_K_identity(K,p)
 
