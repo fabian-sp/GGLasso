@@ -138,11 +138,15 @@ def grid_search(solver, S, N, p, reg, l1, method= 'eBIC', l2 = None, w2 = None, 
         ix= np.unravel_index(np.nanargmin(BIC[gamma_ix,:,:]), BIC[gamma_ix,:,:].shape)
     return AIC, BIC, L1, L2, ix, SP, UQED, curr_best
 
-def single_range_search(S, L, N, method = 'eBIC'):
+def single_range_search(S, L, N, method = 'eBIC', latent = False, mu = None):
     """
     method for doing model selection for sungle Graphical Lasso estimation
     it returns two estimates, one with the individual optimal reg. param. for each instance and one with the uniform optimal
+    L: range of lambda values
     N: vector with sample sizes for each instance
+    
+    latent: boolean which indicates if low rank term should be estimated (i.e. Latent Variable Graphical Lasso)
+    mu: range of penalty parameters for trace norm (only needed if latent = True)
     """
     
     if type(S) == dict:
@@ -150,19 +154,28 @@ def single_range_search(S, L, N, method = 'eBIC'):
     elif type(S) == np.ndarray:
         K = S.shape[0]
         
+    if type(N) == int:
+        N = N * np.ones(K)
+        
+    if latent:
+        assert mu is not None
+        M = len(mu)
+    else:
+        M = 1
+        
     r = len(L)
     
     gammas = [0.1, 0.3, 0.5, 0.7]
     # determine the gamma you want for the returned estimate
     gamma_ix = 1
-    BIC = np.zeros((len(gammas), K, r))
-    BIC[:] = np.nan
+    tmpBIC = np.zeros((len(gammas), K, r, M))
+    tmpBIC[:] = np.nan
     
-    AIC = np.zeros((K, r))
-    AIC[:] = np.nan
+    tmpAIC = np.zeros((K, r, M))
+    tmpAIC[:] = np.nan
     
-    SP = np.zeros((K, r))
-    SP[:] = np.nan
+    tmpSP = np.zeros((K, r, M))
+    tmpSP[:] = np.nan
     
     estimates = dict()
     
@@ -181,26 +194,49 @@ def single_range_search(S, L, N, method = 'eBIC'):
         p_k = S_k.shape[0]
         kwargs['Omega_0'] = np.eye(p_k)
         kwargs['X_0'] = np.eye(p_k)
-        estimates[k] = np.zeros((r,p_k,p_k))
+        estimates[k] = np.zeros((r,M,p_k,p_k))
         
-        # start range search    
-        for j in np.arange(r):
-            kwargs['lambda1'] = L[j]
-            sol, info = ADMM_SGL(**kwargs)
-            
-            Theta_sol = sol['Theta']
-            estimates[k][j,:,:] = Theta_sol.copy()
-        
-            # warm start
-            kwargs['Omega_0'] = sol['Omega'].copy()
-            kwargs['X_0'] = sol['X'].copy()
-            
-            AIC[k,j] = aic_single(S_k, Theta_sol, N[k])
-            for l in np.arange(len(gammas)):
-                BIC[l, k, j] = ebic_single(S_k, Theta_sol, N[k], gamma = gammas[l])
+        # start range search
+        for m in np.arange(M):
+            if latent:
+                kwargs['mu'] = mu[m]
                 
-            SP[k,j] = sparsity(Theta_sol)
-         
+            for j in np.arange(r):
+                kwargs['lambda1'] = L[j]
+                sol, info = ADMM_SGL(**kwargs)
+                
+                Theta_sol = sol['Theta']
+                estimates[k][j,m,:,:] = Theta_sol.copy()
+            
+                # warm start
+                kwargs['Omega_0'] = sol['Omega'].copy()
+                kwargs['X_0'] = sol['X'].copy()
+                
+                tmpAIC[k,j,m] = aic_single(S_k, Theta_sol, N[k])
+                for l in np.arange(len(gammas)):
+                    tmpBIC[l, k, j, m] = ebic_single(S_k, Theta_sol, N[k], gamma = gammas[l])
+                    
+                tmpSP[k,j,m] = sparsity(Theta_sol)
+                
+    # get optimal low rank for each lambda
+    if M > 1:
+        BIC = np.zeros((len(gammas), K, r))
+        BIC[:] = np.nan
+        AIC = np.zeros((K, r))
+        AIC[:] = np.nan
+       
+        for k in np.arange(K):
+            for j in np.arange(r):
+                ixx = np.nanargmin(tmpAIC[k,j,:])
+                AIC[k,j] = tmpAIC[k,j,ixx]
+                for l in np.arange(len(gammas)):
+                    ixx = np.nanargmin(tmpBIC[l,k,j,:])
+                    BIC[l,k,j] = tmpBIC[l,k,j,ixx]
+    else:
+        BIC = tmpBIC.squeeze()
+        AIC = tmpAIC.squeeze()     
+        
+    SP = tmpSP.copy()
     # get optimal lambda
     if method == 'AIC':
         AIC[AIC==-np.inf] = np.nan
@@ -211,7 +247,7 @@ def single_range_search(S, L, N, method = 'eBIC'):
         BIC[BIC==-np.inf] = np.nan
         ix_uniform = np.nanargmin(BIC[gamma_ix,:,:].sum(axis=0))
         ix_indv = np.nanargmin(BIC[gamma_ix,:,:], axis = 1)
-    
+        
     # create the two estimators
     est_uniform = dict()
     est_indv = dict()
