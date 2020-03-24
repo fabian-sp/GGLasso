@@ -33,7 +33,10 @@ lambda1= 0.05
 lambda2 = 0.05
 L = np.logspace(-1,-3,5)
 
-aic, bic, sp, est_uniform, est_indv, ix_uniform, ix_indv, ix_mu = single_range_search(S, L, N, method = 'eBIC', latent = True, mu = L[:-2])
+#%%
+
+
+est_uniform, est_indv, range_stats = single_range_search(S, L, N, method = 'eBIC', latent = True, mu = L[:-2])
 
 Omega_0 = get_K_identity(K,p)
 
@@ -43,8 +46,6 @@ solPPDNA, info = warmPPDNA(S, lambda1, lambda2, reg, Omega_0, eps = 1e-4 , verbo
 solADMM, info = ADMM_MGL(S, lambda1, lambda2, reg, Omega_0, n_samples = None, eps_admm = 1e-4 , verbose = True)
 
 #solADMM, info = latent_ADMM_GGL(S, lambda1, lambda2, 1e-5, 1e-5, Omega_0, n_samples = None, eps_admm = 1e-5 , verbose = True, measure = False, max_iter = 100)
-
-
 
 #%%
 # tests for the extended ADMM version

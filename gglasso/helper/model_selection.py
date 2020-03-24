@@ -71,6 +71,7 @@ def grid_search(solver, S, N, p, reg, l1, method= 'eBIC', l2 = None, w2 = None, 
     SP[:] = np.nan
     SKIP = np.zeros((grid1, grid2), dtype = bool)
     
+    # unique edges
     UQED = np.zeros((grid1, grid2))
     
     kwargs = {'reg': reg, 'S': S, 'eps_admm': 1e-3, 'verbose': True, 'measure': True}
@@ -177,6 +178,8 @@ def single_range_search(S, L, N, method = 'eBIC', latent = False, mu = None):
     SP = np.zeros((K, r, M))
     SP[:] = np.nan
     
+    RANK = np.zeros((K,r,M))
+    
     estimates = dict()
     
     kwargs = {'eps_admm': 1e-4, 'verbose': False, 'measure': False}
@@ -199,15 +202,19 @@ def single_range_search(S, L, N, method = 'eBIC', latent = False, mu = None):
         # start range search
         for m in np.arange(M):
             if latent:
-                kwargs['mu'] = mu[m]
-                
+                kwargs['mu1'] = mu[m]
+                kwargs['latent'] = True
+                            
             for j in np.arange(r):
                 kwargs['lambda1'] = L[j]
                 sol, info = ADMM_SGL(**kwargs)
                 
                 Theta_sol = sol['Theta']
                 estimates[k][j,m,:,:] = Theta_sol.copy()
-            
+                
+                if latent:
+                    RANK[k,j,m] = np.linalg.matrix_rank(sol['L'])
+                
                 # warm start
                 kwargs['Omega_0'] = sol['Omega'].copy()
                 kwargs['X_0'] = sol['X'].copy()
@@ -258,8 +265,9 @@ def single_range_search(S, L, N, method = 'eBIC', latent = False, mu = None):
         est_uniform[k] = estimates[k][ix_uniform, ix_mu[k,ix_uniform] , :,:]
         est_indv[k] = estimates[k][ix_indv[k], ix_mu[k,ix_indv[k]], :, :]
     
+    statistics = {'BIC': BIC[gamma_ix,:,:,:], 'AIC': AIC, 'SP': SP, 'RANK': RANK, 'ix_uniform': ix_uniform, 'ix_indv': ix_indv, 'ix_mu': ix_mu}
     
-    return AIC, BIC[gamma_ix,:,:,:], SP, est_uniform, est_indv, ix_uniform, ix_indv, ix_mu
+    return est_uniform, est_indv, statistics
 
 
 def aic(S, Theta, N):
