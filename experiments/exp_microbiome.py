@@ -51,7 +51,7 @@ sol1 = sol1['Theta']
 #l1 = np.linspace(0.2, 0.05, 5)
 #l1 = 5*np.logspace(-1, -2.5, 6)
 
-sAIC, sBIC, sSP, sol2, sol3, ix_uniform,_,_ = single_range_search(S, l1, num_samples)
+sol2, sol3, range_stats = single_range_search(S, l1, num_samples)
 
 #%%
 
@@ -90,10 +90,10 @@ np.savetxt('data/slr_results/res_multiple/UQED.csv', UQED)
 save_result(sol2, 'single_unif')
 save_result(sol3, 'single')
 
-for j in np.arange(sBIC.shape[0]):
-    np.savetxt('data/slr_results/res_single/BIC_' + str(j) + '.csv', sBIC[j,:,:])
-np.savetxt('data/slr_results/res_single/AIC.csv', sAIC)
-np.savetxt('data/slr_results/res_single/SP.csv', sSP)
+#for j in np.arange(sBIC.shape[0]):
+#    np.savetxt('data/slr_results/res_single/BIC_' + str(j) + '.csv', sBIC[j,:,:])
+#np.savetxt('data/slr_results/res_single/AIC.csv', sAIC)
+#np.savetxt('data/slr_results/res_single/SP.csv', sSP)
 
 
 #%%

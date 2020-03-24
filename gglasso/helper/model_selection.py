@@ -71,6 +71,7 @@ def grid_search(solver, S, N, p, reg, l1, method= 'eBIC', l2 = None, w2 = None, 
     SP[:] = np.nan
     SKIP = np.zeros((grid1, grid2), dtype = bool)
     
+    # unique edges
     UQED = np.zeros((grid1, grid2))
     
     kwargs = {'reg': reg, 'S': S, 'eps_admm': 1e-3, 'verbose': True, 'measure': True}
@@ -177,6 +178,8 @@ def single_range_search(S, L, N, method = 'eBIC', latent = False, mu = None):
     SP = np.zeros((K, r, M))
     SP[:] = np.nan
     
+    RANK = np.zeros((K,r,M))
+    
     estimates = dict()
     
     kwargs = {'eps_admm': 1e-4, 'verbose': False, 'measure': False}
@@ -199,15 +202,19 @@ def single_range_search(S, L, N, method = 'eBIC', latent = False, mu = None):
         # start range search
         for m in np.arange(M):
             if latent:
-                kwargs['mu'] = mu[m]
-                
+                kwargs['mu1'] = mu[m]
+                kwargs['latent'] = True
+                            
             for j in np.arange(r):
                 kwargs['lambda1'] = L[j]
                 sol, info = ADMM_SGL(**kwargs)
                 
                 Theta_sol = sol['Theta']
                 estimates[k][j,m,:,:] = Theta_sol.copy()
-            
+                
+                if latent:
+                    RANK[k,j,m] = np.linalg.matrix_rank(sol['L'])
+                
                 # warm start
                 kwargs['Omega_0'] = sol['Omega'].copy()
                 kwargs['X_0'] = sol['X'].copy()
@@ -258,8 +265,9 @@ def single_range_search(S, L, N, method = 'eBIC', latent = False, mu = None):
         est_uniform[k] = estimates[k][ix_uniform, ix_mu[k,ix_uniform] , :,:]
         est_indv[k] = estimates[k][ix_indv[k], ix_mu[k,ix_indv[k]], :, :]
     
+    statistics = {'BIC': BIC[gamma_ix,:,:,:], 'AIC': AIC, 'SP': SP, 'RANK': RANK, 'ix_uniform': ix_uniform, 'ix_indv': ix_indv, 'ix_mu': ix_mu}
     
-    return AIC, BIC[gamma_ix,:,:,:], SP, est_uniform, est_indv, ix_uniform, ix_indv, ix_mu
+    return est_uniform, est_indv, statistics
 
 
 def aic(S, Theta, N):
@@ -281,27 +289,13 @@ def ebic(S, Theta, N, gamma = 0.5):
     extended BIC after Drton et al.
     """
     if type(S) == dict:
-        aic = ebic_dict(S, Theta, N, gamma)
+        ebic = ebic_dict(S, Theta, N, gamma)
     elif type(S) == np.ndarray:
-        aic = ebic_array(S, Theta, N, gamma)
+        ebic = ebic_array(S, Theta, N, gamma)
     else:
         raise KeyError("Not a valid input type -- should be either dictionary or ndarray")
     
-    return aic
-
-def aic_array(S,Theta, N):
-    (K,p,p) = S.shape
-    
-    if type(N) == int:
-        N = np.ones(K) * N
-    
-    A = adjacency_matrix(Theta , t = 1e-5)
-    nonzero_count = A.sum(axis=(1,2))/2
-    aic = 0
-    for k in np.arange(K):
-        aic += N[k]*Sdot(S[k,:,:], Theta[k,:,:]) - N[k]*robust_logdet(Theta[k,:,:]) + 2*nonzero_count[k]
-        
-    return aic
+    return ebic
 
 def aic_single(S,Theta, N):
     (p,p) = S.shape
@@ -317,20 +311,35 @@ def ebic_single(S,Theta, N, gamma):
     bic = N*Sdot(S, Theta) - N*robust_logdet(Theta) + A.sum()/2 * (np.log(N)+ 4*np.log(p)*gamma)
     
     return bic
+
+def aic_array(S,Theta, N):
+    (K,p,p) = S.shape
     
+    if type(N) == int:
+        N = np.ones(K) * N
+    
+    #A = adjacency_matrix(Theta , t = 1e-5)
+    #nonzero_count = A.sum(axis=(1,2))/2
+    aic = 0
+    for k in np.arange(K):
+        aic += aic_single(S[k,:,:], Theta[k,:,:], N[k])
+        #aic += N[k]*Sdot(S[k,:,:], Theta[k,:,:]) - N[k]*robust_logdet(Theta[k,:,:]) + 2*nonzero_count[k]
+        
+    return aic
+
 
 def ebic_array(S, Theta, N, gamma):
     (K,p,p) = S.shape
     if type(N) == int:
         N = np.ones(K) * N
     
-    A = adjacency_matrix(Theta , t = 1e-5)
-    nonzero_count = A.sum(axis=(1,2))/2
+    #A = adjacency_matrix(Theta , t = 1e-5)
+    #nonzero_count = A.sum(axis=(1,2))/2
     
     bic = 0
     for k in np.arange(K):
-        bic += N[k]*Sdot(S[k,:,:], Theta[k,:,:]) - N[k]*robust_logdet(Theta[k,:,:]) + nonzero_count[k] * (np.log(N[k])+ 4*np.log(p)*gamma)
-    
+        #bic += N[k]*Sdot(S[k,:,:], Theta[k,:,:]) - N[k]*robust_logdet(Theta[k,:,:]) + nonzero_count[k] * (np.log(N[k])+ 4*np.log(p)*gamma)
+        bic += ebic_single(S[k,:,:], Theta[k,:,:], N[k], gamma)
     return bic
 
 
@@ -342,9 +351,11 @@ def ebic_dict(S, Theta, N, gamma):
     K = len(S.keys())
     bic = 0
     for k in np.arange(K):
-        A = adjacency_matrix(Theta[k] , t = 1e-5)
-        p = S[k].shape[0]
-        bic += N[k]*Sdot(S[k], Theta[k]) - N[k]*robust_logdet(Theta[k]) + A.sum()/2 * (np.log(N[k])+ 4*np.log(p)*gamma)
+        #A = adjacency_matrix(Theta[k] , t = 1e-5)
+        #p = S[k].shape[0]
+        #bic += N[k]*Sdot(S[k], Theta[k]) - N[k]*robust_logdet(Theta[k]) + A.sum()/2 * (np.log(N[k])+ 4*np.log(p)*gamma)
+        
+        bic += ebic_single(S[k], Theta[k], N[k], gamma)
         
     return bic
         
@@ -357,9 +368,10 @@ def aic_dict(S, Theta, N):
     K = len(S.keys())
     aic = 0
     for k in np.arange(K):
-        A = adjacency_matrix(Theta[k] , t = 1e-5)
-        aic += N[k]*Sdot(S[k], Theta[k]) - N[k]*robust_logdet(Theta[k]) + A.sum()
+        #A = adjacency_matrix(Theta[k] , t = 1e-5)
+        #aic += N[k]*Sdot(S[k], Theta[k]) - N[k]*robust_logdet(Theta[k]) + A.sum()
         
+        aic += aic_single(S[k], Theta[k], N[k])
     return aic
 
 def robust_logdet(A, t = 1e-6):
