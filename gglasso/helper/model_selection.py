@@ -107,9 +107,13 @@ def grid_search(solver, S, N, p, reg, l1, method= 'eBIC', l2 = None, w2 = None, 
             
             # warm start
             kwargs['Omega_0'] = Omega_sol.copy()
-            kwargs['X0'] = sol['X0'].copy()
-            kwargs['X1'] = sol['X1'].copy()
-            
+            if 'X0' in sol.keys():
+                kwargs['X0'] = sol['X0'].copy()
+                kwargs['X1'] = sol['X1'].copy()
+            elif 'X' in sol.keys():
+                kwargs['X_0'] = sol['X'].copy()
+                
+                
             AIC[g1,g2] = aic(S, Theta_sol, N)
             for j in np.arange(len(gammas)):
                 BIC[j, g1,g2] = ebic(S, Theta_sol, N, gamma = gammas[j])
@@ -126,7 +130,7 @@ def grid_search(solver, S, N, p, reg, l1, method= 'eBIC', l2 = None, w2 = None, 
             print("Current Sparsity grid:")
             print(SP)
             
-            if BIC[gamma_ix,g1,g2].mean() < curr_min:
+            if BIC[gamma_ix,g1,g2] < curr_min:
                 curr_min = BIC[gamma_ix,g1,g2]
                 curr_best = sol.copy()
     
@@ -233,7 +237,7 @@ def single_range_search(S, L, N, method = 'eBIC', latent = False, mu = None):
     
     ix_mu = np.zeros((K,r), dtype = int)
     
-    # for eachk,lambda get optimal mu
+    # for each lambda, get optimal mu
     for k in np.arange(K):
         for j in np.arange(r):
             
@@ -247,7 +251,7 @@ def single_range_search(S, L, N, method = 'eBIC', latent = False, mu = None):
             for l in np.arange(len(gammas)):
                 tmpBIC[l,k,j] = BIC[l,k,j,ix_mu[k,j]]
         
-    # get optimal lambda
+    # get optimal lambda (uniform over k =1,..,K and individual)
     if method == 'AIC':
         tmpAIC[tmpAIC==-np.inf] = np.nan
         ix_uniform = np.nanargmin(tmpAIC.sum(axis=0))
