@@ -18,12 +18,15 @@ def ext_ADMM_MGL(S, lambda1, lambda2, mu1, R_0, G,\
     
     R_0: start point -- must be specified as a dictionary with the keys 0,...,K-1 (as integers)
     S: empirical covariance matrices -- must be specified as a dictionary with the keys 0,...,K-1 (as integers)
+    
     lambda1: can be a vector of length K or a float
+    lambda2: float
     mu1: can be a vector of length K or a float
+    
     G: array containing the group penalty indices
     max_iter and rho can be specified via kwargs
     
-    In the code, X are the SCALED dual variables, for the KKT stop criterion they have to be unscaled again!
+    In the code, X0 and X1 are the SCALED dual variables, for the KKT stop criterion they have to be unscaled again!
     """
     K = len(S.keys())
     p = np.zeros(K, dtype= int)
@@ -35,7 +38,8 @@ def ext_ADMM_MGL(S, lambda1, lambda2, mu1, R_0, G,\
     
     if type(mu1) == np.float64 or type(mu1) == float:
         mu1 = mu1*np.ones(K)
-        
+    
+    assert len(mu1) == len(lambda1) == K     
     assert min(lambda1.min(), lambda2) > 0
     assert mu1.min() > 0
    
@@ -59,6 +63,7 @@ def ext_ADMM_MGL(S, lambda1, lambda2, mu1, R_0, G,\
     Lambda_t = R_0.copy()
     
     L_t = dict()
+    
     # helper variable
     Z_t = dict()
     X0_t = dict()
@@ -133,6 +138,14 @@ def ext_ADMM_MGL(S, lambda1, lambda2, mu1, R_0, G,\
         assert abs(R_t[k].T - R_t[k]).max() <= 1e-5, "Solution is not symmetric"
         assert abs(Theta_t[k].T - Theta_t[k]).max() <= 1e-5, "Solution is not symmetric"
         assert abs(L_t[k].T - L_t[k]).max() <= 1e-5, "Solution is not symmetric"
+        
+        D,_ = np.linalg.eigh(Theta_t[k])
+        if D.min() <= 1e-5:
+            print("WARNING: Theta may be not positive definite -- increase accuracy!")
+        
+        D,_ = np.linalg.eigh(L_t[k])
+        if D.min() <= -1e-5:
+            print("WARNING: L may be not positive semidefinite -- increase accuracy!")
     
     sol = {'R': R_t, 'Theta': Theta_t, 'L': L_t, 'X0': X0_t, 'X1': X1_t}
     if measure:
