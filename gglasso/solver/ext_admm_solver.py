@@ -6,8 +6,8 @@ import numpy as np
 import time
 import copy
 
-from .ggl_helper import phiplus, prox_od_1norm, prox_2norm, prox_rank_norm
-from ..helper.ext_admm_helper import check_G
+from gglasso.solver.ggl_helper import phiplus, prox_od_1norm, prox_2norm, prox_rank_norm
+from gglasso.helper.ext_admm_helper import check_G
 
 
 def ext_ADMM_MGL(S, lambda1, lambda2, reg , Omega_0, G,\
@@ -212,7 +212,6 @@ def ext_ADMM_stopping_criterion(Omega, Theta, L, Lambda, X0, X1, S , G, lambda1,
     res = max(np.linalg.norm(term1), np.linalg.norm(term2), np.linalg.norm(term3), np.linalg.norm(term4), np.linalg.norm(term5), np.linalg.norm(term6) )
     return res
 
-
 def prox_2norm_G(X, G, l2):
     """
     calculates the proximal operator at points X for the group penalty induced by G
@@ -256,8 +255,3 @@ def prox_2norm_G(X, G, l2):
                 X1[k][G[1,l,k], G[0,l,k]] = v0[k]
              
     return X1
-
-    
-
-
-    

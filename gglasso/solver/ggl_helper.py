@@ -58,7 +58,7 @@ def prox_chi(A, l):
 
     return res
 
-                
+          
 def prox_2norm(v,l):
     a = max(np.linalg.norm(v,2) , l)
     return v * (a - l) / a

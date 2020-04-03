@@ -67,7 +67,8 @@ G = construct_trivial_G(p, K)
 aic, bic, sp, est_uniform, est_indv, ix_uniform, ix_indv, ix_mu = single_range_search(Sdict, L, N, method = 'eBIC', latent = True, mu = L[:-2])
 
 
-solext, info = ext_ADMM_MGL(Sdict, lambda1, lambda2/np.sqrt(K), 'GGL' , Omega_0, G, eps_admm = 1e-4 , verbose = True, measure = False, max_iter = 50)
+solext, info = ext_ADMM_MGL(Sdict, lambda1, lambda2/np.sqrt(K), 'GGL' , Omega_0, G, eps_admm = 1e-4 , verbose = True, measure = False, \
+                            latent = False, mu1 = 1., max_iter = 50)
 
 for k in np.arange(K):
     print(np.linalg.norm(solext['Theta'][k] - solADMM['Theta'][k,:,:]))
