@@ -273,111 +273,118 @@ def single_range_search(S, L, N, method = 'eBIC', latent = False, mu = None):
     
     return est_uniform, est_indv, statistics
 
-
-def aic(S, Theta, N):
+################################################################
+    
+def aic(S, Theta, N, L = None):
     """
     AIC information criterion after Danaher et al.
     excludes the diagonal
     """
     if type(S) == dict:
-        aic = aic_dict(S, Theta, N)
+        aic = aic_dict(S, Theta, N, L)
     elif type(S) == np.ndarray:
-        aic = aic_array(S, Theta, N)
+        aic = aic_array(S, Theta, N, L)
     else:
         raise KeyError("Not a valid input type -- should be either dictionary or ndarray")
     
     return aic
 
-def ebic(S, Theta, N, gamma = 0.5):
+def aic_dict(S, Theta, N, L = None):
+    """
+    S, Theta are dictionaries
+    N is array of sample sizes
+    """
+    K = len(S.keys())
+    if np.all(L is None):
+        L = dict()
+        for k in np.arange(K):
+            L[k] = np.zeros(S[k].shape)     
+    aic = 0
+    for k in np.arange(K):
+        aic += aic_single(S[k], Theta[k], N[k])
+    return aic
+
+def aic_array(S,Theta, N, L = None):
+    (K,p,p) = S.shape
+    
+    if np.all(L is None):
+        L = np.zeros((K,p,p))  
+    if type(N) == int:
+        N = np.ones(K) * N
+    
+    aic = 0
+    for k in np.arange(K):
+        aic += aic_single(S[k,:,:], Theta[k,:,:], N[k], L[k,:,:])
+
+    return aic
+
+def aic_single(S, Theta, N, L = None):
+    (p,p) = S.shape
+    
+    if np.all(L is None):
+        L = np.zeros((p,p))
+        
+    A = adjacency_matrix(Theta , t = 1e-5)
+    aic = N*Sdot(S, Theta-L) - N*robust_logdet(Theta-L) + A.sum()
+    
+    return aic
+
+################################################################
+    
+def ebic(S, Theta, N, gamma = 0.5, L = None):
     """
     extended BIC after Drton et al.
     """
     if type(S) == dict:
-        ebic = ebic_dict(S, Theta, N, gamma)
+        ebic = ebic_dict(S, Theta, N, gamma, L)
     elif type(S) == np.ndarray:
-        ebic = ebic_array(S, Theta, N, gamma)
+        ebic = ebic_array(S, Theta, N, gamma, L)
     else:
         raise KeyError("Not a valid input type -- should be either dictionary or ndarray")
     
     return ebic
 
-def aic_single(S,Theta, N):
+def ebic_single(S,Theta, N, gamma, L = None):
     (p,p) = S.shape
-    A = adjacency_matrix(Theta , t = 1e-5)
-    aic = N*Sdot(S, Theta) - N*robust_logdet(Theta) + A.sum()
     
-    return aic
-
-
-def ebic_single(S,Theta, N, gamma):
-    (p,p) = S.shape
+    if np.all(L is None):
+        L = np.zeros((p,p))
+        
     A = adjacency_matrix(Theta , t = 1e-5)
-    bic = N*Sdot(S, Theta) - N*robust_logdet(Theta) + A.sum()/2 * (np.log(N)+ 4*np.log(p)*gamma)
+    bic = N*Sdot(S, Theta-L) - N*robust_logdet(Theta-L) + A.sum()/2 * (np.log(N)+ 4*np.log(p)*gamma)
     
     return bic
 
-def aic_array(S,Theta, N):
+def ebic_array(S, Theta, N, gamma, L = None):
     (K,p,p) = S.shape
-    
-    if type(N) == int:
-        N = np.ones(K) * N
-    
-    #A = adjacency_matrix(Theta , t = 1e-5)
-    #nonzero_count = A.sum(axis=(1,2))/2
-    aic = 0
-    for k in np.arange(K):
-        aic += aic_single(S[k,:,:], Theta[k,:,:], N[k])
-        #aic += N[k]*Sdot(S[k,:,:], Theta[k,:,:]) - N[k]*robust_logdet(Theta[k,:,:]) + 2*nonzero_count[k]
+    if np.all(L is None):
+        L = np.zeros((K,p,p))  
         
-    return aic
-
-
-def ebic_array(S, Theta, N, gamma):
-    (K,p,p) = S.shape
     if type(N) == int:
         N = np.ones(K) * N
-    
-    #A = adjacency_matrix(Theta , t = 1e-5)
-    #nonzero_count = A.sum(axis=(1,2))/2
-    
+        
     bic = 0
     for k in np.arange(K):
-        #bic += N[k]*Sdot(S[k,:,:], Theta[k,:,:]) - N[k]*robust_logdet(Theta[k,:,:]) + nonzero_count[k] * (np.log(N[k])+ 4*np.log(p)*gamma)
-        bic += ebic_single(S[k,:,:], Theta[k,:,:], N[k], gamma)
+        bic += ebic_single(S[k,:,:], Theta[k,:,:], N[k], gamma, L[k,:,:])
     return bic
 
-
-def ebic_dict(S, Theta, N, gamma):
+def ebic_dict(S, Theta, N, gamma, L = None):
     """
     S, Theta are dictionaries
     N is array of sample sizes
     """
     K = len(S.keys())
+    if np.all(L is None):
+        L = dict()
+        for k in np.arange(K):
+            L[k] = np.zeros(S[k].shape)    
+            
     bic = 0
     for k in np.arange(K):
-        #A = adjacency_matrix(Theta[k] , t = 1e-5)
-        #p = S[k].shape[0]
-        #bic += N[k]*Sdot(S[k], Theta[k]) - N[k]*robust_logdet(Theta[k]) + A.sum()/2 * (np.log(N[k])+ 4*np.log(p)*gamma)
-        
-        bic += ebic_single(S[k], Theta[k], N[k], gamma)
+        bic += ebic_single(S[k], Theta[k], N[k], gamma, L[k])
         
     return bic
         
-
-def aic_dict(S, Theta, N):
-    """
-    S, Theta are dictionaries
-    N is array of sample sizes
-    """
-    K = len(S.keys())
-    aic = 0
-    for k in np.arange(K):
-        #A = adjacency_matrix(Theta[k] , t = 1e-5)
-        #aic += N[k]*Sdot(S[k], Theta[k]) - N[k]*robust_logdet(Theta[k]) + A.sum()
-        
-        aic += aic_single(S[k], Theta[k], N[k])
-    return aic
-
 def robust_logdet(A, t = 1e-6):
     """
     slogdet returns always a finite number if the lowest EV is not EXACTLY 0
