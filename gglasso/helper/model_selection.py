@@ -45,14 +45,22 @@ def lambda_grid(l1, l2 = None, w2 = None):
         
     return L1.squeeze(), L2.squeeze(), w2
 
-def grid_search(solver, S, N, p, reg, l1, method= 'eBIC', l2 = None, w2 = None, G = None):
+def grid_search(solver, S, N, p, reg, l1, method= 'eBIC', l2 = None, w2 = None, G = None, latent = False, mu = None, ix_mu = None):
     """
     method for doing model selection using grid search and AIC/eBIC
     we work the grid columnwise, i.e. hold l1 constant and change l2
+    
+    set latent = True if you want to include latent factors. 
+    ix_mu: array of shape K, len(l1): indicates for each lambda and each instance which value in mu we use (can be obtained with single_range_search)
+    mu: arrays of possible mu values
     """
     
     assert method in ['AIC', 'eBIC']
     assert reg in ['FGL', 'GGL']
+    
+    if latent:
+        assert np.all(mu > 0)
+
     L1, L2, W2 = lambda_grid(l1, l2, w2)
     
     print(L1)
@@ -71,8 +79,6 @@ def grid_search(solver, S, N, p, reg, l1, method= 'eBIC', l2 = None, w2 = None, 
     SP[:] = np.nan
     SKIP = np.zeros((grid1, grid2), dtype = bool)
     
-    # unique edges
-    UQED = np.zeros((grid1, grid2))
     
     kwargs = {'reg': reg, 'S': S, 'eps_admm': 1e-3, 'verbose': True, 'measure': True}
     if type(S) == dict:
@@ -85,9 +91,14 @@ def grid_search(solver, S, N, p, reg, l1, method= 'eBIC', l2 = None, w2 = None, 
         
     kwargs['Omega_0'] = Omega_0.copy()
     
+    # unique edges
+    UQED = np.zeros((grid1, grid2))
+    RANK = np.zeros((K, grid1, grid2))
+    
     curr_min = np.inf
     curr_best = None
     # run down the columns --> hence move g1 fastest
+    # g2 indices the values in l1
     for g2 in np.arange(grid2):
         for g1 in np.arange(grid1):
       
@@ -95,13 +106,24 @@ def grid_search(solver, S, N, p, reg, l1, method= 'eBIC', l2 = None, w2 = None, 
             if SKIP[g1,g2]:
                 print("SKIP")
                 continue
-            kwargs['lambda1'] = L1[g1,g2]
+           
+            kwargs['lambda1'] = L1[g1,g2]            
+            # set the respective mu value
+            if latent:
+                this_mu = mu[ix_mu[:,g2]]
+                kwargs['latent'] = True
+                kwargs['mu1'] = this_mu
+                
+                
             kwargs['lambda2'] = L2[g1,g2]
-
+            
             sol, info = solver(**kwargs)
             Omega_sol = sol['Omega']
             Theta_sol = sol['Theta']
             
+            if latent:
+                RANK[:,g1,g2] = np.linalg.matrix_rank(sol['L'])
+                
             #if mean_sparsity(Theta_sol) >= 0.18:
             #    SKIP[g1:, g2:] = True
             
@@ -141,7 +163,10 @@ def grid_search(solver, S, N, p, reg, l1, method= 'eBIC', l2 = None, w2 = None, 
     elif method == 'eBIC':    
         BIC[BIC==-np.inf] = np.nan
         ix= np.unravel_index(np.nanargmin(BIC[gamma_ix,:,:]), BIC[gamma_ix,:,:].shape)
-    return AIC, BIC, L1, L2, ix, SP, UQED, curr_best
+        
+    stats = {'BIC': BIC, 'AIC': AIC, 'SP': SP, 'RANK': RANK, 'L1': L1, 'L2': L2}
+    
+    return stats, ix, curr_best
 
 def single_range_search(S, L, N, method = 'eBIC', latent = False, mu = None):
     """
@@ -204,13 +229,14 @@ def single_range_search(S, L, N, method = 'eBIC', latent = False, mu = None):
         estimates[k] = np.zeros((r,M,p_k,p_k))
         
         # start range search
-        for m in np.arange(M):
-            if latent:
-                kwargs['mu1'] = mu[m]
-                kwargs['latent'] = True
+        for j in np.arange(r):
+            kwargs['lambda1'] = L[j]
+            print(f"Reached row {j} of the grid/range")
+            for m in np.arange(M):
+                if latent:
+                    kwargs['mu1'] = mu[m]
+                    kwargs['latent'] = True
                             
-            for j in np.arange(r):
-                kwargs['lambda1'] = L[j]
                 sol, info = ADMM_SGL(**kwargs)
                 
                 Theta_sol = sol['Theta']
@@ -268,6 +294,10 @@ def single_range_search(S, L, N, method = 'eBIC', latent = False, mu = None):
     for k in np.arange(K):
         est_uniform[k] = estimates[k][ix_uniform, ix_mu[k,ix_uniform] , :,:]
         est_indv[k] = estimates[k][ix_indv[k], ix_mu[k,ix_indv[k]], :, :]
+    
+    if type(S) == np.ndarray:
+        est_indv = np.stack([e for e in est_indv.values()])
+        est_uniform = np.stack([e for e in est_uniform.values()])
     
     statistics = {'BIC': BIC[gamma_ix,:,:,:], 'AIC': AIC, 'SP': SP, 'RANK': RANK, 'ix_uniform': ix_uniform, 'ix_indv': ix_indv, 'ix_mu': ix_mu}
     
