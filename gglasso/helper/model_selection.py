@@ -142,9 +142,9 @@ def grid_search(solver, S, N, p, reg, l1, method= 'eBIC', l2 = None, w2 = None, 
                 
             SP[g1,g2] = mean_sparsity(Theta_sol)
             
-            if np.all(G!= None):
-                nnz = consensus(Theta_sol, G)
-                UQED[g1,g2] = (nnz >= 1).sum()
+            #if np.all(G!= None):
+            #    nnz = consensus(Theta_sol, G)
+            #    UQED[g1,g2] = (nnz >= 1).sum()
                 
             
             print("Current eBIC grid:")
