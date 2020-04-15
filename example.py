@@ -44,9 +44,9 @@ Omega_0 = get_K_identity(K,p)
 
 solPPDNA, info = warmPPDNA(S, lambda1, lambda2, reg, Omega_0, eps = 1e-4 , verbose = True, measure = True)
 
-solADMM, info = ADMM_MGL(S, lambda1, lambda2, reg, Omega_0, n_samples = None, eps_admm = 1e-4 , verbose = True)
+#solADMM, info = ADMM_MGL(S, lambda1, lambda2, reg, Omega_0, n_samples = None, eps_admm = 1e-4 , verbose = True)
 
-#solADMM, info = latent_ADMM_GGL(S, lambda1, lambda2, 1e-5, 1e-5, Omega_0, n_samples = None, eps_admm = 1e-5 , verbose = True, measure = False, max_iter = 100)
+solADMM, info = ADMM_MGL(S, lambda1, lambda2, reg, Omega_0, n_samples = None, eps_admm = 1e-4 , verbose = True, latent = True, mu1 = .2)
 
 #%%
 # tests for the extended ADMM version
@@ -64,11 +64,11 @@ for k in np.arange(K):
 # constructs the "trivial" groups, i.e. all variables present in all instances  
 G = construct_trivial_G(p, K)
 
-aic, bic, sp, est_uniform, est_indv, ix_uniform, ix_indv, ix_mu = single_range_search(Sdict, L, N, method = 'eBIC', latent = True, mu = L[:-2])
+est_uniform, est_indv, range_stats = single_range_search(Sdict, L, N, method = 'eBIC', latent = True, mu = L[:-2])
 
 
 solext, info = ext_ADMM_MGL(Sdict, lambda1, lambda2/np.sqrt(K), 'GGL' , Omega_0, G, eps_admm = 1e-4 , verbose = True, measure = False, \
-                            latent = False, mu1 = 1., max_iter = 50)
+                            latent = True, mu1 = .2, max_iter = 100)
 
 for k in np.arange(K):
     print(np.linalg.norm(solext['Theta'][k] - solADMM['Theta'][k,:,:]))
