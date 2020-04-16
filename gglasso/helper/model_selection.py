@@ -122,7 +122,7 @@ def grid_search(solver, S, N, p, reg, l1, method= 'eBIC', l2 = None, w2 = None, 
             Theta_sol = sol['Theta']
             
             if latent:
-                RANK[:,g1,g2] = np.linalg.matrix_rank(sol['L'])
+                RANK[:,g1,g2] = [np.linalg.matrix_rank(sol['L'][k]) for k in np.arange(K)]
                 
             #if mean_sparsity(Theta_sol) >= 0.18:
             #    SKIP[g1:, g2:] = True
