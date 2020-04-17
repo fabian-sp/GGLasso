@@ -6,6 +6,10 @@ import numpy as np
 import time
 import copy
 
+from numba import njit
+from numba.typed import List
+
+
 from gglasso.solver.ggl_helper import phiplus, prox_od_1norm, prox_2norm, prox_rank_norm
 from gglasso.helper.ext_admm_helper import check_G
 
@@ -153,9 +157,9 @@ def ext_ADMM_MGL(S, lambda1, lambda2, reg , Omega_0, G,\
         assert abs(Theta_t[k].T - Theta_t[k]).max() <= 1e-5, "Solution is not symmetric"
         assert abs(L_t[k].T - L_t[k]).max() <= 1e-5, "Solution is not symmetric"
         
-        D,_ = np.linalg.eigh(Theta_t[k])
+        D,_ = np.linalg.eigh(Theta_t[k]-L_t[k])
         if D.min() <= 1e-5:
-            print("WARNING: Theta may be not positive definite -- increase accuracy!")
+            print("WARNING: Theta (Theta-L resp.) may be not positive definite -- increase accuracy!")
                      
         D,_ = np.linalg.eigh(L_t[k])
         if D.min() <= -1e-5:
@@ -227,31 +231,98 @@ def prox_2norm_G(X, G, l2):
     d = G.shape
     assert d[0] == 2
     assert d[2] == K
-    L = d[1]
     
-    X1 = copy.deepcopy(X)
     group_size = (G[0,:,:] != -1).sum(axis = 1)
     
+    tmpX = List()
+    for k in np.arange(K):
+        tmpX.append(X[k].copy())
+    
+    X1 = prox_G_inner(G, tmpX, l2, group_size)
+                    
+    X1 = dict(zip(np.arange(K), X1))
+    
+    return X1
+
+@njit
+def prox_G_inner(G, X, l2, group_size):
+    L = G.shape[1]
+    K = G.shape[2]
+    
     for l in np.arange(L):
+            
         # for each group construct v, calculate prox, and insert the result. Ignore -1 entries of G
         v0 = np.zeros(K)
+        
         for k in np.arange(K):
             if G[0,l,k] == -1:
                 v0[k] = np.nan
             else:
                 v0[k] = X[k][G[0,l,k], G[1,l,k]]
         
+        
         v = v0[~np.isnan(v0)]
         # scale with square root of the group size
-        z0 = prox_2norm(v,l2 * np.sqrt(group_size[l]))
+        lam = l2 * np.sqrt(group_size[l])
+        a = max(np.sqrt((v**2).sum()), lam)
+        z0 = v * (a - lam) / a
+    
         v0[~np.isnan(v0)] = z0
         
         for k in np.arange(K):
             if G[0,l,k] == -1:
                 continue
             else:
-                X1[k][G[0,l,k], G[1,l,k]] = v0[k]
+                X[k][G[0,l,k], G[1,l,k]] = v0[k]
                 # lower triangular
-                X1[k][G[1,l,k], G[0,l,k]] = v0[k]
+                X[k][G[1,l,k], G[0,l,k]] = v0[k]
+        
+    return X
+
+
+#%%
+# prox operato in case numba version does not work
+
+# def prox_2norm_G(X, G, l2):
+#     """
+#     calculates the proximal operator at points X for the group penalty induced by G
+#     G: 2xLxK matrix where the -th row contains the (i,j)-index of the element in Theta^k which contains to group l
+#        if G has a entry -1 no element is contained in the group for this Theta^k
+#     X: dictionary with X^k at key k, each X[k] is assumed to be symmetric
+#     """
+#     assert l2 > 0
+#     K = len(X.keys())
+#     for  k in np.arange(K):
+#         assert abs(X[k] - X[k].T).max() <= 1e-5, "X[k] has to be symmetric"
+    
+#     d = G.shape
+#     assert d[0] == 2
+#     assert d[2] == K
+#     L = d[1]
+    
+#     X1 = copy.deepcopy(X)
+#     group_size = (G[0,:,:] != -1).sum(axis = 1)
+    
+#     for l in np.arange(L):
+#         # for each group construct v, calculate prox, and insert the result. Ignore -1 entries of G
+#         v0 = np.zeros(K)
+#         for k in np.arange(K):
+#             if G[0,l,k] == -1:
+#                 v0[k] = np.nan
+#             else:
+#                 v0[k] = X[k][G[0,l,k], G[1,l,k]]
+        
+#         v = v0[~np.isnan(v0)]
+#         # scale with square root of the group size
+#         z0 = prox_2norm(v,l2 * np.sqrt(group_size[l]))
+#         v0[~np.isnan(v0)] = z0
+        
+#         for k in np.arange(K):
+#             if G[0,l,k] == -1:
+#                 continue
+#             else:
+#                 X1[k][G[0,l,k], G[1,l,k]] = v0[k]
+#                 # lower triangular
+#                 X1[k][G[1,l,k], G[0,l,k]] = v0[k]
              
-    return X1
+#     return X1

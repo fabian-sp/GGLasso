@@ -72,5 +72,8 @@ solext, info = ext_ADMM_MGL(Sdict, lambda1, lambda2/np.sqrt(K), 'GGL' , Omega_0,
 
 for k in np.arange(K):
     print(np.linalg.norm(solext['Theta'][k] - solADMM['Theta'][k,:,:]))
+    
+for k in np.arange(K):
+    print(np.linalg.norm(solext['L'][k] - solADMM['L'][k,:,:]))
        
 

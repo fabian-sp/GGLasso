@@ -133,9 +133,9 @@ def ADMM_MGL(S, lambda1, lambda2, reg , Omega_0 , \
     assert abs(trp(Theta_t)- Theta_t).max() <= 1e-5, "Solution is not symmetric"
     assert abs(trp(L_t)- L_t).max() <= 1e-5, "Solution is not symmetric"
     
-    D,_ = np.linalg.eigh(Theta_t)
+    D,_ = np.linalg.eigh(Theta_t - L_t)
     if D.min() <= 0:
-        print("WARNING: Theta is not positive definite. Solve to higher accuracy!")
+        print("WARNING: Theta (Theta - L resp.) is not positive definite. Solve to higher accuracy!")
     
     D,_ = np.linalg.eigh(L_t)
     if D.min() < -1e-5:
