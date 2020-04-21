@@ -22,7 +22,7 @@ Make sure that all packages are installed or run
 alternatively.<br>
 If you want to install with `conda`, you can run
 
-	$ while read requirement; do conda install --yes $requirement; done < requirements.txt
+	$ while read requirement; do conda install --yes $requirement || pip install $requirement; done < requirements.txt
 
 In order to install a local version which you want to edit, run
 
