@@ -458,7 +458,7 @@ def single_surface_plot(L1, L2, C, ax, name = 'eBIC'):
     
     return
 
-def surface_plot(L1, L2, C, name = 'eBIC', save = False):
+def surface_plot(L1, L2, C, name = 'eBIC'):
     
     fig = plt.figure(figsize = (11,7))  
     if len(C.shape) == 2:
@@ -472,7 +472,4 @@ def surface_plot(L1, L2, C, name = 'eBIC', save = False):
             single_surface_plot(L1, L2, C[j,:,:], ax, name = name)
             ax.set_title('')
     
-    if save:
-        fig.savefig('data/slr_results/res_multiple/surface.png', dpi = 500)
-        
-    return
+    return fig
