@@ -9,10 +9,16 @@ This is the PPDNA Algorithm implemented like proposed [here](https://arxiv.org/a
 Algorithm like proposed [here](https://arxiv.org/abs/1111.0324) with minor adaptions. To use this, import `ADMM_MGL` from `gglasso/solver/admm_solver`.<br>
 
 4) ADMM method for Group Graphical Lasso where the features/variables are non-conforming<br>
- Method for problems where not all variables exist in all instances/datasets.  To use this, import `ext_ADMM_MGL` from `gglasso/solver/ext_admm_solver`.<br>
+Method for problems where not all variables exist in all instances/datasets.  To use this, import `ext_ADMM_MGL` from `gglasso/solver/ext_admm_solver`.<br>
+
+5) ADMM methods for Multiple Graphical Lasso with Latent variables<br>
+Often it is beneficial to estimate precision matrices of the form "sparse - low rank". To use this, set the option `latent = True` (and provide a parameter `mu1` for the low rank penalty). This is available in both ADMM solvers.
 
 5) Model selection via grid search <br>
 Method for choosing the best regularization parameters `lambda1` and `lambda2` via choosing the minimal eBIC or AIC. To use this, import `grid_search` from `gglasso/helper/model_selection`<br>
+Furthermore, you can estimate all instances using Single Graphical Lasso problem formulation with `single_range_search` in `gglasso/helper/model_selection`.
+
+
 
 ## Setup and Experiments
 Make sure that all packages are installed or run
