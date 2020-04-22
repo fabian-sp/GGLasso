@@ -68,22 +68,22 @@ def ext_ADMM_MGL(S, lambda1, lambda2, reg , Omega_0, G,\
     Omega_t = Omega_0.copy()
     Theta_t = Omega_0.copy()
     L_t = dict()
-    Lambda_t = Omega_0.copy()
     
     for k in np.arange(K):
         L_t[k] = np.zeros((p[k],p[k]))
     
     # helper and dual variables
+    Lambda_t = Omega_0.copy()
     Z_t = dict()
 
-    if X0 == None:
+    if X0 is None:
         X0_t = dict()
         for k in np.arange(K):
             X0_t[k] = np.zeros((p[k],p[k]))  
     else:
         X0_t = X0.copy()
         
-    if X1 == None:   
+    if X1 is None:   
         X1_t = dict()
         for k in np.arange(K):
             X1_t[k] = np.zeros((p[k],p[k]))

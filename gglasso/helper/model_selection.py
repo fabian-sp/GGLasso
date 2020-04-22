@@ -80,7 +80,7 @@ def grid_search(solver, S, N, p, reg, l1, method= 'eBIC', l2 = None, w2 = None, 
     SKIP = np.zeros((grid1, grid2), dtype = bool)
     
     
-    kwargs = {'reg': reg, 'S': S, 'eps_admm': 1e-3, 'verbose': True, 'measure': True}
+    kwargs = {'reg': reg, 'S': S, 'eps_admm': 1e-3, 'verbose': False, 'measure': False}
     if type(S) == dict:
         K = len(S.keys())
         Omega_0 = id_dict(p)
@@ -113,6 +113,7 @@ def grid_search(solver, S, N, p, reg, l1, method= 'eBIC', l2 = None, w2 = None, 
                 this_mu = mu[ix_mu[:,g2]]
                 kwargs['latent'] = True
                 kwargs['mu1'] = this_mu
+                print("MU values", kwargs['mu1'])
                 
                 
             kwargs['lambda2'] = L2[g1,g2]
@@ -148,11 +149,12 @@ def grid_search(solver, S, N, p, reg, l1, method= 'eBIC', l2 = None, w2 = None, 
                 
             
             print("Current eBIC grid:")
-            print(BIC)
+            print(BIC[gamma_ix,:,:])
             print("Current Sparsity grid:")
             print(SP)
             
             if BIC[gamma_ix,g1,g2] < curr_min:
+                print("----------New optimum found in the grid----------")
                 curr_min = BIC[gamma_ix,g1,g2]
                 curr_best = sol.copy()
     
@@ -210,6 +212,7 @@ def single_range_search(S, L, N, method = 'eBIC', latent = False, mu = None):
     RANK = np.zeros((K,r,M))
     
     estimates = dict()
+    lowrank = dict()
     
     kwargs = {'eps_admm': 1e-4, 'verbose': False, 'measure': False}
     
@@ -227,6 +230,7 @@ def single_range_search(S, L, N, method = 'eBIC', latent = False, mu = None):
         kwargs['Omega_0'] = np.eye(p_k)
         kwargs['X_0'] = np.eye(p_k)
         estimates[k] = np.zeros((r,M,p_k,p_k))
+        lowrank[k] = np.zeros((r,M,p_k,p_k))
         
         # start range search
         for j in np.arange(r):
@@ -243,6 +247,7 @@ def single_range_search(S, L, N, method = 'eBIC', latent = False, mu = None):
                 estimates[k][j,m,:,:] = Theta_sol.copy()
                 
                 if latent:
+                    lowrank[k][j,m,:,:] = sol['L'].copy()
                     RANK[k,j,m] = np.linalg.matrix_rank(sol['L'])
                 
                 # warm start
@@ -292,12 +297,19 @@ def single_range_search(S, L, N, method = 'eBIC', latent = False, mu = None):
     est_uniform = dict()
     est_indv = dict()
     for k in np.arange(K):
-        est_uniform[k] = estimates[k][ix_uniform, ix_mu[k,ix_uniform] , :,:]
-        est_indv[k] = estimates[k][ix_indv[k], ix_mu[k,ix_indv[k]], :, :]
+        est_uniform['Theta'][k] = estimates[k][ix_uniform, ix_mu[k,ix_uniform] , :,:]
+        est_indv['Theta'][k] = estimates[k][ix_indv[k], ix_mu[k,ix_indv[k]], :, :]
+        if latent:
+            est_uniform['L'][k] = lowrank[k][ix_uniform, ix_mu[k,ix_uniform] , :,:]
+            est_indv['L'][k] = lowrank[k][ix_indv[k], ix_mu[k,ix_indv[k]], :, :]
+            
     
     if type(S) == np.ndarray:
-        est_indv = np.stack([e for e in est_indv.values()])
-        est_uniform = np.stack([e for e in est_uniform.values()])
+        est_indv['Theta'] = np.stack([e for e in est_indv['Theta'].values()])
+        est_uniform['Theta'] = np.stack([e for e in est_uniform['Theta'].values()])
+        if latent:
+            est_indv['L'] = np.stack([e for e in est_indv['L'].values()])
+            est_uniform['L'] = np.stack([e for e in est_uniform['L'].values()])
     
     statistics = {'BIC': BIC[gamma_ix,:,:,:], 'AIC': AIC, 'SP': SP, 'RANK': RANK, 'ix_uniform': ix_uniform, 'ix_indv': ix_indv, 'ix_mu': ix_mu}
     
