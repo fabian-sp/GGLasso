@@ -112,7 +112,7 @@ def grid_search(solver, S, N, p, reg, l1, method= 'eBIC', l2 = None, w2 = None, 
             if latent:
                 this_mu = mu[ix_mu[:,g2]]
                 kwargs['latent'] = True
-                kwargs['mu1'] = this_mu
+                kwargs['mu1'] = this_mu.copy()
                 print("MU values", kwargs['mu1'])
                 
                 
@@ -180,6 +180,7 @@ def single_range_search(S, L, N, method = 'eBIC', latent = False, mu = None):
     latent: boolean which indicates if low rank term should be estimated (i.e. Latent Variable Graphical Lasso)
     mu: range of penalty parameters for trace norm (only needed if latent = True)
     """
+    assert method in ['AIC', 'eBIC']
     
     if type(S) == dict:
         K = len(S.keys())
@@ -296,9 +297,17 @@ def single_range_search(S, L, N, method = 'eBIC', latent = False, mu = None):
     # create the two estimators
     est_uniform = dict()
     est_indv = dict()
+    est_uniform['Theta'] = dict()
+    est_indv['Theta'] = dict()
+    if latent:
+        est_uniform['L'] = dict()
+        est_indv['L'] = dict()
+        
     for k in np.arange(K):
+        
         est_uniform['Theta'][k] = estimates[k][ix_uniform, ix_mu[k,ix_uniform] , :,:]
         est_indv['Theta'][k] = estimates[k][ix_indv[k], ix_mu[k,ix_indv[k]], :, :]
+        
         if latent:
             est_uniform['L'][k] = lowrank[k][ix_uniform, ix_mu[k,ix_uniform] , :,:]
             est_indv['L'][k] = lowrank[k][ix_indv[k], ix_mu[k,ix_indv[k]], :, :]
