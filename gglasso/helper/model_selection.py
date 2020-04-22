@@ -376,7 +376,7 @@ def aic_single(S, Theta, N, L = None):
         L = np.zeros((p,p))
         
     A = adjacency_matrix(Theta , t = 1e-5)
-    aic = N*Sdot(S, Theta-L) - N*robust_logdet(Theta-L) + A.sum()
+    aic = N*Sdot(S, Theta) - N*robust_logdet(Theta) + A.sum()
     
     return aic
 
@@ -402,7 +402,7 @@ def ebic_single(S,Theta, N, gamma, L = None):
         L = np.zeros((p,p))
         
     A = adjacency_matrix(Theta , t = 1e-5)
-    bic = N*Sdot(S, Theta-L) - N*robust_logdet(Theta-L) + A.sum()/2 * (np.log(N)+ 4*np.log(p)*gamma)
+    bic = N*Sdot(S, Theta) - N*robust_logdet(Theta) + A.sum()/2 * (np.log(N)+ 4*np.log(p)*gamma)
     
     return bic
 
