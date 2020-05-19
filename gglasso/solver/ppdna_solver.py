@@ -89,7 +89,7 @@ def PPA_subproblem(Omega_t, Theta_t, X_t, S, reg, ppa_sub_params = None, verbose
     
     sub_iter = 0
     
-    while not(condA or condB) and sub_iter < 10:
+    while not(condA and condB) and sub_iter < 10:
         # step 0: set variables
         W_t = Omega_t - (sigma_t * (S + X_t))  
         V_t = Theta_t + (sigma_t * X_t)
@@ -142,7 +142,7 @@ def PPA_subproblem(Omega_t, Theta_t, X_t, S, reg, ppa_sub_params = None, verbose
     
         sub_iter += 1
         
-    if verbose and not(condA or condB):
+    if verbose and not(condA and condB):
         print("Subproblem could not be solve with the given accuracy! -- reached maximal iterations")
             
     
