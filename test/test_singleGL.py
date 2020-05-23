@@ -36,32 +36,56 @@ Omega_0 = np.eye(p)
 sol, info = ADMM_SGL(S, lambda1, Omega_0 , eps_admm = 1e-4 , verbose = True, latent = False)
 
 
-assert np.linalg.norm(sol['Theta'] - res_scikit) <= 1e-3
+plt.scatter(np.triu(sol['Theta']), np.triu(res_scikit))
+
+print( np.linalg.norm(sol['Theta'] - res_scikit) )
+
+#%%
+# test with low rank component
+#from lvsglasso.lvsglasso import admm_consensus
+
+
+
+Omega_0 = np.eye(p)
+mu1 = .01
+
+sol, info = ADMM_SGL(S, lambda1, Omega_0 , eps_admm = 1e-4 , verbose = True, latent = True, mu1 = mu1)
+
+
+# rTheta, rL, _, _, _ , _ , _ = admm_consensus(S[np.newaxis,:,:], lambda1, mu1, niter=200, alpha=1., mu=None, 
+#                    mu_cont=None, mu_cont_iter=10, mu_min=1e-6,
+#                    S_init=None, L_init=None,
+#                    abstol=1e-5, reltol=1e-5, verbose=True, compute_obj=False,
+#                    compute_infeas=False, do_lowrank=True, do_sparse=True)
+
+
+
+# plt.scatter(np.triu(sol['Theta']), np.triu(rTheta))
 
 
 #%%
 # teest for low rank component
-v = np.random.randn(p) 
-v = v/np.linalg.norm(v)
-L = np.outer(v,v)
+# v = np.random.randn(p) 
+# v = v/np.linalg.norm(v)
+# L = np.outer(v,v)
 
 
-L = L * 0.5 * np.linalg.eigh(Theta)[0].min()
+# L = L * 0.5 * np.linalg.eigh(Theta)[0].min()
 
-R = Theta-L
-Sigma = np.linalg.pinv(R)
-assert np.linalg.eigh(R)[0].min() >= -1e-8
+# R = Theta-L
+# Sigma = np.linalg.pinv(R)
+# assert np.linalg.eigh(R)[0].min() >= -1e-8
 
-S,_ = sample_covariance_matrix(Sigma[np.newaxis,:,:], N)
-S = S.squeeze()
+# S,_ = sample_covariance_matrix(Sigma[np.newaxis,:,:], N)
+# S = S.squeeze()
 
 
-lambda1 = 0.08
-Omega_0 = np.eye(p)
-sol, info = ADMM_SGL(S, lambda1, Omega_0 , eps_admm = 1e-4 , verbose = True, latent = True, mu1 = .2)
+# lambda1 = 0.08
+# Omega_0 = np.eye(p)
+# sol, info = ADMM_SGL(S, lambda1, Omega_0 , eps_admm = 1e-4 , verbose = True, latent = True, mu1 = .2)
 
-np.linalg.matrix_rank(sol['L'])
+# np.linalg.matrix_rank(sol['L'])
 
-fig,axs = plt.subplots(1,2)
-sns.heatmap(L, ax = axs[0], cmap = 'coolwarm')
-sns.heatmap(sol['L'], ax = axs[1], cmap = 'coolwarm')
+# fig,axs = plt.subplots(1,2)
+# sns.heatmap(L, ax = axs[0], cmap = 'coolwarm')
+# sns.heatmap(sol['L'], ax = axs[1], cmap = 'coolwarm')

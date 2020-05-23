@@ -84,7 +84,7 @@ def ADMM_SGL(S, lambda1, Omega_0 , Theta_0 = np.array([]), X_0 = np.array([]), \
         # L Update
         if latent:
             C_t = Theta_t - X_t - Omega_t
-            C_t = (C_t.T + C_t)/2
+            #C_t = (C_t.T + C_t)/2
             eigD, eigQ = np.linalg.eigh(C_t)
             L_t = prox_rank_norm(C_t, mu1/rho, D = eigD, Q = eigQ)
 
