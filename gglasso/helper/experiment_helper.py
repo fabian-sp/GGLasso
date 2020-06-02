@@ -345,7 +345,7 @@ def plot_runtime(iA, iP, vecN, save = False):
             
             lns = p1+p2+p3+p4
             labs = [l.get_label() for l in lns]
-            fig.legend(lns, labs, loc=0)
+            fig.legend(lns, labs, loc="upper right")
             
         path_rt = 'plots//ggl_runtime//'  
         if save:
