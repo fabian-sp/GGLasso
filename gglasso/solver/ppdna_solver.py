@@ -36,7 +36,7 @@ def get_ppdna_params(ppdna_params = None):
 
 def get_ppa_sub_params_default():
     ppa_sub_params = { 'sigma_t' : 1e3, 
-          'eta' : .5, 'tau' : .5, 'rho' : .5, 'mu' : .25,
+          'eta' : 1e-3, 'tau' : .5, 'rho' : .5, 'mu' : .25,
           'eps_t' : .9, 'delta_t' : .9} 
     
     return ppa_sub_params
@@ -106,7 +106,7 @@ def PPA_subproblem(Omega_t, Theta_t, X_t, S, reg, ppa_sub_params = None, verbose
         
         # step 1: CG method
         kwargs = {'Gamma' : Gamma, 'eigQ': eigQ, 'W': W, 'sigma_t': sigma_t}
-        cg_accur = min(eta, np.linalg.norm(gradY_Xt)**(1+tau), 1e-10)
+        cg_accur = min(eta, np.linalg.norm(gradY_Xt)**(1+tau))
         if verbose:
             print("Start CG method")
         D = cg_general(hessian_Y, Gdot, - gradY_Xt, eps = cg_accur, kwargs = kwargs, verbose = verbose)
