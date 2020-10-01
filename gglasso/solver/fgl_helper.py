@@ -1,8 +1,7 @@
 """
 author: Fabian Schaipp
 
-This is Condat's algorithm
-y is the point where we calculate prox_lambda*||By||_1
+This is Condat's algorithm for the proximal operator of the Fused Lasso regularizer (https://lcondat.github.io/publis/Condat-fast_TV-SPL-2013.pdf)
 """
 
 import numpy as np
