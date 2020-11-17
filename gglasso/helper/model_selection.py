@@ -14,6 +14,8 @@ from gglasso.helper.ext_admm_helper import get_K_identity as id_dict
 from gglasso.solver.single_admm_solver import ADMM_SGL
 
 
+plt.rc('text', usetex=True)
+        
 def lambda_parametrizer(l1 = 0.05, w2 = 0.5):
     """transforms given l1 and w2 into the respective l2"""
     a = 1/np.sqrt(2)
@@ -464,24 +466,29 @@ def single_surface_plot(L1, L2, C, ax, name = 'eBIC'):
     
     #ax.set_xlabel('lambda_1')
     #ax.set_ylabel('lambda_2')
-    ax.set_xlabel('w_1')
-    ax.set_ylabel('w_2')
-    ax.set_zlabel(name)
+    ax.set_xlabel(r'$w_1$', fontsize = 14)
+    ax.set_ylabel(r'$w_2$', fontsize = 14)
+    ax.set_zlabel(name, fontsize = 14)
     ax.view_init(elev = 25, azim = 110)
     
-    plt.xticks(fontsize = 10)
-    plt.yticks(fontsize = 10)
+    plt.xticks(fontsize = 8)
+    plt.yticks(fontsize = 8)
+    ax.zaxis.set_tick_params(labelsize=8)
+    
+    ax.tick_params(axis='both', which='major', pad=.5)
     
     for label in ax.xaxis.get_ticklabels()[::2]:
         label.set_visible(False)
     for label in ax.yaxis.get_ticklabels()[::2]:
         label.set_visible(False)
+    for label in ax.zaxis.get_ticklabels()[::2]:
+        label.set_visible(False)
     
     return
 
-def surface_plot(L1, L2, C, name = 'eBIC'):
+def surface_plot(L1, L2, C, name = 'eBIC', gammas = None):
     
-    fig = plt.figure(figsize = (11,7))  
+    fig = plt.figure(figsize = (8,5))  
     if len(C.shape) == 2:
         ax = fig.gca(projection='3d')
         single_surface_plot(L1, L2, C, ax, name = name)
@@ -491,6 +498,7 @@ def surface_plot(L1, L2, C, name = 'eBIC'):
         for j in np.arange(C.shape[0]):
             ax = fig.add_subplot(2, 2, j+1, projection='3d')
             single_surface_plot(L1, L2, C[j,:,:], ax, name = name)
-            ax.set_title('')
+            if gammas is not None:
+                ax.set_title(rf"$\gamma = $ {gammas[j]}")
     
     return fig
