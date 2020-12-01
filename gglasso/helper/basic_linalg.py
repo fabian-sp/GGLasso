@@ -3,9 +3,11 @@ author: Fabian Schaipp
 """
 
 import numpy as np
-
+from numba import jit
 
 ## general functions for the space G
+
+@jit(nopython=True)
 def trp(X):   
     # transposes for a block of matrices each single matrix
     # assumes that X is given in the form (K, p, p)
@@ -38,6 +40,7 @@ def adjacency_matrix(S , t = 1e-5):
         np.fill_diagonal(A, 0)
     return A
 
+
 def cg_general(lin, dot, b, eps = 1e-6, kwargs = {}, verbose = False):
     """
     This is the CG method for a general selfadjoint linear operator "lin" and a general scalar product "dot"
@@ -50,10 +53,9 @@ def cg_general(lin, dot, b, eps = 1e-6, kwargs = {}, verbose = False):
     """
     
     dim = b.shape
-    #N_iter = len(b)
     N_iter = np.array(dim).prod()
     x = np.zeros(dim)
-    r = b - lin(x, **kwargs)
+    r = b - lin(x, **kwargs)  
     p = r.copy()
     j = 0
     
@@ -77,9 +79,6 @@ def cg_general(lin, dot, b, eps = 1e-6, kwargs = {}, verbose = False):
         j += 1
         
     return x
-
-
-
 
 
 

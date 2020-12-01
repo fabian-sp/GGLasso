@@ -318,15 +318,27 @@ def construct_gamma(A, beta, D = np.array([]), Q = np.array([])):
                       
     return Gamma
 
+
 def eval_jacobian_phiplus(B, Gamma, Q):
     # Gamma is constructed with construct_gamma
     # Q is the right-eigenvector matrix of the point A
         
     res = Q @ (Gamma * (trp(Q) @ B @ Q)) @ trp(Q)
     
-    assert abs(res - trp(res)).max() <= 1e-4, f"symmetry failed by  {abs(res - trp(res)).max()}"
+    assert np.abs(res - trp(res)).max() <= 1e-4, f"symmetry failed by  {np.abs(res - trp(res)).max()}"
     return res
-      
+
+@jit(nopython=True)
+def eval_jacobian_phiplus_numba(B, Gamma, Q):
+    # numba version of function eval_jacobian_phiplus
+    # numba only supports @ for 2D-arrays --> loop through K
+    (K,p,p) = B.shape
+    res = np.zeros((K,p,p))
+    
+    for k in np.arange(K):       
+        res[k,:,:] = Q[k,:,:] @ (Gamma[k,:,:] * (Q[k,:,:].T @ B[k,:,:] @ Q[k,:,:])) @ Q[k,:,:].T
+       
+    return res
 
 # functions related to the proximal point algorithm
     
@@ -334,13 +346,14 @@ def Phi_t(Omega, Theta, S, Omega_t, Theta_t, sigma_t, lambda1, lambda2, reg):
     res = f(Omega, S) + P_val(Theta, lambda1, lambda2, reg) + 1/(2*sigma_t) * (np.linalg.norm(Omega - Omega_t)**2 + np.linalg.norm(Theta - Theta_t)**2)
     return res
 
+@jit(nopython=True)
 def hessian_Y(D , Gamma, eigQ, W, sigma_t):
     """
     this is the linear operator for the CG method
     argument is D
     Gamma and W are constructed beforehand in order to evaluate more efficiently
     """
-    tmp1 = eval_jacobian_phiplus( D, Gamma, eigQ)
+    tmp1 = eval_jacobian_phiplus_numba( D, Gamma, eigQ)
     tmp2 = eval_jacobian_prox_p( D , W)
 
     res = - sigma_t * (tmp1 + tmp2)

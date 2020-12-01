@@ -105,12 +105,12 @@ def PPA_subproblem(Omega_t, Theta_t, X_t, S, reg, ppa_sub_params = None, verbose
         W = construct_jacobian_prox_p( (1/sigma_t) * V_t, lambda1 , lambda2, reg)
         
         # step 1: CG method
-        kwargs = {'Gamma' : Gamma, 'eigQ': eigQ, 'W': W, 'sigma_t': sigma_t}
+        cg_kwargs = {'Gamma' : Gamma, 'eigQ': eigQ, 'W': W, 'sigma_t': sigma_t}
+        
         cg_accur = min(eta, np.linalg.norm(gradY_Xt)**(1+tau))
         if verbose:
             print("Start CG method")
-        D = cg_general(hessian_Y, Gdot, - gradY_Xt, eps = cg_accur, kwargs = kwargs, verbose = verbose)
-        
+        D = cg_general(hessian_Y, Gdot, - gradY_Xt, eps = cg_accur, kwargs = cg_kwargs, verbose = verbose)
         # step 2: line search 
         if verbose:
             print("Start Line search")

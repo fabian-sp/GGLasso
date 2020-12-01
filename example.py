@@ -13,9 +13,9 @@ from gglasso.helper.data_generation import time_varying_power_network, group_pow
 from gglasso.helper.experiment_helper import get_K_identity
 from gglasso.helper.model_selection import grid_search, single_range_search
 
-p = 20
+p = 100
 K = 5
-N = 200
+N = 1000
 M = 2
 
 reg = 'GGL'
@@ -42,7 +42,7 @@ est_uniform, est_indv, range_stats = single_range_search(S, L, N, method = 'eBIC
 Omega_0 = get_K_identity(K,p)
 
 
-solPPDNA, info = warmPPDNA(S, lambda1, lambda2, reg, Omega_0, eps = 1e-4 , verbose = True, measure = True)
+solPPDNA, info = warmPPDNA(S, lambda1, lambda2, reg, Omega_0, eps = 1e-5 , verbose = True, measure = True)
 
 #solADMM, info = ADMM_MGL(S, lambda1, lambda2, reg, Omega_0, n_samples = None, eps_admm = 1e-4 , verbose = True)
 
