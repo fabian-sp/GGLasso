@@ -20,13 +20,11 @@ def prox_od_1norm(A, l):
     """
     
     (d1,d2) = A.shape
-    res = np.zeros((d1,d2))
-    for i in np.arange(d1):
-        for j in np.arange(d2):
-            if i == j:
-                res[i,j] = A[i,j]
-            else:
-                res[i,j] = np.sign(A[i,j]) * np.maximum(abs(A[i,j]) - l, 0)
+    res = np.sign(A) * np.maximum(np.abs(A) - l, 0)
+    
+    for i in np.arange(np.minimum(d1,d2)):
+        res[i,i] = A[i,i]
+    
 
     return res
 
