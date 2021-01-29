@@ -7,7 +7,6 @@ from numba import jit
 
 ## general functions for the space G
 
-@jit(nopython=True)
 def trp(X):   
     # transposes for a block of matrices each single matrix
     # assumes that X is given in the form (K, p, p)
