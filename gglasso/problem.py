@@ -1,24 +1,39 @@
 import numpy as np
+
 from gglasso.helper.basic_linalg import trp
+
+from gglasso.solver.admm_solver import ADMM_MGL
 
 assert_tol = 1e-5
 
 class glasso_problem:
     
-    def __init__(self, S, reg, reg_params, latent = False):
+    def __init__(self, S, reg, reg_params = None, latent = False):
         
         self.S = S
         
         self.latent = latent
         self.reg = reg
-        self.reg_params = reg_params
+        
+        # initialize and set regularization params
+        self.reg_params = None
+        self.set_reg_params(reg_params)
         
         self.derive_problem_formulation()
+    
+    def __repr__(self):
         
+        return (
+            " \n \nFORMULATION: "
+            + "\n \n"
+            + ("MULTIPLE" if self.multiple else "SINGLE")
+            + " GRAPHICAL LASSO PROBLEM"
+            + "\n")
         
     def derive_problem_formulation(self):
         """
         - derives the problem formulation type from the given input of covariance matrices
+        - sets the problems dimensions (K,p_k)
         - checks the input data (e.g. symmetry)
         """
         
@@ -89,9 +104,20 @@ class glasso_problem:
         
         return
     
+    def default_reg_params(self):
+        reg_params_default = dict()
+        reg_params_default['lambda1'] = 1e-3
+        reg_params_default['lambda2'] = 1e-3
+        
+        if self.latent:
+            reg_params_default['mu1'] = 1e-3*np.ones(self.K)
+        else:
+            reg_params_default['mu1'] = None
+            
+        return reg_params_default
+        
     def set_reg_params(self, reg_params = None):
         """
-
         Parameters
         ----------
         reg_params : dict
@@ -106,14 +132,69 @@ class glasso_problem:
         else:
             assert type(reg_params) == dict
         
-        reg_params_default = dict()
-        reg_params_default['lambda1'] = 1e-3
-        reg_params_default['lambda2'] = 1e-3
+        # when initialized set to default
+        if self.reg_params is None:
+            self.reg_params = self.default_reg_params()
         
+        
+        # update with given input
         # update with empty dict does not change the dictionary
-        reg_params_default.update(reg_params)
+        self.reg_params.update(reg_params)
             
+        return
+    
+    def default_start_point(self):
+        
+        if not self.multiple:
+            X = np.eye(self.p)
+            
+        elif self.conforming:
+            X = np.repeat(np.eye(self.p)[np.newaxis,:,:], self.K, axis=0)
+        
+        else:
+            X = dict()
+            for k in range(self.K):
+                X[k] = np.eye(self.p[k])
+                
+        return X
+            
+    
+    def set_start_point(self, Omega_0 = None):
+        
+        if Omega_0 is not None:
+            self.Omega_0 = Omega_0.copy()
+        else:
+            self.Omega_0 = self.default_start_point()
+            
+        return
+        
+    def default_solver_params(self):
+        
+        solver_params = dict()
+        solver_params['verbose'] = False
+        solver_params['measure'] = False
+        solver_params['rho'] = 1.
+        solver_params['max_iter'] = 1000
+        solver_params['eps_admm'] = 1e-5
+        
+        return solver_params
+        
+      
+    def solve(self, Omega_0 = None, solver_params = None):
+        
+        self.set_start_point(Omega_0)
         
         
+        if self.conforming:
+            
+            sol, info = ADMM_MGL(S = self.S, lambda1 = self.reg_params['lambda_1'], lambda2 = self.reg_params['lambda_2'], reg = self.reg,\
+                     Omega_0 = self.Omega_0, latent = self.latent(), mu1 = self.reg_params['mu_1'], **solver_params)
+            
+                
+                
+        else:
+            1
+    
+        return
 
     

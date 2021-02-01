@@ -8,7 +8,6 @@ import numpy as np
 
 from gglasso.solver.ppdna_solver import PPDNA, warmPPDNA
 from gglasso.solver.admm_solver import ADMM_MGL
-from gglasso.solver.latent_admm_solver import latent_ADMM_GGL
 from gglasso.helper.data_generation import time_varying_power_network, group_power_network,sample_covariance_matrix
 from gglasso.helper.experiment_helper import get_K_identity
 from gglasso.helper.model_selection import grid_search, single_range_search
