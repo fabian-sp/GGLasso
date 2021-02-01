@@ -13,10 +13,14 @@ class glasso_problem:
         self.reg = reg
         self.reg_params = reg_params
         
-        
+        self.derive_problem_formulation()
         
         
     def derive_problem_formulation(self):
+        """
+        - derives the problem formulation type from the given input of covariance matrices
+        - checks the input data (e.g. symmetry)
+        """
         
         self.conforming = False
         self.multiple = False
@@ -34,12 +38,15 @@ class glasso_problem:
                 self.check_covariance_2d()
                 
                 
-        elif type(self.S) == dict:
+        elif type(self.S) == list:
             
-            assert len(self.S.keys() > 1), "Covariance data is a dictionary with only one key. This is a Single Graphical Lasso problem. Specify S as 2d-array."
+            assert len(self.S > 1), "Covariance data is a list with only one entry. This is a Single Graphical Lasso problem. Specify S as 2d-array."
             self.conforming = False
             self.multiple = True
-            self.check_covariance_dict()
+            self.check_covariance_list()
+            
+        else:
+            raise TypeError(f"Incorrect input type of S. You input {type(self.S)}, but np.ndarray or list is expected.")
     
     def check_covariance_3d(self):
         
@@ -61,12 +68,12 @@ class glasso_problem:
         
         return
     
-    def check_covariance_dict(self):
-        self.K = len(self.S.keys())
-        
-        #TODO: assert for keys being equal to 1..K
+    def check_covariance_list(self):
+        self.K = len(self.S)
         
         self.p = np.zeros(self.K, dtype = int)
+        
+        S_dict = dict()
         
         for k in range(self.K):
             assert self.S[k].shape[0] == self.S[k].shape[1], f"Dimensions are not correct, 1st and 2nd dimension have to match but do not match for instance {k}."
@@ -74,7 +81,39 @@ class glasso_problem:
             
             self.p[k]= self.S[k].shape[0]
             
+            S_dict[k] = self.S[k].copy()
+        
+            
+        # S gets converted from alist to a dict with keys 1,..,K
+        self.S = S_dict
+        
         return
     
-    
+    def set_reg_params(self, reg_params = None):
+        """
+
+        Parameters
+        ----------
+        reg_params : dict
+            
+        Returns
+        -------
+        None.
+
+        """
+        if reg_params is None:
+            reg_params = dict()
+        else:
+            assert type(reg_params) == dict
+        
+        reg_params_default = dict()
+        reg_params_default['lambda1'] = 1e-3
+        reg_params_default['lambda2'] = 1e-3
+        
+        # update with empty dict does not change the dictionary
+        reg_params_default.update(reg_params)
+            
+        
+        
+
     
