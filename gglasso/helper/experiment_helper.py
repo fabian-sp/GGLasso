@@ -466,8 +466,8 @@ def surface_plot(L1, L2, C, name = 'eBIC', save = False):
     with sns.axes_style("white"):
         ax.plot_surface(X, Y, Z , cmap = plt.cm.ocean,linewidth=0, antialiased=False)
     
-    ax.set_xlabel('lambda_1')
-    ax.set_ylabel('lambda_2')
+    ax.set_xlabel('lambda1')
+    ax.set_ylabel('lambda2')
     ax.set_zlabel(name)
     #ax.view_init(elev = 20, azim = 60)
     
