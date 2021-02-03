@@ -1,19 +1,25 @@
 import numpy as np
 
 from gglasso.helper.basic_linalg import trp
+from gglasso.helper.ext_admm_helper import check_G
 
 from gglasso.solver.admm_solver import ADMM_MGL
+from gglasso.solver.single_admm_solveradmm_solver import ADMM_SGL
+from gglasso.solver.ext_admm_solver import ext_ADMM_MGL
+
 
 assert_tol = 1e-5
 
 class glasso_problem:
     
-    def __init__(self, S, reg, reg_params = None, latent = False):
+    def __init__(self, S, reg, reg_params = None, latent = False, G = None):
         
         self.S = S
         
         self.latent = latent
         self.reg = reg
+        
+        self.G = G
         
         # initialize and set regularization params
         self.reg_params = None
@@ -56,13 +62,21 @@ class glasso_problem:
         elif type(self.S) == list:
             
             assert len(self.S > 1), "Covariance data is a list with only one entry. This is a Single Graphical Lasso problem. Specify S as 2d-array."
+            assert self.G is not None, "For non-conforming dimensions, the input G has to be specified for bookeeping the overlapping variables."
+            
             self.conforming = False
             self.multiple = True
             self.check_covariance_list()
             
+            # G is also checked in the solver
+            check_G(self.G, self.p)
+            
         else:
             raise TypeError(f"Incorrect input type of S. You input {type(self.S)}, but np.ndarray or list is expected.")
     
+    ##############################################
+    #### CHECK INPUT DATA
+    ##############################################
     def check_covariance_3d(self):
         
         assert self.S.shape[1] == self.S.shape[2], f"Dimensions are not correct, 2nd and 3rd dimension have to match but shape is {self.S.shape}. Specify covariance data in format(K,p,p)!"
@@ -104,46 +118,25 @@ class glasso_problem:
         
         return
     
-    def default_reg_params(self):
+    ##############################################
+    #### DEFAULT PARAMETERS
+    ##############################################
+    def _default_reg_params(self):
         reg_params_default = dict()
         reg_params_default['lambda1'] = 1e-3
         reg_params_default['lambda2'] = 1e-3
         
         if self.latent:
-            reg_params_default['mu1'] = 1e-3*np.ones(self.K)
+            if self.multiple:
+                reg_params_default['mu1'] = 1e-3*np.ones(self.K)
+            else:
+                reg_params_default['mu1'] = 1e-3
         else:
             reg_params_default['mu1'] = None
             
         return reg_params_default
-        
-    def set_reg_params(self, reg_params = None):
-        """
-        Parameters
-        ----------
-        reg_params : dict
-            
-        Returns
-        -------
-        None.
-
-        """
-        if reg_params is None:
-            reg_params = dict()
-        else:
-            assert type(reg_params) == dict
-        
-        # when initialized set to default
-        if self.reg_params is None:
-            self.reg_params = self.default_reg_params()
-        
-        
-        # update with given input
-        # update with empty dict does not change the dictionary
-        self.reg_params.update(reg_params)
-            
-        return
     
-    def default_start_point(self):
+    def _default_start_point(self):
         
         if not self.multiple:
             X = np.eye(self.p)
@@ -157,44 +150,94 @@ class glasso_problem:
                 X[k] = np.eye(self.p[k])
                 
         return X
-            
     
-    def set_start_point(self, Omega_0 = None):
-        
-        if Omega_0 is not None:
-            self.Omega_0 = Omega_0.copy()
-        else:
-            self.Omega_0 = self.default_start_point()
-            
-        return
-        
-    def default_solver_params(self):
+    def _default_solver_params(self):
         
         solver_params = dict()
         solver_params['verbose'] = False
         solver_params['measure'] = False
         solver_params['rho'] = 1.
         solver_params['max_iter'] = 1000
-        solver_params['eps_admm'] = 1e-5
         
         return solver_params
         
+    def set_reg_params(self, reg_params = None):
+        """
+        reg_params : dict
+            Contains values for (a subset of) the regularization parameters lambda1, lambda2, mu1
+        """
+        if reg_params is None:
+            reg_params = dict()
+        else:
+            assert type(reg_params) == dict
+        
+        # when initialized set to default
+        if self.reg_params is None:
+            self.reg_params = self._default_reg_params()
+        
+        
+        # update with given input
+        # update with empty dict does not change the dictionary
+        self.reg_params.update(reg_params)
+            
+        return
+
+    
+    def set_start_point(self, Omega_0 = None):
+        
+        if Omega_0 is not None:
+            # TODO: check if Omega_0 has correct type (depends on problem parameters)
+            self.Omega_0 = Omega_0.copy()
+        else:
+            self.Omega_0 = self._default_start_point()
+            
+        return
+        
+    ##############################################
+    #### SOLVING
+    ##############################################
       
-    def solve(self, Omega_0 = None, solver_params = None):
+    def solve(self, Omega_0 = None, solver_params = dict(), tol = 1e-4, solver = 'admm'):
+        
+        assert solver in ["admm", "ppdna"], "There are two solver types supported, ADMM and PPDNA. Specify the argument solver = 'admm' or solver = 'ppdna'."
+        
+        if solver == "ppdna":
+            assert self.multiple,"PPDNA solver is only supported for MULTIPLE Graphical Lassp problems."
+            assert not self.latent, "PPDNA solver is only supported for problems without latent variables."
+            assert self.conforming, "PPDNA solver is only supported for problems with conforming dimensions."
+        
         
         self.set_start_point(Omega_0)
+        self.tol = tol
         
+        #forbidden_keys = ['lambda1', 'lambda2', 'mu1', 'latent', 'Omega_0', 'reg']
         
-        if self.conforming:
+        self.solver_params = self._default_solver_params().update(solver_params)
+        
+        print(solver_params.keys())
+        
+        print(f"Solve problem with {solver} solver...")
+        if not self.multiple:
+            sol, info = ADMM_SGL(S = self.S, lambda1 = self.reg_params['lambda1'], Omega_0= self.Omega_0, \
+                                 eps_admm = self.tol , latent = self.latent, mu1 = self.reg_params['mu1'], **self.solver_params)
+                
+                
+        elif self.conforming:
             
-            sol, info = ADMM_MGL(S = self.S, lambda1 = self.reg_params['lambda_1'], lambda2 = self.reg_params['lambda_2'], reg = self.reg,\
-                     Omega_0 = self.Omega_0, latent = self.latent(), mu1 = self.reg_params['mu_1'], **solver_params)
+            sol, info = ADMM_MGL(S = self.S, lambda1 = self.reg_params['lambda1'], lambda2 = self.reg_params['lambda2'], reg = self.reg,\
+                     Omega_0 = self.Omega_0, latent = self.latent, mu1 = self.reg_params['mu1'],\
+                         eps_admm = self.tol, **self.solver_params)
             
                 
                 
         else:
-            1
-    
+            sol, info = ext_ADMM_MGL(S = self.S, lambda1 = self.reg_params['lambda1'], lambda2 = self.reg_params['lambda2'], reg = self.reg,\
+                                     Omega_0 = self.Omega_0, G = self.G, eps_admm = self.tol,\
+                                         latent = self.latent, mu1 = self.reg_params['mu1'], **self.solver_params)
+                
+                
+        self.solution = sol.copy()
+        self.solver_info = info.copy()
         return
 
     
