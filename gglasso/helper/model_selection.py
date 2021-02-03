@@ -47,13 +47,15 @@ def lambda_grid(l1, l2 = None, w2 = None):
         
     return L1.squeeze(), L2.squeeze(), w2
 
-def grid_search(solver, S, N, p, reg, l1, method= 'eBIC', l2 = None, w2 = None, G = None, latent = False, mu = None, ix_mu = None):
+def grid_search(solver, S, N, p, reg, l1, method= 'eBIC', l2 = None, w2 = None, gamma = 0.3, G = None, latent = False, mu = None, ix_mu = None):
     """
     method for doing model selection using grid search and AIC/eBIC
     we work the grid columnwise, i.e. hold l1 constant and change l2
     
+    gamma: parameter inn [0,1] for eBIC
+    
     set latent = True if you want to include latent factors. 
-    ix_mu: array of shape K, len(l1): indicates for each lambda and each instance which value in mu we use (can be obtained with single_range_search)
+    ix_mu: array of shape K, len(l1): indicates for each lambda and each instance which value in mu we use (can be obtained with K_single_grid)
     mu: arrays of possible mu values
     """
     
@@ -72,8 +74,11 @@ def grid_search(solver, S, N, p, reg, l1, method= 'eBIC', l2 = None, w2 = None, 
     AIC[:] = np.nan
     
     gammas = [0.1, 0.3, 0.5, 0.7]
-    # determine the gamma you want for the returned estimate
-    gamma_ix = 1
+    gammas.append(gamma)
+    gammas = list(set(gammas))
+    # determine the index of the gamma you want for the returned estimate
+    gamma_ix = gammas.index(gamma)
+    
     BIC = np.zeros((len(gammas), grid1, grid2))
     BIC[:] = np.nan
     
@@ -172,12 +177,14 @@ def grid_search(solver, S, N, p, reg, l1, method= 'eBIC', l2 = None, w2 = None, 
     
     return stats, ix, curr_best
 
-def single_range_search(S, L, N, method = 'eBIC', latent = False, mu = None):
+def K_single_grid(S, L, N, method = 'eBIC', gamma = 0.3, latent = False, mu = None):
     """
     method for doing model selection for sungle Graphical Lasso estimation
     it returns two estimates, one with the individual optimal reg. param. for each instance and one with the uniform optimal
     L: range of lambda values
     N: vector with sample sizes for each instance
+    
+    gamma: parameter for eBIC
     
     latent: boolean which indicates if low rank term should be estimated (i.e. Latent Variable Graphical Lasso)
     mu: range of penalty parameters for trace norm (only needed if latent = True)
@@ -201,8 +208,11 @@ def single_range_search(S, L, N, method = 'eBIC', latent = False, mu = None):
     r = len(L)
     
     gammas = [0.1, 0.3, 0.5, 0.7]
-    # determine the gamma you want for the returned estimate
-    gamma_ix = 1
+    gammas.append(gamma)
+    gammas = list(set(gammas))
+    # determine the index of the gamma you want for the returned estimate
+    gamma_ix = gammas.index(gamma)
+    
     BIC = np.zeros((len(gammas), K, r, M))
     BIC[:] = np.nan
     
@@ -326,6 +336,69 @@ def single_range_search(S, L, N, method = 'eBIC', latent = False, mu = None):
     
     return est_uniform, est_indv, statistics
 
+
+def single_grid_search(S, L, N, method = 'eBIC', gamma = 0.3, latent = False, mu = None):
+    p = S.shape[0]
+    
+    if latent:
+        assert mu is not None
+        M = len(mu)
+    else:
+        M = 1
+        
+    r = len(L)
+    
+    gammas = [0.1, 0.3, 0.5, 0.7]
+    gammas.append(gamma)
+    gammas = list(set(gammas))
+    # determine the index of the gamma you want for the returned estimate
+    gamma_ix = gammas.index(gamma)
+    
+    BIC = np.zeros((len(gammas), r, M))
+    BIC[:] = np.nan
+    
+    AIC = np.zeros((r, M))
+    AIC[:] = np.nan
+    
+    SP = np.zeros((r, M))
+    SP[:] = np.nan
+    
+    RANK = np.zeros((r,M))
+    
+    kwargs = {'S':S, 'Omega_0': np.eye(p), 'X_0': np.eye(p), 'eps_admm': 1e-4, 'verbose': False, 'measure': False}
+    
+    estimates = np.zeros((r,M,p,p))
+    lowrank = np.zeros((r,M,p,p))
+    
+    # start range search
+    for j in np.arange(r):
+        kwargs['lambda1'] = L[j]
+        
+        for m in np.arange(M):
+            if latent:
+                kwargs['mu1'] = mu[m]
+                kwargs['latent'] = True
+                        
+            sol, info = ADMM_SGL(**kwargs)
+            
+            Theta_sol = sol['Theta']
+            estimates[j,m,:,:] = Theta_sol.copy()
+            
+            if latent:
+                lowrank[j,m,:,:] = sol['L'].copy()
+                RANK[j,m] = np.linalg.matrix_rank(sol['L'])
+            
+            # warm start
+            kwargs['Omega_0'] = sol['Omega'].copy()
+            kwargs['X_0'] = sol['X'].copy()
+            
+            AIC[j,m] = aic_single(S, Theta_sol, N)
+            for l in np.arange(len(gammas)):
+                BIC[l, j, m] = ebic_single(S, Theta_sol, N, gamma = gammas[l])
+                
+            SP[j,m] = sparsity(Theta_sol)
+            
+    return 
 ################################################################
     
 def aic(S, Theta, N, L = None):

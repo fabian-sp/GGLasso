@@ -16,7 +16,7 @@ Often it is beneficial to estimate precision matrices of the form "sparse - low 
 
 5) Model selection via grid search <br>
 Method for choosing the best regularization parameters `lambda1` and `lambda2` via choosing the minimal eBIC or AIC. To use this, import `grid_search` from `gglasso/helper/model_selection`<br>
-Furthermore, you can estimate all instances using Single Graphical Lasso problem formulation with `single_range_search` in `gglasso/helper/model_selection`.
+Furthermore, you can estimate all instances using Single Graphical Lasso problem formulation with `K_single_grid` in `gglasso/helper/model_selection`.
 
 
 

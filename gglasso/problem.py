@@ -12,12 +12,11 @@ assert_tol = 1e-5
 
 class glasso_problem:
     
-    def __init__(self, S, reg, reg_params = None, latent = False, G = None):
+    def __init__(self, S, reg = "GGL", reg_params = None, latent = False, G = None):
         
         self.S = S
         
         self.latent = latent
-        self.reg = reg
         
         self.G = G
         
@@ -26,15 +25,28 @@ class glasso_problem:
         self.set_reg_params(reg_params)
         
         self.derive_problem_formulation()
-    
+        
+        if self.multiple:
+            assert reg in ["GGL", "FGL"], "Specify 'GGL' for Group Graphical Lasso or 'FGL' for Fused Graphical Lasso (or None for Single Graphical Lasso)"
+            self.reg = reg
+        else:
+            self.reg = None
+            
+        
     def __repr__(self):
         
+        if self.multiple:
+            prefix = ("FUSED" if self.reg == "FGL" else "GROUP")
+        else:
+            prefix = "SINGLE"
         return (
-            " \n \nFORMULATION: "
-            + "\n \n"
-            + ("MULTIPLE" if self.multiple else "SINGLE")
+            " \n"
+            + prefix
             + " GRAPHICAL LASSO PROBLEM"
-            + "\n")
+            + "\n"
+            + "Regularization parameters:\n"
+            + f"{self.reg_params}"
+            )
         
     def derive_problem_formulation(self):
         """
