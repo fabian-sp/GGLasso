@@ -233,45 +233,20 @@ def K_single_grid(S, L, N, method = 'eBIC', gamma = 0.3, latent = False, mu = No
         print(f"------------Range search for instance {k}------------")
         
         if type(S) == dict:
-            S_k = S[k].copy()
-            kwargs['S'] = S_k.copy()
+            S_k = S[k].copy()    
         elif type(S) == np.ndarray:
             S_k = S[k,:,:].copy()
-            kwargs['S'] = S_k.copy()
-            
-        p_k = S_k.shape[0]
-        kwargs['Omega_0'] = np.eye(p_k)
-        kwargs['X_0'] = np.eye(p_k)
-        estimates[k] = np.zeros((r,M,p_k,p_k))
-        lowrank[k] = np.zeros((r,M,p_k,p_k))
         
-        # start range search
-        for j in np.arange(r):
-            kwargs['lambda1'] = L[j]
-            print(f"Reached row {j} of the grid/range")
-            for m in np.arange(M):
-                if latent:
-                    kwargs['mu1'] = mu[m]
-                    kwargs['latent'] = True
-                            
-                sol, info = ADMM_SGL(**kwargs)
-                
-                Theta_sol = sol['Theta']
-                estimates[k][j,m,:,:] = Theta_sol.copy()
-                
-                if latent:
-                    lowrank[k][j,m,:,:] = sol['L'].copy()
-                    RANK[k,j,m] = np.linalg.matrix_rank(sol['L'])
-                
-                # warm start
-                kwargs['Omega_0'] = sol['Omega'].copy()
-                kwargs['X_0'] = sol['X'].copy()
-                
-                AIC[k,j,m] = aic_single(S_k, Theta_sol, N[k])
-                for l in np.arange(len(gammas)):
-                    BIC[l, k, j, m] = ebic_single(S_k, Theta_sol, N[k], gamma = gammas[l])
-                    
-                SP[k,j,m] = sparsity(Theta_sol)
+        best, est_k, lr_k, stats_k = single_grid_search(S = S_k, L = L, N = N[k], method = method, gamma = gamma, \
+                                                             latent = latent, mu = mu)
+        estimates[k] = est_k.copy()
+        lowrank[k] = lr_k.copy()
+        
+        BIC[:,k,:,:] = stats_k['BIC'].copy()
+        AIC[k,:,:] = stats_k['AIC'].copy()
+        SP[k,:,:] = stats_k['SP'].copy()
+        RANK[k,:,:] = stats_k['RANK'].copy()
+        
                 
     # get optimal low rank for each lambda
     tmpBIC = np.zeros((len(gammas), K, r))
@@ -358,10 +333,10 @@ def single_grid_search(S, L, N, method = 'eBIC', gamma = 0.3, latent = False, mu
     BIC[:] = np.nan
     
     AIC = np.zeros((r, M))
-    AIC[:] = np.nan
+    AIC[:] = np.inf
     
     SP = np.zeros((r, M))
-    SP[:] = np.nan
+    SP[:] = np.inf
     
     RANK = np.zeros((r,M))
     
@@ -397,8 +372,21 @@ def single_grid_search(S, L, N, method = 'eBIC', gamma = 0.3, latent = False, mu
                 BIC[l, j, m] = ebic_single(S, Theta_sol, N, gamma = gammas[l])
                 
             SP[j,m] = sparsity(Theta_sol)
+    
+    AIC[AIC==-np.inf] = np.nan
+    BIC[BIC==-np.inf] = np.nan
+    
+    if method == 'AIC':    
+        ix= np.unravel_index(np.nanargmin(AIC), AIC.shape)
+    elif method == 'eBIC':        
+        ix= np.unravel_index(np.nanargmin(BIC[gamma_ix,:,:]), BIC[gamma_ix,:,:].shape)
+        
+        
+    best = estimates[ix]
+    
+    stats = {'BIC': BIC, 'AIC': AIC, 'SP': SP, 'RANK': RANK}
             
-    return 
+    return best, estimates, lowrank, stats
 ################################################################
     
 def aic(S, Theta, N, L = None):
