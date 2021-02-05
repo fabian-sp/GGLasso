@@ -1,11 +1,13 @@
 import numpy as np
 
-from gglasso.helper.basic_linalg import trp
-from gglasso.helper.ext_admm_helper import check_G
+from .helper.basic_linalg import trp
+from .helper.ext_admm_helper import check_G
 
-from gglasso.solver.admm_solver import ADMM_MGL
-from gglasso.solver.single_admm_solveradmm_solver import ADMM_SGL
-from gglasso.solver.ext_admm_solver import ext_ADMM_MGL
+from .solver.admm_solver import ADMM_MGL
+from .solver.single_admm_solveradmm_solver import ADMM_SGL
+from .solver.ext_admm_solver import ext_ADMM_MGL
+
+from .helper.model_selection import ebic, ebic_single
 
 
 assert_tol = 1e-5
@@ -248,8 +250,91 @@ class glasso_problem:
                                          latent = self.latent, mu1 = self.reg_params['mu1'], **self.solver_params)
                 
                 
-        self.solution = sol.copy()
-        self.solver_info = info.copy()
+        #self.solution = sol.copy()
+        #self.solver_info = info.copy()
         return
 
+
+    ##############################################
+    #### MODEL SELECTION
+    ##############################################
     
+    def _default_modelselect_params(self):
+        
+        params = dict()
+        params['lambda1_range'] = np.logspace(-3,1,10)
+        if self.multiple:
+            params['w2_range'] = np.logspace(-1,-4,5)
+            #params['lambda2_range'] = np.logspace(-3,1,10)
+            
+        if self.latent:
+            params['mu1_range'] = np.logspace(-1,1,10)
+        
+        
+        return params
+    
+    def set_modelselect_params(self, modelselect_params = None):
+        """
+        params : dict
+            Contains values for (a subset of) the grid parameters for lambda1, lambda2, mu1
+        """
+        if modelselect_params is None:
+            modelselect_params = dict()
+        else:
+            assert type(modelselect_params) == dict
+        
+        # when initialized set to default
+        if self.modelselect_params is None:
+            self.modelselect_params = self._default_modelselect_params()
+        
+        
+        # update with given input
+        # update with empty dict does not change the dictionary
+        self.modelselect_params.update(modelselect_params)
+            
+        return
+    
+#%%
+
+from sklearn.base import BaseEstimator
+
+
+class GGLassoEstimator(BaseEstimator):
+    
+    def __init__(self, S, N, p, multiple = True, latent = False, conforming = True):
+        
+        self.multiple = multiple
+        self.latent = latent
+        self.conforming = conforming
+        
+        self.n_samples = N
+        self.n_features = p
+        
+        self.precision_ = None
+        self.sample_covariance_ = S.copy()
+        self.lowrank_ = None
+        
+        
+        super(GGLassoEstimator, self).__init__()
+        
+        return
+    
+    def set_solution(self, Theta, L):
+        
+        return
+    
+    def ebic(self, gamma = 0.5):
+        
+        if self.mutliple:
+            self.ebic_ = ebic(self.S, self.precision_, self.n_samples, gamma = gamma)
+            
+        else:
+            self.ebic_ = ebic_single(self.S, self.precision_, self.n_samples, gamma = gamma)        
+        
+        
+
+
+
+
+
+
