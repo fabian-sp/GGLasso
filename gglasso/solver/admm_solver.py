@@ -182,5 +182,4 @@ def ADMM_stopping_criterion(Omega, Theta, L, X, S , lambda1, lambda2, nk, reg, l
         
     return max(term1, term2, term3, term4)
 
-
     

@@ -4,7 +4,7 @@ from .helper.basic_linalg import trp
 from .helper.ext_admm_helper import check_G
 
 from .solver.admm_solver import ADMM_MGL
-from .solver.single_admm_solveradmm_solver import ADMM_SGL
+from .solver.single_admm_solver import ADMM_SGL
 from .solver.ext_admm_solver import ext_ADMM_MGL
 
 from .helper.model_selection import ebic, ebic_single
@@ -14,10 +14,10 @@ assert_tol = 1e-5
 
 class glasso_problem:
     
-    def __init__(self, S, reg = "GGL", reg_params = None, latent = False, G = None):
+    def __init__(self, S, N, reg = "GGL", reg_params = None, latent = False, G = None):
         
         self.S = S
-        
+        self.N = N
         self.latent = latent
         
         self.G = G
@@ -26,7 +26,7 @@ class glasso_problem:
         self.reg_params = None
         self.set_reg_params(reg_params)
         
-        self.derive_problem_formulation()
+        self._derive_problem_formulation()
         
         if self.multiple:
             assert reg in ["GGL", "FGL"], "Specify 'GGL' for Group Graphical Lasso or 'FGL' for Fused Graphical Lasso (or None for Single Graphical Lasso)"
@@ -50,7 +50,7 @@ class glasso_problem:
             + f"{self.reg_params}"
             )
         
-    def derive_problem_formulation(self):
+    def _derive_problem_formulation(self):
         """
         - derives the problem formulation type from the given input of covariance matrices
         - sets the problems dimensions (K,p_k)
@@ -65,12 +65,12 @@ class glasso_problem:
             if len(self.S.shape) == 3:
                 self.conforming = True
                 self.multiple = True
-                self.check_covariance_3d()
+                self._check_covariance_3d()
                 
             else:
                 assert len(self.S.shape) == 2, f"The specified covariance data has shape {self.S.shape}, GGLasso can only handle 2 or 3dim-input"
                 self.conforming = True
-                self.check_covariance_2d()
+                self._check_covariance_2d()
                 
                 
         elif type(self.S) == list:
@@ -80,7 +80,7 @@ class glasso_problem:
             
             self.conforming = False
             self.multiple = True
-            self.check_covariance_list()
+            self._check_covariance_list()
             
             # G is also checked in the solver
             check_G(self.G, self.p)
@@ -91,7 +91,7 @@ class glasso_problem:
     ##############################################
     #### CHECK INPUT DATA
     ##############################################
-    def check_covariance_3d(self):
+    def _check_covariance_3d(self):
         
         assert self.S.shape[1] == self.S.shape[2], f"Dimensions are not correct, 2nd and 3rd dimension have to match but shape is {self.S.shape}. Specify covariance data in format(K,p,p)!"
         
@@ -101,7 +101,7 @@ class glasso_problem:
         
         return
     
-    def check_covariance_2d(self):
+    def _check_covariance_2d(self):
         
         assert self.S.shape[0] == self.S.shape[1], f"Dimensions are not correct, 1st and 2nd dimension have to match but shape is {self.S.shape}. Specify covariance data in format(p,p)!"
         
@@ -111,7 +111,7 @@ class glasso_problem:
         
         return
     
-    def check_covariance_list(self):
+    def _check_covariance_list(self):
         self.K = len(self.S)
         
         self.p = np.zeros(self.K, dtype = int)
@@ -249,9 +249,18 @@ class glasso_problem:
                                      Omega_0 = self.Omega_0, G = self.G, eps_admm = self.tol,\
                                          latent = self.latent, mu1 = self.reg_params['mu1'], **self.solver_params)
                 
-                
-        #self.solution = sol.copy()
-        #self.solver_info = info.copy()
+        
+        # create an instance of GGLassoEstimator
+        self.solution = GGLassoEstimator(S = self.S, N = self.N, p = self.p, \
+                         multiple = self.multiple, latent = self.latent, conforming = self.conforming)
+        
+        # set the computed solution
+        if self.latent:
+            self.solution._set_solution(Theta = sol['Theta'], L = sol['L'])   
+        else:
+            self.solution._set_solution(Theta = sol['Theta'])   
+        
+        self.solver_info = info.copy()
         return
 
 
@@ -319,7 +328,10 @@ class GGLassoEstimator(BaseEstimator):
         
         return
     
-    def set_solution(self, Theta, L):
+    def _set_solution(self, Theta, L = None):
+        
+        self.precision_ = Theta.copy()
+        self.lowrank_ = L.copy()
         
         return
     
