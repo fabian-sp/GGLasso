@@ -1,0 +1,3 @@
+[submodule "gglasso/test/gglasso/Lvsglasso/lvsglasso"]
+	path = gglasso/test/gglasso/Lvsglasso/lvsglasso
+	url = https://github.com/rahuln/lvsglasso.git
