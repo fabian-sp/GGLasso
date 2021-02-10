@@ -9,7 +9,7 @@ from .ggl_helper import prox_od_1norm, phiplus, prox_rank_norm
 
 
 def ADMM_SGL(S, lambda1, Omega_0 , Theta_0 = np.array([]), X_0 = np.array([]), \
-             eps_admm = 1e-5 , verbose = False, measure = False, latent = False, mu1 = None, **kwargs):
+             eps_admm = 1e-5 , rho= 1., max_iter = 1000, verbose = False, measure = False, latent = False, mu1 = None):
     """
     This is an ADMM algorithm for solving the Single Graphical Lasso problem
     
@@ -19,7 +19,6 @@ def ADMM_SGL(S, lambda1, Omega_0 , Theta_0 = np.array([]), X_0 = np.array([]), \
     latent: boolean to indidate whether low rank term should be estimated
     mu1: low rank penalty paramater, if latent=True
     
-    max_iter and rho can be specified via kwargs
     
     In the code, X are the SCALED dual variables, for the KKT stop criterion they have to be unscaled again!
     """
@@ -33,15 +32,7 @@ def ADMM_SGL(S, lambda1, Omega_0 , Theta_0 = np.array([]), X_0 = np.array([]), \
         
     (p,p) = S.shape
     
-    if 'max_iter' in kwargs.keys():
-        max_iter = kwargs.get('max_iter')
-    else:
-        max_iter = 1000
-    if 'rho' in kwargs.keys():
-        assert kwargs.get('rho') > 0
-        rho = kwargs.get('rho')
-    else:
-        rho = 1.
+    assert rho > 0, "ADMM penalization parameter must be positive."
         
     
     # initialize 

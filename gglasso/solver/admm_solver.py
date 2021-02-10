@@ -11,7 +11,7 @@ from .ggl_helper import prox_p, phiplus, prox_rank_norm, f, P_val
 
 def ADMM_MGL(S, lambda1, lambda2, reg , Omega_0 , \
              Theta_0 = np.array([]), X_0 = np.array([]), n_samples = None, \
-             eps_admm = 1e-5 , verbose = False, measure = False, latent = False, mu1 = None, **kwargs):
+             eps_admm = 1e-5 , rho= 1., max_iter = 1000, verbose = False, measure = False, latent = False, mu1 = None):
     """
     This is an ADMM algorithm for solving the Multiple Graphical Lasso problem
     reg specifies the type of penalty, i.e. Group or Fused Graphical Lasso
@@ -21,7 +21,6 @@ def ADMM_MGL(S, lambda1, lambda2, reg , Omega_0 , \
     S : empirical covariance matrices -- must be specified as a (K,p,p) array
     
     n_samples are the sample sizes for the K instances, can also be None or integer
-    max_iter and rho can be specified via kwargs
     
     latent: boolean to indidate whether low rank term should be estimated
     mu1: low rank penalty parameter (if latent=True), can be a vector of length K or a float
@@ -36,15 +35,7 @@ def ADMM_MGL(S, lambda1, lambda2, reg , Omega_0 , \
         
     (K,p,p) = S.shape
     
-    if 'max_iter' in kwargs.keys():
-        max_iter = kwargs.get('max_iter')
-    else:
-        max_iter = 1000
-    if 'rho' in kwargs.keys():
-        assert kwargs.get('rho') > 0
-        rho = kwargs.get('rho')
-    else:
-        rho = 1.
+    assert rho > 0, "ADMM penalization parameter must be positive."
     
     if latent:
         if type(mu1) == np.float64 or type(mu1) == float:
