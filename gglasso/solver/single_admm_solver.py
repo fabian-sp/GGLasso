@@ -4,6 +4,9 @@ author: Fabian Schaipp
 
 import numpy as np
 import time
+from scipy.sparse.csgraph import connected_components
+from scipy.linalg import block_diag
+
 
 from .ggl_helper import prox_od_1norm, phiplus, prox_rank_norm
 
@@ -20,7 +23,7 @@ def ADMM_SGL(S, lambda1, Omega_0 , Theta_0 = np.array([]), X_0 = np.array([]), \
     mu1: low rank penalty paramater, if latent=True
     
     
-    In the code, X are the SCALED dual variables, for the KKT stop criterion they have to be unscaled again!
+    In the code, X are the SCALED (with 1/rho) dual variables, for the KKT stop criterion they have to be unscaled (i.e. take rho*X) again!
     """
     assert Omega_0.shape == S.shape
     assert S.shape[0] == S.shape[1]
@@ -146,5 +149,130 @@ def ADMM_stopping_criterion(Omega, Theta, L, X, S , lambda1, latent = False, mu1
     
     return max(term1, term2, term3, term4)
 
+#######################################################
+## BLOCK-WISE GRAPHICAL LASSO AFTER WITTEN ET AL.
+#######################################################
 
+def block_SGL(S, lambda1, Omega_0, tol = 1e-5 , Theta_0 = None, X_0 = None, rho=1., max_iter = 1000, verbose = False, measure = False):
+    """
+    Parameters
+    ----------
+    S : (p,p) array
+        Empirical covariance matrix. Should be symmetric and semipositive definite.
+    lambda1 : float
+        Positive l1-regularization parameter.
+    Omega_0 : array
+        Starting point for solver. Use np.eye(p) if no prior knowledge.
+    tol : float, optional
+        Tolerance for the ADMM algorithm on each block. The default is 1e-5.
+    Theta_0 : array, optional
+        Starting point for solver (for Theta variable). 
+    X_0 : array
+        Starting point for solver (for dual variable).
+    rho : float, optional
+        ADMM penalty parameter. The default is 1..
+    max_iter : int, optional
+        Maximum number of iterations for the ADMM algorithm on each block. The default is 1000.
     
+    verbose : boolean, optional
+        ADMM prints information. The default is False.
+    measure : boolean, optional
+        Measure runtime and objective at each iter of ADMM. The default is False.
+
+    Returns
+    -------
+    sol2 : (p,p) array
+        Solution Theta to the Graphical Lasso problem.
+        
+    This function solves the Single Graphical Lasso problem
+    
+    min -log det(Z) + tr(S.T@Z) + lambda_1 * ||Z||_1,od
+    
+    by finding connected components of the solution and solving each block separately, according to Witten, Friedman, Simon "NEW INSIGHTS FOR THE GRAPHICAL LASSO"
+    where ||Z||_1,od is the off-diagonal l1-norm.
+    
+    
+    NOTE: 
+        -in the original paper the l1-norm is also used on the diagonal which results in a small modification.
+        -the returned solution for X is not guaranteed to be identical to the dual variable of the full solution, but can be used as starting point (e.g. in grid search)
+    """
+    assert Omega_0.shape == S.shape
+    assert S.shape[0] == S.shape[1]
+    assert lambda1 > 0
+    
+    (p,p) = S.shape
+    
+    if Theta_0 is None:
+        Theta_0 = Omega_0.copy()
+    if X_0 is None:
+        X_0 = np.zeros((p,p))
+    
+    
+    # compute connected components of S with lambda_1 threshold
+    numC, allC =  get_connected_components(S, lambda1)
+
+    allOmega = list()
+    allTheta = list()
+    allX = list()
+    
+    for i in range(numC):
+        C = allC[i]
+        
+        # single node connected components have a closed form solution, see Witten, Friedman, Simon "NEW INSIGHTS FOR THE GRAPHICAL LASSO "
+        if len(C) == 1:
+            # we use the OFF-DIAGONAL l1-penalty, otherwise it would be 1/(S[C,C]+lambda1)
+            closed_sol = 1/(S[C,C])
+            
+            allOmega.append(closed_sol)
+            allTheta.append(closed_sol)
+            allX.append(np.array([0]))
+            
+            
+        # else solve Graphical Lasso for the corresponding block       
+        else:
+            block_S = S[np.ix_(C,C)]
+            block_sol, block_info =  ADMM_SGL(S = block_S, lambda1 = lambda1, eps_admm = tol, Omega_0 = Omega_0[np.ix_(C,C)],\
+                                              Theta_0 = Theta_0[np.ix_(C,C)], X_0 = X_0[np.ix_(C,C)], \
+                                              rho = rho, max_iter = max_iter, verbose = verbose, measure = measure)
+            
+            allOmega.append(block_sol['Omega'])
+            allTheta.append(block_sol['Theta'])
+            allX.append(block_sol['X'])
+            
+    
+    # compute inverse permutation
+    per = np.hstack(allC)
+    per1 = invert_permutation(per)
+    
+    # construct solution by applying inverse permutation indexing
+    sol = dict()
+    sol['Omega'] = block_diag(*allOmega)[np.ix_(per1,per1)]
+    sol['Theta'] = block_diag(*allTheta)[np.ix_(per1,per1)]
+    sol['X'] = block_diag(*allX)[np.ix_(per1,per1)]
+    
+    return sol
+
+def get_connected_components(S, lambda1):
+    
+    A = (np.abs(S) > lambda1).astype(int)
+    np.fill_diagonal(A, 1)
+    
+    numC, labelsC = connected_components(A, directed=False, return_labels=True)
+    
+    allC = list()
+    for i in range(numC):
+        # need hstack for avoiding redundant dimensions
+        thisC = np.hstack(np.argwhere(labelsC == i))
+        
+        allC.append(thisC)
+    
+    return numC, allC
+
+def invert_permutation(p):
+    """The argument p is assumed to be some permutation of 0, 1, ..., len(p)-1. 
+    Returns an array s, where s[i] gives the index of i in p.
+    """
+    s = np.empty_like(p)
+    s[p] = np.arange(p.size)
+    return s
+
