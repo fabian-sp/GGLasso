@@ -226,11 +226,12 @@ class glasso_problem:
         
         #forbidden_keys = ['lambda1', 'lambda2', 'mu1', 'latent', 'Omega_0', 'reg']
         
-        self.solver_params = self._default_solver_params().update(solver_params)
+        self.solver_params = self._default_solver_params()
+        self.solver_params.update(solver_params)
         
-        print(solver_params.keys())
+        #print(self.solver_params.keys())
         
-        print(f"Solve problem with {solver} solver...")
+        print(f"\n Solve problem with {solver.upper()} solver... \n ")
         if not self.multiple:
             sol, info = ADMM_SGL(S = self.S, lambda1 = self.reg_params['lambda1'], Omega_0= self.Omega_0, \
                                  eps_admm = self.tol , latent = self.latent, mu1 = self.reg_params['mu1'], **self.solver_params)
@@ -331,7 +332,9 @@ class GGLassoEstimator(BaseEstimator):
     def _set_solution(self, Theta, L = None):
         
         self.precision_ = Theta.copy()
-        self.lowrank_ = L.copy()
+        
+        if L is not None:
+            self.lowrank_ = L.copy()
         
         return
     

@@ -15,7 +15,7 @@ from gglasso.helper.model_selection import grid_search, K_single_grid
 p = 100
 K = 5
 N = 1000
-M = 2
+M = 10
 
 reg = 'GGL'
 

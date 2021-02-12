@@ -1,4 +1,6 @@
 import numpy as np
+import time
+
 from gglasso.helper.data_generation import time_varying_power_network, group_power_network,sample_covariance_matrix
 from gglasso.problem import glasso_problem
 
@@ -16,9 +18,20 @@ elif reg == 'FGL':
 
 S, samples = sample_covariance_matrix(Sigma, N)
 
-lambda1= 0.05
-lambda2 = 0.05
 
 
+P = glasso_problem(S = S, N = N, reg = reg, latent = False)
 
+print(P)
+
+reg_params = {'lambda1': 0.05, 'lambda2' : 0.05}
+
+
+P.set_reg_params(reg_params)
+
+solver_params = {'verbose': True, 'measure': False}
+
+start = time.time()
+P.solve(solver_params= solver_params)
+end = time.time(); print(end-start)
 

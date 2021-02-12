@@ -6,14 +6,14 @@ author: Fabian Schaipp
 import numpy as np
 from matplotlib import pyplot as plt
 import seaborn as sns
+import time
 from sklearn.covariance import GraphicalLasso
 from gglasso.helper.data_generation import time_varying_power_network, group_power_network,sample_covariance_matrix
 from gglasso.solver.single_admm_solver import ADMM_SGL
 
 
-p = 10
-N = 100
-
+p = 100
+N = 1000
 Sigma, Theta = group_power_network(p, K=5, M=2)
 
 S, samples = sample_covariance_matrix(Sigma, N)
@@ -27,13 +27,18 @@ Theta = Theta[0,:,:]
 lambda1 = 0.01
 
 singleGL = GraphicalLasso(alpha = lambda1, tol = 1e-6, max_iter = 500, verbose = True)
-model = singleGL.fit(samples[0,:,:].T)
 
+start = time.time()
+model = singleGL.fit(samples[0,:,:].T)
+end = time.time(); print(end-start)
+ 
 res_scikit = model.precision_
 
-
 Omega_0 = np.eye(p)
+
+start = time.time()
 sol, info = ADMM_SGL(S, lambda1, Omega_0 , eps_admm = 1e-4 , verbose = True, latent = False)
+end = time.time(); print(end-start)
 
 
 plt.scatter(np.triu(sol['Theta']), np.triu(res_scikit))
