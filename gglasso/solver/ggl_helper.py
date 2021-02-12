@@ -111,12 +111,13 @@ def construct_B(K):
     Binv = np.linalg.pinv(B.T)
     return B, Binv
 
-
+@njit()
 def prox_tv(v,l):
     a = condat_method(v,l)
     #a = ProxTV(l).call(np.ascontiguousarray(v))
     return a
 
+@njit()
 def prox_phi_fgl(v, l1, l2):
     res = prox_1norm(prox_tv(v,l2) , l1)
     return res
@@ -178,9 +179,10 @@ def P_val(X, l1, l2, reg):
                 
     # multiply by 2 as we only summed the upper triangular
     return 2 * res
-    
+
+@njit()  
 def prox_phi(v, l1, l2, reg):
-    assert min(l1,l2) > 0, "lambda 1 and lambda2 have to be positive"
+    assert np.minimum(l1,l2) > 0, "lambda 1 and lambda2 have to be positive"
     assert reg in ['GGL', 'FGL']
     
     if reg == 'GGL':
@@ -189,18 +191,37 @@ def prox_phi(v, l1, l2, reg):
         res = prox_phi_fgl(v, l1, l2)
     return res
     
+# def OLD_prox_p(X, l1, l2, reg):
+#     assert min(l1,l2) > 0, "lambda 1 and lambda2 have to be positive"
+#     (K,p,p) = X.shape
+#     M = np.zeros((K,p,p))
+#     for i in np.arange(p):
+#         for j in np.arange(p):
+#             if i == j:
+#                 M[:,i,j] = X[:,i,j]
+#             else:
+#                 M[:,i,j] = prox_phi(X[:,i,j], l1, l2 , reg)
+    
+#     assert np.abs(M - trp(M)).max() <= 1e-5, f"symmetry failed by  {abs(M - trp(M)).max()}"
+#     return M
+
+@njit()
 def prox_p(X, l1, l2, reg):
-    assert min(l1,l2) > 0, "lambda 1 and lambda2 have to be positive"
+    #X is always symmetric and hence we only calculate upper diagonals
+    assert np.abs(X - trp(X)).max() <= 1e-5, "input X is not symmetric"
+    assert np.minimum(l1,l2) > 0, "lambda 1 and lambda2 have to be positive"
+    
     (K,p,p) = X.shape
     M = np.zeros((K,p,p))
     for i in np.arange(p):
-        for j in np.arange(p):
+        for j in np.arange(start = i, stop = p):
             if i == j:
-                M[:,i,j] = X[:,i,j]
+                # factor 1/2 because we later add again
+                M[:,i,j] = (1/2)*X[:,i,j]
             else:
                 M[:,i,j] = prox_phi(X[:,i,j], l1, l2 , reg)
-    
-    assert np.abs(M - trp(M)).max() <= 1e-5, f"symmetry failed by  {abs(M - trp(M)).max()}"
+    # add transposed for lower diagonal
+    M = M + trp(M)
     return M
   
 def moreau_P(X, l1, l2, reg):
