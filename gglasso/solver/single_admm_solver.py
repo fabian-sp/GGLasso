@@ -103,14 +103,15 @@ def ADMM_SGL(S, lambda1, Omega_0 , Theta_0 = np.array([]), X_0 = np.array([]), \
     assert abs((Theta_t).T- Theta_t).max() <= 1e-5, "Solution is not symmetric"
     assert abs((L_t).T- L_t).max() <= 1e-5, "Solution is not symmetric"
     
-    D,_ = np.linalg.eigh(Theta_t-L_t)
+    D = np.linalg.eigvalsh(Theta_t-L_t)
     if D.min() <= 0:
         print(f"WARNING: Theta (Theta - L resp.) is not positive definite. Solve to higher accuracy! (min EV is {D.min()})")
     
-    D,_ = np.linalg.eigh(L_t)
-    if D.min() < -1e-8:
-        print(f"WARNING: L is not positive semidefinite. Solve to higher accuracy! (min EV is {D.min()})")
-    
+    if latent:
+        D = np.linalg.eigvalsh(L_t)
+        if D.min() < -1e-8:
+            print(f"WARNING: L is not positive semidefinite. Solve to higher accuracy! (min EV is {D.min()})")
+        
     if latent:
         sol = {'Omega': Omega_t, 'Theta': Theta_t, 'L': L_t, 'X': X_t}
     else:    

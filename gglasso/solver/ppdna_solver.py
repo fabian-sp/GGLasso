@@ -229,7 +229,8 @@ def PPDNA(S, lambda1, lambda2, reg, Omega_0, Theta_0 = np.array([]), X_0 = np.ar
     assert abs(trp(Omega_t)- Omega_t).max() <= 1e-5, "Solution is not symmetric"
     assert abs(trp(Theta_t)- Theta_t).max() <= 1e-5, "Solution is not symmetric"
     assert abs(trp(X_t)- X_t).max() <= 1e-5, "Solution is not symmetric"
-    D,_ = np.linalg.eigh(Theta_t)
+    
+    D = np.linalg.eigvalsh(Theta_t)
     if D.min() <= 0:
         print("WARNING: Theta is not positive definite. Solve to higher accuracy!")
     

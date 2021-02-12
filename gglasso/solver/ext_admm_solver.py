@@ -148,14 +148,15 @@ def ext_ADMM_MGL(S, lambda1, lambda2, reg , Omega_0, G,\
         assert abs(Theta_t[k].T - Theta_t[k]).max() <= 1e-5, "Solution is not symmetric"
         assert abs(L_t[k].T - L_t[k]).max() <= 1e-5, "Solution is not symmetric"
         
-        D,_ = np.linalg.eigh(Theta_t[k]-L_t[k])
+        D = np.linalg.eigvalsh(Theta_t[k]-L_t[k])
         if D.min() <= 1e-5:
             print("WARNING: Theta (Theta-L resp.) may be not positive definite -- increase accuracy!")
                      
-        D,_ = np.linalg.eigh(L_t[k])
-        if D.min() <= -1e-5:
-            print("WARNING: L may be not positive semidefinite -- increase accuracy!")
-    
+        if latent:
+            D = np.linalg.eigvalsh(L_t[k])
+            if D.min() <= -1e-5:
+                print("WARNING: L may be not positive semidefinite -- increase accuracy!")
+        
     
     sol = {'Omega': Omega_t, 'Theta': Theta_t, 'L': L_t, 'X0': X0_t, 'X1': X1_t}
     if measure:
