@@ -1,2 +1,12 @@
 *.pyc
-*.egg-info
+*.egg-info.DS_Store
+.idea/
+=0.46.0
+=3.8
+build/
+dist/
+gglasso/Lvsglasso/
+tick/
+venv/
+.DS_Store
+gglasso.egg-info/
