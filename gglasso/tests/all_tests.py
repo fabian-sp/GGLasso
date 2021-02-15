@@ -4,7 +4,7 @@ from sklearn.covariance import GraphicalLasso
 
 from gglasso.helper.data_generation import group_power_network, time_varying_power_network,  sample_covariance_matrix
 from gglasso.helper.experiment_helper import get_K_identity
-from gglasso.solver.single_admm_solver import ADMM_SGL
+from gglasso.solver.single_admm_solver import ADMM_SGL, block_SGL
 from gglasso.solver.admm_solver import ADMM_MGL
 
 from gglasso.solver.ext_admm_solver import ext_ADMM_MGL
@@ -62,7 +62,7 @@ def template_extADMM_consistent(latent = False):
     """
     tests whether the extended ADMM solver results in the same as MGL-solver for the redundant case of conforming variables
     """
-    p = 100
+    p = 50
     N = 1000
     K = 5
     M = 10
@@ -103,6 +103,34 @@ def test_extADMM_consistent():
 
 def test_extADMM_consistent_latent():
     template_extADMM_consistent(latent = True)
+    return
+
+
+def test_block_SGL():
+    """
+    tests whether solving each connected component results in the same as solving the whole problem (see Witten et al. paper referenced in block_SGL)
+    """
+    p = 100
+    K = 1
+    N = 1000
+    M = 2
+    lambda1 = 0.1
+    
+    Sigma, Theta = group_power_network(p, K, M)
+    S, samples = sample_covariance_matrix(Sigma, N)    
+    S = S.squeeze()
+    
+    Omega_0 = np.eye(p)
+    
+    full_sol,_ = ADMM_SGL(S, lambda1, Omega_0, eps_admm = 1e-7, verbose = False)
+    
+    block_sol = block_SGL(S, lambda1, Omega_0, tol = 1e-7, verbose = False)
+    
+    sol1 = full_sol['Theta']
+    sol2 = block_sol['Theta']
+    
+    assert sol1 == pt.approx(sol2, abs = 1e-3), f"Absolute error in norm: {np.linalg.norm(sol1-sol2)}"
+    
     return
 
 ###############################################################
