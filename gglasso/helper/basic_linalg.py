@@ -3,10 +3,11 @@ author: Fabian Schaipp
 """
 
 import numpy as np
-from numba import jit
+from numba import njit
 
 ## general functions for the space G
 
+@njit()
 def trp(X):   
     # transposes for a block of matrices each single matrix
     # assumes that X is given in the form (K, p, p)

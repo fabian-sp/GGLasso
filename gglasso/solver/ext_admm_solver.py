@@ -15,7 +15,7 @@ from gglasso.helper.ext_admm_helper import check_G
 
 
 def ext_ADMM_MGL(S, lambda1, lambda2, reg , Omega_0, G,\
-             X0 = None, X1 = None, eps_admm = 1e-5 , verbose = False, measure = False, latent = False, mu1 = None, **kwargs):
+             X0 = None, X1 = None, eps_admm = 1e-5 , rho= 1., max_iter = 1000, verbose = False, measure = False, latent = False, mu1 = None):
     """
     This is an ADMM algorithm for solving the Multiple Graphical Lasso problem
     where not all instances have the same number of dimensions
@@ -29,7 +29,6 @@ def ext_ADMM_MGL(S, lambda1, lambda2, reg , Omega_0, G,\
     mu1: low rank penalty parameter (if latent=True), can be a vector of length K or a float
     
     G: array containing the group penalty indices
-    max_iter and rho can be specified via kwargs
     
     In the code, X are the SCALED dual variables, for the KKT stop criterion they have to be unscaled again!
     """
@@ -52,15 +51,7 @@ def ext_ADMM_MGL(S, lambda1, lambda2, reg , Omega_0, G,\
    
     check_G(G, p)
     
-    if 'max_iter' in kwargs.keys():
-        max_iter = kwargs.get('max_iter')
-    else:
-        max_iter = 1000
-    if 'rho' in kwargs.keys():
-        assert kwargs.get('rho') > 0
-        rho = kwargs.get('rho')
-    else:
-        rho = 1.
+    assert rho > 0, "ADMM penalization parameter must be positive."
         
     
     # initialize 
@@ -157,14 +148,15 @@ def ext_ADMM_MGL(S, lambda1, lambda2, reg , Omega_0, G,\
         assert abs(Theta_t[k].T - Theta_t[k]).max() <= 1e-5, "Solution is not symmetric"
         assert abs(L_t[k].T - L_t[k]).max() <= 1e-5, "Solution is not symmetric"
         
-        D,_ = np.linalg.eigh(Theta_t[k]-L_t[k])
+        D = np.linalg.eigvalsh(Theta_t[k]-L_t[k])
         if D.min() <= 1e-5:
             print("WARNING: Theta (Theta-L resp.) may be not positive definite -- increase accuracy!")
                      
-        D,_ = np.linalg.eigh(L_t[k])
-        if D.min() <= -1e-5:
-            print("WARNING: L may be not positive semidefinite -- increase accuracy!")
-    
+        if latent:
+            D = np.linalg.eigvalsh(L_t[k])
+            if D.min() <= -1e-5:
+                print("WARNING: L may be not positive semidefinite -- increase accuracy!")
+        
     
     sol = {'Omega': Omega_t, 'Theta': Theta_t, 'L': L_t, 'X0': X0_t, 'X1': X1_t}
     if measure:

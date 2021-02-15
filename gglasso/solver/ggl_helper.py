@@ -3,16 +3,17 @@ author: Fabian Schaipp
 """
 
 import numpy as np
-from tick.prox import ProxTV
-from numba import jit
+#from tick.prox import ProxTV
+from numba import jit, njit
 
 from ..helper.basic_linalg import trp,Gdot,Sdot
 from .fgl_helper import condat_method
 
 # functions specifically related to the GGL regularizer
+@njit()
 def prox_1norm(v, l): 
-    return np.sign(v) * np.maximum(abs(v) - l, 0)
-
+    return np.sign(v) * np.maximum(np.abs(v) - l, 0.)
+    
 @jit(nopython=True)
 def prox_od_1norm(A, l):
     """
@@ -56,11 +57,12 @@ def prox_chi(A, l):
 
     return res
 
-          
+@njit()          
 def prox_2norm(v,l):
-    a = max(np.linalg.norm(v,2) , l)
+    a = np.maximum(np.linalg.norm(v,2) , l)
     return v * (a - l) / a
 
+@njit()
 def prox_phi_ggl(v, l1, l2):
     u = prox_1norm(v, l1)
     return prox_2norm(u,l2)
@@ -85,7 +87,7 @@ def jacobian_2norm(v, l):
 
 
 def jacobian_1norm(v, l):  
-    d = (abs(v) > l).astype(int)
+    d = (np.abs(v) > l).astype(int)
     return np.diag(d)
 
 
@@ -95,7 +97,7 @@ def jacobian_prox_phi_ggl(v , l1 , l2):
     lam = jacobian_1norm(v, l1)
     
     M = (np.eye(len(v)) - sig) @ lam
-    assert abs(M - M.T).max() <= 1e-10
+    assert np.abs(M - M.T).max() <= 1e-10
     return M
 
 # functions specifically related to the FGL regularizer
@@ -109,12 +111,13 @@ def construct_B(K):
     Binv = np.linalg.pinv(B.T)
     return B, Binv
 
-
+@njit()
 def prox_tv(v,l):
     a = condat_method(v,l)
     #a = ProxTV(l).call(np.ascontiguousarray(v))
     return a
 
+@njit()
 def prox_phi_fgl(v, l1, l2):
     res = prox_1norm(prox_tv(v,l2) , l1)
     return res
@@ -127,7 +130,7 @@ def jacobian_tv(v,l):
     x_l2 = prox_tv(v,l)   
     z_l2 = Binv @ (v - x_l2)
     
-    ind1 = (abs(abs(z_l2) - l) <= 1e-10)    
+    ind1 = (np.abs(np.abs(z_l2) - l) <= 1e-10)    
     #ind2 = (B@x_l2 != 0)
     
     Sigma = np.diag(1-ind1.astype(int))   
@@ -143,22 +146,24 @@ def jacobian_prox_phi_fgl(v , l1 , l2):
     
     return Theta @ P
 
-def prox_PTV(X, l2):
-    """
-    prox of only the TV penalty, but on the space G
-    """
-    assert l2 > 0, "lambda2 havs to be positive"
-    (K,p,p) = X.shape
-    M = np.zeros((K,p,p))
-    for i in np.arange(p):
-        for j in np.arange(p):
-            if i == j:
-                M[:,i,j] = X[:,i,j]
-            else:
-                M[:,i,j] = condat_method(X[:,i,j], l2)
+# def prox_PTV(X, l2):
+#     """
+#     prox of only the TV penalty, but on the space G
+#     """
+#     assert l2 > 0, "lambda2 havs to be positive"
+#     (K,p,p) = X.shape
+#     M = np.zeros((K,p,p))
+#     for i in np.arange(p):
+#         for j in np.arange(p):
+#             if i == j:
+#                 M[:,i,j] = X[:,i,j]
+#             else:
+#                 M[:,i,j] = condat_method(X[:,i,j], l2)
     
-    assert abs(M - trp(M)).max() <= 1e-5
-    return M
+#     assert abs(M - trp(M)).max() <= 1e-5
+#     return M
+
+
 # general functions related to the regularizer P
     
 def P_val(X, l1, l2, reg):
@@ -174,9 +179,10 @@ def P_val(X, l1, l2, reg):
                 
     # multiply by 2 as we only summed the upper triangular
     return 2 * res
-    
+
+@njit()  
 def prox_phi(v, l1, l2, reg):
-    assert min(l1,l2) > 0, "lambda 1 and lambda2 have to be positive"
+    assert np.minimum(l1,l2) > 0, "lambda 1 and lambda2 have to be positive"
     assert reg in ['GGL', 'FGL']
     
     if reg == 'GGL':
@@ -185,18 +191,37 @@ def prox_phi(v, l1, l2, reg):
         res = prox_phi_fgl(v, l1, l2)
     return res
     
+# def OLD_prox_p(X, l1, l2, reg):
+#     assert min(l1,l2) > 0, "lambda 1 and lambda2 have to be positive"
+#     (K,p,p) = X.shape
+#     M = np.zeros((K,p,p))
+#     for i in np.arange(p):
+#         for j in np.arange(p):
+#             if i == j:
+#                 M[:,i,j] = X[:,i,j]
+#             else:
+#                 M[:,i,j] = prox_phi(X[:,i,j], l1, l2 , reg)
+    
+#     assert np.abs(M - trp(M)).max() <= 1e-5, f"symmetry failed by  {abs(M - trp(M)).max()}"
+#     return M
+
+@njit()
 def prox_p(X, l1, l2, reg):
-    assert min(l1,l2) > 0, "lambda 1 and lambda2 have to be positive"
+    #X is always symmetric and hence we only calculate upper diagonals
+    assert np.abs(X - trp(X)).max() <= 1e-5, "input X is not symmetric"
+    assert np.minimum(l1,l2) > 0, "lambda 1 and lambda2 have to be positive"
+    
     (K,p,p) = X.shape
     M = np.zeros((K,p,p))
     for i in np.arange(p):
-        for j in np.arange(p):
+        for j in np.arange(start = i, stop = p):
             if i == j:
-                M[:,i,j] = X[:,i,j]
+                # factor 1/2 because we later add again
+                M[:,i,j] = (1/2)*X[:,i,j]
             else:
                 M[:,i,j] = prox_phi(X[:,i,j], l1, l2 , reg)
-    
-    assert abs(M - trp(M)).max() <= 1e-5, f"symmetry failed by  {abs(M - trp(M)).max()}"
+    # add transposed for lower diagonal
+    M = M + trp(M)
     return M
   
 def moreau_P(X, l1, l2, reg):
@@ -368,7 +393,6 @@ def Y_t( X, Omega_t, Theta_t, S, lambda1, lambda2, sigma_t, reg):
     V_t = Theta_t + (sigma_t * X)
 
     eigD, eigQ = np.linalg.eigh(W_t)
-    #print("Eigendecomposition is executed in Y_t")
   
     grad1 = np.zeros((K,p,p))
     term1 = 0

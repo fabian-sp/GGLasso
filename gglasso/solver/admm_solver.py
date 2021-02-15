@@ -11,7 +11,7 @@ from .ggl_helper import prox_p, phiplus, prox_rank_norm, f, P_val
 
 def ADMM_MGL(S, lambda1, lambda2, reg , Omega_0 , \
              Theta_0 = np.array([]), X_0 = np.array([]), n_samples = None, \
-             eps_admm = 1e-5 , verbose = False, measure = False, latent = False, mu1 = None, **kwargs):
+             eps_admm = 1e-5 , rho= 1., max_iter = 1000, verbose = False, measure = False, latent = False, mu1 = None):
     """
     This is an ADMM algorithm for solving the Multiple Graphical Lasso problem
     reg specifies the type of penalty, i.e. Group or Fused Graphical Lasso
@@ -21,7 +21,6 @@ def ADMM_MGL(S, lambda1, lambda2, reg , Omega_0 , \
     S : empirical covariance matrices -- must be specified as a (K,p,p) array
     
     n_samples are the sample sizes for the K instances, can also be None or integer
-    max_iter and rho can be specified via kwargs
     
     latent: boolean to indidate whether low rank term should be estimated
     mu1: low rank penalty parameter (if latent=True), can be a vector of length K or a float
@@ -36,15 +35,7 @@ def ADMM_MGL(S, lambda1, lambda2, reg , Omega_0 , \
         
     (K,p,p) = S.shape
     
-    if 'max_iter' in kwargs.keys():
-        max_iter = kwargs.get('max_iter')
-    else:
-        max_iter = 1000
-    if 'rho' in kwargs.keys():
-        assert kwargs.get('rho') > 0
-        rho = kwargs.get('rho')
-    else:
-        rho = 1.
+    assert rho > 0, "ADMM penalization parameter must be positive."
     
     if latent:
         if type(mu1) == np.float64 or type(mu1) == float:
@@ -85,8 +76,9 @@ def ADMM_MGL(S, lambda1, lambda2, reg , Omega_0 , \
         
         if measure:
             start = time.time()
-            
+        
         eta_A = ADMM_stopping_criterion(Omega_t, Theta_t, L_t, rho*X_t, S , lambda1, lambda2, nk, reg, latent = latent, mu1 = mu1)
+        
         kkt_residual[iter_t] = eta_A
             
         if eta_A <= eps_admm:
@@ -133,14 +125,15 @@ def ADMM_MGL(S, lambda1, lambda2, reg , Omega_0 , \
     assert abs(trp(Theta_t)- Theta_t).max() <= 1e-5, "Solution is not symmetric"
     assert abs(trp(L_t)- L_t).max() <= 1e-5, "Solution is not symmetric"
     
-    D,_ = np.linalg.eigh(Theta_t - L_t)
+    D = np.linalg.eigvalsh(Theta_t - L_t)
     if D.min() <= 0:
         print("WARNING: Theta (Theta - L resp.) is not positive definite. Solve to higher accuracy!")
     
-    D,_ = np.linalg.eigh(L_t)
-    if D.min() < -1e-5:
-        print("WARNING: L is not positive semidefinite. Solve to higher accuracy!")
-    
+    if latent:
+        D = np.linalg.eigvalsh(L_t)
+        if D.min() < -1e-5:
+            print("WARNING: L is not positive semidefinite. Solve to higher accuracy!")
+        
     sol = {'Omega': Omega_t, 'Theta': Theta_t, 'L': L_t, 'X': X_t}
     if measure:
         info = {'status': status , 'runtime': runtime[:iter_t], 'kkt_residual': kkt_residual[1:iter_t +1], 'objective': objective[:iter_t]}
@@ -181,6 +174,5 @@ def ADMM_stopping_criterion(Omega, Theta, L, X, S , lambda1, lambda2, nk, reg, l
         term4 = 0
         
     return max(term1, term2, term3, term4)
-
 
     
