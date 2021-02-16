@@ -6,7 +6,7 @@ from gglasso.problem import glasso_problem
 
 p = 100
 K = 5
-N = 1000
+N = 100
 M = 2
 
 reg = 'GGL'
@@ -17,7 +17,6 @@ elif reg == 'FGL':
     Sigma, Theta = time_varying_power_network(p, K, M)
 
 S, samples = sample_covariance_matrix(Sigma, N)
-
 
 
 P = glasso_problem(S = S, N = N, reg = reg, latent = False)
@@ -35,3 +34,20 @@ start = time.time()
 P.solve(solver_params= solver_params)
 end = time.time(); print(end-start)
 
+Theta_sol = P.solution.precision_
+
+
+#%% non-conforming example
+
+
+
+
+
+
+
+
+
+
+
+
+#%% SGL example

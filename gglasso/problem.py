@@ -89,7 +89,7 @@ class glasso_problem:
             raise TypeError(f"Incorrect input type of S. You input {type(self.S)}, but np.ndarray or list is expected.")
     
     ##############################################
-    #### CHECK INPUT DATA
+    #### CHECK INPUT DATA / SCALING
     ##############################################
     def _check_covariance_3d(self):
         
@@ -131,6 +131,22 @@ class glasso_problem:
         self.S = S_dict
         
         return
+    
+    def _scale_input_to_correlation(self):
+        """
+        scales input data S by diagonal elements 
+        scale factors are stored in self._scale for rescaling later
+        """
+        if not self.multiple:
+            self._scale = np.diag(self.S)
+            self.S = _scale_array_by_diagonal(self.S)
+        else:
+            self._scale = np.vstack([np.diag(self.S[k]) for k in range(self.K)])
+            for k in range(self.K):
+                self.S[k] = _scale_array_by_diagonal(self.S[k])
+        return
+    
+
     
     ##############################################
     #### DEFAULT PARAMETERS
@@ -252,7 +268,7 @@ class glasso_problem:
                 
         
         # create an instance of GGLassoEstimator
-        self.solution = GGLassoEstimator(S = self.S, N = self.N, p = self.p, \
+        self.solution = GGLassoEstimator(S = self.S, N = self.N, p = self.p, K = self.K,\
                          multiple = self.multiple, latent = self.latent, conforming = self.conforming)
         
         # set the computed solution
@@ -303,19 +319,40 @@ class glasso_problem:
         self.modelselect_params.update(modelselect_params)
             
         return
+
+# helper function
+def _scale_array_by_diagonal(X, d = None):
+        """
+        scales a 2d-array X with 1/sqrt(d), i.e.
+        
+        X_ij/sqrt(d_i*d_j)
+        in matrix notation: W^-1 @ X @ W^-1 with W^2 = diag(d)
+        
+        if d = None, use square root diagonal, i.e. W^2 = diag(X)
+        see (2.4) in https://fan.princeton.edu/papers/09/Covariance.pdf
+        """
+        assert len(X.shape) == 2
+        if d is None:
+            d = np.diag(X)
+        else:
+            assert len(d) == X.shape[0]
+            
+        scale = np.tile(np.sqrt(d),(X.shape[0],1))
+        scale = scale.T * scale
+        
+        return X/scale
     
 #%%
-
 from sklearn.base import BaseEstimator
-
 
 class GGLassoEstimator(BaseEstimator):
     
-    def __init__(self, S, N, p, multiple = True, latent = False, conforming = True):
+    def __init__(self, S, N, p, K, multiple = True, latent = False, conforming = True):
         
         self.multiple = multiple
         self.latent = latent
         self.conforming = conforming
+        self.K = K
         
         self.n_samples = N
         self.n_features = p
@@ -336,6 +373,16 @@ class GGLassoEstimator(BaseEstimator):
         if L is not None:
             self.lowrank_ = L.copy()
         
+        return
+    
+    def _rescale_to_covariances(self, scale):
+        
+        if not self.multiple:
+            self.precision_ = _scale_array_by_diagonal(self.precision_, d = scale)
+        else:
+            for k in range(self.K):
+                self.precision_[k] = _scale_array_by_diagonal(self.precision_[k], d = scale[k])
+                
         return
     
     def ebic(self, gamma = 0.5):
