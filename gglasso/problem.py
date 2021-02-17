@@ -150,8 +150,8 @@ class glasso_problem:
     def _rescale_to_covariances(self, X, scale):
         """
         rescales X with the given scale
-        X: array od dict, has the format of the solution to GGLasso problem
-        
+        X: object of type like input data S
+        scale: array with diagonal elements of unscaled input S --> use self._scaled
         """
         Y = X.copy()
         if not self.multiple:
@@ -250,6 +250,18 @@ class glasso_problem:
 
     
     def set_start_point(self, Omega_0 = None):
+        """
+
+        Parameters
+        ----------
+        Omega_0 : array or dict, optional
+            Starting point for solver. Needs to be of same type as input data S. The default is None.
+
+        Returns
+        -------
+        None.
+
+        """
         
         if Omega_0 is not None:
             # TODO: check if Omega_0 has correct type (depends on problem parameters)
@@ -336,7 +348,7 @@ class glasso_problem:
     
     def set_modelselect_params(self, modelselect_params = None):
         """
-        params : dict
+        modelselect_params : dict
             Contains values for (a subset of) the grid parameters for lambda1, lambda2, mu1
         """
         if modelselect_params is None:
