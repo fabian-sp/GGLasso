@@ -19,11 +19,11 @@ elif reg == 'FGL':
 S, samples = sample_covariance_matrix(Sigma, N)
 
 
-P = glasso_problem(S = S, N = N, reg = reg, latent = False)
+P = glasso_problem(S = S, N = N, reg = reg, latent = True)
 
 print(P)
 
-reg_params = {'lambda1': 0.05, 'lambda2' : 0.05}
+reg_params = {'lambda1': 0.05, 'lambda2' : 0.01}
 
 
 P.set_reg_params(reg_params)
@@ -35,6 +35,23 @@ P.solve(solver_params= solver_params)
 end = time.time(); print(end-start)
 
 Theta_sol = P.solution.precision_
+A_sol = P.solution.adjacency_
+
+
+
+#%% scale test
+
+S2 = 2*S
+
+P2 = glasso_problem(S = S2, N = N, reg = reg, latent = False)
+
+P2._scale_input_to_correlation()
+
+P2.set_reg_params(reg_params)
+
+start = time.time()
+P2.solve(solver_params= solver_params)
+end = time.time(); print(end-start)
 
 
 #%% non-conforming example
@@ -51,3 +68,18 @@ Theta_sol = P.solution.precision_
 
 
 #%% SGL example
+S0 = S[0,:,:].copy()
+
+P = glasso_problem(S = S0, N = N, reg = None, latent = False)
+
+
+reg_params = {'lambda1': 0.1}
+P.set_reg_params(reg_params)
+
+start = time.time()
+P.solve()
+end = time.time(); print(end-start)
+
+Theta_sol = P.solution.precision_
+A_sol = P.solution.adjacency_
+
