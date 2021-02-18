@@ -31,7 +31,7 @@ S, samples = sample_covariance_matrix(Sigma, N)
 lambda1= 0.05
 lambda2 = 0.05
 lambda_range = np.logspace(-1,-3,6)
-mu_range = np.logspace(0,-2,4)
+mu_range = 2*np.logspace(0,-2,4)
 
 #%%
 

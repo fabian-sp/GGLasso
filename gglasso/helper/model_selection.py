@@ -98,8 +98,6 @@ def grid_search(solver, S, N, p, reg, l1, method= 'eBIC', l2 = None, w2 = None, 
         
     kwargs['Omega_0'] = Omega_0.copy()
     
-    # unique edges
-    UQED = np.zeros((grid1, grid2))
     RANK = np.zeros((K, grid1, grid2))
     
     curr_min = np.inf
@@ -149,10 +147,6 @@ def grid_search(solver, S, N, p, reg, l1, method= 'eBIC', l2 = None, w2 = None, 
                 BIC[j, g1,g2] = ebic(S, Theta_sol, N, gamma = gammas[j])
                 
             SP[g1,g2] = mean_sparsity(Theta_sol)
-            
-            #if np.all(G!= None):
-            #    nnz = consensus(Theta_sol, G)
-            #    UQED[g1,g2] = (nnz >= 1).sum()
                 
             
             print("Current eBIC grid:")
@@ -203,9 +197,13 @@ def K_single_grid(S, lambda_range, N, method = 'eBIC', gamma = 0.3, latent = Fal
         assert mu_range is not None
         M = len(mu_range)
     else:
+        mu_range = np.array([0])
         M = 1
         
     L = len(lambda_range)
+    
+    # create grid for stats, if latent = False MU is array of zeros
+    MU, LAMB = np.meshgrid(mu_range, lambda_range)
     
     gammas = [0.1, 0.3, 0.5, 0.7]
     gammas.append(gamma)
@@ -306,6 +304,7 @@ def K_single_grid(S, lambda_range, N, method = 'eBIC', gamma = 0.3, latent = Fal
             est_uniform['L'] = np.stack([e for e in est_uniform['L'].values()])
     
     statistics = {'BIC': BIC[gamma_ix,:,:,:], 'AIC': AIC, 'SP': SP, 'RANK': RANK, \
+                  'LAMB': LAMB, 'MU': MU,\
                   'ix_uniform': ix_uniform, 'ix_indv': ix_indv, 'ix_mu': ix_mu}
     
     return est_uniform, est_indv, statistics
@@ -375,7 +374,8 @@ def single_grid_search(S, lambda_range, N, method = 'eBIC', gamma = 0.3, latent 
                 BIC[l, j, m] = ebic_single(S, Theta_sol, N, gamma = gammas[l])
                 
             SP[j,m] = sparsity(Theta_sol)
-    
+            
+
     AIC[AIC==-np.inf] = np.nan
     BIC[BIC==-np.inf] = np.nan
     
@@ -390,6 +390,9 @@ def single_grid_search(S, lambda_range, N, method = 'eBIC', gamma = 0.3, latent 
     stats = {'BIC': BIC, 'AIC': AIC, 'SP': SP, 'RANK': RANK, 'LAMBDA': LAMB, 'MU': MU, 'BEST': (LAMB[ix], MU[ix])}
             
     return best, estimates, lowrank, stats
+
+################################################################
+## CRITERIA AIC/EBIC
 ################################################################
     
 def aic(S, Theta, N, L = None):
