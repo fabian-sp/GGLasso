@@ -30,15 +30,16 @@ S, samples = sample_covariance_matrix(Sigma, N)
 
 lambda1= 0.05
 lambda2 = 0.05
-L = np.logspace(-1,-3,5)
+lambda_range = np.logspace(-1,-3,6)
+mu_range = np.logspace(0,-2,4)
 
 #%%
 
-grid_search(ADMM_MGL, S, N, p, reg, L, method= 'eBIC', l2 = L)
+grid_search(ADMM_MGL, S, N, p, reg, lambda_range, method= 'eBIC', l2 = lambda_range)
 
-est_uniform, est_indv, range_stats = K_single_grid(S, L, N, method = 'eBIC', latent = True, mu = L[:-2])
+est_uniform, est_indv, range_stats = K_single_grid(S, lambda_range, N, method = 'eBIC', latent = True, mu_range = mu_range)
 
-est_uniform, est_indv, range_stats = K_single_grid(S, L, N, method = 'eBIC', latent = False, mu = None, gamma = 0.1)
+est_uniform, est_indv, range_stats = K_single_grid(S, lambda_range, N, method = 'eBIC', latent = False, mu_range = None, gamma = 0.1)
 
 Omega_0 = get_K_identity(K,p)
 
@@ -65,7 +66,7 @@ for k in np.arange(K):
 # constructs the "trivial" groups, i.e. all variables present in all instances  
 G = construct_trivial_G(p, K)
 
-est_uniform, est_indv, range_stats = K_single_grid(Sdict, L, N, method = 'eBIC', latent = True, mu = L[:-2])
+est_uniform, est_indv, range_stats = K_single_grid(Sdict, lambda_range, N, method = 'eBIC', latent = True, mu = lambda_range[:-2])
 
 
 solext, info = ext_ADMM_MGL(Sdict, lambda1, lambda2/np.sqrt(K), 'GGL' , Omega_0, G, eps_admm = 1e-4 , verbose = True, measure = False, \

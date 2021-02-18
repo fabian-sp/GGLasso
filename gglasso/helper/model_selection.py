@@ -177,17 +177,17 @@ def grid_search(solver, S, N, p, reg, l1, method= 'eBIC', l2 = None, w2 = None, 
     
     return stats, ix, curr_best
 
-def K_single_grid(S, L, N, method = 'eBIC', gamma = 0.3, latent = False, mu = None):
+def K_single_grid(S, lambda_range, N, method = 'eBIC', gamma = 0.3, latent = False, mu_range = None):
     """
-    method for doing model selection for sungle Graphical Lasso estimation
+    method for doing model selection for single Graphical Lasso estimation
     it returns two estimates, one with the individual optimal reg. param. for each instance and one with the uniform optimal
-    L: range of lambda values
+    lambda_range: range of lambda values
     N: vector with sample sizes for each instance
     
     gamma: parameter for eBIC
     
     latent: boolean which indicates if low rank term should be estimated (i.e. Latent Variable Graphical Lasso)
-    mu: range of penalty parameters for trace norm (only needed if latent = True)
+    mu_range: range of penalty parameters for trace norm (only needed if latent = True)
     """
     assert method in ['AIC', 'eBIC']
     
@@ -200,12 +200,12 @@ def K_single_grid(S, L, N, method = 'eBIC', gamma = 0.3, latent = False, mu = No
         N = N * np.ones(K)
         
     if latent:
-        assert mu is not None
-        M = len(mu)
+        assert mu_range is not None
+        M = len(mu_range)
     else:
         M = 1
         
-    r = len(L)
+    L = len(lambda_range)
     
     gammas = [0.1, 0.3, 0.5, 0.7]
     gammas.append(gamma)
@@ -213,22 +213,20 @@ def K_single_grid(S, L, N, method = 'eBIC', gamma = 0.3, latent = False, mu = No
     # determine the index of the gamma you want for the returned estimate
     gamma_ix = gammas.index(gamma)
     
-    BIC = np.zeros((len(gammas), K, r, M))
+    BIC = np.zeros((len(gammas), K, L, M))
     BIC[:] = np.nan
     
-    AIC = np.zeros((K, r, M))
+    AIC = np.zeros((K, L, M))
     AIC[:] = np.nan
     
-    SP = np.zeros((K, r, M))
+    SP = np.zeros((K, L, M))
     SP[:] = np.nan
     
-    RANK = np.zeros((K,r,M))
+    RANK = np.zeros((K,L,M))
     
     estimates = dict()
     lowrank = dict()
-    
-    kwargs = {'eps_admm': 1e-4, 'verbose': False, 'measure': False}
-    
+     
     for k in np.arange(K):
         print(f"------------Range search for instance {k}------------")
         
@@ -237,8 +235,8 @@ def K_single_grid(S, L, N, method = 'eBIC', gamma = 0.3, latent = False, mu = No
         elif type(S) == np.ndarray:
             S_k = S[k,:,:].copy()
         
-        best, est_k, lr_k, stats_k = single_grid_search(S = S_k, L = L, N = N[k], method = method, gamma = gamma, \
-                                                             latent = latent, mu = mu)
+        best, est_k, lr_k, stats_k = single_grid_search(S = S_k, lambda_range = lambda_range, N = N[k], method = method, gamma = gamma, \
+                                                             latent = latent, mu_range = mu_range)
         estimates[k] = est_k.copy()
         lowrank[k] = lr_k.copy()
         
@@ -249,16 +247,16 @@ def K_single_grid(S, L, N, method = 'eBIC', gamma = 0.3, latent = False, mu = No
         
                 
     # get optimal low rank for each lambda
-    tmpBIC = np.zeros((len(gammas), K, r))
+    tmpBIC = np.zeros((len(gammas), K, L))
     tmpBIC[:] = np.nan
-    tmpAIC = np.zeros((K, r))
+    tmpAIC = np.zeros((K, L))
     tmpAIC[:] = np.nan
     
-    ix_mu = np.zeros((K,r), dtype = int)
+    ix_mu = np.zeros((K,L), dtype = int)
     
     # for each lambda, get optimal mu
     for k in np.arange(K):
-        for j in np.arange(r):
+        for j in np.arange(L):
             
             if method == 'AIC':
                 ix_mu[k,j] = np.nanargmin(AIC[k,j,:])
@@ -307,21 +305,23 @@ def K_single_grid(S, L, N, method = 'eBIC', gamma = 0.3, latent = False, mu = No
             est_indv['L'] = np.stack([e for e in est_indv['L'].values()])
             est_uniform['L'] = np.stack([e for e in est_uniform['L'].values()])
     
-    statistics = {'BIC': BIC[gamma_ix,:,:,:], 'AIC': AIC, 'SP': SP, 'RANK': RANK, 'ix_uniform': ix_uniform, 'ix_indv': ix_indv, 'ix_mu': ix_mu}
+    statistics = {'BIC': BIC[gamma_ix,:,:,:], 'AIC': AIC, 'SP': SP, 'RANK': RANK, \
+                  'ix_uniform': ix_uniform, 'ix_indv': ix_indv, 'ix_mu': ix_mu}
     
     return est_uniform, est_indv, statistics
 
 
-def single_grid_search(S, L, N, method = 'eBIC', gamma = 0.3, latent = False, mu = None):
+def single_grid_search(S, lambda_range, N, method = 'eBIC', gamma = 0.3, latent = False, mu_range = None):
     p = S.shape[0]
     
     if latent:
-        assert mu is not None
-        M = len(mu)
+        assert mu_range is not None
+        M = len(mu_range)
     else:
+        mu_range = np.array([0])
         M = 1
         
-    r = len(L)
+    L = len(lambda_range)
     
     gammas = [0.1, 0.3, 0.5, 0.7]
     gammas.append(gamma)
@@ -329,29 +329,32 @@ def single_grid_search(S, L, N, method = 'eBIC', gamma = 0.3, latent = False, mu
     # determine the index of the gamma you want for the returned estimate
     gamma_ix = gammas.index(gamma)
     
-    BIC = np.zeros((len(gammas), r, M))
+    # create grid for stats, if latent = False MU is array of zeros
+    MU, LAMB = np.meshgrid(mu_range, lambda_range)
+        
+    BIC = np.zeros((len(gammas), L, M))
     BIC[:] = np.nan
     
-    AIC = np.zeros((r, M))
+    AIC = np.zeros((L, M))
     AIC[:] = np.inf
     
-    SP = np.zeros((r, M))
+    SP = np.zeros((L, M))
     SP[:] = np.inf
     
-    RANK = np.zeros((r,M))
+    RANK = np.zeros((L,M))
     
-    kwargs = {'S':S, 'Omega_0': np.eye(p), 'X_0': np.eye(p), 'eps_admm': 1e-4, 'verbose': False, 'measure': False}
+    kwargs = {'S':S, 'Omega_0': np.eye(p), 'X_0': np.eye(p), 'eps_admm': 1e-5, 'verbose': False, 'measure': False}
     
-    estimates = np.zeros((r,M,p,p))
-    lowrank = np.zeros((r,M,p,p))
+    estimates = np.zeros((L,M,p,p))
+    lowrank = np.zeros((L,M,p,p))
     
     # start range search
-    for j in np.arange(r):
-        kwargs['lambda1'] = L[j]
+    for j in np.arange(L):
+        kwargs['lambda1'] = lambda_range[j]
         
         for m in np.arange(M):
             if latent:
-                kwargs['mu1'] = mu[m]
+                kwargs['mu1'] = mu_range[m]
                 kwargs['latent'] = True
                         
             sol, info = ADMM_SGL(**kwargs)
@@ -384,7 +387,7 @@ def single_grid_search(S, L, N, method = 'eBIC', gamma = 0.3, latent = False, mu
         
     best = estimates[ix]
     
-    stats = {'BIC': BIC, 'AIC': AIC, 'SP': SP, 'RANK': RANK}
+    stats = {'BIC': BIC, 'AIC': AIC, 'SP': SP, 'RANK': RANK, 'LAMBDA': LAMB, 'MU': MU, 'BEST': (LAMB[ix], MU[ix])}
             
     return best, estimates, lowrank, stats
 ################################################################
