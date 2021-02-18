@@ -66,7 +66,7 @@ for k in np.arange(K):
 # constructs the "trivial" groups, i.e. all variables present in all instances  
 G = construct_trivial_G(p, K)
 
-est_uniform, est_indv, range_stats = K_single_grid(Sdict, lambda_range, N, method = 'eBIC', latent = True, mu = lambda_range[:-2])
+est_uniform, est_indv, range_stats = K_single_grid(Sdict, lambda_range, N, method = 'eBIC', latent = True, mu_range = mu_range)
 
 
 solext, info = ext_ADMM_MGL(Sdict, lambda1, lambda2/np.sqrt(K), 'GGL' , Omega_0, G, eps_admm = 1e-4 , verbose = True, measure = False, \
