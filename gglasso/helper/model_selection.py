@@ -47,7 +47,7 @@ def lambda_grid(l1, l2 = None, w2 = None):
         
     return L1.squeeze(), L2.squeeze(), w2
 
-def grid_search(solver, S, N, p, reg, l1, method= 'eBIC', l2 = None, w2 = None, gamma = 0.3, G = None, latent = False, mu = None, ix_mu = None):
+def grid_search(solver, S, N, p, reg, l1, l2 = None, w2 = None, method= 'eBIC', gamma = 0.3, G = None, latent = False, mu = None, ix_mu = None, verbose = False):
     """
     method for doing model selection using grid search and AIC/eBIC
     we work the grid columnwise, i.e. hold l1 constant and change l2
@@ -69,6 +69,7 @@ def grid_search(solver, S, N, p, reg, l1, method= 'eBIC', l2 = None, w2 = None, 
     
     print(L1)
     print(L2)
+    
     grid1 = L1.shape[0]; grid2 = L2.shape[1]
     AIC = np.zeros((grid1, grid2))
     AIC[:] = np.nan
@@ -118,11 +119,13 @@ def grid_search(solver, S, N, p, reg, l1, method= 'eBIC', l2 = None, w2 = None, 
                 this_mu = mu[ix_mu[:,g2]]
                 kwargs['latent'] = True
                 kwargs['mu1'] = this_mu.copy()
-                print("MU values", kwargs['mu1'])
+                if verbose:
+                    print("MU values", kwargs['mu1'])
                 
                 
             kwargs['lambda2'] = L2[g1,g2]
             
+            # solve
             sol, info = solver(**kwargs)
             Omega_sol = sol['Omega']
             Theta_sol = sol['Theta']
@@ -148,12 +151,13 @@ def grid_search(solver, S, N, p, reg, l1, method= 'eBIC', l2 = None, w2 = None, 
                 
             SP[g1,g2] = mean_sparsity(Theta_sol)
                 
+            if verbose:
+                print("Current eBIC grid:")
+                print(BIC[gamma_ix,:,:])
+                print("Current Sparsity grid:")
+                print(SP)
             
-            print("Current eBIC grid:")
-            print(BIC[gamma_ix,:,:])
-            print("Current Sparsity grid:")
-            print(SP)
-            
+            # new best point found
             if BIC[gamma_ix,g1,g2] < curr_min:
                 print("----------New optimum found in the grid----------")
                 curr_min = BIC[gamma_ix,g1,g2]
@@ -167,7 +171,8 @@ def grid_search(solver, S, N, p, reg, l1, method= 'eBIC', l2 = None, w2 = None, 
         BIC[BIC==-np.inf] = np.nan
         ix= np.unravel_index(np.nanargmin(BIC[gamma_ix,:,:]), BIC[gamma_ix,:,:].shape)
         
-    stats = {'BIC': BIC, 'AIC': AIC, 'SP': SP, 'RANK': RANK, 'L1': L1, 'L2': L2}
+    stats = {'BIC': BIC, 'AIC': AIC, 'SP': SP, 'RANK': RANK, 'L1': L1, 'L2': L2, \
+             'BEST': {'lambda1': L1[ix], 'lambda2': L2[ix]}, 'GAMMA': gammas}
     
     return stats, ix, curr_best
 
@@ -385,11 +390,16 @@ def single_grid_search(S, lambda_range, N, method = 'eBIC', gamma = 0.3, latent 
         ix= np.unravel_index(np.nanargmin(BIC[gamma_ix,:,:]), BIC[gamma_ix,:,:].shape)
         
         
-    best = estimates[ix]
+    best_sol = dict()
+    best_sol['Theta'] = estimates[ix]
+    if latent:
+        best_sol['L'] = lowrank[ix]
     
-    stats = {'BIC': BIC, 'AIC': AIC, 'SP': SP, 'RANK': RANK, 'LAMBDA': LAMB, 'MU': MU, 'BEST': (LAMB[ix], MU[ix])}
+
+    stats = {'BIC': BIC, 'AIC': AIC, 'SP': SP, 'RANK': RANK, 'LAMBDA': LAMB, 'MU': MU, \
+             'BEST': {'lambda1':LAMB[ix], 'mu1': MU[ix]}, 'GAMMA': gammas}
             
-    return best, estimates, lowrank, stats
+    return best_sol, estimates, lowrank, stats
 
 ################################################################
 ## CRITERIA AIC/EBIC

@@ -7,7 +7,7 @@ from .solver.admm_solver import ADMM_MGL
 from .solver.single_admm_solver import ADMM_SGL
 from .solver.ext_admm_solver import ext_ADMM_MGL
 
-from .helper.model_selection import ebic, ebic_single
+from .helper.model_selection import grid_search, single_grid_search, ebic, ebic_single
 
 
 assert_tol = 1e-5
@@ -33,6 +33,7 @@ class glasso_problem:
             self.reg = reg
         else:
             self.reg = None
+            
             
         # create an instance of GGLassoEstimator (before scaling S!)
         self.solution = GGLassoEstimator(S = self.S.copy(), N = self.N, p = self.p, K = self.K,\
@@ -367,6 +368,69 @@ class glasso_problem:
             
         return
 
+    def model_selection(self, method = 'eBIC', gamma = 0.1):
+        
+        assert (gamma >= 0) and (gamma <= 1), "gamma needs to be chosen as a parameter in [0,1]."
+        assert method in ['eBIC', 'AIC'], "Supported evaluation methods are eBIC and AIC."
+        
+        ###############################
+        # SINGLE GL --> GRID SEARCH lambda1/mu
+        ###############################
+        if not self.multiple:
+            sol, _, _, stats = single_grid_search(S = self.S, lambda_range = self.modelselect_params['lambda1_range'], N = self.N, \
+                               method = method, gamma = gamma, latent = self.latent, mu_range = self.modelselect_params['mu1_range'])
+            
+            # update the regularization parameters to the best grid point
+            self.set_reg_params(stats['BEST'])
+            
+            # set solution
+            
+            
+            
+        ###############################
+        # NO LATENT VARIABLES --> GRID SEARCH lambda1/lambda2
+        ###############################    
+        elif not self.latent:
+             
+            if self.conforming:
+                solver = ADMM_MGL
+            else:
+                solver = ext_ADMM_MGL
+                
+            stats, _, sol = grid_search(solver, S = self.S, N = self.N, p = self.p, reg = self.reg, l1 = self.modelselect_params['lambda1_range'], \
+                                        l2 = None, w2 = None, method= method, gamma = gamma, \
+                                        G = self.G, latent = self.latent, mu = None, ix_mu = None, verbose = False)
+        ###############################
+        # LATENT VARIABLES --> TWO_STAGE
+        ############################### 
+        else:
+            raise KeyError("Not implemented yet!")
+            
+            
+        ###############################
+        # SET SOLUTION AND STORE INFOS
+        ###############################
+            
+        # rescale
+        if self.do_scaling:
+            #print("Diagonal of solution before rescaling:", np.diag(sol['Theta']))
+            sol['Theta'] = self._rescale_to_covariances(sol['Theta'], self._scale)
+        
+            
+        # set the computed solution
+        if self.latent:
+            self.solution._set_solution(Theta = sol['Theta'], L = sol['L'])   
+        else:
+            self.solution._set_solution(Theta = sol['Theta'])   
+        
+        
+        self.modelselect_stats = stats.copy()
+        
+        
+        return
+    
+    
+    
 # helper function
 def _scale_array_by_diagonal(X, d = None):
         """
