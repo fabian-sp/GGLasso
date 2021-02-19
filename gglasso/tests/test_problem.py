@@ -6,7 +6,7 @@ from gglasso.problem import glasso_problem
 
 p = 100
 K = 5
-N = 100
+N = 2000
 M = 2
 
 reg = 'GGL'
@@ -38,6 +38,10 @@ Theta_sol = P.solution.precision_
 A_sol = P.solution.adjacency_
 
 
+
+P.model_selection()
+
+tmp = P.modelselect_stats.copy()
 
 #%% scale test
 

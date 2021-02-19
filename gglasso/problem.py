@@ -16,7 +16,7 @@ class glasso_problem:
     
     def __init__(self, S, N, reg = "GGL", reg_params = None, latent = False, G = None):
         
-        self.S = S
+        self.S = S.copy()
         self.N = N
         self.latent = latent
         
@@ -171,7 +171,7 @@ class glasso_problem:
         NOTE: this overwrites self.S!
         """
         
-        print("NOTE: input data S is rescaled with the daigonal elements, this has impact on the scale of the regularization parameters!")
+        print("NOTE: input data S is rescaled with the diagonal elements, this has impact on the scale of the regularization parameters!")
         
         if not self.multiple:
             self._scale = np.diag(self.S)
@@ -373,6 +373,8 @@ class glasso_problem:
         assert (gamma >= 0) and (gamma <= 1), "gamma needs to be chosen as a parameter in [0,1]."
         assert method in ['eBIC', 'AIC'], "Supported evaluation methods are eBIC and AIC."
         
+        self.modelselect_params = self._default_modelselect_params()
+        
         ###############################
         # SINGLE GL --> GRID SEARCH lambda1/mu
         ###############################
@@ -382,11 +384,7 @@ class glasso_problem:
             
             # update the regularization parameters to the best grid point
             self.set_reg_params(stats['BEST'])
-            
-            # set solution
-            
-            
-            
+           
         ###############################
         # NO LATENT VARIABLES --> GRID SEARCH lambda1/lambda2
         ###############################    
@@ -398,8 +396,11 @@ class glasso_problem:
                 solver = ext_ADMM_MGL
                 
             stats, _, sol = grid_search(solver, S = self.S, N = self.N, p = self.p, reg = self.reg, l1 = self.modelselect_params['lambda1_range'], \
-                                        l2 = None, w2 = None, method= method, gamma = gamma, \
+                                        l2 = None, w2 = self.modelselect_params['w2_range'], method= method, gamma = gamma, \
                                         G = self.G, latent = self.latent, mu = None, ix_mu = None, verbose = False)
+            
+            # update the regularization parameters to the best grid point
+            self.set_reg_params(stats['BEST'])
         ###############################
         # LATENT VARIABLES --> TWO_STAGE
         ############################### 
@@ -493,7 +494,7 @@ class GGLassoEstimator(BaseEstimator):
     
     def calc_ebic(self, gamma = 0.5):
         
-        if self.mutliple:
+        if self.multiple:
             self.ebic_ = ebic(self.S, self.precision_, self.n_samples, gamma = gamma)
             
         else:
