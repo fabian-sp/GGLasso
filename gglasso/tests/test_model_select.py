@@ -43,7 +43,7 @@ if latent:
 else:
     mu = None
 
-est_uniform, est_indv, range_stats = K_single_grid(S, L1, N, method = 'eBIC', latent = latent, mu = mu)
+est_uniform, est_indv, range_stats = K_single_grid(S, L1, N, method = 'eBIC', latent = latent, mu_range = mu)
 
 ix_mu = range_stats['ix_mu']
 

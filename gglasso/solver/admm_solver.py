@@ -74,10 +74,10 @@ def ADMM_MGL(S, lambda1, lambda2, reg , Omega_0 , \
     
     for iter_t in np.arange(max_iter):
         
+        eta_A = ADMM_stopping_criterion(Omega_t, Theta_t, L_t, rho*X_t, S , lambda1, lambda2, nk, reg, latent = latent, mu1 = mu1)
+        
         if measure:
             start = time.time()
-        
-        eta_A = ADMM_stopping_criterion(Omega_t, Theta_t, L_t, rho*X_t, S , lambda1, lambda2, nk, reg, latent = latent, mu1 = mu1)
         
         kkt_residual[iter_t] = eta_A
             

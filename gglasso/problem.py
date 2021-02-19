@@ -1,13 +1,13 @@
 import numpy as np
 
-from .helper.basic_linalg import trp
+from .helper.basic_linalg import trp, adjacency_matrix
 from .helper.ext_admm_helper import check_G
 
 from .solver.admm_solver import ADMM_MGL
 from .solver.single_admm_solver import ADMM_SGL
 from .solver.ext_admm_solver import ext_ADMM_MGL
 
-from .helper.model_selection import ebic, ebic_single
+from .helper.model_selection import grid_search, single_grid_search, ebic, ebic_single
 
 
 assert_tol = 1e-5
@@ -16,17 +16,17 @@ class glasso_problem:
     
     def __init__(self, S, N, reg = "GGL", reg_params = None, latent = False, G = None):
         
-        self.S = S
+        self.S = S.copy()
         self.N = N
         self.latent = latent
         
         self.G = G
         
+        self._derive_problem_formulation()
+        
         # initialize and set regularization params
         self.reg_params = None
         self.set_reg_params(reg_params)
-        
-        self._derive_problem_formulation()
         
         if self.multiple:
             assert reg in ["GGL", "FGL"], "Specify 'GGL' for Group Graphical Lasso or 'FGL' for Fused Graphical Lasso (or None for Single Graphical Lasso)"
@@ -34,6 +34,17 @@ class glasso_problem:
         else:
             self.reg = None
             
+            
+        # create an instance of GGLassoEstimator (before scaling S!)
+        self.solution = GGLassoEstimator(S = self.S.copy(), N = self.N, p = self.p, K = self.K,\
+                         multiple = self.multiple, latent = self.latent, conforming = self.conforming)
+        
+        self.do_scaling = True
+        
+        if self.do_scaling:
+            self._scale_input_to_correlation()
+        
+        return
         
     def __repr__(self):
         
@@ -89,7 +100,7 @@ class glasso_problem:
             raise TypeError(f"Incorrect input type of S. You input {type(self.S)}, but np.ndarray or list is expected.")
     
     ##############################################
-    #### CHECK INPUT DATA
+    #### CHECK INPUT DATA 
     ##############################################
     def _check_covariance_3d(self):
         
@@ -107,7 +118,8 @@ class glasso_problem:
         
         assert np.max(np.abs(self.S - self.S.T)) <= assert_tol, "Covariance data is not symmetric."
         
-        (self.K,self.p) = self.S.shape
+        (self.p,self.p) = self.S.shape
+        self.K = 1
         
         return
     
@@ -133,18 +145,59 @@ class glasso_problem:
         return
     
     ##############################################
+    #### SCALING
+    ##############################################
+    
+    def _rescale_to_covariances(self, X, scale):
+        """
+        rescales X with the given scale
+        X: object of type like input data S
+        scale: array with diagonal elements of unscaled input S --> use self._scaled
+        """
+        Y = X.copy()
+        if not self.multiple:
+            Y = _scale_array_by_diagonal(X, d = scale)
+        else:
+            for k in range(self.K):
+                Y[k] = _scale_array_by_diagonal(X[k], d = scale[k])
+                
+        return Y
+    
+    def _scale_input_to_correlation(self):
+        """
+        scales input data S by diagonal elements 
+        scale factors are stored in self._scale for rescaling later
+        
+        NOTE: this overwrites self.S!
+        """
+        
+        print("NOTE: input data S is rescaled with the diagonal elements, this has impact on the scale of the regularization parameters!")
+        
+        if not self.multiple:
+            self._scale = np.diag(self.S)
+            self.S = _scale_array_by_diagonal(self.S)
+        else:
+            self._scale = np.vstack([np.diag(self.S[k]) for k in range(self.K)])
+            for k in range(self.K):
+                self.S[k] = _scale_array_by_diagonal(self.S[k])
+        return
+    
+
+    
+    ##############################################
     #### DEFAULT PARAMETERS
     ##############################################
     def _default_reg_params(self):
         reg_params_default = dict()
-        reg_params_default['lambda1'] = 1e-3
-        reg_params_default['lambda2'] = 1e-3
         
+        reg_params_default['lambda1'] = 1e-2
+        if self.multiple:
+            reg_params_default['lambda2'] = 1e-2
         if self.latent:
             if self.multiple:
-                reg_params_default['mu1'] = 1e-3*np.ones(self.K)
+                reg_params_default['mu1'] = 1e-1*np.ones(self.K)
             else:
-                reg_params_default['mu1'] = 1e-3
+                reg_params_default['mu1'] = 1e-1
         else:
             reg_params_default['mu1'] = None
             
@@ -198,6 +251,18 @@ class glasso_problem:
 
     
     def set_start_point(self, Omega_0 = None):
+        """
+
+        Parameters
+        ----------
+        Omega_0 : array or dict, optional
+            Starting point for solver. Needs to be of same type as input data S. The default is None.
+
+        Returns
+        -------
+        None.
+
+        """
         
         if Omega_0 is not None:
             # TODO: check if Omega_0 has correct type (depends on problem parameters)
@@ -223,9 +288,7 @@ class glasso_problem:
         
         self.set_start_point(Omega_0)
         self.tol = tol
-        
-        #forbidden_keys = ['lambda1', 'lambda2', 'mu1', 'latent', 'Omega_0', 'reg']
-        
+         
         self.solver_params = self._default_solver_params()
         self.solver_params.update(solver_params)
         
@@ -243,18 +306,19 @@ class glasso_problem:
                      Omega_0 = self.Omega_0, latent = self.latent, mu1 = self.reg_params['mu1'],\
                          eps_admm = self.tol, **self.solver_params)
             
-                
-                
+                               
         else:
             sol, info = ext_ADMM_MGL(S = self.S, lambda1 = self.reg_params['lambda1'], lambda2 = self.reg_params['lambda2'], reg = self.reg,\
                                      Omega_0 = self.Omega_0, G = self.G, eps_admm = self.tol,\
                                          latent = self.latent, mu1 = self.reg_params['mu1'], **self.solver_params)
                 
+ 
+        # rescale
+        if self.do_scaling:
+            #print("Diagonal of solution before rescaling:", np.diag(sol['Theta']))
+            sol['Theta'] = self._rescale_to_covariances(sol['Theta'], self._scale)
         
-        # create an instance of GGLassoEstimator
-        self.solution = GGLassoEstimator(S = self.S, N = self.N, p = self.p, \
-                         multiple = self.multiple, latent = self.latent, conforming = self.conforming)
-        
+            
         # set the computed solution
         if self.latent:
             self.solution._set_solution(Theta = sol['Theta'], L = sol['L'])   
@@ -272,7 +336,7 @@ class glasso_problem:
     def _default_modelselect_params(self):
         
         params = dict()
-        params['lambda1_range'] = np.logspace(-3,1,10)
+        params['lambda1_range'] = np.logspace(-3,0,10)
         if self.multiple:
             params['w2_range'] = np.logspace(-1,-4,5)
             #params['lambda2_range'] = np.logspace(-3,1,10)
@@ -285,7 +349,7 @@ class glasso_problem:
     
     def set_modelselect_params(self, modelselect_params = None):
         """
-        params : dict
+        modelselect_params : dict
             Contains values for (a subset of) the grid parameters for lambda1, lambda2, mu1
         """
         if modelselect_params is None:
@@ -303,19 +367,104 @@ class glasso_problem:
         self.modelselect_params.update(modelselect_params)
             
         return
+
+    def model_selection(self, method = 'eBIC', gamma = 0.1):
+        
+        assert (gamma >= 0) and (gamma <= 1), "gamma needs to be chosen as a parameter in [0,1]."
+        assert method in ['eBIC', 'AIC'], "Supported evaluation methods are eBIC and AIC."
+        
+        self.modelselect_params = self._default_modelselect_params()
+        
+        ###############################
+        # SINGLE GL --> GRID SEARCH lambda1/mu
+        ###############################
+        if not self.multiple:
+            sol, _, _, stats = single_grid_search(S = self.S, lambda_range = self.modelselect_params['lambda1_range'], N = self.N, \
+                               method = method, gamma = gamma, latent = self.latent, mu_range = self.modelselect_params['mu1_range'])
+            
+            # update the regularization parameters to the best grid point
+            self.set_reg_params(stats['BEST'])
+           
+        ###############################
+        # NO LATENT VARIABLES --> GRID SEARCH lambda1/lambda2
+        ###############################    
+        elif not self.latent:
+             
+            if self.conforming:
+                solver = ADMM_MGL
+            else:
+                solver = ext_ADMM_MGL
+                
+            stats, _, sol = grid_search(solver, S = self.S, N = self.N, p = self.p, reg = self.reg, l1 = self.modelselect_params['lambda1_range'], \
+                                        l2 = None, w2 = self.modelselect_params['w2_range'], method= method, gamma = gamma, \
+                                        G = self.G, latent = self.latent, mu = None, ix_mu = None, verbose = False)
+            
+            # update the regularization parameters to the best grid point
+            self.set_reg_params(stats['BEST'])
+        ###############################
+        # LATENT VARIABLES --> TWO_STAGE
+        ############################### 
+        else:
+            raise KeyError("Not implemented yet!")
+            
+            
+        ###############################
+        # SET SOLUTION AND STORE INFOS
+        ###############################
+            
+        # rescale
+        if self.do_scaling:
+            #print("Diagonal of solution before rescaling:", np.diag(sol['Theta']))
+            sol['Theta'] = self._rescale_to_covariances(sol['Theta'], self._scale)
+        
+            
+        # set the computed solution
+        if self.latent:
+            self.solution._set_solution(Theta = sol['Theta'], L = sol['L'])   
+        else:
+            self.solution._set_solution(Theta = sol['Theta'])   
+        
+        
+        self.modelselect_stats = stats.copy()
+        
+        
+        return
+    
+    
+    
+# helper function
+def _scale_array_by_diagonal(X, d = None):
+        """
+        scales a 2d-array X with 1/sqrt(d), i.e.
+        
+        X_ij/sqrt(d_i*d_j)
+        in matrix notation: W^-1 @ X @ W^-1 with W^2 = diag(d)
+        
+        if d = None, use square root diagonal, i.e. W^2 = diag(X)
+        see (2.4) in https://fan.princeton.edu/papers/09/Covariance.pdf
+        """
+        assert len(X.shape) == 2
+        if d is None:
+            d = np.diag(X)
+        else:
+            assert len(d) == X.shape[0]
+            
+        scale = np.tile(np.sqrt(d),(X.shape[0],1))
+        scale = scale.T * scale
+        
+        return X/scale
     
 #%%
-
 from sklearn.base import BaseEstimator
-
 
 class GGLassoEstimator(BaseEstimator):
     
-    def __init__(self, S, N, p, multiple = True, latent = False, conforming = True):
+    def __init__(self, S, N, p, K, multiple = True, latent = False, conforming = True):
         
         self.multiple = multiple
         self.latent = latent
         self.conforming = conforming
+        self.K = K
         
         self.n_samples = N
         self.n_features = p
@@ -327,25 +476,41 @@ class GGLassoEstimator(BaseEstimator):
         
         super(GGLassoEstimator, self).__init__()
         
+        self.adjacency_ = None
+        self.ebic_ = None
+        
+        
         return
     
     def _set_solution(self, Theta, L = None):
         
         self.precision_ = Theta.copy()
+        self.calc_adjacency()
         
         if L is not None:
             self.lowrank_ = L.copy()
         
         return
     
-    def ebic(self, gamma = 0.5):
+    def calc_ebic(self, gamma = 0.5):
         
-        if self.mutliple:
+        if self.multiple:
             self.ebic_ = ebic(self.S, self.precision_, self.n_samples, gamma = gamma)
             
         else:
             self.ebic_ = ebic_single(self.S, self.precision_, self.n_samples, gamma = gamma)        
+    
+    def calc_adjacency(self):
         
+        if self.conforming:
+            self.adjacency_ = adjacency_matrix(S = self.precision_, t = 1e-5)
+        
+        else:
+            self.adjacency_ = dict()
+            for k in range(self.K):
+                self.adjacency_[k] = adjacency_matrix(S = self.precision_[k], t = 1e-5)
+            
+        return
         
 
 
