@@ -19,7 +19,7 @@ elif reg == 'FGL':
 S, samples = sample_covariance_matrix(Sigma, N)
 
 
-P = glasso_problem(S = S, N = N, reg = reg, latent = True)
+P = glasso_problem(S = S, N = N, reg = reg, latent = False)
 
 print(P)
 
