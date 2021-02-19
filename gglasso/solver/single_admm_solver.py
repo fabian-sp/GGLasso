@@ -55,12 +55,12 @@ def ADMM_SGL(S, lambda1, Omega_0 , Theta_0 = np.array([]), X_0 = np.array([]), \
     
     for iter_t in np.arange(max_iter):
         
-        if measure:
-            start = time.time()
-            
         eta_A = ADMM_stopping_criterion(Omega_t, Theta_t, L_t, rho*X_t, S , lambda1, latent, mu1)
         kkt_residual[iter_t] = eta_A
-            
+        
+        if measure:
+            start = time.time()
+                
         if eta_A <= eps_admm:
             status = 'optimal'
             break
