@@ -188,13 +188,13 @@ def PPDNA(S, lambda1, lambda2, reg, Omega_0, Theta_0 = np.array([]), X_0 = np.ar
     objective = np.zeros(max_iter)
     
     for iter_t in np.arange(max_iter):
-        
-        if measure:
-            start = time.time()
-            
+             
         # check stopping criterion
         eta_P = PPDNA_stopping_criterion(Omega_t, Theta_t, X_t, S , ppa_sub_params, reg)
         kkt_residual[iter_t] = eta_P
+        
+        if measure:
+            start = time.time()
         
         if eta_P <= eps_ppdna:
             status = 'optimal'

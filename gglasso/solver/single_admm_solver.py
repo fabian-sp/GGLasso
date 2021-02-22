@@ -121,7 +121,6 @@ def ADMM_SGL(S, lambda1, Omega_0, Theta_0=np.array([]), X_0=np.array([]), \
     kkt_residual = np.zeros(max_iter)
 
     for iter_t in np.arange(max_iter):
-
         if measure:
             start = time.time()
 
