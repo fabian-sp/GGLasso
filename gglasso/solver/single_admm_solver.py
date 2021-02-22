@@ -10,7 +10,7 @@ from scipy.linalg import block_diag
 from .ggl_helper import prox_od_1norm, phiplus, prox_rank_norm
 
 
-def ADMM_stopping_criterion(Omega, Theta, L, X, S, lambda1, latent=False, mu1=None):
+def ADMM_stopping_criterion(Omega, Theta, Theta_t_1, L, X, S, lambda1, eps_rel = 1e-3, eps_abs = 1e-3, latent=False, mu1=None):
     assert Omega.shape == Theta.shape == S.shape
     assert S.shape[0] == S.shape[1]
 
@@ -21,11 +21,12 @@ def ADMM_stopping_criterion(Omega, Theta, L, X, S, lambda1, latent=False, mu1=No
 
     #new formula
 
-    eps_rel = 1e-3
-    eps_abs = 1e-3
+    psi = (p**2/2 + p/2) # number of elements of off-diagonal matrix
+    e_pri = psi * eps_abs + eps_rel * np.maximum(np.linalg.norm(Omega), np.linalg.norm(Theta))
+    e_dual = psi * eps_abs + eps_rel * np.linalg.norm(X)
 
-    e_pri = np.sqrt(p)*eps_abs + eps_rel*max(np.linalg.norm(Omega), np.linalg.norm(Theta), np.linalg.norm(X))
-    e_dual = np.sqrt(p)*eps_abs + eps_rel*np.linalg.norm(X)
+    r_k = np.linalg.norm(Omega + Theta)
+    s_k = np.linalg.norm(Theta - Theta_t_1)
 
     term4 = 0
     if latent:
@@ -33,7 +34,21 @@ def ADMM_stopping_criterion(Omega, Theta, L, X, S, lambda1, latent=False, mu1=No
         proxL = prox_rank_norm(A=L - X, beta=mu1, D=eigD, Q=eigQ)
         term4 = np.linalg.norm(L - proxL) / (1 + np.linalg.norm(L))
 
-    return np.array([e_pri, e_dual, term4])
+    criterion = np.array([])
+
+    #primal convergence condition
+    if r_k <= e_pri:
+        criterion = criterion.append("primal optimal")
+        print("primal problem has reached the optimal solution")
+
+    #dual convergence condition
+    if s_k <= e_dual:
+        criterion = criterion.append("dual optimal")
+        print("dual problem has reached the optimal solution")
+
+    stop_value = np.maximum(r_k, s_k, term4)
+
+    return {'status': criterion, 'value': stop_value}
 
 
 # def ADMM_stopping_criterion(Omega, Theta, L, X, S , lambda1, latent = False, mu1 = None):
@@ -98,6 +113,7 @@ def ADMM_SGL(S, lambda1, Omega_0, Theta_0=np.array([]), X_0=np.array([]), \
         X_0 = np.zeros((p, p))
 
     Theta_t = Theta_0.copy()
+    Theta_t_1 = Theta_t
     L_t = np.zeros((p, p))
     X_t = X_0.copy()
 
@@ -112,10 +128,10 @@ def ADMM_SGL(S, lambda1, Omega_0, Theta_0=np.array([]), X_0=np.array([]), \
         # eta_A = ADMM_stopping_criterion(Omega_t, Theta_t, L_t, rho * X_t, S, lambda1, latent, mu1)
         # kkt_residual[iter_t] = eta_A
 
-        eta_A = ADMM_stopping_criterion(Omega_t, Theta_t, L_t, rho * X_t, S, lambda1, latent, mu1)
-        kkt_residual[iter_t] = eta_A[0]  # take only e_pri since dual always converges according to the Boyd's paper
+        eta_A = ADMM_stopping_criterion(Omega_t, Theta_t, Theta_t_1, L_t, rho * X_t, S, lambda1, latent, mu1)
+        kkt_residual[iter_t] = eta_A['value']
 
-        if eta_A[0]<= eps_admm:
+        if len(eta_A["status"]) > 1: #both primal and dual solutions are optimal
             status = 'optimal'
             break
         if verbose:
@@ -144,12 +160,12 @@ def ADMM_SGL(S, lambda1, Omega_0, Theta_0=np.array([]), X_0=np.array([]), \
             runtime[iter_t] = end - start
 
         if verbose:
-            print(f"Current accuracy: ", eta_A)
+            print(f"Current accuracy: ", eta_A['value'])
 
-    if eta_A[0] > eps_admm:
+    if eta_A['value'] > eps_admm:
         status = 'max iterations reached'
 
-    print(f"ADMM terminated after {iter_t} iterations with accuracy {eta_A[0]}")
+    print(f"ADMM terminated after {iter_t} iterations with accuracy {eta_A['value']}")
     print(f"ADMM status: {status}")
 
     assert abs((Omega_t).T - Omega_t).max() <= 1e-5, "Solution is not symmetric"

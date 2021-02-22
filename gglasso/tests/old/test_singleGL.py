@@ -18,10 +18,8 @@ Sigma, Theta = group_power_network(p, K=5, M=2)
 
 S, samples = sample_covariance_matrix(Sigma, N)
 
-
 S = S[0,:,:]
 Theta = Theta[0,:,:]
-
 
 
 lambda1 = 0.01
