@@ -17,18 +17,21 @@ def trp(X):
     
     return X.transpose(0,2,1)
 
+@njit()
 def Gdot(X, Y):
-    # calculates the inner product for X,Y in G
-    assert X.shape == Y.shape
+     # calculates the inner product for X,Y in G = K-fold of symm. matrices in R^p
+    (K,p,p) = X.shape
+    res = 0
+    for k in np.arange(K):
+        res += Sdot(X[k,:,:], Y[k,:,:])
     
-    xy = np.trace( np.matmul( trp(X), Y) , axis1 = 1, axis2 = 2)
-    
-    return xy.sum() 
+    return res 
+
 
 # general functions for the space S
-    
+@njit()
 def Sdot(X,Y):
-    return np.trace( X.T @ Y )
+    return np.trace(X.T @ Y)
 
 def adjacency_matrix(S , t = 1e-5):
     A = (np.abs(S) >= t).astype(int)
@@ -40,45 +43,50 @@ def adjacency_matrix(S , t = 1e-5):
         np.fill_diagonal(A, 0)
     return A
 
+#############################################################
+#### OLD CG METHOD
+#### this code is more general, but not jittable 
+#### use hessian_Y as lin input
+#############################################################
 
-def cg_general(lin, dot, b, eps = 1e-6, kwargs = {}, verbose = False):
-    """
-    This is the CG method for a general selfadjoint linear operator "lin" and a general scalar product "dot"
+# def cg_general(lin, dot, b, eps = 1e-6, kwargs = {}, verbose = False):
+#     """
+#     This is the CG method for a general selfadjoint linear operator "lin" and a general scalar product "dot"
     
-    It solves after x: lin(x) = b
+#     It solves after x: lin(x) = b
     
-    lin: should be a callable where the first argument is the argument of the operator
-         other arguments can be handled via kwargs
-    dot: should be a callable with two arguments, namely the two points of <X,Y>
-    """
+#     lin: should be a callable where the first argument is the argument of the operator
+#          other arguments can be handled via kwargs
+#     dot: should be a callable with two arguments, namely the two points of <X,Y>
+#     """
     
-    dim = b.shape
-    N_iter = np.array(dim).prod()
-    x = np.zeros(dim)
-    r = b - lin(x, **kwargs)  
-    p = r.copy()
-    j = 0
+#     dim = b.shape
+#     N_iter = np.array(dim).prod()
+#     x = np.zeros(dim)
+#     r = b - lin(x, **kwargs)  
+#     p = r.copy()
+#     j = 0
     
-    while j < N_iter :
+#     while j < N_iter :
         
-        linp = lin(p , **kwargs)
-        alpha = dot(r,r) / dot(p, linp)
+#         linp = lin(p , **kwargs)
+#         alpha = dot(r,r) / dot(p, linp)
         
-        x +=   alpha * p
-        denom = dot(r,r)
-        r -=  alpha * linp
-        #r = b - linp
+#         x +=   alpha * p
+#         denom = dot(r,r)
+#         r -=  alpha * linp
+#         #r = b - linp
         
-        if np.sqrt(dot(r,r))  <= eps:
-            if verbose:
-                print(f"Reached accuracy in iteration {str(j)}")
-            break
+#         if np.sqrt(dot(r,r))  <= eps:
+#             if verbose:
+#                 print(f"Reached accuracy in iteration {str(j)}")
+#             break
         
-        beta = dot(r,r)/denom
-        p = r + beta * p 
-        j += 1
+#         beta = dot(r,r)/denom
+#         p = r + beta * p 
+#         j += 1
         
-    return x
+#     return x
 
 
 

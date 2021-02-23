@@ -6,6 +6,7 @@ from gglasso.helper.data_generation import group_power_network, time_varying_pow
 from gglasso.helper.experiment_helper import get_K_identity
 from gglasso.solver.single_admm_solver import ADMM_SGL, block_SGL
 from gglasso.solver.admm_solver import ADMM_MGL
+from gglasso.solver.ppdna_solver import PPDNA, warmPPDNA
 
 from gglasso.solver.ext_admm_solver import ext_ADMM_MGL
 from gglasso.helper.ext_admm_helper import construct_trivial_G
@@ -132,6 +133,38 @@ def test_block_SGL():
     assert sol1 == pt.approx(sol2, abs = 1e-3), f"Absolute error in norm: {np.linalg.norm(sol1-sol2)}"
     
     return
+
+def template_admm_vs_ppdna(p = 100, K = 5, N = 1000, reg = "GGL"):
+    M = 10 # M should be divisor of p
+
+    if reg == 'GGL':
+        Sigma, Theta = group_power_network(p, K, M)
+    elif reg == 'FGL':
+        Sigma, Theta = time_varying_power_network(p, K, M)
+    
+    S, samples = sample_covariance_matrix(Sigma, N)
+
+    lambda1= 0.05
+    lambda2 = 0.01
+    
+    Omega_0 = get_K_identity(K,p)
+    
+    sol, info = ADMM_MGL(S, lambda1, lambda2, reg, Omega_0, eps_admm = 1e-6, verbose = False, latent = False)
+    sol2, info2 = warmPPDNA(S, lambda1, lambda2, reg, Omega_0, eps = 1e-6 , verbose = False, measure = False)
+    
+    
+    assert sol['Theta'] == pt.approx(sol2['Theta'], abs = 1e-2), f"Absolute error in norm: {np.linalg.norm(sol['Theta']-sol2['Theta'])}"
+    
+    return 
+    
+def test_admm_ppdna_ggl():
+    template_admm_vs_ppdna(p = 100, K = 5, N = 2000, reg = "GGL")
+    return
+
+def test_admm_ppdna_fgl():
+    template_admm_vs_ppdna(p = 100, K = 5, N = 2000, reg = "FGL")
+    return
+
 
 ###############################################################
 ### TEST VS. OTHER PACKAGES 

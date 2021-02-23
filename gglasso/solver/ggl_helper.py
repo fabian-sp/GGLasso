@@ -382,6 +382,41 @@ def hessian_Y(D , Gamma, eigQ, W, sigma_t):
     res = - sigma_t * (tmp1 + tmp2)
     return res
 
+@njit()
+def cg_ppdna(Gamma, eigQ, W, sigma_t, b, eps = 1e-6, max_iter = 20):
+    """
+    solves the linear system in the PPDNA subproblem
+    
+    Gamma, eigQ,W, sigma_t are constructed beforehand
+    b: right-hand-side of linear system
+    
+    eps: tolerance fo CG method
+    max_iter: max iterations of CG method
+    """
+    
+    dim = b.shape
+    x = np.zeros(dim)
+    r = b - hessian_Y(x, Gamma, eigQ, W, sigma_t)
+    p = r.copy()
+    j = 0
+    
+    for j in np.arange(max_iter):
+        
+        linp = hessian_Y(p , Gamma, eigQ, W, sigma_t)
+        
+        alpha = Gdot(r,r) / Gdot(p, linp)
+        
+        x += alpha * p
+        denom = Gdot(r,r)
+        r -= alpha * linp
+        
+        if np.sqrt(Gdot(r,r)) <= eps:
+            break
+        
+        beta = Gdot(r,r)/denom
+        p = r + beta * p 
+        
+    return x
 
 def Y_t( X, Omega_t, Theta_t, S, lambda1, lambda2, sigma_t, reg):
     assert min(lambda1, lambda2, sigma_t) > 0 , "at least one parameter is not positive"

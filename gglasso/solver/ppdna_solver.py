@@ -7,9 +7,10 @@ This file contains the proximal point algorithm proposed by Zhang et al.
 import numpy as np
 import time
 
-from .ggl_helper import prox_p, phiplus, moreau_h, moreau_P, construct_gamma, construct_jacobian_prox_p, Y_t, hessian_Y,  Phi_t, f, P_val
+from .ggl_helper import prox_p, phiplus, moreau_h, moreau_P, construct_gamma, construct_jacobian_prox_p
+from .ggl_helper import  Y_t, hessian_Y,  Phi_t, f, P_val, cg_ppdna
 from .admm_solver import ADMM_MGL
-from ..helper.basic_linalg import trp,Gdot, cg_general
+from ..helper.basic_linalg import trp, Gdot
 
 def get_ppdna_params(ppdna_params = None):
     
@@ -105,12 +106,12 @@ def PPA_subproblem(Omega_t, Theta_t, X_t, S, reg, ppa_sub_params = None, verbose
         W = construct_jacobian_prox_p( (1/sigma_t) * V_t, lambda1 , lambda2, reg)
         
         # step 1: CG method
-        cg_kwargs = {'Gamma' : Gamma, 'eigQ': eigQ, 'W': W, 'sigma_t': sigma_t}
-        
         cg_accur = min(eta, np.linalg.norm(gradY_Xt)**(1+tau))
         if verbose:
             print("Start CG method")
-        D = cg_general(hessian_Y, Gdot, - gradY_Xt, eps = cg_accur, kwargs = cg_kwargs, verbose = verbose)
+        
+        D = cg_ppdna(Gamma, eigQ, W, sigma_t, -gradY_Xt, eps = cg_accur, max_iter = 10)
+        
         # step 2: line search 
         if verbose:
             print("Start Line search")
