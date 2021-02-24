@@ -1,6 +1,6 @@
 import numpy as np
 
-from .helper.basic_linalg import trp, adjacency_matrix
+from .helper.basic_linalg import trp, adjacency_matrix, scale_array_by_diagonal
 from .helper.ext_admm_helper import check_G
 
 from .solver.admm_solver import ADMM_MGL
@@ -156,10 +156,10 @@ class glasso_problem:
         """
         Y = X.copy()
         if not self.multiple:
-            Y = _scale_array_by_diagonal(X, d = scale)
+            Y = scale_array_by_diagonal(X, d = scale)
         else:
             for k in range(self.K):
-                Y[k] = _scale_array_by_diagonal(X[k], d = scale[k])
+                Y[k] = scale_array_by_diagonal(X[k], d = scale[k])
                 
         return Y
     
@@ -175,11 +175,11 @@ class glasso_problem:
         
         if not self.multiple:
             self._scale = np.diag(self.S)
-            self.S = _scale_array_by_diagonal(self.S)
+            self.S = scale_array_by_diagonal(self.S)
         else:
             self._scale = np.vstack([np.diag(self.S[k]) for k in range(self.K)])
             for k in range(self.K):
-                self.S[k] = _scale_array_by_diagonal(self.S[k])
+                self.S[k] = scale_array_by_diagonal(self.S[k])
         return
     
 
@@ -432,27 +432,7 @@ class glasso_problem:
     
     
     
-# helper function
-def _scale_array_by_diagonal(X, d = None):
-        """
-        scales a 2d-array X with 1/sqrt(d), i.e.
-        
-        X_ij/sqrt(d_i*d_j)
-        in matrix notation: W^-1 @ X @ W^-1 with W^2 = diag(d)
-        
-        if d = None, use square root diagonal, i.e. W^2 = diag(X)
-        see (2.4) in https://fan.princeton.edu/papers/09/Covariance.pdf
-        """
-        assert len(X.shape) == 2
-        if d is None:
-            d = np.diag(X)
-        else:
-            assert len(d) == X.shape[0]
-            
-        scale = np.tile(np.sqrt(d),(X.shape[0],1))
-        scale = scale.T * scale
-        
-        return X/scale
+
     
 #%%
 from sklearn.base import BaseEstimator

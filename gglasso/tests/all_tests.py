@@ -4,13 +4,14 @@ from sklearn.covariance import GraphicalLasso
 
 from gglasso.helper.data_generation import group_power_network, time_varying_power_network,  sample_covariance_matrix
 from gglasso.helper.experiment_helper import get_K_identity
-from gglasso.solver.single_admm_solver import ADMM_SGL, block_SGL
+from gglasso.solver.single_admm_solver import ADMM_SGL, block_SGL, get_connected_components
 from gglasso.solver.admm_solver import ADMM_MGL
 from gglasso.solver.ppdna_solver import PPDNA, warmPPDNA
 
 from gglasso.solver.ext_admm_solver import ext_ADMM_MGL
 from gglasso.helper.ext_admm_helper import construct_trivial_G
 
+from gglasso.helper.basic_linalg import scale_array_by_diagonal
 
 ###############################################################
 ### TEST WHETHER SOLVERS ARE RUNNING
@@ -112,19 +113,19 @@ def test_block_SGL():
     tests whether solving each connected component results in the same as solving the whole problem (see Witten et al. paper referenced in block_SGL)
     """
     p = 100
-    K = 1
-    N = 1000
-    M = 2
-    lambda1 = 0.1
+    lambda1 = 0.12
     
-    Sigma, Theta = group_power_network(p, K, M)
-    S, samples = sample_covariance_matrix(Sigma, N)    
-    S = S.squeeze()
+    np.random.seed(seed=1234)
+    A = np.random.randn(p,p)
+    S = A.T@A + 90*np.eye(p)
+    S = scale_array_by_diagonal(S)
     
     Omega_0 = np.eye(p)
     
     full_sol,_ = ADMM_SGL(S, lambda1, Omega_0, eps_admm = 1e-7, verbose = False)
     
+    numC, allC =  get_connected_components(S, lambda1)
+    assert numC > 1, "Test is redundant if only one connected component"
     block_sol = block_SGL(S, lambda1, Omega_0, tol = 1e-7, verbose = False)
     
     sol1 = full_sol['Theta']
