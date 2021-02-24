@@ -6,6 +6,11 @@ import numpy as np
 #from tick.prox import ProxTV
 from numba import njit
 
+# deactivate numba performance warnings
+from numba.errors import NumbaPerformanceWarning
+import warnings
+warnings.simplefilter('ignore', category=NumbaPerformanceWarning)
+
 from ..helper.basic_linalg import trp,Gdot,Sdot
 from .fgl_helper import condat_method
 
