@@ -4,7 +4,7 @@ author: Fabian Schaipp
 
 import numpy as np
 #from tick.prox import ProxTV
-from numba import jit, njit
+from numba import njit
 
 from ..helper.basic_linalg import trp,Gdot,Sdot
 from .fgl_helper import condat_method
@@ -14,7 +14,7 @@ from .fgl_helper import condat_method
 def prox_1norm(v, l): 
     return np.sign(v) * np.maximum(np.abs(v) - l, 0.)
     
-@jit(nopython=True)
+@njit() 
 def prox_od_1norm(A, l):
     """
     calculates the prox of the off-diagonal 1norm at a point A
@@ -38,7 +38,7 @@ def prox_rank_norm(A, beta, D = np.array([]), Q = np.array([])):
     B = Q @ np.diag(np.maximum(D-beta, 0)) @ Q.T
     return B
 
-@jit(nopython=True)
+@njit() 
 def prox_chi(A, l):
     """
     calculates the prox of the off-diagonal 2norm at point A
@@ -165,12 +165,13 @@ def jacobian_prox_phi_fgl(v , l1 , l2):
 
 
 # general functions related to the regularizer P
-    
+@njit()    
 def P_val(X, l1, l2, reg):
-    assert min(l1,l2) > 0, "lambda 1 and lambda2 have to be positive"
+    assert np.minimum(l1,l2) > 0, "lambda 1 and lambda2 have to be positive"
     (K,p,p) = X.shape
     res = 0
     for i in np.arange(p):
+        # start at i+1 because P does NOT operate on diagonal
         for j in np.arange(start = i + 1 , stop = p):
             if reg == 'GGL':
                 res += l1 * np.linalg.norm(X[:,i,j] , 1) + l2 * np.linalg.norm(X[:,i,j] , 2)
@@ -191,19 +192,7 @@ def prox_phi(v, l1, l2, reg):
         res = prox_phi_fgl(v, l1, l2)
     return res
     
-# def OLD_prox_p(X, l1, l2, reg):
-#     assert min(l1,l2) > 0, "lambda 1 and lambda2 have to be positive"
-#     (K,p,p) = X.shape
-#     M = np.zeros((K,p,p))
-#     for i in np.arange(p):
-#         for j in np.arange(p):
-#             if i == j:
-#                 M[:,i,j] = X[:,i,j]
-#             else:
-#                 M[:,i,j] = prox_phi(X[:,i,j], l1, l2 , reg)
-    
-#     assert np.abs(M - trp(M)).max() <= 1e-5, f"symmetry failed by  {abs(M - trp(M)).max()}"
-#     return M
+
 
 @njit()
 def prox_p(X, l1, l2, reg):
@@ -251,7 +240,6 @@ def construct_jacobian_prox_p(X, l1 , l2, reg):
     return: 4dim array
     each (i,j) entry has a corresponding jacobian which is a KxK matrix
     """
-    # 
     (K,p,p) = X.shape
     assert abs(X - trp(X)).max() <= 1e-5
     
@@ -266,7 +254,7 @@ def construct_jacobian_prox_p(X, l1 , l2, reg):
                 W[:,:,j,i] = ij_entry                 
     return W
 
-@jit(nopython=True)
+@njit() 
 def eval_jacobian_prox_p(Y , W):
     # W is the result of construct_jacobian_prox_p
     (K,p,p) = Y.shape
@@ -287,42 +275,54 @@ def h(A):
 def f(Omega, S):
     return h(Omega).sum() + Gdot(Omega, S)
 
-@jit(nopython=True)
+@njit() 
 def phip(d, beta):
     return 0.5 * (np.sqrt(d**2 + 4*beta) + d)
 
-@jit(nopython=True)
+@njit() 
 def phim(d, beta):
     return 0.5 * (np.sqrt(d**2 + 4*beta) - d)
 
-def phiplus(A, beta, D = np.array([]), Q = np.array([])):
-    # D and Q are optional if already precomputed
-    if len(D) != A.shape[0]:
-        D, Q = np.linalg.eigh(A)
-        print("Single eigendecomposition is executed in phiplus")
+def phiplus(beta, D, Q):
+    """
+    calculates the proximal operator of negative log determinant, i.e.
+    B = prox_{-beta*log det}(A)
     
+    uses eigendecomposition of A as argument, i.e. A = Q @ D @ Q.T
+    
+    Parameters
+    ----------
+    beta : float
+        scalar multiple of -log det.
+    D : array of shape (p,)
+        eigenvalues of A.
+    Q : array of shape (p,p)
+        eigenvectors of argument.
+
+    Returns
+    -------
+    B : array of shape (p,p)
+        proximal operator.
+    """
     B = Q @ np.diag(phip(D,beta)) @ Q.T
     return B
 
-def phiminus(A, beta , D = np.array([]), Q = np.array([]) ):
-    # D and Q are optional if already precomputed
-    if len(D) != A.shape[0]:
-        D, Q = np.linalg.eigh(A)
-        print("Single eigendecomposition is executed in phiminus")
-    
+def phiminus(beta, D, Q):
     B = Q @ np.diag(phim(D,beta)) @ Q.T
     return B
 
-def moreau_h(A, beta , D = np.array([]), Q = np.array([])):
+def moreau_h(beta, D, Q):
     # returns the Moreau_Yosida reg. value as well as the proximal map of beta*h
+    # D: array (p,p)
+    # Q: array (p,p)
     
-    pp = phiplus(A, beta, D , Q)
-    pm = phiminus(A,beta, D , Q)
+    pp = phiplus(beta, D, Q)
+    pm = phiminus(beta, D, Q)
     psi =  - (beta * np.log (np.linalg.det(pp))) + (0.5 * np.linalg.norm(pm)**2 )
     return psi, pp, pm
 
 
-@jit(nopython=True)
+@njit() 
 def construct_gamma(A, beta, D = np.array([]), Q = np.array([])):
     (K,p,p) = A.shape
     Gamma = np.zeros((K,p,p))
@@ -351,7 +351,7 @@ def eval_jacobian_phiplus(B, Gamma, Q):
     assert np.abs(res - trp(res)).max() <= 1e-4, f"symmetry failed by  {np.abs(res - trp(res)).max()}"
     return res
 
-@jit(nopython=True)
+@njit() 
 def eval_jacobian_phiplus_numba(B, Gamma, Q):
     # numba version of function eval_jacobian_phiplus
     # numba only supports @ for 2D-arrays --> loop through K
@@ -369,7 +369,7 @@ def Phi_t(Omega, Theta, S, Omega_t, Theta_t, sigma_t, lambda1, lambda2, reg):
     res = f(Omega, S) + P_val(Theta, lambda1, lambda2, reg) + 1/(2*sigma_t) * (np.linalg.norm(Omega - Omega_t)**2 + np.linalg.norm(Theta - Theta_t)**2)
     return res
 
-@jit(nopython=True)
+@njit() 
 def hessian_Y(D , Gamma, eigQ, W, sigma_t):
     """
     this is the linear operator for the CG method
@@ -432,7 +432,7 @@ def Y_t( X, Omega_t, Theta_t, S, lambda1, lambda2, sigma_t, reg):
     grad1 = np.zeros((K,p,p))
     term1 = 0
     for k in np.arange(K):
-        Psi_h, proxh, _ = moreau_h(W_t[k,:,:] , sigma_t, D = eigD[k,:] , Q = eigQ[k,:,:] )
+        Psi_h, proxh, _ = moreau_h(sigma_t, D = eigD[k,:] , Q = eigQ[k,:,:] )
         term1 += (1/sigma_t) * Psi_h
         grad1[k,:,:] = proxh
     

@@ -131,7 +131,7 @@ def PPA_subproblem(Omega_t, Theta_t, X_t, S, reg, ppa_sub_params = None, verbose
         Omega_sol = np.zeros((K,p,p))
         eigW, eigV = np.linalg.eigh(Omega_t - sigma_t * (S + X_sol))
         for k in np.arange(K):
-            _, phip_k, _ = moreau_h( Omega_t[k,:,:] - sigma_t * (S[k,:,:] + X_sol[k,:,:]) , sigma_t , eigW[k,:], eigV[k,:,:])
+            _, phip_k, _ = moreau_h(sigma_t , eigW[k,:], eigV[k,:,:])
             Omega_sol[k,:,:] = phip_k
         
         _, Theta_sol = moreau_P(Theta_t + sigma_t * X_sol, sigma_t * lambda1, sigma_t * lambda2, reg)
@@ -257,7 +257,7 @@ def PPDNA_stopping_criterion(Omega, Theta, X, S , ppa_sub_params, reg):
     proxK = np.zeros((K,p,p))
     eigD, eigQ = np.linalg.eigh(Omega-S-X)
     for k in np.arange(K):       
-        proxK[k,:,:] = phiplus(A = Omega[k,:,:] - S[k,:,:] - X[k,:,:], beta = 1, D = eigD[k,:], Q = eigQ[k,:,:])
+        proxK[k,:,:] = phiplus(beta = 1, D = eigD[k,:], Q = eigQ[k,:,:])
     
     term3 = np.linalg.norm(Omega - proxK) / (1 + np.linalg.norm(Omega))
     
