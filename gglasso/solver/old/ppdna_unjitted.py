@@ -16,7 +16,30 @@
 #     assert np.abs(M - trp(M)).max() <= 1e-5, f"symmetry failed by  {abs(M - trp(M)).max()}"
 #     return M
 
+# def construct_B(K):
+#     dd = np.eye(K)
+#     ld = - np.tri(K, k = -1) + np.tri(K, k = -2) 
+    
+#     B = dd+ld
+#     B = B[1:,:]
+#     # this is the left-inverse of B.T, is needed to reconstruct the dual solution z_lambda
+#     Binv = np.linalg.pinv(B.T)
+#     return B, Binv
 
+
+# def jacobian_tv(v,l):   
+#     K = len(v)   
+#     B, Binv = construct_B(K)
+    
+#     x_l2 = prox_tv(v,l)   
+#     z_l2 = Binv @ (v - x_l2)
+    
+#     ind1 = (np.abs(np.abs(z_l2) - l) <= 1e-10)    
+    
+#     Sigma = np.diag(1-ind1.astype(int))   
+#     P_hat = np.linalg.pinv(Sigma @ B@ B.T @ Sigma , hermitian = True)
+#     P = np.eye(K) - B.T @ P_hat @ B
+#     return P 
 
 #############################################################
 #### OLD CG METHOD

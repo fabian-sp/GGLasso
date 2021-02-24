@@ -38,24 +38,24 @@ def prox_rank_norm(A, beta, D = np.array([]), Q = np.array([])):
     B = Q @ np.diag(np.maximum(D-beta, 0)) @ Q.T
     return B
 
-@njit() 
-def prox_chi(A, l):
-    """
-    calculates the prox of the off-diagonal 2norm at point A
-    """
-    assert l > 0 
+# @njit() 
+# def prox_chi(A, l):
+#     """
+#     calculates the prox of the off-diagonal 2norm at point A
+#     """
+#     assert l > 0 
         
-    (d1,d2,d3) = A.shape
-    res = np.zeros((d1,d2,d3))
-    for i in np.arange(d2):
-        for j in np.arange(d3):
-            if i == j:
-                res[:,i,j] = A[:,i,j]
-            else:
-                a = max(np.linalg.norm(A[:,i,j],2) , l)
-                res[:,i,j] = A[:,i,j] * (a - l) / a
+#     (d1,d2,d3) = A.shape
+#     res = np.zeros((d1,d2,d3))
+#     for i in np.arange(d2):
+#         for j in np.arange(d3):
+#             if i == j:
+#                 res[:,i,j] = A[:,i,j]
+#             else:
+#                 a = max(np.linalg.norm(A[:,i,j],2) , l)
+#                 res[:,i,j] = A[:,i,j] * (a - l) / a
 
-    return res
+#     return res
 
 @njit()          
 def prox_2norm(v,l):
@@ -67,7 +67,7 @@ def prox_phi_ggl(v, l1, l2):
     u = prox_1norm(v, l1)
     return prox_2norm(u,l2)
 
-
+@njit()
 def jacobian_projection(v, l):
     K = len(v)
     a = np.linalg.norm(v)
@@ -78,19 +78,20 @@ def jacobian_projection(v, l):
         
     return g
     
-
+@njit()
 def jacobian_2norm(v, l):
     # jacobian of the euclidean norm: v is the vector, l is lambda_2
     K = len(v)
     g = np.eye(K) - jacobian_projection(v, l)
     return g
 
-
-def jacobian_1norm(v, l):  
-    d = (np.abs(v) > l).astype(int)
+@njit()
+def jacobian_1norm(v,l):
+    d = np.ones_like(v)
+    d[np.abs(v) <= l] = 0.
     return np.diag(d)
 
-
+@njit()
 def jacobian_prox_phi_ggl(v , l1 , l2):
     u = prox_1norm(v, l1)
     sig = jacobian_projection(u, l2)
@@ -101,16 +102,22 @@ def jacobian_prox_phi_ggl(v , l1 , l2):
     return M
 
 # functions specifically related to the FGL regularizer
+
+@njit()
 def construct_B(K):
     dd = np.eye(K)
     ld = - np.tri(K, k = -1) + np.tri(K, k = -2) 
     
     B = dd+ld
-    B = np.delete(B, 0, axis = 0)
+    B = B[1:,:]
+    # older numba versions modify B when applying pinv, hence copy
+    tB = B.T.copy()
     # this is the left-inverse of B.T, is needed to reconstruct the dual solution z_lambda
-    Binv = np.linalg.pinv(B.T)
-    return B, Binv
+    invB = np.linalg.pinv(tB)
+    
+    return B, invB
 
+# also implemented in package tick, but our implementation is faster
 @njit()
 def prox_tv(v,l):
     a = condat_method(v,l)
@@ -123,6 +130,7 @@ def prox_phi_fgl(v, l1, l2):
     return res
 
 
+@njit()
 def jacobian_tv(v,l):   
     K = len(v)   
     B, Binv = construct_B(K)
@@ -131,14 +139,15 @@ def jacobian_tv(v,l):
     z_l2 = Binv @ (v - x_l2)
     
     ind1 = (np.abs(np.abs(z_l2) - l) <= 1e-10)    
-    #ind2 = (B@x_l2 != 0)
+    z_tmp = np.ones_like(z_l2)
+    z_tmp[ind1] = 0.
     
-    Sigma = np.diag(1-ind1.astype(int))   
-    P_hat = np.linalg.pinv(Sigma @ B@ B.T @ Sigma , hermitian = True)
+    Sigma = np.diag(z_tmp)   
+    P_hat = np.linalg.pinv(Sigma @ B@ B.T @ Sigma)
     P = np.eye(K) - B.T @ P_hat @ B
-    return P 
+    return P
 
-   
+@njit()
 def jacobian_prox_phi_fgl(v , l1 , l2): 
     x = prox_tv(v,l2)
     P = jacobian_tv(v,l2)
@@ -212,7 +221,8 @@ def prox_p(X, l1, l2, reg):
     # add transposed for lower diagonal
     M = M + trp(M)
     return M
-  
+
+@njit()     
 def moreau_P(X, l1, l2, reg):
   # returns the Moreau_Yosida reg. value as well as the proximal map of P
   Y = prox_p(X, l1, l2, reg)
@@ -220,7 +230,7 @@ def moreau_P(X, l1, l2, reg):
  
   return psi, Y           
           
-
+@njit()
 def jacobian_prox_phi(v , l1 , l2, reg):
     assert reg in ['GGL', 'FGL']
     
@@ -231,7 +241,7 @@ def jacobian_prox_phi(v , l1 , l2, reg):
         
     return res
 
-
+@njit()
 def construct_jacobian_prox_p(X, l1 , l2, reg):
     """
     calculates the gen. Jacobian of prox_P at X in G
@@ -241,7 +251,7 @@ def construct_jacobian_prox_p(X, l1 , l2, reg):
     each (i,j) entry has a corresponding jacobian which is a KxK matrix
     """
     (K,p,p) = X.shape
-    assert abs(X - trp(X)).max() <= 1e-5
+    assert np.abs(X - trp(X)).max() <= 1e-5
     
     W = np.zeros((K,K,p,p))
     for i in np.arange(p):
@@ -283,6 +293,7 @@ def phip(d, beta):
 def phim(d, beta):
     return 0.5 * (np.sqrt(d**2 + 4*beta) - d)
 
+@njit() 
 def phiplus(beta, D, Q):
     """
     calculates the proximal operator of negative log determinant, i.e.
@@ -307,10 +318,12 @@ def phiplus(beta, D, Q):
     B = Q @ np.diag(phip(D,beta)) @ Q.T
     return B
 
+@njit() 
 def phiminus(beta, D, Q):
     B = Q @ np.diag(phim(D,beta)) @ Q.T
     return B
 
+@njit() 
 def moreau_h(beta, D, Q):
     # returns the Moreau_Yosida reg. value as well as the proximal map of beta*h
     # D: array (p,p)
@@ -418,8 +431,9 @@ def cg_ppdna(Gamma, eigQ, W, sigma_t, b, eps = 1e-6, max_iter = 20):
         
     return x
 
+@njit()
 def Y_t( X, Omega_t, Theta_t, S, lambda1, lambda2, sigma_t, reg):
-    assert min(lambda1, lambda2, sigma_t) > 0 , "at least one parameter is not positive"
+    assert np.min(np.array([lambda1, lambda2, sigma_t])) > 0 , "at least one parameter is not positive"
     assert X.shape[1] == X.shape[2], "dimensions are not as expected"
   
     (K,p,p) = X.shape
@@ -427,17 +441,18 @@ def Y_t( X, Omega_t, Theta_t, S, lambda1, lambda2, sigma_t, reg):
     W_t = Omega_t - (sigma_t * (S + X))  
     V_t = Theta_t + (sigma_t * X)
 
-    eigD, eigQ = np.linalg.eigh(W_t)
+    #eigD, eigQ = np.linalg.eigh(W_t)
   
     grad1 = np.zeros((K,p,p))
     term1 = 0
     for k in np.arange(K):
-        Psi_h, proxh, _ = moreau_h(sigma_t, D = eigD[k,:] , Q = eigQ[k,:,:] )
+        eigD, eigQ = np.linalg.eigh(W_t[k,:,:])
+        Psi_h, proxh, _ = moreau_h(sigma_t, D = eigD, Q = eigQ)
         term1 += (1/sigma_t) * Psi_h
         grad1[k,:,:] = proxh
     
-    term2 = - 1/(2*sigma_t) * ( Gdot(W_t, W_t) + Gdot(V_t, V_t))
-    term3 = 1/(2*sigma_t) * (  Gdot(Omega_t, Omega_t)  +  Gdot(Theta_t, Theta_t)   )  
+    term2 = - 1/(2*sigma_t) * (Gdot(W_t, W_t) + Gdot(V_t, V_t))
+    term3 = 1/(2*sigma_t) * (Gdot(Omega_t, Omega_t)  +  Gdot(Theta_t, Theta_t))  
   
     Psi_P , U = moreau_P(V_t, sigma_t * lambda1, sigma_t*lambda2, reg)  
     term4 = (1/sigma_t) * Psi_P
