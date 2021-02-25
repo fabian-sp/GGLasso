@@ -92,7 +92,7 @@ def ADMM_MGL(S, lambda1, lambda2, reg , Omega_0 , \
         eigD, eigQ = np.linalg.eigh(W_t)
         
         for k in np.arange(K):
-            Omega_t[k,:,:] = phiplus(W_t[k,:,:], beta = nk[k,0,0]/rho, D = eigD[k,:], Q = eigQ[k,:,:])
+            Omega_t[k,:,:] = phiplus(beta = nk[k,0,0]/rho, D = eigD[k,:], Q = eigQ[k,:,:])
         
         # Theta Update
         Theta_t = prox_p(Omega_t + L_t + X_t, (1/rho)*lambda1, (1/rho)*lambda2, reg)
@@ -159,7 +159,7 @@ def ADMM_stopping_criterion(Omega, Theta, L, X, S , lambda1, lambda2, nk, reg, l
     proxK = np.zeros((K,p,p))
     eigD, eigQ = np.linalg.eigh(Omega - nk*S - X)
     for k in np.arange(K):       
-        proxK[k,:,:] = phiplus(A = Omega[k,:,:] - nk[k,0,0]*S[k,:,:] - X[k,:,:], beta = nk[k,0,0], D = eigD[k,:], Q = eigQ[k,:,:])
+        proxK[k,:,:] = phiplus(beta = nk[k,0,0], D = eigD[k,:], Q = eigQ[k,:,:])
      
     term3 = np.linalg.norm(Omega - proxK) / (1 + np.linalg.norm(Omega))
     

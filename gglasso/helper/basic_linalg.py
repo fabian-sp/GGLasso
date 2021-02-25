@@ -17,18 +17,21 @@ def trp(X):
     
     return X.transpose(0,2,1)
 
+@njit()
 def Gdot(X, Y):
-    # calculates the inner product for X,Y in G
-    assert X.shape == Y.shape
+     # calculates the inner product for X,Y in G = K-fold of symm. matrices in R^p
+    (K,p,p) = X.shape
+    res = 0
+    for k in np.arange(K):
+        res += Sdot(X[k,:,:], Y[k,:,:])
     
-    xy = np.trace( np.matmul( trp(X), Y) , axis1 = 1, axis2 = 2)
-    
-    return xy.sum() 
+    return res 
+
 
 # general functions for the space S
-    
+@njit()
 def Sdot(X,Y):
-    return np.trace( X.T @ Y )
+    return np.trace(X.T @ Y)
 
 def adjacency_matrix(S , t = 1e-5):
     A = (np.abs(S) >= t).astype(int)
@@ -41,44 +44,26 @@ def adjacency_matrix(S , t = 1e-5):
     return A
 
 
-def cg_general(lin, dot, b, eps = 1e-6, kwargs = {}, verbose = False):
-    """
-    This is the CG method for a general selfadjoint linear operator "lin" and a general scalar product "dot"
-    
-    It solves after x: lin(x) = b
-    
-    lin: should be a callable where the first argument is the argument of the operator
-         other arguments can be handled via kwargs
-    dot: should be a callable with two arguments, namely the two points of <X,Y>
-    """
-    
-    dim = b.shape
-    N_iter = np.array(dim).prod()
-    x = np.zeros(dim)
-    r = b - lin(x, **kwargs)  
-    p = r.copy()
-    j = 0
-    
-    while j < N_iter :
+def scale_array_by_diagonal(X, d = None):
+        """
+        scales a 2d-array X with 1/sqrt(d), i.e.
         
-        linp = lin(p , **kwargs)
-        alpha = dot(r,r) / dot(p, linp)
+        X_ij/sqrt(d_i*d_j)
+        in matrix notation: W^-1 @ X @ W^-1 with W^2 = diag(d)
         
-        x +=   alpha * p
-        denom = dot(r,r)
-        r -=  alpha * linp
-        #r = b - linp
+        if d = None, use square root diagonal, i.e. W^2 = diag(X)
+        see (2.4) in https://fan.princeton.edu/papers/09/Covariance.pdf
+        """
+        assert len(X.shape) == 2
+        if d is None:
+            d = np.diag(X)
+        else:
+            assert len(d) == X.shape[0]
+            
+        scale = np.tile(np.sqrt(d),(X.shape[0],1))
+        scale = scale.T * scale
         
-        if np.sqrt(dot(r,r))  <= eps:
-            if verbose:
-                print(f"Reached accuracy in iteration {str(j)}")
-            break
-        
-        beta = dot(r,r)/denom
-        p = r + beta * p 
-        j += 1
-        
-    return x
+        return X/scale
 
 
 
