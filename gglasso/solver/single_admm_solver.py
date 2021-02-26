@@ -10,7 +10,8 @@ from scipy.linalg import block_diag
 from .ggl_helper import prox_od_1norm, phiplus, prox_rank_norm
 
 
-def ADMM_stopping_criterion(Omega, Theta, Theta_t_1, L, X, S, lambda1, eps_rel = 1e-3, eps_abs = 1e-3, latent=False, mu1=None):
+def ADMM_stopping_criterion(Omega, Theta, Theta_t_1, L, X, S, lambda1, eps_rel, eps_abs, latent=False,
+                            mu1=None):
     assert Omega.shape == Theta.shape == S.shape
     assert S.shape[0] == S.shape[1]
 
@@ -19,13 +20,13 @@ def ADMM_stopping_criterion(Omega, Theta, Theta_t_1, L, X, S, lambda1, eps_rel =
 
     (p, p) = S.shape
 
-    #new formula
+    # new formula
 
-    psi = (p**2/2 + p/2) # number of elements of off-diagonal matrix
+    psi = (p ** 2 / 2 + p / 2)  # number of elements of off-diagonal matrix
     e_pri = psi * eps_abs + eps_rel * np.maximum(np.linalg.norm(Omega), np.linalg.norm(Theta))
     e_dual = psi * eps_abs + eps_rel * np.linalg.norm(X)
 
-    r_k = np.linalg.norm(Omega + Theta)
+    r_k = np.linalg.norm(Omega - Theta)
     s_k = np.linalg.norm(Theta - Theta_t_1)
 
     term4 = 0
@@ -34,16 +35,16 @@ def ADMM_stopping_criterion(Omega, Theta, Theta_t_1, L, X, S, lambda1, eps_rel =
         proxL = prox_rank_norm(A=L - X, beta=mu1, D=eigD, Q=eigQ)
         term4 = np.linalg.norm(L - proxL) / (1 + np.linalg.norm(L))
 
-    criterion = np.array([])
+    criterion = {}
 
-    #primal convergence condition
+    # primal convergence condition
     if r_k <= e_pri:
-        criterion = criterion.append("primal optimal")
+        criterion = criterion.add("primal optimal")
         print("primal problem has reached the optimal solution")
 
-    #dual convergence condition
-    if s_k <= e_dual:
-        criterion = criterion.append("dual optimal")
+    # dual convergence condition
+    if s_k <= e_dual & Theta_t_1 != Theta:
+        criterion = criterion.add("dual optimal")
         print("dual problem has reached the optimal solution")
 
     stop_value = np.maximum(r_k, s_k, term4)
@@ -51,35 +52,42 @@ def ADMM_stopping_criterion(Omega, Theta, Theta_t_1, L, X, S, lambda1, eps_rel =
     return {'status': criterion, 'value': stop_value}
 
 
-# def ADMM_stopping_criterion(Omega, Theta, L, X, S , lambda1, latent = False, mu1 = None):
-#
-#     assert Omega.shape == Theta.shape == S.shape
-#     assert S.shape[0] == S.shape[1]
-#
-#     if not latent:
-#         assert np.all(L==0)
-#
-#     (p,p) = S.shape
-#
-#     term1 = np.linalg.norm(Theta - prox_od_1norm(Theta + X , l = lambda1)) / (1 + np.linalg.norm(Theta))
-#
-#     term2 = np.linalg.norm(Omega - Theta + L) / (1 + np.linalg.norm(Theta))
-#
-#     eigD, eigQ = np.linalg.eigh(Omega - S - X)
-#     proxO = phiplus(A = Omega - S - X, beta = 1, D = eigD, Q = eigQ)
-#     term3 = np.linalg.norm(Omega - proxO) / (1 + np.linalg.norm(Omega))
-#
-#     term4 = 0
-#     if latent:
-#         eigD, eigQ = np.linalg.eigh(L - X)
-#         proxL = prox_rank_norm(A = L - X, beta = mu1, D = eigD, Q = eigQ)
-#         term4 = np.linalg.norm(L - proxL) / (1 + np.linalg.norm(L))
-#
-#     return max(term1, term2, term3, term4)
+def Fabian_stopping_criterion(Omega, Theta, L, X, S , lambda1, latent = False, mu1 = None):
+
+    assert Omega.shape == Theta.shape == S.shape
+    assert S.shape[0] == S.shape[1]
+
+    if not latent:
+        assert np.all(L==0)
+
+    (p,p) = S.shape
+
+    term1 = np.linalg.norm(Theta - prox_od_1norm(Theta + X , l = lambda1)) / (1 + np.linalg.norm(Theta))
+
+    term2 = np.linalg.norm(Omega - Theta + L) / (1 + np.linalg.norm(Theta))
+
+    eigD, eigQ = np.linalg.eigh(Omega - S - X)
+    proxO = phiplus(A = Omega - S - X, beta = 1, D = eigD, Q = eigQ)
+    term3 = np.linalg.norm(Omega - proxO) / (1 + np.linalg.norm(Omega))
+
+    term4 = 0
+    if latent:
+        eigD, eigQ = np.linalg.eigh(L - X)
+        proxL = prox_rank_norm(A = L - X, beta = mu1, D = eigD, Q = eigQ)
+        term4 = np.linalg.norm(L - proxL) / (1 + np.linalg.norm(L))
+
+    criterion = {}
+    stop_value = np.maximum(term1, term2, term3, term4)
+    
+    if stop_value <= 1e-5:
+        criterion = criterion.add("primal optimal")
+        criterion = criterion.add("dual optimal")
+        print("both primal and dual problems have reached the optimal solution")
+
+    return {'status': criterion, 'value': stop_value}
 
 
-def ADMM_SGL(S, lambda1, Omega_0, Theta_0=np.array([]), X_0=np.array([]), \
-             eps_admm=1e-5, rho=1., max_iter=1000, verbose=False, measure=False, latent=False, mu1=None):
+def ADMM_SGL(S, lambda1, Omega_0, Theta_0=np.array([]), X_0=np.array([]), eps_admm=1e-5, rho=1., max_iter=1000, eps_rel=1e-3, eps_abs=1e-3, verbose=False, measure=False, latent=False, mu1=None):
     """
     This is an ADMM algorithm for solving the Single Graphical Lasso problem
 
@@ -113,24 +121,26 @@ def ADMM_SGL(S, lambda1, Omega_0, Theta_0=np.array([]), X_0=np.array([]), \
         X_0 = np.zeros((p, p))
 
     Theta_t = Theta_0.copy()
-    Theta_t_1 = Theta_t
+    Theta_t_1 = Theta_0.copy()
     L_t = np.zeros((p, p))
     X_t = X_0.copy()
 
     runtime = np.zeros(max_iter)
     kkt_residual = np.zeros(max_iter)
+    first_pass = True
 
     for iter_t in np.arange(max_iter):
         if measure:
             start = time.time()
 
-        # eta_A = ADMM_stopping_criterion(Omega_t, Theta_t, L_t, rho * X_t, S, lambda1, latent, mu1)
-        # kkt_residual[iter_t] = eta_A
+        if not first_pass:
+            eta_A = ADMM_stopping_criterion(Omega_t, Theta_t, Theta_t_1, L_t, rho * X_t, S, lambda1, latent, mu1, eps_rel, eps_abs)
+            kkt_residual[iter_t] = eta_A['value']
+        else:
+            eta_A = Fabian_stopping_criterion(Omega_t, Theta_t, L_t, rho * X_t, S, lambda1, latent, mu1)
+            kkt_residual[iter_t] = eta_A['value']
 
-        eta_A = ADMM_stopping_criterion(Omega_t, Theta_t, Theta_t_1, L_t, rho * X_t, S, lambda1, latent, mu1)
-        kkt_residual[iter_t] = eta_A['value']
-
-        if len(eta_A["status"]) > 1: #both primal and dual solutions are optimal
+        if len(eta_A["status"]) > 1:  # both primal and dual solutions are optimal
             status = 'optimal'
             break
         if verbose:
@@ -143,6 +153,7 @@ def ADMM_SGL(S, lambda1, Omega_0, Theta_0=np.array([]), X_0=np.array([]), \
 
         # Theta Update
         Theta_t = prox_od_1norm(Omega_t + L_t + X_t, (1 / rho) * lambda1)
+        Theta_t_1 = Theta_t.copy()
 
         # L Update
         if latent:
@@ -153,6 +164,8 @@ def ADMM_SGL(S, lambda1, Omega_0, Theta_0=np.array([]), X_0=np.array([]), \
 
         # X Update
         X_t = X_t + Omega_t - Theta_t + L_t
+
+        first_pass = False
 
         if measure:
             end = time.time()
@@ -311,8 +324,6 @@ def get_connected_components(S, lambda1):
         allC.append(thisC)
 
     return numC, allC
-
-
 
 
 def invert_permutation(p):
