@@ -78,7 +78,7 @@ def Fabian_stopping_criterion(Omega, Theta, L, X, S , lambda1, latent = False, m
 
     criterion = {}
     stop_value = np.maximum(term1, term2, term3, term4)
-    
+
     if stop_value <= 1e-5:
         criterion = criterion.add("primal optimal")
         criterion = criterion.add("dual optimal")
