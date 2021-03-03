@@ -37,8 +37,8 @@ def get_ppdna_params(ppdna_params = None):
 
 def get_ppa_sub_params_default():
     ppa_sub_params = { 'sigma_t' : 1e3, 
-          'eta' : 1e-3, 'tau' : .5, 'rho' : .5, 'mu' : .25,
-          'eps_t' : .9, 'delta_t' : .9} 
+          'eta' : 1e-5, 'tau' : .2, 'rho' : .5, 'mu' : .4,
+          'eps_t' : .95, 'delta_t' : .95} 
     
     return ppa_sub_params
 
@@ -110,7 +110,7 @@ def PPA_subproblem(Omega_t, Theta_t, X_t, S, reg, ppa_sub_params = None, verbose
         if verbose:
             print("Start CG method")
         
-        D = cg_ppdna(Gamma, eigQ, W, sigma_t, -gradY_Xt, eps = cg_accur, max_iter = 10)
+        D = cg_ppdna(Gamma, eigQ, W, sigma_t, -gradY_Xt, eps = cg_accur, max_iter = 15)
         
         # step 2: line search 
         if verbose:
