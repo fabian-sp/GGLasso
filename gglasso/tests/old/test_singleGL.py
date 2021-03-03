@@ -36,7 +36,7 @@ res_scikit = model.precision_
 Omega_0 = np.eye(p)
 
 start = time.time()
-sol, info = ADMM_SGL(S, lambda1, Omega_0, tol=1e-5, verbose=False, latent=False)
+sol, info = ADMM_SGL(S, lambda1, Omega_0, verbose=True, latent=False)
 end = time.time();
 print(end - start)
 
