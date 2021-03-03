@@ -49,7 +49,7 @@ def ADMM_stopping_criterion(Omega, Theta, Theta_t_1, L, X, S, tol, latent=False,
         criterion = criterion.add("dual optimal")
         print("dual problem has reached the optimal solution")
 
-    stop_value = np.maximum(r_k, s_k, term4)
+    stop_value = max(r_k, s_k, term4)
 
     return {'status': criterion, 'value': stop_value}
 
