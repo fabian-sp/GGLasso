@@ -23,7 +23,7 @@ def ADMM_stopping_criterion(Omega, Theta, Theta_t_1, L, X, S, tol, latent=False,
     eps_rel = 1e-3
     eps_abs = tol
 
-    psi = (p ** 2 / 2 + p / 2)  # number of elements of off-diagonal matrix
+    psi = ((p**2 + p)/2)  # number of elements of off-diagonal matrix
     e_pri = psi * eps_abs + eps_rel * np.maximum(np.linalg.norm(Omega), np.linalg.norm(Theta))
     e_dual = psi * eps_abs + eps_rel * np.linalg.norm(X)
 
@@ -49,7 +49,7 @@ def ADMM_stopping_criterion(Omega, Theta, Theta_t_1, L, X, S, tol, latent=False,
     return stop_value, status_set
 
 
-def ADMM_SGL(S, lambda1, Omega_0, Theta_0=np.array([]), X_0=np.array([]), rho=1., max_iter=1000, tol=1e-3,
+def ADMM_SGL(S, lambda1, Omega_0, Theta_0=np.array([]), X_0=np.array([]), rho=1., max_iter=1000, tol=1e-7,
              verbose=False, measure=False, latent=False, mu1=None):
     """
     This is an ADMM algorithm for solving the Single Graphical Lasso problem
@@ -99,9 +99,9 @@ def ADMM_SGL(S, lambda1, Omega_0, Theta_0=np.array([]), X_0=np.array([]), rho=1.
 
         if iter_t > 0:
             eta_A = ADMM_stopping_criterion(Omega_t, Theta_t, Theta_t_1, L_t, rho * X_t, S, tol, latent, mu1)
-            residual[iter_t] = eta_A[0]
+            residual[iter_t] = eta_A[0]  # difference between Omega and Theta
 
-        if len(eta_A[1]) > 1:
+        if len(eta_A[1]) > 1:  # check if both primal and dual solutions are optimal
             status = 'primal and dual optimal'
             break
 
@@ -133,15 +133,19 @@ def ADMM_SGL(S, lambda1, Omega_0, Theta_0=np.array([]), X_0=np.array([]), rho=1.
 
         if verbose:
             print(f"Current accuracy: ", eta_A[0])
+            print(f"Current ADMM status: ", eta_A[1])
 
     if len(eta_A[1]) == 1:
         print(f"ADMM is only {eta_A[1]}")
         print(f"Try to change the tolerance value {tol}")
 
-    if eta_A[0] > tol:
-        status = 'max iterations reached'
+    # if eta_A[0] > tol:
+    #     status = 'max iterations reached'
+    if len(eta_A[1]) == 0:
+        print(f"ADMM has reached max iterations")
+
     print(f"ADMM terminated after {iter_t} iterations with accuracy {eta_A[0]}")
-    print(f"ADMM status: {status}")
+    print(f"ADMM status: {eta_A[1]}")
 
     assert abs((Omega_t).T - Omega_t).max() <= 1e-5, "Solution is not symmetric"
     assert abs((Theta_t).T - Theta_t).max() <= 1e-5, "Solution is not symmetric"
@@ -296,7 +300,6 @@ def invert_permutation(p):
     s = np.empty_like(p)
     s[p] = np.arange(p.size)
     return s
-
 
 # def ADMM_stopping_criterion(Omega, Theta, L, X, S, lambda1, latent=False, mu1=None):
 #     assert Omega.shape == Theta.shape == S.shape
