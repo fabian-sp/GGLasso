@@ -52,7 +52,7 @@ def ADMM_stopping_criterion(Omega, Theta, Theta_t_1, L, X, S, lambda1, eps_rel, 
     return {'status': criterion, 'value': stop_value}
 
 
-def Fabian_stopping_criterion(Omega, Theta, L, X, S , lambda1, latent = False, mu1 = None):
+def KKT_stopping_criterion(Omega, Theta, L, X, S , lambda1, latent = False, mu1 = None):
 
     assert Omega.shape == Theta.shape == S.shape
     assert S.shape[0] == S.shape[1]
@@ -137,7 +137,7 @@ def ADMM_SGL(S, lambda1, Omega_0, Theta_0=np.array([]), X_0=np.array([]), eps_ad
             eta_A = ADMM_stopping_criterion(Omega_t, Theta_t, Theta_t_1, L_t, rho * X_t, S, lambda1, latent, mu1, eps_rel, eps_abs)
             kkt_residual[iter_t] = eta_A['value']
         else:
-            eta_A = Fabian_stopping_criterion(Omega_t, Theta_t, L_t, rho * X_t, S, lambda1, latent, mu1)
+            eta_A = KKT_stopping_criterion(Omega_t, Theta_t, L_t, rho * X_t, S, lambda1, latent, mu1)
             kkt_residual[iter_t] = eta_A['value']
 
         if len(eta_A["status"]) > 1:  # both primal and dual solutions are optimal
