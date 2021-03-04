@@ -88,7 +88,8 @@ def ADMM_SGL(S, lambda1, Omega_0, Theta_0=np.array([]), X_0=np.array([]), rho=1.
     Theta_t_1 = Theta_0.copy()
     L_t = np.zeros((p, p))
     X_t = X_0.copy()
-    eta_A = (1, set())
+    eta_A = 1
+    status_set = set()
 
     runtime = np.zeros(max_iter)
     residual = np.zeros(max_iter)
@@ -98,10 +99,10 @@ def ADMM_SGL(S, lambda1, Omega_0, Theta_0=np.array([]), X_0=np.array([]), rho=1.
             start = time.time()
 
         if iter_t > 0:
-            eta_A = ADMM_stopping_criterion(Omega_t, Theta_t, Theta_t_1, L_t, rho * X_t, S, tol, latent, mu1)
-            residual[iter_t] = eta_A[0]  # difference between Omega and Theta
+            eta_A, status_set = ADMM_stopping_criterion(Omega_t, Theta_t, Theta_t_1, L_t, rho * X_t, S, tol, latent, mu1)
+            residual[iter_t] = eta_A  # difference between Omega and Theta
 
-        if len(eta_A[1]) > 1:  # check if both primal and dual solutions are optimal
+        if len(status_set) > 1:  # check if both primal and dual solutions are optimal
             status = 'primal and dual optimal'
             break
 
@@ -132,20 +133,20 @@ def ADMM_SGL(S, lambda1, Omega_0, Theta_0=np.array([]), X_0=np.array([]), rho=1.
             runtime[iter_t] = end - start
 
         if verbose:
-            print(f"Current accuracy: ", eta_A[0])
-            print(f"Current ADMM status: ", eta_A[1])
+            print(f"Current accuracy: ", eta_A)
+            print(f"Current ADMM status: ", status_set)
 
-    if len(eta_A[1]) == 1:
-        print(f"ADMM is only {eta_A[1]}")
+    if len(status_set) == 1:
+        print(f"ADMM is only {status_set}")
         print(f"Try to change the tolerance value {tol}")
 
     # if eta_A[0] > tol:
     #     status = 'max iterations reached'
-    if len(eta_A[1]) == 0:
+    if len(status_set) == 0:
         print(f"ADMM has reached max iterations")
 
-    print(f"ADMM terminated after {iter_t} iterations with accuracy {eta_A[0]}")
-    print(f"ADMM status: {eta_A[1]}")
+    print(f"ADMM terminated after {iter_t} iterations with accuracy {eta_A}")
+    print(f"ADMM status: {status_set}")
 
     assert abs((Omega_t).T - Omega_t).max() <= 1e-5, "Solution is not symmetric"
     assert abs((Theta_t).T - Theta_t).max() <= 1e-5, "Solution is not symmetric"
