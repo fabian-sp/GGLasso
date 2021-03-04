@@ -23,18 +23,19 @@ def ADMM_stopping_criterion(Omega, Theta, Theta_t_1, L, X, S, tol, latent=False,
     eps_rel = 1e-3
     eps_abs = tol
 
-    psi = ((p**2 + p)/2)  # number of elements of off-diagonal matrix
+    psi = ((p ** 2 + p) / 2)  # number of elements of off-diagonal matrix
     e_pri = psi * eps_abs + eps_rel * np.maximum(np.linalg.norm(Omega), np.linalg.norm(Theta))
     e_dual = psi * eps_abs + eps_rel * np.linalg.norm(X)
 
     r_k = np.linalg.norm(Omega - Theta)
     s_k = np.linalg.norm(Theta - Theta_t_1)
 
-    term4 = 0
     if latent:
-        eigD, eigQ = np.linalg.eigh(L - X)
-        proxL = prox_rank_norm(A=L - X, beta=mu1, D=eigD, Q=eigQ)
-        term4 = np.linalg.norm(L - proxL) / (1 + np.linalg.norm(L))
+        e_pri = psi * eps_abs + eps_rel * np.maximum(np.linalg.norm(Omega), np.linalg.norm(Theta - L))
+        e_dual = psi * eps_abs + eps_rel * np.linalg.norm(X)  # X*pho is given as an input to the function
+
+        r_k = np.linalg.norm(Omega - Theta + L)
+        s_k = np.linalg.norm(Theta - Theta_t_1)
 
     status_set = set()
     # primal convergence condition
@@ -44,7 +45,7 @@ def ADMM_stopping_criterion(Omega, Theta, Theta_t_1, L, X, S, tol, latent=False,
     if s_k <= e_dual:
         status_set.add("dual optimal")
 
-    stop_value = max(r_k, s_k, term4)
+    stop_value = np.maximum(r_k, s_k)
 
     return stop_value, status_set
 
@@ -88,6 +89,7 @@ def ADMM_SGL(S, lambda1, Omega_0, Theta_0=np.array([]), X_0=np.array([]), rho=1.
     Theta_t_1 = Theta_0.copy()
     L_t = np.zeros((p, p))
     X_t = X_0.copy()
+    
     eta_A = 1
     status_set = set()
 
@@ -99,7 +101,8 @@ def ADMM_SGL(S, lambda1, Omega_0, Theta_0=np.array([]), X_0=np.array([]), rho=1.
             start = time.time()
 
         if iter_t > 0:
-            eta_A, status_set = ADMM_stopping_criterion(Omega_t, Theta_t, Theta_t_1, L_t, rho * X_t, S, tol, latent, mu1)
+            eta_A, status_set = ADMM_stopping_criterion(Omega_t, Theta_t, Theta_t_1, L_t, rho * X_t, S, tol, latent,
+                                                        mu1)
             residual[iter_t] = eta_A  # difference between Omega and Theta
 
         if len(status_set) > 1:  # check if both primal and dual solutions are optimal
