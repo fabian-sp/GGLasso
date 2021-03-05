@@ -491,8 +491,7 @@ class GGLassoEstimator(BaseEstimator):
     def calc_ebic(self, gamma = 0.5):
         
         if self.multiple:
-            self.ebic_ = ebic(self.S, self.precision_, self.n_samples, gamma = gamma)
-            
+            self.ebic_ = ebic(self.sample_covariance_, self.precision_, self.n_samples, gamma = gamma)          
         else:
             self.ebic_ = ebic_single(self.sample_covariance_, self.precision_, self.n_samples, gamma = gamma)        
         

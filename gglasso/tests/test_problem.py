@@ -9,7 +9,7 @@ from gglasso.helper.ext_admm_helper import construct_trivial_G
 p = 20
 K = 3
 N = 1000
-M = 2
+M = 4
 
 ###############################################################
 ### TEST MGL
@@ -32,6 +32,7 @@ def template_problem_MGL(S, N, reg = 'GGL', latent = False, G = None):
     
     P.model_selection(modelselect_params = modelselectparams, method = 'eBIC', gamma = 0.1)
     #tmp = P.modelselect_stats.copy()
+    P.solution.calc_ebic(gamma = 0.1)
     return
 
 def test_GGL():
@@ -102,6 +103,7 @@ def template_problem_SGL(S, N, latent = False):
     
     P.model_selection(modelselect_params = modelselectparams, method = 'eBIC', gamma = 0.1)
     #tmp = P.modelselect_stats.copy()
+    P.solution.calc_ebic(gamma = 0.1)
     return
 
 def test_SGL():

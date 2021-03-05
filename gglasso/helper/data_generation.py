@@ -75,12 +75,13 @@ def time_varying_power_network(p=100, K=10, M=10):
     generates a power law network. The first block disappears at half-time, while the second block appears 
     p: dimension
     K: number of instances/time-stamps
-    M: number of sublocks in each instance
+    M: number of sublocks in each instance, should be greater or equal than 3
     """  
     Sigma = np.zeros((K,p,p))
     
     L = int(p/M)
     assert M*L == p
+    assert M >=3
     
     Sigma_0 = power_law_network(p = p, M = M) 
     
