@@ -14,18 +14,19 @@ assert_tol = 1e-5
 
 class glasso_problem:
     
-    def __init__(self, S, N, reg = "GGL", reg_params = None, latent = False, G = None):
+    def __init__(self, S, N, reg = "GGL", reg_params = None, latent = False, G = None, do_scaling = True):
         
         self.S = S.copy()
         self.N = N
         self.latent = latent
-        
         self.G = G
+        self.do_scaling = do_scaling
         
         self._derive_problem_formulation()
         
         # initialize and set regularization params
         self.reg_params = None
+        self.modelselect_params = None
         self.set_reg_params(reg_params)
         
         if self.multiple:
@@ -39,8 +40,8 @@ class glasso_problem:
         self.solution = GGLassoEstimator(S = self.S.copy(), N = self.N, p = self.p, K = self.K,\
                          multiple = self.multiple, latent = self.latent, conforming = self.conforming)
         
-        self.do_scaling = True
         
+        # scale S by diagonal
         if self.do_scaling:
             self._scale_input_to_correlation()
         
@@ -338,7 +339,7 @@ class glasso_problem:
         params = dict()
         params['lambda1_range'] = np.logspace(-3,0,10)
         if self.multiple:
-            params['w2_range'] = np.logspace(-1,-4,5)
+            params['w2_range'] = np.logspace(-1,-3,5)
             #params['lambda2_range'] = np.logspace(-3,1,10)
             
         if self.latent:
@@ -360,6 +361,7 @@ class glasso_problem:
         
         # when initialized set to default
         if self.modelselect_params is None:
+            print("NOTE: No grid for model selection is specified and thus default values are used. A grid can be specified with the argument modelselect_params.")
             self.modelselect_params = self._default_modelselect_params()
         
         
@@ -369,12 +371,12 @@ class glasso_problem:
             
         return
 
-    def model_selection(self, method = 'eBIC', gamma = 0.1):
+    def model_selection(self, modelselect_params = None, method = 'eBIC', gamma = 0.1):
         
         assert (gamma >= 0) and (gamma <= 1), "gamma needs to be chosen as a parameter in [0,1]."
         assert method in ['eBIC', 'AIC'], "Supported evaluation methods are eBIC and AIC."
         
-        self.modelselect_params = self._default_modelselect_params()
+        self.set_modelselect_params(modelselect_params)
         
         ###############################
         # SINGLE GL --> GRID SEARCH lambda1/mu
@@ -401,6 +403,11 @@ class glasso_problem:
                                                                   gamma = gamma, latent = self.latent, mu_range = self.modelselect_params['mu1_range'])            
                 
                 ix_mu = stage1_statistics['ix_mu']
+                
+                # store results from stage 1 (may be needed to compare Single estimator vs. Joint estimator)
+                self.est1 = est_uniform
+                self.est2 = est_indv
+                self.stage1_stats = stage1_statistics          
             else:
                 ix_mu = None
             
