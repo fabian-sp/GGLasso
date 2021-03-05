@@ -18,14 +18,14 @@ elif reg == 'FGL':
 
 S, samples = sample_covariance_matrix(Sigma, N)
 
+latent = False
 
-P = glasso_problem(S = S, N = N, reg = reg, latent = False)
+P = glasso_problem(S = S, N = N, reg = reg, latent = latent)
 
 print(P)
 
+
 reg_params = {'lambda1': 0.05, 'lambda2' : 0.01}
-
-
 P.set_reg_params(reg_params)
 
 solver_params = {'verbose': True, 'measure': False}
@@ -36,7 +36,6 @@ end = time.time(); print(end-start)
 
 Theta_sol = P.solution.precision_
 A_sol = P.solution.adjacency_
-
 
 
 P.model_selection()
@@ -86,4 +85,7 @@ end = time.time(); print(end-start)
 
 Theta_sol = P.solution.precision_
 A_sol = P.solution.adjacency_
+
+
+P.model_selection()
 
