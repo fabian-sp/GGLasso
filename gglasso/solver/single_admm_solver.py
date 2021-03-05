@@ -10,7 +10,7 @@ from scipy.linalg import block_diag
 from .ggl_helper import prox_od_1norm, phiplus, prox_rank_norm
 
 
-def ADMM_stopping_criterion(Omega, Theta, Theta_t_1, L, X, S, tol, latent=False,
+def ADMM_stopping_criterion(Omega, Omega_t_1, Theta, Theta_t_1, L, X, S, tol, latent=False,
                             mu1=None):
     assert Omega.shape == Theta.shape == S.shape
     assert S.shape[0] == S.shape[1]
@@ -35,7 +35,7 @@ def ADMM_stopping_criterion(Omega, Theta, Theta_t_1, L, X, S, tol, latent=False,
         e_dual = psi * eps_abs + eps_rel * np.linalg.norm(X)  # X*pho is given as an input to the function
 
         r_k = np.linalg.norm(Omega - Theta + L)
-        s_k = np.linalg.norm(Theta - Theta_t_1)
+        s_k = np.linalg.norm(Omega - Omega_t_1)
 
     status_set = set()
     # primal convergence condition
@@ -80,6 +80,7 @@ def ADMM_SGL(S, lambda1, Omega_0, Theta_0=np.array([]), X_0=np.array([]), rho=1.
     # status = {0: "not optimal", 1: "primal optimal", 2: "dual optimal"}
     status = "not optimal"
     Omega_t = Omega_0.copy()
+    Omega_t_1 = Omega_t.copy()
     if len(Theta_0) == 0:
         Theta_0 = Omega_0.copy()
     if len(X_0) == 0:
@@ -101,7 +102,7 @@ def ADMM_SGL(S, lambda1, Omega_0, Theta_0=np.array([]), X_0=np.array([]), rho=1.
             start = time.time()
 
         if iter_t > 0:
-            eta_A, status_set = ADMM_stopping_criterion(Omega_t, Theta_t, Theta_t_1, L_t, rho * X_t, S, tol, latent,
+            eta_A, status_set = ADMM_stopping_criterion(Omega_t, Omega_t_1, Theta_t, Theta_t_1, L_t, rho * X_t, S, tol, latent,
                                                         mu1)
             residual[iter_t] = eta_A  # difference between Omega and Theta
 
@@ -115,6 +116,7 @@ def ADMM_SGL(S, lambda1, Omega_0, Theta_0=np.array([]), X_0=np.array([]), rho=1.
         # Omega Update
         W_t = Theta_t - L_t - X_t - (1 / rho) * S
         eigD, eigQ = np.linalg.eigh(W_t)
+        Omega_t_1 = Omega_t.copy()
         Omega_t = phiplus(W_t, beta=1 / rho, D=eigD, Q=eigQ)
 
         # Theta Update
