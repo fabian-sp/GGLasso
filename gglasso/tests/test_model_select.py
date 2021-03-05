@@ -47,7 +47,7 @@ est_uniform, est_indv, range_stats = K_single_grid(S, L1, N, method = 'eBIC', la
 
 ix_mu = range_stats['ix_mu']
 
-grid_stats, ix, est_group = grid_search(ADMM_MGL, S, N, p, reg, L1, method= 'eBIC', w2 = W2, latent = latent, mu = mu, ix_mu = ix_mu)
+grid_stats, ix, est_group = grid_search(ADMM_MGL, S, N, p, reg, L1, method= 'eBIC', w2 = W2, latent = latent, mu_range = mu, ix_mu = ix_mu)
 
 
 np.linalg.norm(est_group['Theta'] - est_indv['Theta'])/ np.linalg.norm(est_indv['Theta'])

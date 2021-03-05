@@ -1,13 +1,13 @@
 import numpy as np
 
-from .helper.basic_linalg import trp, adjacency_matrix
+from .helper.basic_linalg import trp, adjacency_matrix, scale_array_by_diagonal
 from .helper.ext_admm_helper import check_G
 
 from .solver.admm_solver import ADMM_MGL
 from .solver.single_admm_solver import ADMM_SGL
 from .solver.ext_admm_solver import ext_ADMM_MGL
 
-from .helper.model_selection import grid_search, single_grid_search, ebic, ebic_single
+from .helper.model_selection import grid_search, single_grid_search, K_single_grid, ebic, ebic_single
 
 
 assert_tol = 1e-5
@@ -156,10 +156,10 @@ class glasso_problem:
         """
         Y = X.copy()
         if not self.multiple:
-            Y = _scale_array_by_diagonal(X, d = scale)
+            Y = scale_array_by_diagonal(X, d = scale)
         else:
             for k in range(self.K):
-                Y[k] = _scale_array_by_diagonal(X[k], d = scale[k])
+                Y[k] = scale_array_by_diagonal(X[k], d = scale[k])
                 
         return Y
     
@@ -175,11 +175,11 @@ class glasso_problem:
         
         if not self.multiple:
             self._scale = np.diag(self.S)
-            self.S = _scale_array_by_diagonal(self.S)
+            self.S = scale_array_by_diagonal(self.S)
         else:
             self._scale = np.vstack([np.diag(self.S[k]) for k in range(self.K)])
             for k in range(self.K):
-                self.S[k] = _scale_array_by_diagonal(self.S[k])
+                self.S[k] = scale_array_by_diagonal(self.S[k])
         return
     
 
@@ -342,8 +342,9 @@ class glasso_problem:
             #params['lambda2_range'] = np.logspace(-3,1,10)
             
         if self.latent:
-            params['mu1_range'] = np.logspace(-1,1,10)
-        
+            params['mu1_range'] = np.logspace(-2,0,10)
+        else:
+            params['mu1_range'] = None
         
         return params
     
@@ -385,28 +386,36 @@ class glasso_problem:
             # update the regularization parameters to the best grid point
             self.set_reg_params(stats['BEST'])
            
-        ###############################
-        # NO LATENT VARIABLES --> GRID SEARCH lambda1/lambda2
-        ###############################    
-        elif not self.latent:
-             
+        else:
+            # choose solver 
             if self.conforming:
                 solver = ADMM_MGL
             else:
                 solver = ext_ADMM_MGL
+            
+            ###############################
+            # LATENT VARIABLES --> FIRST STAGE lambda1/mu1 for each instance
+            ############################### 
+            if self.latent:
+                est_uniform, est_indv, stage1_statistics = K_single_grid(S = self.S, lambda_range = self.modelselect_params['lambda1_range'], N = self.N, method = method,\
+                                                                  gamma = gamma, latent = self.latent, mu_range = self.modelselect_params['mu1_range'])            
                 
+                ix_mu = stage1_statistics['ix_mu']
+            else:
+                ix_mu = None
+            
+            
+            ###############################
+            # SECOND STAGE --> GRID SEARCH lambda1/lambda2
+            ############################### 
+    
             stats, _, sol = grid_search(solver, S = self.S, N = self.N, p = self.p, reg = self.reg, l1 = self.modelselect_params['lambda1_range'], \
                                         l2 = None, w2 = self.modelselect_params['w2_range'], method= method, gamma = gamma, \
-                                        G = self.G, latent = self.latent, mu = None, ix_mu = None, verbose = False)
+                                        G = self.G, latent = self.latent, mu_range = self.modelselect_params['mu1_range'], ix_mu = ix_mu, verbose = False)
             
             # update the regularization parameters to the best grid point
             self.set_reg_params(stats['BEST'])
-        ###############################
-        # LATENT VARIABLES --> TWO_STAGE
-        ############################### 
-        else:
-            raise KeyError("Not implemented yet!")
-            
+        
             
         ###############################
         # SET SOLUTION AND STORE INFOS
@@ -432,27 +441,7 @@ class glasso_problem:
     
     
     
-# helper function
-def _scale_array_by_diagonal(X, d = None):
-        """
-        scales a 2d-array X with 1/sqrt(d), i.e.
-        
-        X_ij/sqrt(d_i*d_j)
-        in matrix notation: W^-1 @ X @ W^-1 with W^2 = diag(d)
-        
-        if d = None, use square root diagonal, i.e. W^2 = diag(X)
-        see (2.4) in https://fan.princeton.edu/papers/09/Covariance.pdf
-        """
-        assert len(X.shape) == 2
-        if d is None:
-            d = np.diag(X)
-        else:
-            assert len(d) == X.shape[0]
-            
-        scale = np.tile(np.sqrt(d),(X.shape[0],1))
-        scale = scale.T * scale
-        
-        return X/scale
+
     
 #%%
 from sklearn.base import BaseEstimator
@@ -498,7 +487,9 @@ class GGLassoEstimator(BaseEstimator):
             self.ebic_ = ebic(self.S, self.precision_, self.n_samples, gamma = gamma)
             
         else:
-            self.ebic_ = ebic_single(self.S, self.precision_, self.n_samples, gamma = gamma)        
+            self.ebic_ = ebic_single(self.sample_covariance_, self.precision_, self.n_samples, gamma = gamma)        
+        
+        return self.ebic_
     
     def calc_adjacency(self):
         

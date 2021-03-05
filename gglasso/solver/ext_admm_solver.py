@@ -105,7 +105,7 @@ def ext_ADMM_MGL(S, lambda1, lambda2, reg , Omega_0, G,\
         for k in np.arange(K):
             W_t = Theta_t[k] - L_t[k] - X0_t[k] - (1/rho) * S[k]
             eigD, eigQ = np.linalg.eigh(W_t)
-            Omega_t[k] = phiplus(W_t, beta = 1/rho, D = eigD, Q = eigQ)
+            Omega_t[k] = phiplus(beta = 1/rho, D = eigD, Q = eigQ)
         
         # Theta Update
         for k in np.arange(K): 
@@ -184,7 +184,7 @@ def ext_ADMM_stopping_criterion(Omega, Theta, L, Lambda, X0, X1, S , G, lambda1,
     
     for k in np.arange(K):
         eigD, eigQ = np.linalg.eigh(Omega[k] - S[k] - X0[k])
-        proxk = phiplus(Omega[k] - S[k] - X0[k], beta = 1, D = eigD, Q = eigQ)
+        proxk = phiplus(beta = 1, D = eigD, Q = eigQ)
         # primal varibale optimality
         term1[k] = np.linalg.norm(Omega[k] - proxk) / (1 + np.linalg.norm(Omega[k]))
         term2[k] = np.linalg.norm(Theta[k] - prox_od_1norm(Theta[k] + X0[k] - X1[k] , lambda1[k])) / (1 + np.linalg.norm(Theta[k]))

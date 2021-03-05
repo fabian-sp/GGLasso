@@ -7,9 +7,10 @@ This file contains the proximal point algorithm proposed by Zhang et al.
 import numpy as np
 import time
 
-from .ggl_helper import prox_p, phiplus, moreau_h, moreau_P, construct_gamma, construct_jacobian_prox_p, Y_t, hessian_Y,  Phi_t, f, P_val
+from .ggl_helper import prox_p, phiplus, moreau_h, moreau_P, construct_gamma, construct_jacobian_prox_p
+from .ggl_helper import  Y_t, hessian_Y,  Phi_t, f, P_val, cg_ppdna
 from .admm_solver import ADMM_MGL
-from ..helper.basic_linalg import trp,Gdot, cg_general
+from ..helper.basic_linalg import trp, Gdot
 
 def get_ppdna_params(ppdna_params = None):
     
@@ -36,8 +37,8 @@ def get_ppdna_params(ppdna_params = None):
 
 def get_ppa_sub_params_default():
     ppa_sub_params = { 'sigma_t' : 1e3, 
-          'eta' : 1e-3, 'tau' : .5, 'rho' : .5, 'mu' : .25,
-          'eps_t' : .9, 'delta_t' : .9} 
+          'eta' : 1e-5, 'tau' : .2, 'rho' : .5, 'mu' : .4,
+          'eps_t' : .95, 'delta_t' : .95} 
     
     return ppa_sub_params
 
@@ -105,12 +106,12 @@ def PPA_subproblem(Omega_t, Theta_t, X_t, S, reg, ppa_sub_params = None, verbose
         W = construct_jacobian_prox_p( (1/sigma_t) * V_t, lambda1 , lambda2, reg)
         
         # step 1: CG method
-        cg_kwargs = {'Gamma' : Gamma, 'eigQ': eigQ, 'W': W, 'sigma_t': sigma_t}
-        
         cg_accur = min(eta, np.linalg.norm(gradY_Xt)**(1+tau))
         if verbose:
             print("Start CG method")
-        D = cg_general(hessian_Y, Gdot, - gradY_Xt, eps = cg_accur, kwargs = cg_kwargs, verbose = verbose)
+        
+        D = cg_ppdna(Gamma, eigQ, W, sigma_t, -gradY_Xt, eps = cg_accur, max_iter = 15)
+        
         # step 2: line search 
         if verbose:
             print("Start Line search")
@@ -130,7 +131,7 @@ def PPA_subproblem(Omega_t, Theta_t, X_t, S, reg, ppa_sub_params = None, verbose
         Omega_sol = np.zeros((K,p,p))
         eigW, eigV = np.linalg.eigh(Omega_t - sigma_t * (S + X_sol))
         for k in np.arange(K):
-            _, phip_k, _ = moreau_h( Omega_t[k,:,:] - sigma_t * (S[k,:,:] + X_sol[k,:,:]) , sigma_t , eigW[k,:], eigV[k,:,:])
+            _, phip_k, _ = moreau_h(sigma_t , eigW[k,:], eigV[k,:,:])
             Omega_sol[k,:,:] = phip_k
         
         _, Theta_sol = moreau_P(Theta_t + sigma_t * X_sol, sigma_t * lambda1, sigma_t * lambda2, reg)
@@ -256,7 +257,7 @@ def PPDNA_stopping_criterion(Omega, Theta, X, S , ppa_sub_params, reg):
     proxK = np.zeros((K,p,p))
     eigD, eigQ = np.linalg.eigh(Omega-S-X)
     for k in np.arange(K):       
-        proxK[k,:,:] = phiplus(A = Omega[k,:,:] - S[k,:,:] - X[k,:,:], beta = 1, D = eigD[k,:], Q = eigQ[k,:,:])
+        proxK[k,:,:] = phiplus(beta = 1, D = eigD[k,:], Q = eigQ[k,:,:])
     
     term3 = np.linalg.norm(Omega - proxK) / (1 + np.linalg.norm(Omega))
     

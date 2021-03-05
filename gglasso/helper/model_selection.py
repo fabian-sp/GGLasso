@@ -47,7 +47,7 @@ def lambda_grid(l1, l2 = None, w2 = None):
         
     return L1.squeeze(), L2.squeeze(), w2
 
-def grid_search(solver, S, N, p, reg, l1, l2 = None, w2 = None, method= 'eBIC', gamma = 0.3, G = None, latent = False, mu = None, ix_mu = None, verbose = False):
+def grid_search(solver, S, N, p, reg, l1, l2 = None, w2 = None, method= 'eBIC', gamma = 0.3, G = None, latent = False, mu_range = None, ix_mu = None, verbose = False):
     """
     method for doing model selection using grid search and AIC/eBIC
     we work the grid columnwise, i.e. hold l1 constant and change l2
@@ -56,14 +56,14 @@ def grid_search(solver, S, N, p, reg, l1, l2 = None, w2 = None, method= 'eBIC', 
     
     set latent = True if you want to include latent factors. 
     ix_mu: array of shape K, len(l1): indicates for each lambda and each instance which value in mu we use (can be obtained with K_single_grid)
-    mu: arrays of possible mu values
+    mu_range: arrays of possible mu values
     """
     
     assert method in ['AIC', 'eBIC']
     assert reg in ['FGL', 'GGL']
     
     if latent:
-        assert np.all(mu > 0)
+        assert np.all(mu_range > 0)
 
     L1, L2, W2 = lambda_grid(l1, l2, w2)
     
@@ -116,7 +116,7 @@ def grid_search(solver, S, N, p, reg, l1, l2 = None, w2 = None, method= 'eBIC', 
             kwargs['lambda1'] = L1[g1,g2]            
             # set the respective mu value
             if latent:
-                this_mu = mu[ix_mu[:,g2]]
+                this_mu = mu_range[ix_mu[:,g2]]
                 kwargs['latent'] = True
                 kwargs['mu1'] = this_mu.copy()
                 if verbose:

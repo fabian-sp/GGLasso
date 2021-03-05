@@ -117,8 +117,8 @@ def ADMM_SGL(S, lambda1, Omega_0, Theta_0=np.array([]), X_0=np.array([]), rho=1.
         W_t = Theta_t - L_t - X_t - (1 / rho) * S
         eigD, eigQ = np.linalg.eigh(W_t)
         Omega_t_1 = Omega_t.copy()
-        Omega_t = phiplus(W_t, beta=1 / rho, D=eigD, Q=eigQ)
-
+        Omega_t= phiplus(beta = 1/rho, D = eigD, Q = eigQ)
+        
         # Theta Update
         Theta_t_1 = Theta_t.copy()
         Theta_t = prox_od_1norm(Omega_t + L_t + X_t, (1 / rho) * lambda1)
@@ -178,7 +178,6 @@ def ADMM_SGL(S, lambda1, Omega_0, Theta_0=np.array([]), X_0=np.array([]), rho=1.
         info = {'status': status}
 
     return sol, info
-
 
 #######################################################
 ## BLOCK-WISE GRAPHICAL LASSO AFTER WITTEN ET AL.
