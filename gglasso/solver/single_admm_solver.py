@@ -102,7 +102,8 @@ def ADMM_SGL(S, lambda1, Omega_0, Theta_0=np.array([]), X_0=np.array([]), rho=1.
             start = time.time()
 
         if iter_t > 0:
-            eta_A, status_set = ADMM_stopping_criterion(Omega_t, Omega_t_1, Theta_t, Theta_t_1, L_t, rho * X_t, S, tol, latent,
+            eta_A, status_set = ADMM_stopping_criterion(Omega_t, Omega_t_1, Theta_t, Theta_t_1, L_t, rho * X_t, S, tol,
+                                                        latent,
                                                         mu1)
             residual[iter_t] = eta_A  # difference between Omega and Theta
 
@@ -117,7 +118,7 @@ def ADMM_SGL(S, lambda1, Omega_0, Theta_0=np.array([]), X_0=np.array([]), rho=1.
         W_t = Theta_t - L_t - X_t - (1 / rho) * S
         eigD, eigQ = np.linalg.eigh(W_t)
         Omega_t_1 = Omega_t.copy()
-        Omega_t= phiplus(beta = 1/rho, D = eigD, Q = eigQ)
+        Omega_t = phiplus(beta=1 / rho, D=eigD, Q=eigQ)
 
         # Theta Update
         Theta_t_1 = Theta_t.copy()
@@ -178,6 +179,7 @@ def ADMM_SGL(S, lambda1, Omega_0, Theta_0=np.array([]), X_0=np.array([]), rho=1.
         info = {'status': status}
 
     return sol, info
+
 
 #######################################################
 ## BLOCK-WISE GRAPHICAL LASSO AFTER WITTEN ET AL.
