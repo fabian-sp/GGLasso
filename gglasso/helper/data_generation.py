@@ -75,12 +75,13 @@ def time_varying_power_network(p=100, K=10, M=10):
     generates a power law network. The first block disappears at half-time, while the second block appears 
     p: dimension
     K: number of instances/time-stamps
-    M: number of sublocks in each instance
+    M: number of sublocks in each instance, should be greater or equal than 3
     """  
     Sigma = np.zeros((K,p,p))
     
     L = int(p/M)
     assert M*L == p
+    assert M >=3
     
     Sigma_0 = power_law_network(p = p, M = M) 
     
@@ -122,13 +123,14 @@ def group_power_network(p=100, K=10, M=10):
     Sigma_0 = power_law_network(p = p, M = M)
     # contains the number of the block disappearing for each k=1,..,K
     block = np.random.randint(M, size = K)
-   
-    for k in np.arange(K):
-        
+    
+    for k in np.arange(K):    
         Sigma_k = Sigma_0.copy()           
-        Sigma_k[block[k]*L : (block[k]+1)*L, block[k]*L : (block[k]+1)*L] = np.eye(L)
-        Sigma[k,:,:] = Sigma_k
+        if K > 1:
+            Sigma_k[block[k]*L : (block[k]+1)*L, block[k]*L : (block[k]+1)*L] = np.eye(L)
         
+        Sigma[k,:,:] = Sigma_k
+            
     Theta = np.linalg.pinv(Sigma, hermitian = True)
     Sigma, Theta = ensure_sparsity(Sigma, Theta)
     
