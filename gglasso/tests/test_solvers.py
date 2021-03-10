@@ -197,7 +197,7 @@ def test_SGL_scikit():
     Omega_0 = np.eye(p)
     sol, info = ADMM_SGL(S, lambda1, Omega_0, eps_admm=1e-6, verbose=False, latent=False)
 
-    assert sol_scikit == pt.approx(sol['Theta'], rel = 1e-3), f"Absolute error in norm: {np.linalg.norm(sol['Theta']-sol_scikit)}"
+    assert sol_scikit == pt.approx(sol['Theta'], abs = 1e-3), f"Absolute error in norm: {np.linalg.norm(sol['Theta']-sol_scikit)}"
 
     return
 
