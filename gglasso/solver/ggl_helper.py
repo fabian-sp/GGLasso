@@ -40,7 +40,8 @@ def prox_rank_norm(A, beta, D = np.array([]), Q = np.array([])):
         D, Q = np.linalg.eigh(A)
         print("Single eigendecomposition is executed in prox_rank_norm")
     
-    B = Q @ (np.maximum(D-beta, 0).reshape(-1,1)*Q.T)
+    B = (Q * np.maximum(D-beta, 0))@Q.T
+    
     return B
 
 @njit()          
@@ -321,12 +322,12 @@ def phiplus(beta, D, Q):
         proximal operator.
     """
     #B = Q @ np.diag(phip(D,beta)) @ Q.T
-    B = Q @ (phip(D,beta).reshape(-1,1)*Q.T)
+    B = (Q * phip(D,beta))@Q.T   
     return B
 
 @njit() 
 def phiminus(beta, D, Q):
-    B = Q @ (phim(D,beta).reshape(-1,1)*Q.T) 
+    B = (Q * phim(D,beta))@Q.T
     return B
 
 @njit() 
