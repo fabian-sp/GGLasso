@@ -32,17 +32,13 @@ def power_law_network(p=100, M=10):
         # generate random numbers for the nonzero entries
         np.random.seed(1234)
         B1 = np.random.uniform(low = .1, high = .4, size = (L,L))
-        np.random.seed(1234)
         B2 = np.random.choice(a = [-1,1], p=[.5, .5], size = (L,L))
         
         A_m = A_m * (B1*B2)
         
         A[m*L:(m+1)*L, m*L:(m+1)*L] = A_m
     
-    if p > 100:
-        row_sum_od = 2.3 * abs(A).sum(axis = 1)
-    else:
-        row_sum_od = 1.7 * abs(A).sum(axis = 1)
+    row_sum_od = 1.5 * abs(A).sum(axis = 1)
     # broadcasting in order to divide ROW-wise
     A = A / row_sum_od[:,np.newaxis]
     
@@ -52,7 +48,12 @@ def power_law_network(p=100, M=10):
     A = A + np.eye(p)
     assert all(np.diag(A)==1), "Expected 1s on diagonal"
     
-    D,_ = np.linalg.eigh(A)
+    # make sure A is pos def
+    D = np.linalg.eigvalsh(A)
+    if D.min() < 1e-8:
+        A += (0.1+abs(D.min())) * np.eye(p)    
+        
+    D = np.linalg.eigvalsh(A)
     assert D.min() > 0, f"generated matrix A is not positive definite, min EV is {D.min()}"
     
     Ainv = np.linalg.pinv(A, hermitian = True)
@@ -65,14 +66,15 @@ def power_law_network(p=100, M=10):
                 Sigma[i,j] = 0.6 * Ainv[i,j]/np.sqrt(Ainv[i,i] * Ainv[j,j])
      
     assert abs(Sigma.T - Sigma).max() <= 1e-8
-    D,_ = np.linalg.eigh(Sigma)
+    D = np.linalg.eigvalsh(Sigma)
     assert D.min() > 0, "generated matrix Sigma is not positive definite"
          
     return Sigma
 
 def time_varying_power_network(p=100, K=10, M=10):
     """
-    generates a power law network. The first block disappears at half-time, while the second block appears 
+    generates a power law network. The first block disappears at half-time, while the second block appears
+    third block decays exponentially
     p: dimension
     K: number of instances/time-stamps
     M: number of sublocks in each instance, should be greater or equal than 3
@@ -140,7 +142,7 @@ def ensure_sparsity(Sigma, Theta):
     
     Theta[abs(Theta) <= 1e-2] = 0
     
-    D,_ = np.linalg.eigh(Theta)
+    D = np.linalg.eigvalsh(Theta)
     assert D.min() > 0, "generated matrix Theta is not positive definite"
     
     Sigma = np.linalg.pinv(Theta, hermitian = True)
