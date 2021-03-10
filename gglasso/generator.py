@@ -23,3 +23,4 @@ np.cov(data).shape
 
 X = np.random.multivariate_normal(mean=np.zeros(289), cov=np.cov(data), size=100)
 X.shape
+

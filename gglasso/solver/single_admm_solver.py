@@ -295,27 +295,141 @@ def invert_permutation(p):
     s[p] = np.arange(p.size)
     return s
 
-# def ADMM_stopping_criterion(Omega, Theta, L, X, S, lambda1, latent=False, mu1=None):
-#     assert Omega.shape == Theta.shape == S.shape
-#     assert S.shape[0] == S.shape[1]
-#
-#     if not latent:
-#         assert np.all(L == 0)
-#
-#     (p, p) = S.shape
-#
-#     term1 = np.linalg.norm(Theta - prox_od_1norm(Theta + X, l=lambda1)) / (1 + np.linalg.norm(Theta))
-#
-#     term2 = np.linalg.norm(Omega - Theta + L) / (1 + np.linalg.norm(Theta))
-#
-#     eigD, eigQ = np.linalg.eigh(Omega - S - X)
-#     proxO = phiplus(beta=1, D=eigD, Q=eigQ)
-#     term3 = np.linalg.norm(Omega - proxO) / (1 + np.linalg.norm(Omega))
-#
-#     term4 = 0
-#     if latent:
-#         eigD, eigQ = np.linalg.eigh(L - X)
-#         proxL = prox_rank_norm(A=L - X, beta=mu1, D=eigD, Q=eigQ)
-#         term4 = np.linalg.norm(L - proxL) / (1 + np.linalg.norm(L))
-#
-#     return max(term1, term2, term3, term4)
+
+def kkt_ADMM_SGL(S, lambda1, Omega_0, Theta_0=np.array([]), X_0=np.array([]), \
+             eps_admm=1e-5, rho=1., max_iter=1000, verbose=False, measure=False, latent=False, mu1=None):
+    """
+    This is an ADMM algorithm for solving the Single Graphical Lasso problem
+
+    Omega_0 : start point -- must be specified as a (p,p) array
+    S : empirical covariance matrix -- must be specified as a (p,p) array
+
+    latent: boolean to indidate whether low rank term should be estimated
+    mu1: low rank penalty paramater, if latent=True
+
+
+    In the code, X are the SCALED (with 1/rho) dual variables, for the KKT stop criterion they have to be unscaled (i.e. take rho*X) again!
+    """
+    assert Omega_0.shape == S.shape
+    assert S.shape[0] == S.shape[1]
+    assert lambda1 > 0
+
+    if latent:
+        assert mu1 is not None
+        assert mu1 > 0
+
+    (p, p) = S.shape
+
+    assert rho > 0, "ADMM penalization parameter must be positive."
+
+    # initialize
+    status = 'not optimal'
+    Omega_t = Omega_0.copy()
+    if len(Theta_0) == 0:
+        Theta_0 = Omega_0.copy()
+    if len(X_0) == 0:
+        X_0 = np.zeros((p, p))
+
+    Theta_t = Theta_0.copy()
+    L_t = np.zeros((p, p))
+    X_t = X_0.copy()
+
+    runtime = np.zeros(max_iter)
+    kkt_residual = np.zeros(max_iter)
+
+    for iter_t in np.arange(max_iter):
+
+        eta_A = kkt_stopping_criterion(Omega_t, Theta_t, L_t, rho * X_t, S, lambda1, latent, mu1)
+        kkt_residual[iter_t] = eta_A
+
+        if measure:
+            start = time.time()
+
+        if eta_A <= eps_admm:
+            status = 'optimal'
+            break
+        if verbose:
+            print(f"------------Iteration {iter_t} of the ADMM Algorithm----------------")
+
+        # Omega Update
+        W_t = Theta_t - L_t - X_t - (1 / rho) * S
+        eigD, eigQ = np.linalg.eigh(W_t)
+        Omega_t = phiplus(beta=1 / rho, D=eigD, Q=eigQ)
+
+        # Theta Update
+        Theta_t = prox_od_1norm(Omega_t + L_t + X_t, (1 / rho) * lambda1)
+
+        # L Update
+        if latent:
+            C_t = Theta_t - X_t - Omega_t
+            # C_t = (C_t.T + C_t)/2
+            eigD, eigQ = np.linalg.eigh(C_t)
+            L_t = prox_rank_norm(C_t, mu1 / rho, D=eigD, Q=eigQ)
+
+        # X Update
+        X_t = X_t + Omega_t - Theta_t + L_t
+
+        if measure:
+            end = time.time()
+            runtime[iter_t] = end - start
+
+        if verbose:
+            print(f"Current accuracy: ", eta_A)
+
+    if eta_A > eps_admm:
+        status = 'max iterations reached'
+
+    print(f"ADMM terminated after {iter_t} iterations with accuracy {eta_A}")
+    print(f"ADMM status: {status}")
+
+    assert abs((Omega_t).T - Omega_t).max() <= 1e-5, "Solution is not symmetric"
+    assert abs((Theta_t).T - Theta_t).max() <= 1e-5, "Solution is not symmetric"
+    assert abs((L_t).T - L_t).max() <= 1e-5, "Solution is not symmetric"
+
+    D = np.linalg.eigvalsh(Theta_t - L_t)
+    if D.min() <= 0:
+        print(
+            f"WARNING: Theta (Theta - L resp.) is not positive definite. Solve to higher accuracy! (min EV is {D.min()})")
+
+    if latent:
+        D = np.linalg.eigvalsh(L_t)
+        if D.min() < -1e-8:
+            print(f"WARNING: L is not positive semidefinite. Solve to higher accuracy! (min EV is {D.min()})")
+
+    if latent:
+        sol = {'Omega': Omega_t, 'Theta': Theta_t, 'L': L_t, 'X': X_t}
+    else:
+        sol = {'Omega': Omega_t, 'Theta': Theta_t, 'X': X_t}
+
+    if measure:
+        info = {'status': status, 'runtime': runtime[:iter_t], 'kkt_residual': kkt_residual[1:iter_t + 1]}
+    else:
+        info = {'status': status}
+
+    return sol, info
+
+
+def kkt_stopping_criterion(Omega, Theta, L, X, S, lambda1, latent=False, mu1=None):
+    assert Omega.shape == Theta.shape == S.shape
+    assert S.shape[0] == S.shape[1]
+
+    if not latent:
+        assert np.all(L == 0)
+
+    (p, p) = S.shape
+
+    term1 = np.linalg.norm(Theta - prox_od_1norm(Theta + X, l=lambda1)) / (1 + np.linalg.norm(Theta))
+
+    term2 = np.linalg.norm(Omega - Theta + L) / (1 + np.linalg.norm(Theta))
+
+    eigD, eigQ = np.linalg.eigh(Omega - S - X)
+    proxO = phiplus(beta=1, D=eigD, Q=eigQ)
+    term3 = np.linalg.norm(Omega - proxO) / (1 + np.linalg.norm(Omega))
+
+    term4 = 0
+    if latent:
+        eigD, eigQ = np.linalg.eigh(L - X)
+        proxL = prox_rank_norm(A=L - X, beta=mu1, D=eigD, Q=eigQ)
+        term4 = np.linalg.norm(L - proxL) / (1 + np.linalg.norm(L))
+
+    return max(term1, term2, term3, term4)
