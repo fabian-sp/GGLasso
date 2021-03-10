@@ -376,8 +376,9 @@ def eval_jacobian_phiplus_numba(B, Gamma, Q):
     (K,p,p) = B.shape
     res = np.zeros((K,p,p))
     
-    for k in np.arange(K):       
-        res[k,:,:] = Q[k,:,:] @ (Gamma[k,:,:] * (Q[k,:,:].T @ B[k,:,:] @ Q[k,:,:])) @ Q[k,:,:].T
+    for k in np.arange(K):
+        Q_k = Q[k,:,:].copy()
+        res[k,:,:] = Q_k @ (Gamma[k,:,:] * (Q_k.T @ B[k,:,:] @ Q_k)) @ Q_k.T
        
     return res
 
