@@ -50,7 +50,7 @@ def ADMM_stopping_criterion(Omega, Omega_t_1, Theta, Theta_t_1, L, X, S, tol, la
     return stop_value, status_set
 
 
-def ADMM_SGL(S, lambda1, Omega_0, Theta_0=np.array([]), X_0=np.array([]), rho=1., max_iter=1000, tol=1e-7,
+def ADMM_SGL(S, lambda1, Omega_0, Theta_0=np.array([]), X_0=np.array([]), rho=1., stopping_criterion="boyd", max_iter=1000, tol=1e-7,
              verbose=False, measure=False, latent=False, mu1=None):
     """
     This is an ADMM algorithm for solving the Single Graphical Lasso problem
@@ -101,15 +101,22 @@ def ADMM_SGL(S, lambda1, Omega_0, Theta_0=np.array([]), X_0=np.array([]), rho=1.
         if measure:
             start = time.time()
 
-        if iter_t > 0:
-            eta_A, status_set = ADMM_stopping_criterion(Omega_t, Omega_t_1, Theta_t, Theta_t_1, L_t, rho * X_t, S, tol,
-                                                        latent,
-                                                        mu1)
-            residual[iter_t] = eta_A  # difference between Omega and Theta
+        if stopping_criterion == "boyd":
+            if iter_t > 0:
+                eta_A, status_set = ADMM_stopping_criterion(Omega_t, Omega_t_1, Theta_t, Theta_t_1, L_t, rho * X_t, S, tol,
+                                                            latent,
+                                                            mu1)
+                residual[iter_t] = eta_A  # difference between Omega and Theta
 
-        if len(status_set) > 1:  # check if both primal and dual solutions are optimal
-            status = 'primal and dual optimal'
-            break
+            if len(status_set) > 1:  # check if both primal and dual solutions are optimal
+                status = 'primal and dual optimal'
+                break
+        if stopping_criterion == "kkt":
+            eta_A, status_set = kkt_stopping_criterion(Omega_t, Theta_t, L_t, rho * X_t, S, lambda1, tol, latent, mu1)
+            residual[iter_t] = eta_A
+
+            if eta_A <= tol:
+                break
 
         if verbose:
             print(f"------------Iteration {iter_t} of the ADMM Algorithm----------------")
@@ -180,6 +187,37 @@ def ADMM_SGL(S, lambda1, Omega_0, Theta_0=np.array([]), X_0=np.array([]), rho=1.
 
     return sol, info
 
+
+def kkt_stopping_criterion(Omega, Theta, L, X, S, lambda1, tol, latent=False, mu1=None):
+    assert Omega.shape == Theta.shape == S.shape
+    assert S.shape[0] == S.shape[1]
+
+    if not latent:
+        assert np.all(L == 0)
+
+    (p, p) = S.shape
+
+    term1 = np.linalg.norm(Theta - prox_od_1norm(Theta + X, l=lambda1)) / (1 + np.linalg.norm(Theta))
+
+    term2 = np.linalg.norm(Omega - Theta + L) / (1 + np.linalg.norm(Theta))
+
+    eigD, eigQ = np.linalg.eigh(Omega - S - X)
+    proxO = phiplus(beta=1, D=eigD, Q=eigQ)
+    term3 = np.linalg.norm(Omega - proxO) / (1 + np.linalg.norm(Omega))
+
+    term4 = 0
+    if latent:
+        eigD, eigQ = np.linalg.eigh(L - X)
+        proxL = prox_rank_norm(A=L - X, beta=mu1, D=eigD, Q=eigQ)
+        term4 = np.linalg.norm(L - proxL) / (1 + np.linalg.norm(L))
+
+    status_set = set()
+    stop_value = max(term1, term2, term3, term4)
+    if stop_value < tol:
+        # primal convergence condition
+        status_set.add("primal and dual optimal")
+
+    return stop_value, status_set
 
 #######################################################
 ## BLOCK-WISE GRAPHICAL LASSO AFTER WITTEN ET AL.
@@ -307,28 +345,3 @@ def invert_permutation(p):
     s = np.empty_like(p)
     s[p] = np.arange(p.size)
     return s
-
-# def ADMM_stopping_criterion(Omega, Theta, L, X, S, lambda1, latent=False, mu1=None):
-#     assert Omega.shape == Theta.shape == S.shape
-#     assert S.shape[0] == S.shape[1]
-#
-#     if not latent:
-#         assert np.all(L == 0)
-#
-#     (p, p) = S.shape
-#
-#     term1 = np.linalg.norm(Theta - prox_od_1norm(Theta + X, l=lambda1)) / (1 + np.linalg.norm(Theta))
-#
-#     term2 = np.linalg.norm(Omega - Theta + L) / (1 + np.linalg.norm(Theta))
-#
-#     eigD, eigQ = np.linalg.eigh(Omega - S - X)
-#     proxO = phiplus(beta=1, D=eigD, Q=eigQ)
-#     term3 = np.linalg.norm(Omega - proxO) / (1 + np.linalg.norm(Omega))
-#
-#     term4 = 0
-#     if latent:
-#         eigD, eigQ = np.linalg.eigh(L - X)
-#         proxL = prox_rank_norm(A=L - X, beta=mu1, D=eigD, Q=eigQ)
-#         term4 = np.linalg.norm(L - proxL) / (1 + np.linalg.norm(L))
-#
-#     return max(term1, term2, term3, term4)
