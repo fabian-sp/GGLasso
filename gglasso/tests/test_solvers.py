@@ -135,8 +135,8 @@ def test_block_SGL():
     
     return
 
-def template_admm_vs_ppdna(p = 100, K = 5, N = 1000, reg = "GGL"):
-    M = 10 # M should be divisor of p
+def template_admm_vs_ppdna(p = 50, K = 3, N = 1000, reg = "GGL"):
+    M = 5 # M should be divisor of p
 
     if reg == 'GGL':
         Sigma, Theta = group_power_network(p, K, M)
@@ -159,11 +159,11 @@ def template_admm_vs_ppdna(p = 100, K = 5, N = 1000, reg = "GGL"):
     return 
     
 def test_admm_ppdna_ggl():
-    template_admm_vs_ppdna(p = 100, K = 5, N = 2000, reg = "GGL")
+    template_admm_vs_ppdna(p = 50, K = 3, N = 2000, reg = "GGL")
     return
 
 def test_admm_ppdna_fgl():
-    template_admm_vs_ppdna(p = 100, K = 5, N = 2000, reg = "FGL")
+    template_admm_vs_ppdna(p = 50, K = 3, N = 2000, reg = "FGL")
     return
 
 
@@ -197,7 +197,7 @@ def test_SGL_scikit():
     Omega_0 = np.eye(p)
     sol, info = ADMM_SGL(S, lambda1, Omega_0, eps_admm=1e-6, verbose=False, latent=False)
 
-    assert sol_scikit == pt.approx(sol['Theta'], rel = 1e-3), f"Absolute error in norm: {np.linalg.norm(sol['Theta']-sol_scikit)}"
+    assert sol_scikit == pt.approx(sol['Theta'], abs = 1e-3), f"Absolute error in norm: {np.linalg.norm(sol['Theta']-sol_scikit)}"
 
     return
 

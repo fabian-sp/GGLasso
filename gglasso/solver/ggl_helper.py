@@ -40,27 +40,9 @@ def prox_rank_norm(A, beta, D = np.array([]), Q = np.array([])):
         D, Q = np.linalg.eigh(A)
         print("Single eigendecomposition is executed in prox_rank_norm")
     
-    B = Q @ np.diag(np.maximum(D-beta, 0)) @ Q.T
+    B = (Q * np.maximum(D-beta, 0))@Q.T
+    
     return B
-
-# @njit() 
-# def prox_chi(A, l):
-#     """
-#     calculates the prox of the off-diagonal 2norm at point A
-#     """
-#     assert l > 0 
-        
-#     (d1,d2,d3) = A.shape
-#     res = np.zeros((d1,d2,d3))
-#     for i in np.arange(d2):
-#         for j in np.arange(d3):
-#             if i == j:
-#                 res[:,i,j] = A[:,i,j]
-#             else:
-#                 a = max(np.linalg.norm(A[:,i,j],2) , l)
-#                 res[:,i,j] = A[:,i,j] * (a - l) / a
-
-#     return res
 
 @njit()          
 def prox_2norm(v,l):
@@ -159,6 +141,25 @@ def jacobian_prox_phi_fgl(v , l1 , l2):
     Theta = jacobian_1norm(x, l1)
     
     return Theta @ P
+
+# @njit() 
+# def prox_chi(A, l):
+#     """
+#     calculates the prox of the off-diagonal 2norm at point A
+#     """
+#     assert l > 0 
+        
+#     (d1,d2,d3) = A.shape
+#     res = np.zeros((d1,d2,d3))
+#     for i in np.arange(d2):
+#         for j in np.arange(d3):
+#             if i == j:
+#                 res[:,i,j] = A[:,i,j]
+#             else:
+#                 a = max(np.linalg.norm(A[:,i,j],2) , l)
+#                 res[:,i,j] = A[:,i,j] * (a - l) / a
+
+#     return res
 
 # def prox_PTV(X, l2):
 #     """
@@ -320,12 +321,13 @@ def phiplus(beta, D, Q):
     B : array of shape (p,p)
         proximal operator.
     """
-    B = Q @ np.diag(phip(D,beta)) @ Q.T
+    #B = Q @ np.diag(phip(D,beta)) @ Q.T
+    B = (Q * phip(D,beta))@Q.T   
     return B
 
 @njit() 
 def phiminus(beta, D, Q):
-    B = Q @ np.diag(phim(D,beta)) @ Q.T
+    B = (Q * phim(D,beta))@Q.T
     return B
 
 @njit() 
@@ -376,8 +378,9 @@ def eval_jacobian_phiplus_numba(B, Gamma, Q):
     (K,p,p) = B.shape
     res = np.zeros((K,p,p))
     
-    for k in np.arange(K):       
-        res[k,:,:] = Q[k,:,:] @ (Gamma[k,:,:] * (Q[k,:,:].T @ B[k,:,:] @ Q[k,:,:])) @ Q[k,:,:].T
+    for k in np.arange(K):
+        Q_k = Q[k,:,:].copy()
+        res[k,:,:] = Q_k @ (Gamma[k,:,:] * (Q_k.T @ B[k,:,:] @ Q_k)) @ Q_k.T
        
     return res
 
