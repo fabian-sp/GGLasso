@@ -10,7 +10,7 @@ from scipy.linalg import block_diag
 from .ggl_helper import prox_od_1norm, phiplus, prox_rank_norm
 
 
-def ADMM_stopping_criterion(Omega, Omega_t_1, Theta, Theta_t_1, L, X, S, tol, latent=False,
+def ADMM_stopping_criterion(Omega, Omega_t_1, Theta, Theta_t_1, L, X, S, tol, rtol, latent=False,
                             mu1=None):
     assert Omega.shape == Theta.shape == S.shape
     assert S.shape[0] == S.shape[1]
@@ -20,7 +20,7 @@ def ADMM_stopping_criterion(Omega, Omega_t_1, Theta, Theta_t_1, L, X, S, tol, la
 
     (p, p) = S.shape
 
-    eps_rel = 1e-3
+    eps_rel = rtol
     eps_abs = tol
 
     psi = ((p ** 2 + p) / 2)  # number of elements of off-diagonal matrix
@@ -50,7 +50,9 @@ def ADMM_stopping_criterion(Omega, Omega_t_1, Theta, Theta_t_1, L, X, S, tol, la
     return stop_value, status_set
 
 
-def ADMM_SGL(S, lambda1, Omega_0, Theta_0=np.array([]), X_0=np.array([]), rho=1., stopping_criterion="boyd", max_iter=1000, tol=1e-7,
+def ADMM_SGL(S, lambda1, Omega_0, Theta_0=np.array([]), X_0=np.array([]),
+             rho=1., max_iter=1000, tol=1e-7, rtol=1e-3,
+             stopping_criterion="boyd",
              verbose=False, measure=False, latent=False, mu1=None):
     """
     This is an ADMM algorithm for solving the Single Graphical Lasso problem
@@ -103,7 +105,8 @@ def ADMM_SGL(S, lambda1, Omega_0, Theta_0=np.array([]), X_0=np.array([]), rho=1.
 
         if stopping_criterion == "boyd":
             if iter_t > 0:
-                eta_A, status_set = ADMM_stopping_criterion(Omega_t, Omega_t_1, Theta_t, Theta_t_1, L_t, rho * X_t, S, tol,
+                eta_A, status_set = ADMM_stopping_criterion(Omega_t, Omega_t_1, Theta_t, Theta_t_1, L_t, rho * X_t, S,
+                                                            tol, rtol,
                                                             latent,
                                                             mu1)
                 residual[iter_t] = eta_A  # difference between Omega and Theta
@@ -219,11 +222,14 @@ def kkt_stopping_criterion(Omega, Theta, L, X, S, lambda1, tol, latent=False, mu
 
     return stop_value, status_set
 
+
 #######################################################
 ## BLOCK-WISE GRAPHICAL LASSO AFTER WITTEN ET AL.
 #######################################################
 
-def block_SGL(S, lambda1, Omega_0, tol=1e-5, Theta_0=None, X_0=None, rho=1., max_iter=1000, verbose=False,
+def block_SGL(S, lambda1, Omega_0, Theta_0=None, X_0=None, rho=1.,
+              tol=1e-7, rtol=1e-3, stopping_criterion="boyd",
+              max_iter=1000, verbose=False,
               measure=False):
     """
     Parameters
@@ -301,8 +307,9 @@ def block_SGL(S, lambda1, Omega_0, tol=1e-5, Theta_0=None, X_0=None, rho=1., max
         # else solve Graphical Lasso for the corresponding block
         else:
             block_S = S[np.ix_(C, C)]
-            block_sol, block_info = ADMM_SGL(S=block_S, lambda1=lambda1, eps_admm=tol, Omega_0=Omega_0[np.ix_(C, C)], \
-                                             Theta_0=Theta_0[np.ix_(C, C)], X_0=X_0[np.ix_(C, C)], \
+            block_sol, block_info = ADMM_SGL(S=block_S, lambda1=lambda1, Omega_0=Omega_0[np.ix_(C, C)],
+                                             Theta_0=Theta_0[np.ix_(C, C)], X_0=X_0[np.ix_(C, C)], tol=tol, rtol=rtol,
+                                             stopping_criterion=stopping_criterion,
                                              rho=rho, max_iter=max_iter, verbose=verbose, measure=measure)
 
             allOmega.append(block_sol['Omega'])
