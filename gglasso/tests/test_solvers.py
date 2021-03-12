@@ -122,11 +122,11 @@ def test_block_SGL():
     
     Omega_0 = np.eye(p)
     
-    full_sol,_ = ADMM_SGL(S, lambda1, Omega_0, eps_admm = 1e-7, verbose = False)
+    full_sol,_ = ADMM_SGL(S, lambda1, Omega_0, tol = 1e-7, rtol = 1e-5, verbose = False)
     
     numC, allC =  get_connected_components(S, lambda1)
     assert numC > 1, "Test is redundant if only one connected component"
-    block_sol = block_SGL(S, lambda1, Omega_0, tol = 1e-7, verbose = False)
+    block_sol = block_SGL(S, lambda1, Omega_0, tol = 1e-7, rtol = 1e-5, verbose = False)
     
     sol1 = full_sol['Theta']
     sol2 = block_sol['Theta']
@@ -195,11 +195,10 @@ def test_SGL_scikit():
     sol_scikit = model.precision_
 
     Omega_0 = np.eye(p)
-    sol, info = ADMM_SGL(S, lambda1, Omega_0, eps_admm=1e-6, verbose=False, latent=False)
+    sol, info = ADMM_SGL(S, lambda1, Omega_0, tol=1e-7, rtol=1e-5, verbose=False, latent=False)
 
     assert sol_scikit == pt.approx(sol['Theta'], abs = 1e-3), f"Absolute error in norm: {np.linalg.norm(sol['Theta']-sol_scikit)}"
 
     return
-
 
 
