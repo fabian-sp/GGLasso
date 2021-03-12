@@ -11,7 +11,8 @@ from .ggl_helper import prox_p, phiplus, prox_rank_norm, f, P_val
 
 def ADMM_MGL(S, lambda1, lambda2, reg , Omega_0 , \
              Theta_0 = np.array([]), X_0 = np.array([]), n_samples = None, \
-             eps_admm = 1e-5 , rho= 1., max_iter = 1000, verbose = False, measure = False, latent = False, mu1 = None):
+             tol = 1e-5 , rtol = 1e-4, stopping_criterion = 'boyd', \
+             rho= 1., max_iter = 1000, verbose = False, measure = False, latent = False, mu1 = None):
     """
     This is an ADMM algorithm for solving the Multiple Graphical Lasso problem
     reg specifies the type of penalty, i.e. Group or Fused Graphical Lasso
@@ -57,7 +58,6 @@ def ADMM_MGL(S, lambda1, lambda2, reg , Omega_0 , \
         nk = n_samples.reshape(K,1,1)
     
     # initialize 
-    status = 'not optimal'
     Omega_t = Omega_0.copy()
     if len(Theta_0) == 0:
         Theta_0 = Omega_0.copy()
@@ -69,25 +69,22 @@ def ADMM_MGL(S, lambda1, lambda2, reg , Omega_0 , \
     X_t = X_0.copy()
      
     runtime = np.zeros(max_iter)
-    kkt_residual = np.zeros(max_iter)
+    residual = np.zeros(max_iter)
     objective = np.zeros(max_iter)
-    
+    status = ''
+    ##################################################################
+    ### MAIN LOOP STARTS
+    ##################################################################
     for iter_t in np.arange(max_iter):
-        
-        eta_A = ADMM_stopping_criterion(Omega_t, Theta_t, L_t, rho*X_t, S , lambda1, lambda2, nk, reg, latent = latent, mu1 = mu1)
         
         if measure:
             start = time.time()
-        
-        kkt_residual[iter_t] = eta_A
-            
-        if eta_A <= eps_admm:
-            status = 'optimal'
-            break
+
         if verbose:
             print(f"------------Iteration {iter_t} of the ADMM Algorithm----------------")
         
         # Omega Update
+        Omega_t_1 = Omega_t.copy()
         W_t = Theta_t - L_t - X_t - (nk/rho) * S
         eigD, eigQ = np.linalg.eigh(W_t)
         
@@ -107,19 +104,49 @@ def ADMM_MGL(S, lambda1, lambda2, reg , Omega_0 , \
         # X Update
         X_t += Omega_t - Theta_t + L_t
         
+        
         if measure:
             end = time.time()
             runtime[iter_t] = end-start
             objective[iter_t] = f(Omega_t, S) + P_val(Theta_t, lambda1, lambda2, reg)
+        
+        # Stopping condition
+        if stopping_criterion == 'boyd':
+            r_t,s_t,e_pri,e_dual = ADMM_stopping_criterion(Omega_t, Omega_t_1, Theta_t, L_t, rho*X_t, S, tol, rtol, latent, mu1)
+            residual[iter_t] = max(r_t,s_t)
+        
+            if (r_t <= e_pri) and  (s_t <= e_dual):
+                status = 'optimal'
+                break
             
+        elif stopping_criterion == 'kkt':
+            eta_A = kkt_stopping_criterion(Omega_t, Theta_t, L_t, X_t, S , lambda1, lambda2, nk, reg, latent, mu1)
+            residual[iter_t] = eta_A
+        
+            if eta_A <= tol:
+                status = 'optimal'
+                break
+        
         if verbose:
-            print(f"Current accuracy: ", eta_A)
-        
-    if eta_A > eps_admm:
-        status = 'max iterations reached'
-        
-    print(f"ADMM terminated after {iter_t} iterations with accuracy {eta_A}")
-    print(f"ADMM status: {status}")
+            print(f"Current accuracy: ", residual[iter_t])
+            
+    ##################################################################
+    ### MAIN LOOP FINISHED
+    ##################################################################
+    
+    # retrieve status (partially optimal or max iter)
+    if status != 'optimal':
+        if stopping_criterion == 'boyd':
+            if (r_t <= e_pri):
+                status = 'primal optimal'
+            elif (s_t <= e_dual):
+                status = 'dual optimal'
+            else:
+                status = 'max iterations reached'
+        else:
+            status = 'max iterations reached'
+    
+    print(f"ADMM terminated after {iter_t+1} iterations with status: {status}.")
     
     assert abs(trp(Omega_t)- Omega_t).max() <= 1e-5, "Solution is not symmetric"
     assert abs(trp(Theta_t)- Theta_t).max() <= 1e-5, "Solution is not symmetric"
@@ -136,13 +163,31 @@ def ADMM_MGL(S, lambda1, lambda2, reg , Omega_0 , \
         
     sol = {'Omega': Omega_t, 'Theta': Theta_t, 'L': L_t, 'X': X_t}
     if measure:
-        info = {'status': status , 'runtime': runtime[:iter_t], 'kkt_residual': kkt_residual[1:iter_t +1], 'objective': objective[:iter_t]}
+        info = {'status': status , 'runtime': runtime[:iter_t+1], 'residual': residual[:iter_t+1], 'objective': objective[:iter_t+1]}
     else:
         info = {'status': status}
                
     return sol, info
 
-def ADMM_stopping_criterion(Omega, Theta, L, X, S , lambda1, lambda2, nk, reg, latent = False, mu1 = None):
+
+def ADMM_stopping_criterion(Omega, Omega_t_1, Theta, L, X, S, eps_abs, eps_rel, latent=False, mu1=None):
+    
+
+    if not latent:
+        assert np.all(L == 0)
+
+    (K,p,p) = S.shape
+
+    dim = K*((p ** 2 + p) / 2)  # number of elements of off-diagonal matrix
+    e_pri = dim * eps_abs + eps_rel * np.maximum(np.linalg.norm(Omega), np.linalg.norm(Theta -L))
+    e_dual = dim * eps_abs + eps_rel * np.linalg.norm(X)
+
+    r = np.linalg.norm(Omega - Theta + L)
+    s = np.linalg.norm(Omega - Omega_t_1)
+
+    return r,s,e_pri,e_dual
+
+def kkt_stopping_criterion(Omega, Theta, L, X, S , lambda1, lambda2, nk, reg, latent = False, mu1 = None):
     
     assert Omega.shape == Theta.shape == S.shape
     assert S.shape[1] == S.shape[2]
