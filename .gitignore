@@ -5,5 +5,9 @@ build/
 dist/
 .DS_Store
 gglasso.egg-info/
+<<<<<<< HEAD
 *.ipynb_checkpoints/
 *draft
+=======
+*.ipynb_checkpoints/
+>>>>>>> 4f530c7aa251224fd4a581892444a8a56aa7a561

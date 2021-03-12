@@ -360,7 +360,7 @@ def single_grid_search(S, lambda_range, N, method = 'eBIC', gamma = 0.3, latent 
     
     RANK = np.zeros((L,M))
     
-    kwargs = {'S':S, 'Omega_0': np.eye(p), 'X_0': np.eye(p), 'eps_admm': 1e-4, 'verbose': False, 'measure': False}
+    kwargs = {'S':S, 'Omega_0': np.eye(p), 'X_0': np.eye(p), 'tol': 1e-6, 'rtol': 1e-4, 'verbose': False, 'measure': False}
     
     estimates = np.zeros((L,M,p,p))
     lowrank = np.zeros((L,M,p,p))
