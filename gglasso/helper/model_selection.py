@@ -77,12 +77,12 @@ def grid_search(solver, S, N, p, reg, l1, l2 = None, w2 = None, method= 'eBIC', 
     gammas = [0.1, 0.3, 0.5, 0.7]
     gammas.append(gamma)
     gammas = list(set(gammas))
-    # determine the index of the gamma you want for the returned estimate
-    gamma_ix = gammas.index(gamma)
-    
-    BIC = np.zeros((len(gammas), grid1, grid2))
-    BIC[:] = np.nan
-    
+     
+    BIC = dict()
+    for g in gammas:
+        BIC[g] = np.zeros((grid1, grid2))
+        BIC[g][:] = np.nan
+        
     SP = np.zeros((grid1, grid2))
     SP[:] = np.nan
     SKIP = np.zeros((grid1, grid2), dtype = bool)
@@ -108,12 +108,17 @@ def grid_search(solver, S, N, p, reg, l1, l2 = None, w2 = None, method= 'eBIC', 
     for g2 in np.arange(grid2):
         for g1 in np.arange(grid1):
       
-            print("Current grid point: ", (L1[g1,g2],L2[g1,g2]) )
+            if verbose:
+                print("Current grid point: ", (L1[g1,g2],L2[g1,g2]) )
+            
             if SKIP[g1,g2]:
                 print("SKIP")
                 continue
-           
-            kwargs['lambda1'] = L1[g1,g2]            
+            
+            # set lambda1 and lambda2
+            kwargs['lambda1'] = L1[g1,g2]  
+            kwargs['lambda2'] = L2[g1,g2]
+            
             # set the respective mu value
             if latent:
                 this_mu = mu_range[ix_mu[:,g2]]
@@ -122,9 +127,6 @@ def grid_search(solver, S, N, p, reg, l1, l2 = None, w2 = None, method= 'eBIC', 
                 if verbose:
                     print("MU values", kwargs['mu1'])
                 
-                
-            kwargs['lambda2'] = L2[g1,g2]
-            
             # solve
             sol, info = solver(**kwargs)
             Omega_sol = sol['Omega']
@@ -144,32 +146,35 @@ def grid_search(solver, S, N, p, reg, l1, l2 = None, w2 = None, method= 'eBIC', 
             elif 'X' in sol.keys():
                 kwargs['X_0'] = sol['X'].copy()
                 
-                
+            # store diagnostics
             AIC[g1,g2] = aic(S, Theta_sol, N)
-            for j in np.arange(len(gammas)):
-                BIC[j, g1,g2] = ebic(S, Theta_sol, N, gamma = gammas[j])
+            for g in gammas:
+                BIC[g][g1,g2] = ebic(S, Theta_sol, N, gamma = g)
                 
             SP[g1,g2] = mean_sparsity(Theta_sol)
                 
             if verbose:
                 print("Current eBIC grid:")
-                print(BIC[gamma_ix,:,:])
+                print(BIC[gamma])
                 print("Current Sparsity grid:")
                 print(SP)
             
             # new best point found
-            if BIC[gamma_ix,g1,g2] < curr_min:
+            if BIC[gamma][g1,g2] < curr_min:
                 print("----------New optimum found in the grid----------")
-                curr_min = BIC[gamma_ix,g1,g2]
+                curr_min = BIC[gamma][g1,g2]
                 curr_best = sol.copy()
     
     # get optimal lambda
     if method == 'AIC':
         AIC[AIC==-np.inf] = np.nan
         ix= np.unravel_index(np.nanargmin(AIC), AIC.shape)
+    
     elif method == 'eBIC':    
-        BIC[BIC==-np.inf] = np.nan
-        ix= np.unravel_index(np.nanargmin(BIC[gamma_ix,:,:]), BIC[gamma_ix,:,:].shape)
+        for g in gammas:
+            BIC[g][BIC[g]==-np.inf] = np.nan
+            
+        ix= np.unravel_index(np.nanargmin(BIC[gamma]), BIC[gamma].shape)
         
     stats = {'BIC': BIC, 'AIC': AIC, 'SP': SP, 'RANK': RANK, 'L1': L1, 'L2': L2, \
              'BEST': {'lambda1': L1[ix], 'lambda2': L2[ix]}, 'GAMMA': gammas}
@@ -213,11 +218,12 @@ def K_single_grid(S, lambda_range, N, method = 'eBIC', gamma = 0.3, latent = Fal
     gammas = [0.1, 0.3, 0.5, 0.7]
     gammas.append(gamma)
     gammas = list(set(gammas))
-    # determine the index of the gamma you want for the returned estimate
-    gamma_ix = gammas.index(gamma)
+    #gamma_ix = gammas.index(gamma)
     
-    BIC = np.zeros((len(gammas), K, L, M))
-    BIC[:] = np.nan
+    BIC = dict()
+    for g in gammas:
+        BIC[g] = np.zeros((K, L, M))
+        BIC[g][:] = np.nan
     
     AIC = np.zeros((K, L, M))
     AIC[:] = np.nan
@@ -243,15 +249,19 @@ def K_single_grid(S, lambda_range, N, method = 'eBIC', gamma = 0.3, latent = Fal
         estimates[k] = est_k.copy()
         lowrank[k] = lr_k.copy()
         
-        BIC[:,k,:,:] = stats_k['BIC'].copy()
+        for g in gammas:
+            BIC[g][k,:,:] = stats_k['BIC'][g].copy()
         AIC[k,:,:] = stats_k['AIC'].copy()
         SP[k,:,:] = stats_k['SP'].copy()
         RANK[k,:,:] = stats_k['RANK'].copy()
         
                 
     # get optimal low rank for each lambda
-    tmpBIC = np.zeros((len(gammas), K, L))
-    tmpBIC[:] = np.nan
+    tmpBIC = dict()
+    for g in gammas:
+        tmpBIC[g] = np.zeros((K,L))
+        tmpBIC[g][:] = np.nan
+    
     tmpAIC = np.zeros((K, L))
     tmpAIC[:] = np.nan
     
@@ -265,12 +275,13 @@ def K_single_grid(S, lambda_range, N, method = 'eBIC', gamma = 0.3, latent = Fal
                 ix_mu[k,j] = np.nanargmin(AIC[k,j,:])
                 
             elif method == 'eBIC':
-                ix_mu[k,j] = np.nanargmin(BIC[gamma_ix,k,j,:])
+                ix_mu[k,j] = np.nanargmin(BIC[gamma][k,j,:])
                 
             tmpAIC[k,j] = AIC[k,j,ix_mu[k,j]]
-            for l in np.arange(len(gammas)):
-                tmpBIC[l,k,j] = BIC[l,k,j,ix_mu[k,j]]
-        
+            
+            for g in gammas:
+                tmpBIC[g][k,j] = BIC[g][k,j,ix_mu[k,j]]
+                
     # get optimal lambda (uniform over k =1,..,K and individual)
     if method == 'AIC':
         tmpAIC[tmpAIC==-np.inf] = np.nan
@@ -278,9 +289,11 @@ def K_single_grid(S, lambda_range, N, method = 'eBIC', gamma = 0.3, latent = Fal
         ix_indv = np.nanargmin(tmpAIC, axis = 1)
         
     elif method == 'eBIC':    
-        tmpBIC[tmpBIC==-np.inf] = np.nan
-        ix_uniform = np.nanargmin(tmpBIC[gamma_ix,:,:].sum(axis=0))
-        ix_indv = np.nanargmin(tmpBIC[gamma_ix,:,:], axis = 1)
+        for g in gammas:
+            tmpBIC[g][tmpBIC[g]==-np.inf] = np.nan
+        
+        ix_uniform = np.nanargmin(tmpBIC[gamma].sum(axis=0))
+        ix_indv = np.nanargmin(tmpBIC[gamma], axis = 1)
         
     # create the two estimators
     est_uniform = dict()
@@ -308,7 +321,7 @@ def K_single_grid(S, lambda_range, N, method = 'eBIC', gamma = 0.3, latent = Fal
             est_indv['L'] = np.stack([e for e in est_indv['L'].values()])
             est_uniform['L'] = np.stack([e for e in est_uniform['L'].values()])
     
-    statistics = {'BIC': BIC[gamma_ix,:,:,:], 'AIC': AIC, 'SP': SP, 'RANK': RANK, \
+    statistics = {'BIC': BIC[gamma], 'AIC': AIC, 'SP': SP, 'RANK': RANK, \
                   'LAMB': LAMB, 'MU': MU,\
                   'ix_uniform': ix_uniform, 'ix_indv': ix_indv, 'ix_mu': ix_mu}
     
@@ -330,14 +343,14 @@ def single_grid_search(S, lambda_range, N, method = 'eBIC', gamma = 0.3, latent 
     gammas = [0.1, 0.3, 0.5, 0.7]
     gammas.append(gamma)
     gammas = list(set(gammas))
-    # determine the index of the gamma you want for the returned estimate
-    gamma_ix = gammas.index(gamma)
     
     # create grid for stats, if latent = False MU is array of zeros
     MU, LAMB = np.meshgrid(mu_range, lambda_range)
         
-    BIC = np.zeros((len(gammas), L, M))
-    BIC[:] = np.nan
+    BIC = dict()
+    for g in gammas:
+        BIC[g] = np.zeros((L, M))
+        BIC[g][:] = np.nan
     
     AIC = np.zeros((L, M))
     AIC[:] = np.inf
@@ -347,7 +360,7 @@ def single_grid_search(S, lambda_range, N, method = 'eBIC', gamma = 0.3, latent 
     
     RANK = np.zeros((L,M))
     
-    kwargs = {'S':S, 'Omega_0': np.eye(p), 'X_0': np.eye(p), 'eps_admm': 1e-5, 'verbose': False, 'measure': False}
+    kwargs = {'S':S, 'Omega_0': np.eye(p), 'X_0': np.eye(p), 'eps_admm': 1e-4, 'verbose': False, 'measure': False}
     
     estimates = np.zeros((L,M,p,p))
     lowrank = np.zeros((L,M,p,p))
@@ -375,19 +388,20 @@ def single_grid_search(S, lambda_range, N, method = 'eBIC', gamma = 0.3, latent 
             kwargs['X_0'] = sol['X'].copy()
             
             AIC[j,m] = aic_single(S, Theta_sol, N)
-            for l in np.arange(len(gammas)):
-                BIC[l, j, m] = ebic_single(S, Theta_sol, N, gamma = gammas[l])
+            for g in gammas:
+                BIC[g][j, m] = ebic_single(S, Theta_sol, N, gamma = g)
                 
             SP[j,m] = sparsity(Theta_sol)
             
 
     AIC[AIC==-np.inf] = np.nan
-    BIC[BIC==-np.inf] = np.nan
+    for g in gammas:
+        BIC[g][BIC[g]==-np.inf] = np.nan
     
     if method == 'AIC':    
         ix= np.unravel_index(np.nanargmin(AIC), AIC.shape)
     elif method == 'eBIC':        
-        ix= np.unravel_index(np.nanargmin(BIC[gamma_ix,:,:]), BIC[gamma_ix,:,:].shape)
+        ix= np.unravel_index(np.nanargmin(BIC[gamma]), BIC[gamma].shape)
         
         
     best_sol = dict()

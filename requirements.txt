@@ -5,5 +5,5 @@ pandas
 matplotlib
 seaborn
 networkx
-tick
 regain
+warnings
