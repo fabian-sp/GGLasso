@@ -41,7 +41,6 @@ def prox_rank_norm(A, beta, D = np.array([]), Q = np.array([])):
         print("Single eigendecomposition is executed in prox_rank_norm")
     
     B = (Q * np.maximum(D-beta, 0))@Q.T
-    
     return B
 
 @njit()          

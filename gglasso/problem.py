@@ -344,7 +344,7 @@ class glasso_problem:
     #### SOLVING
     ##############################################
       
-    def solve(self, Omega_0 = None, solver_params = dict(), tol = 1e-4, solver = 'admm'):
+    def solve(self, Omega_0 = None, solver_params = dict(), tol = 1e-5, rtol = 1e-4, solver = 'admm'):
         """
         Method for solving the Graphical Lasso problem formulation.
         After solving, an instance of GGLassoEstimator will be created and assigned to self.solution.
@@ -362,6 +362,10 @@ class glasso_problem:
             
         tol : float, optional
             Tolerance for solving. The smaller it is, the longer it will take to solve the problem. 
+            The default is 1e-5.
+            
+        rtol : float, optional
+            Relative Tolerance for solving. The smaller it is, the longer it will take to solve the problem. 
             The default is 1e-4.
             
         solver : str, optional
@@ -384,6 +388,7 @@ class glasso_problem:
         
         self.set_start_point(Omega_0)
         self.tol = tol
+        self.rtol = rtol
          
         self.solver_params = self._default_solver_params()
         self.solver_params.update(solver_params)
@@ -393,7 +398,7 @@ class glasso_problem:
         print(f"\n Solve problem with {solver.upper()} solver... \n ")
         if not self.multiple:
             sol, info = ADMM_SGL(S = self.S, lambda1 = self.reg_params['lambda1'], Omega_0= self.Omega_0, \
-                                 eps_admm = self.tol , latent = self.latent, mu1 = self.reg_params['mu1'], **self.solver_params)
+                                 tol = self.tol , rtol = self.rtol, latent = self.latent, mu1 = self.reg_params['mu1'], **self.solver_params)
                 
                 
         elif self.conforming:

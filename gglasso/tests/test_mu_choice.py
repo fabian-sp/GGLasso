@@ -58,7 +58,7 @@ print("Eigvals of S:", np.linalg.eigvalsh(S))
 Omega_0 = np.eye(p)
 lambda1 = 0.1
 
-sol, info = ADMM_SGL(S, lambda1, Omega_0 , eps_admm = 1e-4 , verbose = False, latent = True, mu1 = 1/D.min())
+sol, info = ADMM_SGL(S, lambda1, Omega_0 , tol = 1e-5 , rtol = 1e-4, verbose = False, latent = True, mu1 = 1/D.min())
 np.linalg.matrix_rank(sol['L'])
 
 M=25

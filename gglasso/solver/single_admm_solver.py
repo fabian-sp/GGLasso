@@ -10,48 +10,8 @@ from scipy.linalg import block_diag
 from .ggl_helper import prox_od_1norm, phiplus, prox_rank_norm
 
 
-def ADMM_stopping_criterion(Omega, Omega_t_1, Theta, Theta_t_1, L, X, S, tol, rtol, latent=False,
-                            mu1=None):
-    assert Omega.shape == Theta.shape == S.shape
-    assert S.shape[0] == S.shape[1]
-
-    if not latent:
-        assert np.all(L == 0)
-
-    (p, p) = S.shape
-
-    eps_rel = rtol
-    eps_abs = tol
-
-    psi = ((p ** 2 + p) / 2)  # number of elements of off-diagonal matrix
-    e_pri = psi * eps_abs + eps_rel * np.maximum(np.linalg.norm(Omega), np.linalg.norm(Theta))
-    e_dual = psi * eps_abs + eps_rel * np.linalg.norm(X)
-
-    r_k = np.linalg.norm(Omega - Theta)
-    s_k = np.linalg.norm(Theta - Theta_t_1)
-
-    if latent:
-        e_pri = psi * eps_abs + eps_rel * np.maximum(np.linalg.norm(Omega), np.linalg.norm(Theta - L))
-        e_dual = psi * eps_abs + eps_rel * np.linalg.norm(X)  # X*pho is given as an input to the function
-
-        r_k = np.linalg.norm(Omega - Theta + L)
-        s_k = np.linalg.norm(Omega - Omega_t_1)
-
-    status_set = set()
-    # primal convergence condition
-    if r_k <= e_pri:
-        status_set.add("primal optimal")
-    # dual convergence condition
-    if s_k <= e_dual:
-        status_set.add("dual optimal")
-
-    stop_value = np.maximum(r_k, s_k)
-
-    return stop_value, status_set
-
-
 def ADMM_SGL(S, lambda1, Omega_0, Theta_0=np.array([]), X_0=np.array([]),
-             rho=1., max_iter=1000, tol=1e-7, rtol=1e-3,
+             rho=1., max_iter=1000, tol=1e-7, rtol=1e-4,
              stopping_criterion="boyd",
              verbose=False, measure=False, latent=False, mu1=None):
     """
@@ -69,6 +29,8 @@ def ADMM_SGL(S, lambda1, Omega_0, Theta_0=np.array([]), X_0=np.array([]),
     assert Omega_0.shape == S.shape
     assert S.shape[0] == S.shape[1]
     assert lambda1 > 0
+    
+    assert stopping_criterion in ["boyd", "kkt"]
 
     if latent:
         assert mu1 is not None
@@ -79,21 +41,21 @@ def ADMM_SGL(S, lambda1, Omega_0, Theta_0=np.array([]), X_0=np.array([]),
     assert rho > 0, "ADMM penalization parameter must be positive."
 
     # initialize
-    # status = {0: "not optimal", 1: "primal optimal", 2: "dual optimal"}
     status = "not optimal"
+    
     Omega_t = Omega_0.copy()
-    Omega_t_1 = Omega_t.copy()
+    Omega_t_1 = np.zeros_like(Omega_0)
+    
     if len(Theta_0) == 0:
         Theta_0 = Omega_0.copy()
     if len(X_0) == 0:
         X_0 = np.zeros((p, p))
 
     Theta_t = Theta_0.copy()
-    Theta_t_1 = Theta_0.copy()
     L_t = np.zeros((p, p))
     X_t = X_0.copy()
 
-    eta_A = 1
+    eta_A = np.inf
     status_set = set()
 
     runtime = np.zeros(max_iter)
@@ -105,16 +67,16 @@ def ADMM_SGL(S, lambda1, Omega_0, Theta_0=np.array([]), X_0=np.array([]),
 
         if stopping_criterion == "boyd":
             if iter_t > 0:
-                eta_A, status_set = ADMM_stopping_criterion(Omega_t, Omega_t_1, Theta_t, Theta_t_1, L_t, rho * X_t, S,
-                                                            tol, rtol,
-                                                            latent,
-                                                            mu1)
-                residual[iter_t] = eta_A  # difference between Omega and Theta
+                eta_A, status_set = ADMM_stopping_criterion(Omega_t, Omega_t_1, Theta_t, L_t, rho * X_t, S,
+                                                            tol, rtol,latent,mu1)
+                
+                residual[iter_t] = eta_A
 
-            if len(status_set) > 1:  # check if both primal and dual solutions are optimal
+            if len(status_set) == 2:  # check if both primal and dual solutions are optimal
                 status = 'primal and dual optimal'
                 break
-        if stopping_criterion == "kkt":
+        
+        elif stopping_criterion == "kkt":
             eta_A, status_set = kkt_stopping_criterion(Omega_t, Theta_t, L_t, rho * X_t, S, lambda1, tol, latent, mu1)
             residual[iter_t] = eta_A
 
@@ -131,15 +93,14 @@ def ADMM_SGL(S, lambda1, Omega_0, Theta_0=np.array([]), X_0=np.array([]),
         Omega_t = phiplus(beta=1 / rho, D=eigD, Q=eigQ)
 
         # Theta Update
-        Theta_t_1 = Theta_t.copy()
         Theta_t = prox_od_1norm(Omega_t + L_t + X_t, (1 / rho) * lambda1)
 
         # L Update
         if latent:
             C_t = Theta_t - X_t - Omega_t
             # C_t = (C_t.T + C_t)/2
-            eigD, eigQ = np.linalg.eigh(C_t)
-            L_t = prox_rank_norm(C_t, mu1 / rho, D=eigD, Q=eigQ)
+            eigD1, eigQ1 = np.linalg.eigh(C_t)
+            L_t = prox_rank_norm(C_t, mu1/rho, D=eigD1, Q=eigQ1)
 
         # X Update
         X_t = X_t + Omega_t - Theta_t + L_t
@@ -150,17 +111,13 @@ def ADMM_SGL(S, lambda1, Omega_0, Theta_0=np.array([]), X_0=np.array([]),
 
         if verbose:
             print(f"Current accuracy: ", eta_A)
-            print(f"Current ADMM status: ", status_set)
 
     if len(status_set) == 1:
-        print(f"ADMM is only {status_set}")
-        print(f"Try to change the tolerance value {tol}")
-
-    # if eta_A[0] > tol:
-    #     status = 'max iterations reached'
-    if len(status_set) == 0:
-        print(f"ADMM has reached max iterations")
-
+        print(f"ADMM is only {status_set}. Adapt max_iter parameter or tolerance parameters for convergence.")
+        
+    elif len(status_set) == 0:
+        status_set.add("max iterations reached")
+        
     print(f"ADMM terminated after {iter_t} iterations with accuracy {eta_A}")
     print(f"ADMM status: {status_set}")
 
@@ -184,12 +141,40 @@ def ADMM_SGL(S, lambda1, Omega_0, Theta_0=np.array([]), X_0=np.array([]),
         sol = {'Omega': Omega_t, 'Theta': Theta_t, 'X': X_t}
 
     if measure:
-        info = {'status': status, 'runtime': runtime[:iter_t], 'residual': residual[1:iter_t + 1]}
+        info = {'status': status_set, 'runtime': runtime[:iter_t], 'residual': residual[1:iter_t + 1]}
     else:
-        info = {'status': status}
+        info = {'status': status_set}
 
     return sol, info
 
+def ADMM_stopping_criterion(Omega, Omega_t_1, Theta, L, X, S, eps_abs, eps_rel, latent=False, mu1=None):
+    assert Omega.shape == Theta.shape == S.shape
+    assert S.shape[0] == S.shape[1]
+
+    if not latent:
+        assert np.all(L == 0)
+
+    (p, p) = S.shape
+
+
+    dim = ((p ** 2 + p) / 2)  # number of elements of off-diagonal matrix
+    e_pri = dim * eps_abs + eps_rel * np.maximum(np.linalg.norm(Omega), np.linalg.norm(Theta -L))
+    e_dual = dim * eps_abs + eps_rel * np.linalg.norm(X)
+
+    r_k = np.linalg.norm(Omega - Theta + L)
+    s_k = np.linalg.norm(Omega - Omega_t_1)
+
+    status_set = set()
+    # primal convergence condition
+    if r_k <= e_pri:
+        status_set.add("primal optimal")
+    # dual convergence condition
+    if s_k <= e_dual:
+        status_set.add("dual optimal")
+
+    residual = np.maximum(r_k, s_k)
+
+    return residual, status_set
 
 def kkt_stopping_criterion(Omega, Theta, L, X, S, lambda1, tol, latent=False, mu1=None):
     assert Omega.shape == Theta.shape == S.shape
@@ -215,12 +200,12 @@ def kkt_stopping_criterion(Omega, Theta, L, X, S, lambda1, tol, latent=False, mu
         term4 = np.linalg.norm(L - proxL) / (1 + np.linalg.norm(L))
 
     status_set = set()
-    stop_value = max(term1, term2, term3, term4)
-    if stop_value < tol:
-        # primal convergence condition
-        status_set.add("primal and dual optimal")
+    residual = max(term1, term2, term3, term4)
+    if residual < tol:
+        status_set.add("primal optimal")
+        status_set.add("dual optimal")
 
-    return stop_value, status_set
+    return residual, status_set
 
 
 #######################################################
