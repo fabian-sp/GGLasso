@@ -405,12 +405,12 @@ class glasso_problem:
             
             sol, info = ADMM_MGL(S = self.S, lambda1 = self.reg_params['lambda1'], lambda2 = self.reg_params['lambda2'], reg = self.reg,\
                      Omega_0 = self.Omega_0, latent = self.latent, mu1 = self.reg_params['mu1'],\
-                         eps_admm = self.tol, **self.solver_params)
+                         tol = self.tol, rtol = self.rtol, **self.solver_params)
             
                                
         else:
             sol, info = ext_ADMM_MGL(S = self.S, lambda1 = self.reg_params['lambda1'], lambda2 = self.reg_params['lambda2'], reg = self.reg,\
-                                     Omega_0 = self.Omega_0, G = self.G, eps_admm = self.tol,\
+                                     Omega_0 = self.Omega_0, G = self.G, tol = self.tol, rtol = self.rtol,\
                                          latent = self.latent, mu1 = self.reg_params['mu1'], **self.solver_params)
                 
  

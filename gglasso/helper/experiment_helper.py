@@ -315,7 +315,7 @@ def plot_runtime(iA, iP, vecN, save = False):
         ax = axs.reshape(-1)[j]
         with sns.axes_style("whitegrid"):
             
-            p1 = ax.plot(iA[j]['kkt_residual'], c = color_dict['ADMM'], label = 'ADMM residual')
+            p1 = ax.plot(iA[j]['residual'], c = color_dict['ADMM'], label = 'ADMM residual')
             p2 = ax.plot(iP[j]['kkt_residual'], c = color_dict['PPDNA'], marker = 'o', markersize = 3, label = 'PPDNA residual')
             
             #ax.tick_params(axis='both', which='major', labelsize=7)
@@ -328,8 +328,9 @@ def plot_runtime(iA, iP, vecN, save = False):
             p3 = ax2.plot(iA[j]['runtime'].cumsum(), linestyle = '--', c = color_dict['ADMM'], alpha = 0.7, label = 'ADMM runtime')
             p4 = ax2.plot(iP[j]['runtime'].cumsum(), linestyle = '--', c = color_dict['PPDNA'], marker = 'o', markersize = 3, alpha = 0.7, label = 'PPDNA runtime')
             
-            ax.vlines(iP[j]['iter_admm'], 0, 0.2, 'grey')
-            ax.set_xlim(iP[j]['iter_admm'] - 5, )
+            # plot start x axis at 
+            ax.vlines(iP[j]['iter_admm']-1, 0, 0.2, 'grey')
+            ax.set_xlim(max(iP[j]['iter_admm'] - 5,1), )
             
             #ax.get_xaxis().set_major_formatter(matplotlib.ticker.ScalarFormatter())
             #ax2.get_xaxis().set_major_formatter(matplotlib.ticker.ScalarFormatter())

@@ -49,7 +49,7 @@ for j in np.arange(len(vecN)):
     S, sample = sample_covariance_matrix(Sigma, vecN[j])
     
     #start = time()
-    solA, infoA = ADMM_MGL(S, l1[j], l2[j], reg , Omega_0 , tol = 5e-5, verbose = False, measure = True)
+    solA, infoA = ADMM_MGL(S, l1[j], l2[j], reg , Omega_0 , tol = 5e-5, stopping_criterion = 'kkt', verbose = False, measure = True)
     #end = time()
     #RT_ADMM[j] = end-start
     iA[j] = infoA
@@ -58,7 +58,7 @@ for j in np.arange(len(vecN)):
     FPR[j] = discovery_rate(solA['Theta'], Theta)['FPR']
     
     #start = time()
-    solP, infoP = warmPPDNA(S, l1[j], l2[j], reg, Omega_0, eps = 5e-5, tol = 1e-2, verbose = False, measure = True)
+    solP, infoP = warmPPDNA(S, l1[j], l2[j], reg, Omega_0, eps = 5e-5, eps_admm = 1e-2, verbose = False, measure = True)
     #end = time()
     #RT_PPA[j] = end-start
     iP[j] = infoP

@@ -137,7 +137,7 @@ def ext_ADMM_MGL(S, lambda1, lambda2, reg , Omega_0, G,\
             r_t,s_t,e_pri,e_dual = ADMM_stopping_criterion(Omega_t, Omega_t_1, Theta_t, L_t, Lambda_t, Lambda_t_1, X0_t, X1_t,\
                                                            S, rho, p, tol, rtol, latent)
             
-            print(f"(r_k, s_k, e_pi, e_dual): {(r_t,s_t,e_pri,e_dual)}")
+            #print(f"(r_k, s_k, e_pi, e_dual): {(r_t,s_t,e_pri,e_dual)}")
             residual[iter_t] = max(r_t,s_t)
         
             if (r_t <= e_pri) and  (s_t <= e_dual):

@@ -37,7 +37,7 @@ def get_ppdna_params(ppdna_params = None):
 
 def get_ppa_sub_params_default():
     ppa_sub_params = { 'sigma_t' : 1e3, 
-          'eta' : 1e-5, 'tau' : .2, 'rho' : .5, 'mu' : .4,
+          'eta' : 1e-5, 'tau' : .2, 'rho' : .5, 'mu' : .1,
           'eps_t' : .95, 'delta_t' : .95} 
     
     return ppa_sub_params
@@ -277,7 +277,8 @@ def warmPPDNA(S, lambda1, lambda2, reg, Omega_0, Theta_0 = np.array([]), X_0 = n
         phase2 = True
     
     rho = 1.
-    sol1, info1 = ADMM_MGL(S, lambda1, lambda2, reg , Omega_0 , Theta_0, X_0, n_samples = None, eps_admm = eps_admm , verbose = verbose, measure = measure, rho = rho)
+    sol1, info1 = ADMM_MGL(S, lambda1, lambda2, reg , Omega_0 , Theta_0, X_0, \
+                           tol = eps_admm, stopping_criterion = 'kkt', verbose = verbose, measure = measure, rho = rho)
     
     assert info1['status'] == 'optimal'
     
@@ -292,9 +293,9 @@ def warmPPDNA(S, lambda1, lambda2, reg, Omega_0, Theta_0 = np.array([]), X_0 = n
         # append the infos
         if measure:
             info2['runtime'] = np.append(info1['runtime'], info2['runtime'])
-            info2['kkt_residual'] = np.append(info1['kkt_residual'], info2['kkt_residual'])
+            info2['kkt_residual'] = np.append(info1['residual'], info2['kkt_residual'])
             info2['objective'] = np.append(info1['objective'], info2['objective'])
-            info2['iter_admm'] = len(info1['runtime']) -1 
+            info2['iter_admm'] = len(info1['runtime'])
             
         return sol2, info2
     
