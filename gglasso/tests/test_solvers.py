@@ -36,8 +36,9 @@ def template_ADMM_MGL(p = 100, K = 5, N = 1000, reg = 'GGL', latent = False):
     
     Omega_0 = get_K_identity(K,p)
     
-    sol, info = ADMM_MGL(S, lambda1, lambda2, reg, Omega_0, tol = 1e-5, verbose = False, latent = latent, mu1 = 0.01)
-      
+    sol, info = ADMM_MGL(S, lambda1, lambda2, reg, Omega_0, tol = 1e-5, rtol = 1e-5, verbose = False, latent = latent, mu1 = 0.01)
+     
+    assert info['status'] == 'optimal'
     return
 
 def test_ADMM_GGL(): 

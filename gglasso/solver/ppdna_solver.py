@@ -185,14 +185,14 @@ def PPDNA(S, lambda1, lambda2, reg, Omega_0, Theta_0 = np.array([]), X_0 = np.ar
     ppa_sub_params['lambda2'] = lambda2
     
     runtime = np.zeros(max_iter)
-    kkt_residual = np.zeros(max_iter)
+    residual = np.zeros(max_iter)
     objective = np.zeros(max_iter)
     
     for iter_t in np.arange(max_iter):
              
         # check stopping criterion
         eta_P = PPDNA_stopping_criterion(Omega_t, Theta_t, X_t, S , ppa_sub_params, reg)
-        kkt_residual[iter_t] = eta_P
+        residual[iter_t] = eta_P
         
         if measure:
             start = time.time()
@@ -238,7 +238,7 @@ def PPDNA(S, lambda1, lambda2, reg, Omega_0, Theta_0 = np.array([]), X_0 = np.ar
     sol = {'Omega': Omega_t, 'Theta': Theta_t, 'X': X_t}
     if measure:
         # last runtime irrelevant (as break) and first residual irrelevant
-        info = {'status': status , 'runtime': runtime[:iter_t], 'kkt_residual': kkt_residual[1:iter_t + 1], 'objective': objective[:iter_t]}
+        info = {'status': status , 'runtime': runtime[:iter_t], 'residual': residual[1:iter_t + 1], 'objective': objective[:iter_t]}
     else:
         info = {'status': status}
     return sol, info
@@ -293,7 +293,7 @@ def warmPPDNA(S, lambda1, lambda2, reg, Omega_0, Theta_0 = np.array([]), X_0 = n
         # append the infos
         if measure:
             info2['runtime'] = np.append(info1['runtime'], info2['runtime'])
-            info2['kkt_residual'] = np.append(info1['residual'], info2['kkt_residual'])
+            info2['residual'] = np.append(info1['residual'], info2['residual'])
             info2['objective'] = np.append(info1['objective'], info2['objective'])
             info2['iter_admm'] = len(info1['runtime'])
             

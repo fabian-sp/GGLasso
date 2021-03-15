@@ -316,7 +316,7 @@ def plot_runtime(iA, iP, vecN, save = False):
         with sns.axes_style("whitegrid"):
             
             p1 = ax.plot(iA[j]['residual'], c = color_dict['ADMM'], label = 'ADMM residual')
-            p2 = ax.plot(iP[j]['kkt_residual'], c = color_dict['PPDNA'], marker = 'o', markersize = 3, label = 'PPDNA residual')
+            p2 = ax.plot(iP[j]['residual'], c = color_dict['PPDNA'], marker = 'o', markersize = 3, label = 'PPDNA residual')
             
             #ax.tick_params(axis='both', which='major', labelsize=7)
             ax.set_yscale('log')
