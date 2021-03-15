@@ -112,7 +112,7 @@ def ADMM_MGL(S, lambda1, lambda2, reg , Omega_0 , \
         
         # Stopping condition
         if stopping_criterion == 'boyd':
-            r_t,s_t,e_pri,e_dual = ADMM_stopping_criterion(Omega_t, Omega_t_1, Theta_t, L_t, rho*X_t,\
+            r_t,s_t,e_pri,e_dual = ADMM_stopping_criterion(Omega_t, Omega_t_1, Theta_t, L_t, X_t,\
                                                            S, rho, tol, rtol, latent)
             residual[iter_t] = max(r_t,s_t)
         
@@ -172,8 +172,8 @@ def ADMM_MGL(S, lambda1, lambda2, reg , Omega_0 , \
 
 
 def ADMM_stopping_criterion(Omega, Omega_t_1, Theta, L, X, S, rho, eps_abs, eps_rel, latent=False):
+    # X is inputed as scaled dual variable, this is accounted for by factor rho in e_dual
     
-
     if not latent:
         assert np.all(L == 0)
 
@@ -181,7 +181,7 @@ def ADMM_stopping_criterion(Omega, Omega_t_1, Theta, L, X, S, rho, eps_abs, eps_
 
     dim = K*((p ** 2 + p) / 2)  # number of elements of off-diagonal matrix
     e_pri = dim * eps_abs + eps_rel * np.maximum(np.linalg.norm(Omega), np.linalg.norm(Theta -L))
-    e_dual = dim * eps_abs + eps_rel * np.linalg.norm(X)
+    e_dual = dim * eps_abs + eps_rel * rho * np.linalg.norm(X)
 
     r = np.linalg.norm(Omega - Theta + L)
     s = rho*np.linalg.norm(Omega - Omega_t_1)
