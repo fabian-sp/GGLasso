@@ -89,8 +89,8 @@ def ADMM_SGL(S, lambda1, Omega_0, Theta_0=np.array([]), X_0=np.array([]),
         
         # Stopping criterion
         if stopping_criterion == 'boyd':
-            r_t,s_t,e_pri,e_dual = ADMM_stopping_criterion(Omega_t, Omega_t_1, Theta_t, L_t, rho * X_t, S,
-                                                            tol, rtol,latent,mu1)
+            r_t,s_t,e_pri,e_dual = ADMM_stopping_criterion(Omega_t, Omega_t_1, Theta_t, L_t, rho * X_t,\
+                                                           S, rho, tol, rtol, latent)
             residual[iter_t] = max(r_t,s_t)
             if (r_t <= e_pri) and  (s_t <= e_dual):
                 status = 'optimal'
@@ -151,7 +151,7 @@ def ADMM_SGL(S, lambda1, Omega_0, Theta_0=np.array([]), X_0=np.array([]),
 
     return sol, info
 
-def ADMM_stopping_criterion(Omega, Omega_t_1, Theta, L, X, S, eps_abs, eps_rel, latent=False, mu1=None):
+def ADMM_stopping_criterion(Omega, Omega_t_1, Theta, L, X, S, rho, eps_abs, eps_rel, latent=False):
 
     if not latent:
         assert np.all(L == 0)
@@ -164,7 +164,7 @@ def ADMM_stopping_criterion(Omega, Omega_t_1, Theta, L, X, S, eps_abs, eps_rel, 
     e_dual = dim * eps_abs + eps_rel * np.linalg.norm(X)
 
     r = np.linalg.norm(Omega - Theta + L)
-    s = np.linalg.norm(Omega - Omega_t_1)
+    s = rho*np.linalg.norm(Omega - Omega_t_1)
 
     return r,s,e_pri,e_dual
 

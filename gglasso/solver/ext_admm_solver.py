@@ -15,7 +15,8 @@ from gglasso.helper.ext_admm_helper import check_G
 
 
 def ext_ADMM_MGL(S, lambda1, lambda2, reg , Omega_0, G,\
-             X0 = None, X1 = None, eps_admm = 1e-5 , rho= 1., max_iter = 1000, verbose = False, measure = False, latent = False, mu1 = None):
+                 X0 = None, X1 = None, tol = 1e-5 , rtol = 1e-4, stopping_criterion = 'boyd',\
+                 rho= 1., max_iter = 1000, verbose = False, measure = False, latent = False, mu1 = None):
     """
     This is an ADMM algorithm for solving the Multiple Graphical Lasso problem
     where not all instances have the same number of dimensions
@@ -55,7 +56,6 @@ def ext_ADMM_MGL(S, lambda1, lambda2, reg , Omega_0, G,\
         
     
     # initialize 
-    status = 'not optimal'
     Omega_t = Omega_0.copy()
     Theta_t = Omega_0.copy()
     L_t = dict()
@@ -83,25 +83,21 @@ def ext_ADMM_MGL(S, lambda1, lambda2, reg , Omega_0, G,\
      
      
     runtime = np.zeros(max_iter)
-    kkt_residual = np.zeros(max_iter)
-    
+    residual = np.zeros(max_iter)
+    status = ''
+    ##################################################################
+    ### MAIN LOOP STARTS
+    ##################################################################
     for iter_t in np.arange(max_iter):
-        
-        if iter_t % 10 == 0:
-            eta_A = ext_ADMM_stopping_criterion(Omega_t, Theta_t, L_t, Lambda_t, dict((k, rho*v) for k,v in X0_t.items()), dict((k, rho*v) for k,v in X1_t.items()),\
-                                                S , G, lambda1, lambda2, reg, latent, mu1)
-            kkt_residual[iter_t] = eta_A
         
         if measure:
             start = time.time()
             
-        if eta_A <= eps_admm:
-            status = 'optimal'
-            break
         if verbose:
             print(f"------------Iteration {iter_t} of the ADMM Algorithm----------------")
         
         # Omega Update
+        Omega_t_1 = Omega_t.copy()
         for k in np.arange(K):
             W_t = Theta_t[k] - L_t[k] - X0_t[k] - (1/rho) * S[k]
             eigD, eigQ = np.linalg.eigh(W_t)
@@ -121,10 +117,12 @@ def ext_ADMM_MGL(S, lambda1, lambda2, reg , Omega_0, G,\
                 L_t[k] = prox_rank_norm(C_t, mu1[k]/rho, D = eigD, Q = eigQ)
         
         # Lambda Update
+        Lambda_t_1 = Lambda_t.copy()
         for k in np.arange(K): 
             Z_t[k] = Theta_t[k] + X1_t[k]
             
         Lambda_t = prox_2norm_G(Z_t, G, lambda2/rho)
+        
         # X Update
         for k in np.arange(K):
             X0_t[k] +=  Omega_t[k] - Theta_t[k] + L_t[k]
@@ -133,15 +131,48 @@ def ext_ADMM_MGL(S, lambda1, lambda2, reg , Omega_0, G,\
         if measure:
             end = time.time()
             runtime[iter_t] = end-start
+        
+        # Stopping condition
+        if stopping_criterion == 'boyd':
+            r_t,s_t,e_pri,e_dual = ADMM_stopping_criterion(Omega_t, Omega_t_1, Theta_t, L_t, Lambda_t, Lambda_t_1, X0_t, X1_t,\
+                                                           S, rho, p, tol, rtol, latent)
+            
+            print(f"(r_k, s_k, e_pi, e_dual): {(r_t,s_t,e_pri,e_dual)}")
+            residual[iter_t] = max(r_t,s_t)
+        
+            if (r_t <= e_pri) and  (s_t <= e_dual):
+                status = 'optimal'
+                break
+            
+        elif stopping_criterion == 'kkt':
+            eta_A = kkt_stopping_criterion(Omega_t, Theta_t, L_t, Lambda_t, dict((k, rho*v) for k,v in X0_t.items()), dict((k, rho*v) for k,v in X1_t.items()),\
+                                                S , G, lambda1, lambda2, reg, latent, mu1)
+            residual[iter_t] = eta_A
+        
+            if eta_A <= tol:
+                status = 'optimal'
+                break
             
         if verbose:
             print(f"Current accuracy: ", eta_A)
         
-    if eta_A > eps_admm:
-        status = 'max iterations reached'
+    ##################################################################
+    ### MAIN LOOP FINISHED
+    ##################################################################
+    
+    # retrieve status (partially optimal or max iter)
+    if status != 'optimal':
+        if stopping_criterion == 'boyd':
+            if (r_t <= e_pri):
+                status = 'primal optimal'
+            elif (s_t <= e_dual):
+                status = 'dual optimal'
+            else:
+                status = 'max iterations reached'
+        else:
+            status = 'max iterations reached'
         
-    print(f"ADMM terminated after {iter_t} iterations with accuracy {eta_A}")
-    print(f"ADMM status: {status}")
+    print(f"ADMM terminated after {iter_t+1} iterations with status: {status}.")
     
     for k in np.arange(K):
         assert abs(Omega_t[k].T - Omega_t[k]).max() <= 1e-5, "Solution is not symmetric"
@@ -160,14 +191,39 @@ def ext_ADMM_MGL(S, lambda1, lambda2, reg , Omega_0, G,\
     
     sol = {'Omega': Omega_t, 'Theta': Theta_t, 'L': L_t, 'X0': X0_t, 'X1': X1_t}
     if measure:
-        info = {'status': status , 'runtime': runtime[:iter_t], 'kkt_residual': kkt_residual[1:iter_t +1]}
+        info = {'status': status , 'runtime': runtime[:iter_t+1], 'residual': residual[:iter_t+1]}
     else:
         info = {'status': status}
                
     return sol, info
 
-def ext_ADMM_stopping_criterion(Omega, Theta, L, Lambda, X0, X1, S , G, lambda1, lambda2, reg, latent = False, mu1 = None):
+
+def ADMM_stopping_criterion(Omega, Omega_t_1, Theta, L, Lambda, Lambda_t_1, X0, X1, S, rho, p, eps_abs, eps_rel, latent=False):
+    # X0, X1 are inputed as scaled dual vars., this is accounted for by factor rho in e_dual
+    K = len(S.keys())
+
+    if not latent:
+        for k in np.arange(K):
+            assert np.all(L[k]==0)
+
+
+    dim = ((p ** 2 + p) / 2).sum()  # number of elements of off-diagonal matrix
     
+    D1 = np.sqrt(sum([np.linalg.norm(Omega[k])**2 + np.linalg.norm(Lambda[k])**2 for k in np.arange(K)] ))
+    D2 = np.sqrt(sum([np.linalg.norm(Theta[k] - L[k])**2 + np.linalg.norm(Theta[k])**2 for k in np.arange(K)] ))
+    D3 = np.sqrt(sum([np.linalg.norm(X0[k])**2 + np.linalg.norm(X1[k])**2 for k in np.arange(K)] ))
+    
+    e_pri = dim * eps_abs + eps_rel * np.maximum(D1, D2)
+    e_dual = dim * eps_abs + eps_rel * rho * D3
+    
+    
+    r = np.sqrt(sum([np.linalg.norm(Omega[k] - Theta[k] + L[k])**2 + np.linalg.norm(Lambda[k] - Theta[k])**2 for k in np.arange(K)] ))
+    s = rho * np.sqrt(sum([np.linalg.norm(Omega[k] - Omega_t_1[k])**2 + np.linalg.norm(Lambda[k] - Lambda_t_1[k])**2 for k in np.arange(K)] ))
+
+    return r,s,e_pri,e_dual
+
+def kkt_stopping_criterion(Omega, Theta, L, Lambda, X0, X1, S , G, lambda1, lambda2, reg, latent = False, mu1 = None):
+    # X0, X1 are inputed as UNscaled dual variables(!)
     K = len(S.keys())
     
     if not latent:
