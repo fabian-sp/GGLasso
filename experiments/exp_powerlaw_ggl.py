@@ -134,7 +134,7 @@ Theta_0 = get_K_identity(K,p)
 
 solP, infoP = warmPPDNA(S, l1opt, l2opt, reg, Omega_0, Theta_0 = Theta_0, eps = 5e-5 , verbose = True, measure = True)
 
-solA, infoA = ADMM_MGL(S, l1opt, l2opt, reg , Omega_0 , Theta_0 = Theta_0, eps_admm = 5e-5, verbose = True, measure = True)
+solA, infoA = ADMM_MGL(S, l1opt, l2opt, reg , Omega_0 , Theta_0 = Theta_0, tol = 5e-5, verbose = True, measure = True)
 
 Theta_sol = solP['Theta']
 Omega_sol = solP['Omega']
@@ -186,7 +186,7 @@ for g1 in np.arange(grid1):
         #sol, info = PPDNA(S, L1[g1], L2[g1], reg, Omega_0, Theta_0 = Theta_0, X_0 = X_0, \
         #                                                eps_ppdna = EPS[g2] , verbose = False)
         sol, info = ADMM_MGL(S, L1[g1], L2[g1], reg , Omega_0 , Theta_0 = Theta_0, X_0 = X_0, rho = 1, max_iter = 100, \
-                             eps_admm = EPS[g2], verbose = False)
+                             tol = EPS[g2], verbose = False)
         end = time()
         
         Theta_sol = sol['Theta']

@@ -103,7 +103,7 @@ for g1 in np.arange(grid1):
         lambda1 = L1[g1,g2]
         lambda2 = L2[g1,g2]
         
-        sol, info = ADMM_MGL(S,lambda1, lambda2, reg, Omega_0, eps_admm = 1e-3, verbose = False)
+        sol, info = ADMM_MGL(S,lambda1, lambda2, reg, Omega_0, tol = 1e-3, verbose = False)
         Theta_sol = sol['Theta']
         Omega_sol = sol['Omega']
         
@@ -137,7 +137,7 @@ results['GLASSO'] = {'Theta' : res}
 #%%
 start = time()
 sol, info = ADMM_MGL(S, lambda1, lambda2, reg, Omega_0, rho = 1, max_iter = 100, \
-                                                        eps_admm = 1e-5, verbose = True, measure = True)
+                                                        tol = 1e-5, verbose = True, measure = True)
 end = time()
 
 print(f"Running time for ADMM was {end-start} seconds")

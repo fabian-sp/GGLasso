@@ -117,7 +117,7 @@ results['PPDNA'] = {'Theta' : sol['Theta']}
 # solve with general ADMM
 start = time()
 sol, info = ADMM_MGL(S, lambda1, lambda2, reg, Omega_0, Theta_0 = Theta_0, X_0 = X_0, rho = 1, max_iter = 100, \
-                                                        eps_admm = 5e-4, verbose = True, measure = True)
+                                                        tol = 5e-4, verbose = True, measure = True)
 end = time()
 
 print(f"Running time for ADMM was {end-start} seconds")
