@@ -36,8 +36,9 @@ def template_ADMM_MGL(p = 100, K = 5, N = 1000, reg = 'GGL', latent = False):
     
     Omega_0 = get_K_identity(K,p)
     
-    sol, info = ADMM_MGL(S, lambda1, lambda2, reg, Omega_0, eps_admm = 1e-5, verbose = False, latent = latent, mu1 = 0.01)
-      
+    sol, info = ADMM_MGL(S, lambda1, lambda2, reg, Omega_0, tol = 1e-5, rtol = 1e-5, verbose = False, latent = latent, mu1 = 0.01)
+     
+    assert info['status'] == 'optimal'
     return
 
 def test_ADMM_GGL(): 
@@ -85,10 +86,10 @@ def template_extADMM_consistent(latent = False):
     # constructs the "trivial" groups, i.e. all variables present in all instances  
     G = construct_trivial_G(p, K)
     
-    solext, _ = ext_ADMM_MGL(Sdict, lambda1, lambda2/np.sqrt(K), 'GGL', Omega_0, G, eps_admm = 1e-5, verbose = False, latent = latent, mu1 = 0.01)
+    solext, _ = ext_ADMM_MGL(Sdict, lambda1, lambda2/np.sqrt(K), 'GGL', Omega_0, G, tol = 1e-8, rtol = 1e-8, verbose = False, latent = latent, mu1 = 0.01)
     
     Omega_0_arr = get_K_identity(K,p)
-    solADMM, _ = ADMM_MGL(S, lambda1, lambda2, 'GGL', Omega_0_arr, eps_admm = 1e-5, verbose = False, latent = latent, mu1 = 0.01)
+    solADMM, info = ADMM_MGL(S, lambda1, lambda2, 'GGL', Omega_0_arr, tol = 1e-8, rtol = 1e-8, verbose = False, latent = latent, mu1 = 0.01)
     
     for k in np.arange(K):
         assert solext['Theta'][k] == pt.approx(solADMM['Theta'][k,:,:], abs = 1e-2), f"Absolute error in norm: {np.linalg.norm(solext['Theta'][k] - solADMM['Theta'][k,:,:])}"
@@ -150,7 +151,7 @@ def template_admm_vs_ppdna(p = 50, K = 3, N = 1000, reg = "GGL"):
     
     Omega_0 = get_K_identity(K,p)
     
-    sol, info = ADMM_MGL(S, lambda1, lambda2, reg, Omega_0, eps_admm = 1e-6, verbose = False, latent = False)
+    sol, info = ADMM_MGL(S, lambda1, lambda2, reg, Omega_0, tol = 1e-6, rtol = 1e-5, verbose = False, latent = False)
     sol2, info2 = warmPPDNA(S, lambda1, lambda2, reg, Omega_0, eps = 1e-6 , verbose = False, measure = False)
     
     

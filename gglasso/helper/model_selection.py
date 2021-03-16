@@ -88,7 +88,7 @@ def grid_search(solver, S, N, p, reg, l1, l2 = None, w2 = None, method= 'eBIC', 
     SKIP = np.zeros((grid1, grid2), dtype = bool)
     
     
-    kwargs = {'reg': reg, 'S': S, 'eps_admm': 1e-3, 'verbose': False, 'measure': False}
+    kwargs = {'reg': reg, 'S': S, 'tol': 1e-4, 'rtol': 1e-4, 'verbose': False, 'measure': False}
     if type(S) == dict:
         K = len(S.keys())
         Omega_0 = id_dict(p)
@@ -360,7 +360,7 @@ def single_grid_search(S, lambda_range, N, method = 'eBIC', gamma = 0.3, latent 
     
     RANK = np.zeros((L,M))
     
-    kwargs = {'S':S, 'Omega_0': np.eye(p), 'X_0': np.eye(p), 'tol': 1e-6, 'rtol': 1e-4, 'verbose': False, 'measure': False}
+    kwargs = {'S':S, 'Omega_0': np.eye(p), 'X_0': np.eye(p), 'tol': 1e-5, 'rtol': 1e-4, 'verbose': False, 'measure': False}
     
     estimates = np.zeros((L,M,p,p))
     lowrank = np.zeros((L,M,p,p))

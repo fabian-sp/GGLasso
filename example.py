@@ -46,9 +46,9 @@ Omega_0 = get_K_identity(K,p)
 
 solPPDNA, info = warmPPDNA(S, lambda1, lambda2, reg, Omega_0, eps = 1e-5 , verbose = True, measure = True)
 
-#solADMM, info = ADMM_MGL(S, lambda1, lambda2, reg, Omega_0, n_samples = None, eps_admm = 1e-4 , verbose = True)
+#solADMM, info = ADMM_MGL(S, lambda1, lambda2, reg, Omega_0, n_samples = None, tol = 1e-4 , verbose = True)
 
-solADMM, info = ADMM_MGL(S, lambda1, lambda2, reg, Omega_0, n_samples = None, eps_admm = 1e-4 , verbose = True, latent = True, mu1 = .2)
+solADMM, info = ADMM_MGL(S, lambda1, lambda2, reg, Omega_0, n_samples = None, tol = 1e-4 , verbose = True, latent = True, mu1 = .2)
 
 #%%
 # tests for the extended ADMM version
@@ -69,7 +69,7 @@ G = construct_trivial_G(p, K)
 est_uniform, est_indv, range_stats = K_single_grid(Sdict, lambda_range, N, method = 'eBIC', latent = True, mu_range = mu_range)
 
 
-solext, info = ext_ADMM_MGL(Sdict, lambda1, lambda2/np.sqrt(K), 'GGL' , Omega_0, G, eps_admm = 1e-4 , verbose = True, measure = False, \
+solext, info = ext_ADMM_MGL(Sdict, lambda1, lambda2/np.sqrt(K), 'GGL' , Omega_0, G, tol = 1e-4 , verbose = True, measure = False, \
                             latent = True, mu1 = .2, max_iter = 100)
 
 for k in np.arange(K):
