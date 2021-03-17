@@ -4,6 +4,7 @@ import numpy as np
 import pandas as pd
 import itertools
 import plotly.express as px
+from tqdm import trange
 
 from sklearn.covariance import GraphicalLasso as sk_GL
 from sklearn.covariance import empirical_covariance
@@ -36,13 +37,13 @@ def models_to_dict(models=None, lambda1=0.1, tol_list=list, rtol_list=list, enet
     return models_dict
 
 
-def sklearn_time_benchmark(models=dict, X=np.array([]), Z=np.array([]), n_iter=int,
+def sklearn_time_benchmark(models=dict, X=np.array([]), Z=np.array([]), n_iter=10,
                            cov_dict=dict(), precision_dict=dict(),
                            time_dict=dict(), accuracy_dict=dict()):
     for model, model_instant in models.items():
 
         time_list = []
-        for _ in np.arange(n_iter):
+        for _ in trange(n_iter, desc=model, leave=True):
             start = time.time()
             Z_i = model_instant.fit(X)
             end = time.time()
@@ -61,15 +62,18 @@ def sklearn_time_benchmark(models=dict, X=np.array([]), Z=np.array([]), n_iter=i
     return time_dict, accuracy_dict
 
 
-def admm_time_benchmark(S=np.array([]), Omega_0=np.array([]), Z=np.array([]), lambda1=float, n_iter=int, max_iter=50000,
+def admm_time_benchmark(S=np.array([]), Omega_0=np.array([]), Z=np.array([]), lambda1=float, n_iter=10, max_iter=50000,
                         method_list=list, stop_list=list, tol_list=list, rtol_list=list,
                         cov_dict=dict(), precision_dict=dict(),
                         time_dict=dict(), accuracy_dict=dict()):
+
     for method in method_list:
         for tol, rtol, stop in itertools.product(tol_list, rtol_list, stop_list):
 
             time_list = []
-            for _ in np.arange(n_iter):
+            key = method + "-" + str(stop) + "_tol_" + str(tol) + "_rtol_" + str(rtol)
+
+            for _ in trange(n_iter, desc=key, leave=True):
                 if method == "single":
                     start = time.time()
                     Z_i, info = ADMM_SGL(S, lambda1=lambda1, Omega_0=Omega_0, max_iter=max_iter,
@@ -84,7 +88,6 @@ def admm_time_benchmark(S=np.array([]), Omega_0=np.array([]), Z=np.array([]), la
                     end = time.time()
                     time_list.append(end - start)
 
-            key = method + "-" + str(stop) + "_tol_" + str(tol) + "_rtol_" + str(rtol)
             # mean time in "n" iterations
             time_dict[key] = np.mean(time_list)
 
@@ -95,3 +98,21 @@ def admm_time_benchmark(S=np.array([]), Omega_0=np.array([]), Z=np.array([]), la
             accuracy_dict["accuracy_" + key] = accuracy
 
     return time_dict, accuracy_dict
+
+
+def model_solution(model=str, X=np.array([]), lambda1=float, max_iter=50000, tol=float, rtol=float, enet=float):
+    if model == "sklearn":
+        start = time.time()
+        Z = sk_GL(alpha=lambda1, max_iter=max_iter, tol=tol, enet_tol=enet).fit(X)
+        end = time.time()
+
+    elif model == "regain":
+        start = time.time()
+        Z = sk_GL(alpha=lambda1, max_iter=max_iter, tol=tol, rtol=rtol).fit(X)
+        end = time.time()
+
+    hours, rem = divmod(end - start, 3600)
+    minutes, seconds = divmod(rem, 60)
+    Z_time = "{:0>2}:{:0>2}:{:05.2f}".format(int(hours), int(minutes), seconds)
+
+    return Z.precision_, Z_time
