@@ -49,7 +49,7 @@ for j in np.arange(len(vecN)):
     S, sample = sample_covariance_matrix(Sigma, vecN[j])
     
     #start = time()
-    solA, infoA = ADMM_MGL(S, l1[j], l2[j], reg , Omega_0 , eps_admm = 5e-5, verbose = False, measure = True)
+    solA, infoA = ADMM_MGL(S, l1[j], l2[j], reg , Omega_0 , tol = 5e-5, stopping_criterion = 'kkt', verbose = False, measure = True)
     #end = time()
     #RT_ADMM[j] = end-start
     iA[j] = infoA
@@ -98,7 +98,7 @@ plot_runtime(iA, iP, vecN, save = save)
 #    S, sample = sample_covariance_matrix(Sigma, N)
 #    
 #    start = time()
-#    solA, infoA = ADMM_MGL(S, l1[j], l2[j], reg , Omega_0 , eps_admm = 1e-4, verbose = True, measure = True)
+#    solA, infoA = ADMM_MGL(S, l1[j], l2[j], reg , Omega_0 , tol = 1e-4, verbose = True, measure = True)
 #    end = time()
 #    
 #    TPR[j] = discovery_rate(solA['Theta'], Theta)['TPR']

@@ -11,21 +11,24 @@ from .ggl_helper import prox_od_1norm, phiplus, prox_rank_norm
 
 
 def ADMM_SGL(S, lambda1, Omega_0, Theta_0=np.array([]), X_0=np.array([]),
-             rho=1., max_iter=1000, tol=1e-7, rtol=1e-4,
-             stopping_criterion="boyd",
+             rho=1., max_iter=1000, tol=1e-7, rtol=1e-4, stopping_criterion='boyd',\
              verbose=False, measure=False, latent=False, mu1=None):
     """
     This is an ADMM algorithm for solving the Single Graphical Lasso problem
+
     Omega_0 : start point -- must be specified as a (p,p) array
     S : empirical covariance matrix -- must be specified as a (p,p) array
+
     latent: boolean to indidate whether low rank term should be estimated
     mu1: low rank penalty paramater, if latent=True
+
+
     In the code, X are the SCALED (with 1/rho) dual variables, for the KKT stop criterion they have to be unscaled (i.e. take rho*X) again!
     """
     assert Omega_0.shape == S.shape
     assert S.shape[0] == S.shape[1]
     assert lambda1 > 0
-
+    
     assert stopping_criterion in ["boyd", "kkt"]
 
     if latent:
@@ -37,11 +40,8 @@ def ADMM_SGL(S, lambda1, Omega_0, Theta_0=np.array([]), X_0=np.array([]),
     assert rho > 0, "ADMM penalization parameter must be positive."
 
     # initialize
-    status = "not optimal"
-
     Omega_t = Omega_0.copy()
-    Omega_t_1 = np.zeros_like(Omega_0)
-
+    
     if len(Theta_0) == 0:
         Theta_0 = Omega_0.copy()
     if len(X_0) == 0:
@@ -51,33 +51,15 @@ def ADMM_SGL(S, lambda1, Omega_0, Theta_0=np.array([]), X_0=np.array([]),
     L_t = np.zeros((p, p))
     X_t = X_0.copy()
 
-    eta_A = np.inf
-    status_set = set()
-
     runtime = np.zeros(max_iter)
     residual = np.zeros(max_iter)
-
+    status = ''
+    ##################################################################
+    ### MAIN LOOP STARTS
+    ##################################################################
     for iter_t in np.arange(max_iter):
         if measure:
             start = time.time()
-
-        if stopping_criterion == "boyd":
-            if iter_t > 0:
-                eta_A, status_set = ADMM_stopping_criterion(Omega_t, Omega_t_1, Theta_t, L_t, rho * X_t, S,
-                                                            tol, rtol,latent,mu1)
-
-                residual[iter_t] = eta_A
-
-            if len(status_set) == 2:  # check if both primal and dual solutions are optimal
-                status = 'primal and dual optimal'
-                break
-
-        elif stopping_criterion == "kkt":
-            eta_A, status_set = kkt_stopping_criterion(Omega_t, Theta_t, L_t, rho * X_t, S, lambda1, tol, latent, mu1)
-            residual[iter_t] = eta_A
-
-            if eta_A <= tol:
-                break
 
         if verbose:
             print(f"------------Iteration {iter_t} of the ADMM Algorithm----------------")
@@ -104,18 +86,44 @@ def ADMM_SGL(S, lambda1, Omega_0, Theta_0=np.array([]), X_0=np.array([]),
         if measure:
             end = time.time()
             runtime[iter_t] = end - start
+        
+        # Stopping criterion
+        if stopping_criterion == 'boyd':
+            r_t,s_t,e_pri,e_dual = ADMM_stopping_criterion(Omega_t, Omega_t_1, Theta_t, L_t, X_t,\
+                                                           S, rho, tol, rtol, latent)
+            residual[iter_t] = max(r_t,s_t)
+            if (r_t <= e_pri) and  (s_t <= e_dual):
+                status = 'optimal'
+                break
 
+        elif stopping_criterion == 'kkt':
+            eta_A = kkt_stopping_criterion(Omega_t, Theta_t, L_t, rho * X_t, S, lambda1, latent, mu1)
+            residual[iter_t] = eta_A
+
+            if eta_A <= tol:
+                status = 'optimal'
+                break
+                   
         if verbose:
-            print(f"Current accuracy: ", eta_A)
-
-    if len(status_set) == 1:
-        print(f"ADMM is only {status_set}. Adapt max_iter parameter or tolerance parameters for convergence.")
-
-    elif len(status_set) == 0:
-        status_set.add("max iterations reached")
-
-    print(f"ADMM terminated after {iter_t} iterations with accuracy {eta_A}")
-    print(f"ADMM status: {status_set}")
+            print(f"Current accuracy: ", residual[iter_t])
+    
+    ##################################################################
+    ### MAIN LOOP FINISHED
+    ##################################################################
+    
+    # retrieve status (partially optimal or max iter)
+    if status != 'optimal':
+        if stopping_criterion == 'boyd':
+            if (r_t <= e_pri):
+                status = 'primal optimal'
+            elif (s_t <= e_dual):
+                status = 'dual optimal'
+            else:
+                status = 'max iterations reached'
+        else:
+            status = 'max iterations reached'
+            
+    print(f"ADMM terminated after {iter_t+1} iterations with status: {status}.")
 
     assert abs((Omega_t).T - Omega_t).max() <= 1e-5, "Solution is not symmetric"
     assert abs((Theta_t).T - Theta_t).max() <= 1e-5, "Solution is not symmetric"
@@ -137,16 +145,14 @@ def ADMM_SGL(S, lambda1, Omega_0, Theta_0=np.array([]), X_0=np.array([]),
         sol = {'Omega': Omega_t, 'Theta': Theta_t, 'X': X_t}
 
     if measure:
-        info = {'status': status_set, 'runtime': runtime[:iter_t], 'residual': residual[1:iter_t + 1]}
+        info = {'status': status, 'runtime': runtime[:iter_t+1], 'residual': residual[:iter_t+1]}
     else:
-        info = {'status': status_set}
+        info = {'status': status}
 
     return sol, info
 
-def ADMM_stopping_criterion(Omega, Omega_t_1, Theta, L, X, S, eps_abs, eps_rel, latent=False, mu1=None):
-    assert Omega.shape == Theta.shape == S.shape
-    assert S.shape[0] == S.shape[1]
-
+def ADMM_stopping_criterion(Omega, Omega_t_1, Theta, L, X, S, rho, eps_abs, eps_rel, latent=False):
+    # X is inputed as scaled dual variable, this is accounted for by factor rho in e_dual
     if not latent:
         assert np.all(L == 0)
 
@@ -155,24 +161,14 @@ def ADMM_stopping_criterion(Omega, Omega_t_1, Theta, L, X, S, eps_abs, eps_rel, 
 
     dim = ((p ** 2 + p) / 2)  # number of elements of off-diagonal matrix
     e_pri = dim * eps_abs + eps_rel * np.maximum(np.linalg.norm(Omega), np.linalg.norm(Theta -L))
-    e_dual = dim * eps_abs + eps_rel * np.linalg.norm(X)
+    e_dual = dim * eps_abs + eps_rel * rho * np.linalg.norm(X)
 
-    r_k = np.linalg.norm(Omega - Theta + L)
-    s_k = np.linalg.norm(Omega - Omega_t_1)
+    r = np.linalg.norm(Omega - Theta + L)
+    s = rho*np.linalg.norm(Omega - Omega_t_1)
 
-    status_set = set()
-    # primal convergence condition
-    if r_k <= e_pri:
-        status_set.add("primal optimal")
-    # dual convergence condition
-    if s_k <= e_dual:
-        status_set.add("dual optimal")
+    return r,s,e_pri,e_dual
 
-    residual = np.maximum(r_k, s_k)
-
-    return residual, status_set
-
-def kkt_stopping_criterion(Omega, Theta, L, X, S, lambda1, tol, latent=False, mu1=None):
+def kkt_stopping_criterion(Omega, Theta, L, X, S, lambda1, latent=False, mu1=None):
     assert Omega.shape == Theta.shape == S.shape
     assert S.shape[0] == S.shape[1]
 
@@ -195,13 +191,9 @@ def kkt_stopping_criterion(Omega, Theta, L, X, S, lambda1, tol, latent=False, mu
         proxL = prox_rank_norm(A=L - X, beta=mu1, D=eigD, Q=eigQ)
         term4 = np.linalg.norm(L - proxL) / (1 + np.linalg.norm(L))
 
-    status_set = set()
     residual = max(term1, term2, term3, term4)
-    if residual < tol:
-        status_set.add("primal optimal")
-        status_set.add("dual optimal")
-
-    return residual, status_set
+    
+    return residual
 
 
 #######################################################
@@ -231,18 +223,25 @@ def block_SGL(S, lambda1, Omega_0, Theta_0=None, X_0=None, rho=1.,
         ADMM penalty parameter. The default is 1..
     max_iter : int, optional
         Maximum number of iterations for the ADMM algorithm on each block. The default is 1000.
+
     verbose : boolean, optional
         ADMM prints information. The default is False.
     measure : boolean, optional
         Measure runtime and objective at each iter of ADMM. The default is False.
+
     Returns
     -------
     sol2 : (p,p) array
         Solution Theta to the Graphical Lasso problem.
+
     This function solves the Single Graphical Lasso problem
+
     min -log det(Z) + tr(S.T@Z) + lambda_1 * ||Z||_1,od
+
     by finding connected components of the solution and solving each block separately, according to Witten, Friedman, Simon "NEW INSIGHTS FOR THE GRAPHICAL LASSO"
     where ||Z||_1,od is the off-diagonal l1-norm.
+
+
     NOTE:
         -in the original paper the l1-norm is also used on the diagonal which results in a small modification.
         -the returned solution for X is not guaranteed to be identical to the dual variable of the full solution, but can be used as starting point (e.g. in grid search)
