@@ -14,20 +14,78 @@ def ADMM_MGL(S, lambda1, lambda2, reg , Omega_0 , \
              tol = 1e-5 , rtol = 1e-4, stopping_criterion = 'boyd', \
              rho= 1., max_iter = 1000, verbose = False, measure = False, latent = False, mu1 = None):
     """
-    This is an ADMM algorithm for solving the Multiple Graphical Lasso problem
-    reg specifies the type of penalty, i.e. Group or Fused Graphical Lasso
-    see also the article from Danaher et. al.
+    This is an ADMM solver for the (Latent) Multiple Graphical Lasso problem (MGL). It jointly estimates K precision matrices of shape (p,p).
+
+    MGL problem formulation (latent=False):
+        min_{Omega,Theta} sum_{k=1}^K -log det(Omega^k) + Tr(S^k*Omega^k) + P(Theta) 
+        subject to Omega^k = Theta^k k=1,..,K
     
-    Omega_0 : start point -- must be specified as a (K,p,p) array
-    S : empirical covariance matrices -- must be specified as a (K,p,p) array
+    P() is a regularization function which depends on the application. Group Graphical Lasso (GGL) or Fused Graphical Lasso (FGL) is implemented.
+        
+        For GGL:    P(Theta) = sum_{k=1}^K lambda1*||Theta^k||_{1,od} + sum_{i,j} lambda2 * ||Theta_[ij]||_2
+                    where Theta_[ij] is the K-array of all ij components.
+        For FGL:    P(Theta) = sum_{k=1}^K lambda1*||Theta^k||_{1,od} + sum_{k=1}^{K-1} lambda2 * ||Theta^k+1 - Theta^k||_{1,od}
+                    
+    Latent Variable MGL problem formulation (latent=True):
+        min_{Omega,Theta,L} sum_{k=1}^K -log det(Omega^k) + Tr(S^k*Omega^k) + P(Theta) + sum_{k=1}^K mu1*||L^k||_\star 
+        subject to Omega^k = Theta^k - L^k  k=1,..,K
     
-    n_samples are the sample sizes for the K instances, can also be None or integer
-    
-    latent: boolean to indidate whether low rank term should be estimated
-    mu1: low rank penalty parameter (if latent=True), can be a vector of length K or a float
-    
-    
-    In the code, X are the SCALED dual variables, for the KKT stop criterion they have to be unscaled again!
+    Note:
+        - typically, Omega_t sequence is positive definite, Theta_t sequence is sparse.
+        - in the code, X_t are the SCALED (with 1/rho) dual variables for the equality constraint. 
+
+    Parameters
+    ----------
+    S : array (K,p,p)
+        empirical covariance matrices, i.e. S[k,:,:] contains the empirical cov. matrix of the k-th instance. 
+        Each S[k,:,:] needs to be symmetric and semipositive definite.
+    lambda1 : float, positive
+        sparsity regularization parameter.
+    lambda2 : float, positive
+        group sparsity/ total variation regularization parameter.
+    reg : str
+        choose either
+        "GGL": Group Graphical Lasso
+        "FGL": Fused Graphical Lasso
+    Omega_0 : array (K,p,p)
+        starting point for the Omega variable. Use get_K_identity(K, p) from gglasso.helper.experiment_helper if no better starting point is known.
+    Theta_0 : array (p,p), optional
+        starting point for the Theta variable. If not specified, it is set to the same as Omega_0.
+    X_0 : array (p,p), optional
+        starting point for the X variable. If not specified, it is set to zero array.
+    n_samples : int or array of shape(K,), optional
+        neg. log-likelihood is sometimes weighted with the sample size. If this is desired, specify sample size of each instance.
+        Default is no weighting, i.e. n_samples = 1.
+    rho : float, positive, optional
+        step size paramater for the augmented Lagrangian in ADMM. The default is 1. Tune this parameter for optimal performance.
+    max_iter : int, optional
+        maximum number of iterations. The default is 1000.
+    tol : float, positive, optional
+        tolerance for the primal residual. See "Distributed Optimization and Statistical Learning via the Alternating Direction Method of Multipliers", Boyd et al. for details.
+        The default is 1e-7.
+    rtol : float, positive, optional
+        tolerance for the dual residual. The default is 1e-4.
+    stopping_criterion : str, optional
+        'boyd': Stopping criterion after Boyd et al.
+        'kkt': KKT residual is chosen as stopping criterion. This is computationally expensive to compute.
+        The default is 'boyd'.
+    verbose : boolean, optional
+        verbosity of the solver. The default is False.
+    measure : boolean, optional
+        turn on/off measurements of runtime per iteration. The default is False.
+    latent : boolean, optional
+        Solve the MGL problem with or without latent variables (see above for the exact formulations).
+        The default is False.
+    mu1 : float or array of shape(K,), positive, optional
+        low-rank regularization parameter, possibly different for each instance k=1,..,K. Only needs to be specified if latent=True.
+
+    Returns
+    -------
+    sol : dict
+        contains the solution, i.e. Omega, Theta, X (and L if latent=True) after termination. All arrays are of shape (K,p,p).
+    info : dict
+        status and measurement information from the solver.
+
     """
     assert Omega_0.shape == S.shape
     assert S.shape[1] == S.shape[2]

@@ -14,16 +14,62 @@ def ADMM_SGL(S, lambda1, Omega_0, Theta_0=np.array([]), X_0=np.array([]),
              rho=1., max_iter=1000, tol=1e-7, rtol=1e-4, stopping_criterion='boyd',\
              verbose=False, measure=False, latent=False, mu1=None):
     """
-    This is an ADMM algorithm for solving the Single Graphical Lasso problem
+    This is an ADMM solver for the (Latent) Single Graphical Lasso problem (SGL).
 
-    Omega_0 : start point -- must be specified as a (p,p) array
-    S : empirical covariance matrix -- must be specified as a (p,p) array
+    SGL problem formulation (latent=False):
+        min_{Omega,Theta} -log det(Omega) + Tr(S*Omega) + lambda1*|Theta||_{1,od} 
+        subject to Omega = Theta
+    
+    Latent Variable SGL problem formulation (latent=True):
+        min_{Omega,Theta,L} -log det(Omega) + Tr(S*Omega) + lambda1*||Theta||_{1,od} + mu1*||L||_\star
+        subject to Omega = Theta - L
+    
+    Note:
+        - typically, Omega_t sequence is positive definite, Theta_t sequence is sparse.
+        - in the code, X_t are the SCALED (with 1/rho) dual variables for the equality constraint. 
 
-    latent: boolean to indidate whether low rank term should be estimated
-    mu1: low rank penalty paramater, if latent=True
+    Parameters
+    ----------
+    S : array (p,p)
+        empirical covariance matrix. Needs to be symmetric and semipositive definite.
+    lambda1 : float, positive
+        sparsity regularization parameter.
+    Omega_0 : array (p,p)
+        starting point for the Omega variable. Choose np.eye(p) if no better starting point is known.
+    Theta_0 : array (p,p), optional
+        starting point for the Theta variable. If not specified, it is set to the same as Omega_0.
+    X_0 : array (p,p), optional
+        starting point for the X variable. If not specified, it is set to zero array.
+    rho : float, positive, optional
+        step size paramater for the augmented Lagrangian in ADMM. The default is 1. Tune this parameter for optimal performance.
+    max_iter : int, optional
+        maximum number of iterations. The default is 1000.
+    tol : float, positive, optional
+        tolerance for the primal residual. See "Distributed Optimization and Statistical Learning via the Alternating Direction Method of Multipliers", Boyd et al. for details.
+        The default is 1e-7.
+    rtol : float, positive, optional
+        tolerance for the dual residual. The default is 1e-4.
+    stopping_criterion : str, optional
+        'boyd': Stopping criterion after Boyd et al.
+        'kkt': KKT residual is chosen as stopping criterion. This is computationally expensive to compute.
+        The default is 'boyd'.
+    verbose : boolean, optional
+        verbosity of the solver. The default is False.
+    measure : boolean, optional
+        turn on/off measurements of runtime per iteration. The default is False.
+    latent : boolean, optional
+        Solve the SGL with or without latent variables (see above for the exact formulations).
+        The default is False.
+    mu1 : float, positive, optional
+        low-rank regularization parameter. Only needs to be specified if latent=True.
 
+    Returns
+    -------
+    sol : dict
+        contains the solution, i.e. Omega, Theta, X (and L if latent=True) after termination. All elements are (p,p) arrays.
+    info : dict
+        status and measurement information from the solver.
 
-    In the code, X are the SCALED (with 1/rho) dual variables, for the KKT stop criterion they have to be unscaled (i.e. take rho*X) again!
     """
     assert Omega_0.shape == S.shape
     assert S.shape[0] == S.shape[1]
@@ -205,46 +251,54 @@ def block_SGL(S, lambda1, Omega_0, Theta_0=None, X_0=None, rho=1.,
               max_iter=1000, verbose=False,
               measure=False):
     """
+    This is a wrapper for solving SGL problems on connected components of the solution and solving each block separately.
+    See Witten, Friedman, Simon "NEW INSIGHTS FOR THE GRAPHICAL LASSO" for details.
+    
+    SGL problem formulation:
+        min_{Omega,Theta} -log det(Omega) + Tr(S*Omega) + lambda1*||Theta||_{1,od} 
+        subject to Omega = Theta
+        
+    NOTE:
+        -in the original paper the l1-norm is applied as well on the diagonal (here: off-diagonal) which results in a small modification.
+        -the returned solution for X is not guaranteed to be identical to the dual variable of the full solution, but can be used as starting point (e.g. in grid search)
+    
     Parameters
     ----------
-    S : (p,p) array
-        Empirical covariance matrix. Should be symmetric and semipositive definite.
-    lambda1 : float
-        Positive l1-regularization parameter.
-    Omega_0 : array
-        Starting point for solver. Use np.eye(p) if no prior knowledge.
-    tol : float, optional
-        Tolerance for the ADMM algorithm on each block. The default is 1e-5.
-    Theta_0 : array, optional
-        Starting point for solver (for Theta variable).
-    X_0 : array
-        Starting point for solver (for dual variable).
-    rho : float, optional
-        ADMM penalty parameter. The default is 1..
+    S : array (p,p)
+        empirical covariance matrix. Needs to be symmetric and semipositive definite.
+    lambda1 : float, positive
+        sparsity regularization parameter.
+    Omega_0 : array (p,p)
+        starting point for the Omega variable. Choose np.eye(p) if no better starting point is known.
+    Theta_0 : array (p,p), optional
+        starting point for the Theta variable. If not specified, it is set to the same as Omega_0.
+    X_0 : array (p,p), optional
+        starting point for the X variable. If not specified, it is set to zero array.
+    rho : float, positive, optional
+        step size paramater for the augmented Lagrangian in ADMM. The default is 1. Tune this parameter for optimal performance.
     max_iter : int, optional
-        Maximum number of iterations for the ADMM algorithm on each block. The default is 1000.
-
+        maximum number of iterations. The default is 1000.
+    tol : float, positive, optional
+        tolerance for the primal residual. See "Distributed Optimization and Statistical Learning via the Alternating Direction Method of Multipliers", Boyd et al. for details.
+        The default is 1e-7.
+    rtol : float, positive, optional
+        tolerance for the dual residual. The default is 1e-4.
+    stopping_criterion : str, optional
+        'boyd': Stopping criterion after Boyd et al.
+        'kkt': KKT residual is chosen as stopping criterion. This is computationally expensive to compute.
+        The default is 'boyd'.
     verbose : boolean, optional
-        ADMM prints information. The default is False.
+        verbosity of the solver. The default is False.
     measure : boolean, optional
-        Measure runtime and objective at each iter of ADMM. The default is False.
-
+        turn on/off measurements of runtime per iteration. The default is False.
+    
     Returns
     -------
-    sol2 : (p,p) array
-        Solution Theta to the Graphical Lasso problem.
+    sol : dict
+        contains the solution, i.e. Omega, Theta, X after termination.
+    info : dict
+        status and measurement information from the solver.
 
-    This function solves the Single Graphical Lasso problem
-
-    min -log det(Z) + tr(S.T@Z) + lambda_1 * ||Z||_1,od
-
-    by finding connected components of the solution and solving each block separately, according to Witten, Friedman, Simon "NEW INSIGHTS FOR THE GRAPHICAL LASSO"
-    where ||Z||_1,od is the off-diagonal l1-norm.
-
-
-    NOTE:
-        -in the original paper the l1-norm is also used on the diagonal which results in a small modification.
-        -the returned solution for X is not guaranteed to be identical to the dual variable of the full solution, but can be used as starting point (e.g. in grid search)
     """
     assert Omega_0.shape == S.shape
     assert S.shape[0] == S.shape[1]
