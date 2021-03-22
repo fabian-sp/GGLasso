@@ -24,7 +24,7 @@ N_train = 5000
 M = 10
 
 reg = 'GGL'
-save = False
+save = True
 
 Sigma, Theta = group_power_network(p, K, M)
 
@@ -132,9 +132,9 @@ print("Optimal lambda values: (l1,l2) = ", (l1opt,l2opt))
 Omega_0 = get_K_identity(K,p)
 Theta_0 = get_K_identity(K,p)
 
-solP, infoP = warmPPDNA(S, l1opt, l2opt, reg, Omega_0, Theta_0 = Theta_0, eps = 5e-5 , verbose = True, measure = True)
+solP, infoP = warmPPDNA(S, l1opt, l2opt, reg, Omega_0, Theta_0 = Theta_0, eps = 1e-5 , verbose = True, measure = True)
 
-solA, infoA = ADMM_MGL(S, l1opt, l2opt, reg , Omega_0 , Theta_0 = Theta_0, tol = 5e-5, verbose = True, measure = True)
+solA, infoA = ADMM_MGL(S, l1opt, l2opt, reg , Omega_0, Theta_0 = Theta_0, tol = 1e-7, verbose = True, measure = True)
 
 Theta_sol = solP['Theta']
 Omega_sol = solP['Omega']
@@ -151,7 +151,7 @@ plot_fpr_tpr(FPR, TPR, ix, ix2, FPR_GL, TPR_GL, W2, save = save)
 
 plot_diff_fpr_tpr(DFPR, DTPR, ix, ix2, DFPR_GL, DTPR_GL, W2, save = save)
 
-surface_plot(L1, L2, BIC, name = 'eBIC', save = save)
+surface_plot(L1, L2, BIC, reg = "GGL", name = 'eBIC', save = save)
 
 #%%
 # accuracy/model selection impact on total error analysis
@@ -185,8 +185,8 @@ for g1 in np.arange(grid1):
         start = time()
         #sol, info = PPDNA(S, L1[g1], L2[g1], reg, Omega_0, Theta_0 = Theta_0, X_0 = X_0, \
         #                                                eps_ppdna = EPS[g2] , verbose = False)
-        sol, info = ADMM_MGL(S, L1[g1], L2[g1], reg , Omega_0 , Theta_0 = Theta_0, X_0 = X_0, rho = 1, max_iter = 100, \
-                             tol = EPS[g2], verbose = False)
+        sol, info = ADMM_MGL(S, L1[g1], L2[g1], reg , Omega_0 , Theta_0 = Theta_0, X_0 = X_0, rho = 1, max_iter = 1000, \
+                             tol = EPS[g2], stopping_criterion = 'kkt', verbose = False)
         end = time()
         
         Theta_sol = sol['Theta']

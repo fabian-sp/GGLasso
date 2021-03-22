@@ -160,8 +160,9 @@ def consensus(sol, G):
 ############################ DRAWING FUNCTIONS ##################################################################
 #################################################################################################################
 
-path_ggl = 'plots/ggl_powerlaw/'
-path_fgl = 'plots/fgl_powerlaw/'
+path_ggl_powerlaw = '../plots/ggl_powerlaw/'
+path_fgl_powerlaw = '../plots/fgl_powerlaw/'
+path_ggl_runtime = '../plots/ggl_runtime/' 
 
 default_size_big = (10,7)
 default_size_small = (6,5)
@@ -184,35 +185,6 @@ def get_default_color_coding():
 
     return color_dict
 
-def get_graph_aes(with_edge_col = True):
-    aes = {'node_size' : 100, 'node_color' : 'lightslategrey', 'edge_color' : 'lightslategrey', 'width' : 1.5}
-    
-    if not with_edge_col:
-        del aes['edge_color']
-    return aes
-                
-def draw_group_graph(Theta , t = 1e-9):
-    """
-    Draws a network with Theta as precision matrix
-    """
-    
-    assert len(Theta.shape) == 3
-    (K,p,p) = Theta.shape
-    A = adjacency_matrix(Theta , t)
-    
-    gA = A.sum(axis=0)
-    G = nx.from_numpy_array(gA)
-    aes = get_graph_aes(with_edge_col = False)
-    
-    edge_col = []
-    for e in G.edges:
-        edge_col.append( gA[e[0], e[1]])
-    
-    fig = plt.figure()
-    #nx.draw_shell(G, with_labels = True, edge_color = edge_col, edge_cmap = plt.cm.RdYlGn, edge_vmin = 0, edge_vmax = K, **aes)
-    nx.draw_spring(G, with_labels = True, edge_color = edge_col, edge_cmap = plt.cm.RdYlGn, edge_vmin = 0, edge_vmax = K, **aes)
-    
-    return fig
 
 def draw_group_heatmap(Theta, method = 'truth', ax = None, t = 1e-5, save = False):
     (K,p,p) = Theta.shape
@@ -227,7 +199,7 @@ def draw_group_heatmap(Theta, method = 'truth', ax = None, t = 1e-5, save = Fals
     with sns.axes_style("white"):
         sns.heatmap(A.sum(axis=0), mask = mask, ax = ax, square = True, cmap = this_cmap, vmin = 0, vmax = K, linewidths=.5, cbar_kws={"shrink": .5})
     if save:
-        fig.savefig(path_ggl + method +'_heatmap.pdf')
+        fig.savefig(path_ggl_powerlaw + method +'_heatmap.pdf')
        
     return
         
@@ -268,7 +240,7 @@ def plot_evolution(results, block = None, L = None, start = None, stop = None, s
     fig.suptitle('Precision matrix entries - evolution over time')
     
     if save:
-        fig.savefig(path_fgl + 'block_' + str(block) + '_evolution.pdf')
+        fig.savefig(path_fgl_powerlaw + 'block_' + str(block) + '_evolution.pdf')
     return
 
 def plot_deviation(results, latent = None, save = False):
@@ -300,7 +272,7 @@ def plot_deviation(results, latent = None, save = False):
             ax2.legend(labels = ['Latent variables'], loc = 'upper right')
         
     if save:
-        fig.savefig(path_fgl + 'deviation.pdf')
+        fig.savefig(path_fgl_powerlaw + 'deviation.pdf')
 
     return
 
@@ -347,10 +319,9 @@ def plot_runtime(iA, iP, vecN, save = False):
             lns = p1+p2+p3+p4
             labs = [l.get_label() for l in lns]
             fig.legend(lns, labs, loc="upper right")
-            
-        path_rt = 'plots//ggl_runtime//'  
+             
         if save:
-            fig.savefig(path_rt + 'runtimeN.pdf', dpi = 300)
+            fig.savefig(path_ggl_runtime + 'runtimeN.pdf', dpi = 300)
 
 def plot_fpr_tpr(FPR, TPR, ix, ix2, FPR_GL = None, TPR_GL = None, W2 = [], save = False):
     """
@@ -365,8 +336,8 @@ def plot_fpr_tpr(FPR, TPR, ix, ix2, FPR_GL = None, TPR_GL = None, W2 = [], save 
         if FPR_GL is not None:
             ax.plot(FPR_GL, TPR_GL, c = 'grey', linestyle = '--', **plot_aes)
         
-        ax.plot(FPR[ix], TPR[ix], marker = 'o', fillstyle = 'none', markersize = 12, markeredgecolor = 'grey')
-        ax.plot(FPR[ix2], TPR[ix2], marker = 'D', fillstyle = 'none', markersize = 12, markeredgecolor = 'grey')
+        ax.plot(FPR[ix], TPR[ix], marker = 'o', color = "white", fillstyle = 'none', markersize = 12, markeredgecolor = 'grey')
+        ax.plot(FPR[ix2], TPR[ix2], marker = 'D', color = "white", fillstyle = 'none', markersize = 12, markeredgecolor = 'grey')
     
         ax.set_xlim(-.01,1)
         ax.set_ylim(-.01,1)
@@ -376,11 +347,15 @@ def plot_fpr_tpr(FPR, TPR, ix, ix2, FPR_GL = None, TPR_GL = None, W2 = [], save 
         labels = [f"w2 = {w}" for w in W2] 
         if FPR_GL is not None:
             labels.append("GLASSO")
+            
+        labels.append("eBIC")
+        labels.append("AIC")    
+            
         ax.legend(labels = labels, loc = 'lower right')
         
     fig.suptitle('Discovery rate for different regularization strengths')
     if save:
-        fig.savefig(path_ggl + 'fpr_tpr.pdf', dpi = 300)
+        fig.savefig(path_ggl_powerlaw + 'fpr_tpr.pdf', dpi = 300)
     
     return
 
@@ -394,12 +369,12 @@ def plot_diff_fpr_tpr(DFPR, DTPR, ix, ix2, DFPR_GL = None, DTPR_GL = None, W2 = 
     
     with sns.axes_style("whitegrid"):
         fig, ax = plt.subplots(1,1, figsize = default_size_small)
-        ax.plot(DFPR.T, DTPR.T, **plot_aes)
+        ax.plot(DFPR.T, DTPR.T, label = W2, **plot_aes)
         if DFPR_GL is not None:
             ax.plot(DFPR_GL, DTPR_GL, c = 'grey', linestyle = '--', **plot_aes)
         
-        ax.plot(DFPR[ix], DTPR[ix], marker = 'o', fillstyle = 'none', markersize = 12, markeredgecolor = 'grey')
-        ax.plot(DFPR[ix2], DTPR[ix2], marker = 'D', fillstyle = 'none', markersize = 12, markeredgecolor = 'grey')
+        ax.plot(DFPR[ix], DTPR[ix], marker = 'o', color = "white", fillstyle = 'none', markersize = 12, markeredgecolor = 'grey')
+        ax.plot(DFPR[ix2], DTPR[ix2], marker = 'D', color = "white", fillstyle = 'none', markersize = 12, markeredgecolor = 'grey')
                 
         ax.set_xlim(-10,300)
         #ax.set_ylim(-.01,1)
@@ -409,11 +384,14 @@ def plot_diff_fpr_tpr(DFPR, DTPR, ix, ix2, DFPR_GL = None, DTPR_GL = None, W2 = 
         labels = [f"w2 = {w}" for w in W2]
         if DFPR_GL is not None:
             labels.append("GLASSO")
+        
+        labels.append("eBIC")
+        labels.append("AIC")
         ax.legend(labels = labels, loc = 'lower right')
         
     fig.suptitle('Discovery of differential edges')
     if save:
-        fig.savefig(path_ggl + 'diff_fpr_tpr.pdf', dpi = 300)
+        fig.savefig(path_ggl_powerlaw + 'diff_fpr_tpr.pdf', dpi = 300)
     
     return
 
@@ -437,7 +415,7 @@ def plot_error_accuracy(EPS, ERR, L2, save = False):
         
     fig.suptitle('Total error for different solution accuracies')
     if save:
-        fig.savefig(path_ggl + 'error.pdf', dpi = 300)
+        fig.savefig(path_ggl_powerlaw + 'error.pdf', dpi = 300)
     
     return
 
@@ -453,11 +431,11 @@ def plot_gamma_influence(gammas, GTPR, GFPR, save = False):
     fig.legend()
     
     if save:
-        fig.savefig(path_ggl + 'gamma.pdf', dpi = 300)
+        fig.savefig(path_ggl_powerlaw + 'gamma.pdf', dpi = 300)
         
     return 
 
-def surface_plot(L1, L2, C, name = 'eBIC', save = False):
+def surface_plot(L1, L2, C, reg, name = 'eBIC', save = False):
     fig = plt.figure(figsize = default_size_big)
     ax = fig.gca(projection='3d')
     
@@ -471,9 +449,13 @@ def surface_plot(L1, L2, C, name = 'eBIC', save = False):
     ax.set_ylabel('lambda2')
     ax.set_zlabel(name)
     #ax.view_init(elev = 20, azim = 60)
+    if reg == "FGL":
+        save_path = path_fgl_powerlaw
+    else:
+        save_path = path_ggl_powerlaw
     
     if save:
-        fig.savefig(path_fgl + 'surface.png', dpi = 500)
+        fig.savefig(save_path + 'surface.pdf', dpi = 500)
 #################################################################################################################
 ############################ GIF ################################################################################
 #################################################################################################################

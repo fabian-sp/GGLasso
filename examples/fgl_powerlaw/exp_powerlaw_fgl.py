@@ -82,12 +82,9 @@ lambda1 = L1[ix]
 lambda2 = L2[ix]
 
 print("Optimal lambda values: (l1,l2) = ", (lambda1,lambda2))
-plot_fpr_tpr(FPR.T, TPR.T,  ix[::-1], ix2[::-1])
 
-#%%
-# solve with QUIC/single Glasso
-#from inverse_covariance import QuicGraphicalLasso
-#quic = QuicGraphicalLasso(lam = 1.5*lambda1, tol = 1e-6)
+
+#%% solve with scikit SGL
 
 singleGL = GraphicalLasso(alpha = 1.5*lambda1, tol = 1e-6, max_iter = 200, verbose = True)
 
@@ -100,8 +97,8 @@ for k in np.arange(K):
 
 results['GLASSO'] = {'Theta' : res}
 
-#%%
-# solve with PPDNA
+#%% solve with PPDNA
+
 Omega_0 = results.get('GLASSO').get('Theta')
 Theta_0 = Omega_0.copy()
 X_0 = np.zeros((K,p,p))
@@ -113,26 +110,28 @@ end = time()
 print(f"Running time for PPDNA was {end-start} seconds")
 results['PPDNA'] = {'Theta' : sol['Theta']}
 
-#%%
-# solve with general ADMM
+#%% solve with ADMM
+
 start = time()
-sol, info = ADMM_MGL(S, lambda1, lambda2, reg, Omega_0, Theta_0 = Theta_0, X_0 = X_0, rho = 1, max_iter = 100, \
-                                                        tol = 5e-4, verbose = True, measure = True)
+sol, info = ADMM_MGL(S, lambda1, lambda2, reg, Omega_0, Theta_0 = Theta_0, X_0 = X_0, rho = 1, max_iter = 1000, \
+                                                        tol = 1e-7, rtol = 1e-7, verbose = True, measure = True)
 end = time()
 
 print(f"Running time for ADMM was {end-start} seconds")
 
 results['ADMM'] = {'Theta' : sol['Theta']}
 
-#%%
-# solve with ragin (LTGL)
+#%% solve with regain
+# regain needs data in format (N*K,p)
+
+tmp = sample.transpose(1,0,2).reshape(p,-1).T
 
 start = time()
 alpha = N*lambda1
 beta = N*lambda2 
 ltgl = TimeGraphicalLasso(alpha = alpha, beta = beta , psi = 'l1', \
-                          rho = 1., tol = 5e-4, rtol = 5e-4,  max_iter = 2000, verbose = True)
-ltgl = ltgl.fit(sample.transpose(0,2,1))
+                          rho = 1., tol = 1e-3, rtol = 1e-3,  max_iter = 2000, verbose = True)
+ltgl = ltgl.fit(X = tmp, y = np.repeat(np.arange(K),N))
 end = time()
 
 print(f"Running time for LTGL was {end-start}  seconds")
@@ -151,9 +150,9 @@ print(np.linalg.norm(Theta_ltgl - Theta_admm)/ np.linalg.norm(Theta_admm))
 print(np.linalg.norm(Theta_ppdna - Theta_admm)/ np.linalg.norm(Theta_admm))
 
 
-save = True
+save = False
 
-surface_plot(L1, L2, BIC, name = 'eBIC', save = save)
+surface_plot(L1, L2, BIC, reg = "FGL", name = 'eBIC', save = save)
 
 plot_evolution(results, block = 0, L = L, save = save)
 
