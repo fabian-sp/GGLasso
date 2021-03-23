@@ -35,7 +35,7 @@ def lambda_grid(num1 = 5, num2 = 2, reg = 'GGL'):
     creates a grid of lambda 1 lambda 1 values
     idea: the grid goes from smaller to higher values when going down/right
     """
-    #l2 = np.logspace(start = -4, stop = -1, num = num2, base = 10)   
+    
     if reg == 'GGL':
         l2 = np.logspace(start = -3, stop = -1, num = num2, base = 10)
         w2 = np.linspace(0.2, 0.5, num1)
@@ -102,9 +102,9 @@ def discovery_rate(S_sol , S_true, t = 1e-5):
 def error(S_sol , S_true):
     return np.linalg.norm(S_sol - S_true)/np.linalg.norm(S_true)
 
-def hamming_distance(X,Z):
-    A = adjacency_matrix(X)
-    B = adjacency_matrix(Z)
+def hamming_distance(X, Z, t = 1e-10):
+    A = adjacency_matrix(X, t=t)
+    B = adjacency_matrix(Z, t=t)
     
     return (A+B == 1).sum()
     
@@ -178,7 +178,7 @@ def get_default_color_coding():
     
     color_dict = {}    
     color_dict['truth'] = sns.color_palette("YlGnBu", 10)[-1] #'darkblue'
-    color_dict['GLASSO'] = mypal[7]
+    color_dict['SGL'] = mypal[7]
     color_dict['ADMM'] = mypal[1]
     color_dict['PPDNA'] = mypal[0]
     color_dict['LTGL'] = mypal[5]
@@ -194,13 +194,17 @@ def draw_group_heatmap(Theta, method = 'truth', ax = None, t = 1e-5, save = Fals
     col = get_default_color_coding()[method]
     this_cmap = sns.light_palette(col, as_cmap=True)
     
+    
     if ax == None:
         fig,ax = plt.subplots(nrows = 1, ncols = 1, figsize = default_size_big)
+        fig.suptitle("Distribution of edges (color indicates number of instances with edge present)")
     with sns.axes_style("white"):
         sns.heatmap(A.sum(axis=0), mask = mask, ax = ax, square = True, cmap = this_cmap, vmin = 0, vmax = K, linewidths=.5, cbar_kws={"shrink": .5})
+
     if save:
         fig.savefig(path_ggl_powerlaw + method +'_heatmap.pdf')
-       
+    
+    
     return
         
 def plot_block_evolution(ax, start, stop, Theta, method, color_dict):
@@ -235,7 +239,7 @@ def plot_evolution(results, block = None, L = None, start = None, stop = None, s
         plot_block_evolution(axs[0,0], start, stop, results.get('truth').get('Theta'), 'truth', color_dict)
         plot_block_evolution(axs[0,1], start, stop, results.get('PPDNA').get('Theta'), 'PPDNA', color_dict)
         plot_block_evolution(axs[1,0], start, stop, results.get('LTGL').get('Theta'), 'LTGL', color_dict)
-        plot_block_evolution(axs[1,1], start, stop, results.get('GLASSO').get('Theta'), 'GLASSO', color_dict)
+        plot_block_evolution(axs[1,1], start, stop, results.get('SGL').get('Theta'), 'SGL', color_dict)
     
     fig.suptitle('Precision matrix entries - evolution over time')
     
@@ -255,7 +259,7 @@ def plot_deviation(results, latent = None, save = False):
     
         for m in list(results.keys()):
             d = deviation(results.get(m).get('Theta'))
-            if m in ['truth', 'GLASSO']:
+            if m in ['truth', 'SGL']:
                 ls = '--'
             else:
                 ls = '-'
@@ -346,7 +350,7 @@ def plot_fpr_tpr(FPR, TPR, ix, ix2, FPR_GL = None, TPR_GL = None, W2 = [], save 
         ax.set_ylabel('True Positive Rate')
         labels = [f"w2 = {w}" for w in W2] 
         if FPR_GL is not None:
-            labels.append("GLASSO")
+            labels.append("SGL")
             
         labels.append("eBIC")
         labels.append("AIC")    
@@ -383,7 +387,7 @@ def plot_diff_fpr_tpr(DFPR, DTPR, ix, ix2, DFPR_GL = None, DTPR_GL = None, W2 = 
         ax.set_ylabel('TP Differential Edges')
         labels = [f"w2 = {w}" for w in W2]
         if DFPR_GL is not None:
-            labels.append("GLASSO")
+            labels.append("SGL")
         
         labels.append("eBIC")
         labels.append("AIC")
@@ -421,13 +425,16 @@ def plot_error_accuracy(EPS, ERR, L2, save = False):
 
 def plot_gamma_influence(gammas, GTPR, GFPR, save = False):
     fig, ax = plt.subplots(1,1, figsize = default_size_big)   
-    ax2 = ax.twinx() 
+    
     ax.plot(gammas, GTPR, c = 'green', label = 'TPR')
+    ax2 = ax.twinx() 
     ax2.plot(gammas, GFPR, c = 'red', label = 'FPR')
     
     ax.grid(linestyle = '--') 
+    ax.set_ylabel('gamma')    
     ax.set_ylabel('TPR')
     ax2.set_ylabel('FPR')
+
     fig.legend()
     
     if save:
@@ -503,7 +510,7 @@ def plot_multiple_heatmap(k, Theta, results, axs):
     plot_single_heatmap(k, Theta, 'truth', axs[0,0])
     plot_single_heatmap(k, results.get('PPDNA').get('Theta'), 'PPDNA', axs[0,1])
     plot_single_heatmap(k, results.get('LTGL').get('Theta'), 'ADMM', axs[1,0])
-    plot_single_heatmap(k, results.get('GLASSO').get('Theta'), 'GLASSO', axs[1,1])
+    plot_single_heatmap(k, results.get('SGL').get('Theta'), 'SGL', axs[1,1])
     
     return
 

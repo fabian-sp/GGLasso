@@ -1,7 +1,10 @@
 """
 author: Fabian Schaipp
 
-Sigma denotes the covariance matrix, Theta the precision matrix
+Set the working directory to the file location if you want to save the plots.
+
+This is a script for investigating Group Graphical Lasso on Powerlaw networks.
+Sigma denotes the true covariance matrix, Theta the true precision matrix.
 """
 from time import time
 import numpy as np
@@ -11,9 +14,9 @@ import seaborn as sns
 from sklearn.covariance import GraphicalLasso
 
 from gglasso.solver.admm_solver import ADMM_MGL
-from gglasso.solver.ppdna_solver import PPDNA, warmPPDNA
+from gglasso.solver.ppdna_solver import warmPPDNA
 from gglasso.helper.data_generation import group_power_network, sample_covariance_matrix
-from gglasso.helper.experiment_helper import get_K_identity, lambda_parametrizer, lambda_grid, discovery_rate, error, hamming_distance, mean_sparsity
+from gglasso.helper.experiment_helper import get_K_identity, lambda_parametrizer, lambda_grid, discovery_rate, error, hamming_distance
 from gglasso.helper.experiment_helper import draw_group_heatmap, plot_fpr_tpr, plot_diff_fpr_tpr, plot_error_accuracy, surface_plot, plot_gamma_influence
 from gglasso.helper.model_selection import aic, ebic
 
@@ -24,7 +27,8 @@ N_train = 5000
 M = 10
 
 reg = 'GGL'
-save = True
+# whether to save the plots as pdf-files
+save = False
 
 Sigma, Theta = group_power_network(p, K, M)
 
@@ -34,8 +38,8 @@ S, sample = sample_covariance_matrix(Sigma, N)
 S_train, sample_train = sample_covariance_matrix(Sigma, N_train)
 Sinv = np.linalg.pinv(S, hermitian = True)
 
-#%%
-# grid search for best lambda values with warm starts
+#%% grid search for best lambda values with warm starts
+
 L1, L2, W2 = lambda_grid(num1 = 3, num2 = 9, reg = reg)
 grid1 = L1.shape[0]; grid2 = L2.shape[1]
 
@@ -58,10 +62,10 @@ for g1 in np.arange(grid1):
         lambda1 = L1[g1,g2]
         lambda2 = L2[g1,g2]
               
-        #sol, info = PPDNA(S, lambda1, lambda2, reg, Omega_0, Theta_0 = Theta_0, sigma_0 = 10, max_iter = 20, \
-        #                                            eps_ppdna = 1e-2 , verbose = False)
+        #sol, info = warmPPDNA(S_train, lambda1, lambda2, reg, Omega_0, Theta_0 = Theta_0, eps = 1e-3, verbose = False, measure = False)
         
-        sol, info = warmPPDNA(S_train, lambda1, lambda2, reg, Omega_0, Theta_0 = Theta_0, eps = 1e-3, verbose = False, measure = False)
+        sol, info =  ADMM_MGL(S_train, lambda1, lambda2, reg , Omega_0, Theta_0 = Theta_0, tol = 1e-10, rtol = 1e-10, verbose = False, measure = False)
+
         Theta_sol = sol['Theta']
         Omega_sol = sol['Omega']
         
@@ -86,8 +90,8 @@ ix= np.unravel_index(np.nanargmin(BIC), BIC.shape)
 ix2= np.unravel_index(np.nanargmin(AIC), AIC.shape)
 
 
-#%%
-# investigate influence of gamma choice
+#%% investigate influence of gamma choice
+
 GTPR = np.zeros(len(gammas))
 GFPR = np.zeros(len(gammas))
 
@@ -98,11 +102,11 @@ for l in np.arange(len(gammas)):
     GFPR[l] = FPR[gix]
 
 
-plot_gamma_influence(gammas, GTPR, GFPR, save = False)
+plot_gamma_influence(gammas, GTPR, GFPR, save = save)
 
-#%%
-# solve single GLASSO
-ALPHA = 2*np.logspace(start = -3, stop = -1, num = 15, base = 10)
+#%% solve single Graphical Lasso
+
+ALPHA = 2*np.logspace(start = -3, stop = -1, num = 20, base = 10)
 
 FPR_GL = np.zeros(len(ALPHA))
 TPR_GL = np.zeros(len(ALPHA))
@@ -113,8 +117,7 @@ for a in np.arange(len(ALPHA)):
     singleGL = GraphicalLasso(alpha = ALPHA[a], tol = 1e-6, max_iter = 200, verbose = False)
     singleGL_sol = np.zeros((K,p,p))
     for k in np.arange(K):
-        #model = quic.fit(S[k,:,:], verbose = 1)
-        model = singleGL.fit(sample[k,:,:].T)
+        model = singleGL.fit(sample_train[k,:,:].T)
         singleGL_sol[k,:,:] = model.precision_
 
     TPR_GL[a] = discovery_rate(singleGL_sol, Theta)['TPR']
@@ -123,8 +126,8 @@ for a in np.arange(len(ALPHA)):
     DFPR_GL[a] = discovery_rate(singleGL_sol, Theta)['FPR_DIFF']
     
 
-#%%
-# solve again for optimal (l1, l2)
+#%% solve again for optimal (l1, l2)
+
 l1opt = L1[ix]
 l2opt = L2[ix]
 
@@ -134,18 +137,19 @@ Theta_0 = get_K_identity(K,p)
 
 solP, infoP = warmPPDNA(S, l1opt, l2opt, reg, Omega_0, Theta_0 = Theta_0, eps = 1e-5 , verbose = True, measure = True)
 
-solA, infoA = ADMM_MGL(S, l1opt, l2opt, reg , Omega_0, Theta_0 = Theta_0, tol = 1e-7, verbose = True, measure = True)
+solA, infoA = ADMM_MGL(S, l1opt, l2opt, reg , Omega_0, Theta_0 = Theta_0, tol = 1e-10, rtol = 1e-10, verbose = True, measure = True)
 
-Theta_sol = solP['Theta']
-Omega_sol = solP['Omega']
+Theta_sol = solA['Theta']
+Omega_sol = solA['Omega']
+
+print(np.linalg.norm(solA['Theta'] - solP['Theta']))
 
 with sns.axes_style("white"):
     fig,axs = plt.subplots(nrows = 1, ncols = 2, figsize = (10,3))
     draw_group_heatmap(Theta, method = 'truth', ax = axs[0])
-    draw_group_heatmap(Theta_sol, method = 'PPDNA', ax = axs[1])
+    draw_group_heatmap(Theta_sol, method = 'ADMM', ax = axs[1])
 
-#%%
-# plotting (set save = False if plot should not be saved)
+#%% plotting (set save = False if plot should not be saved)
     
 plot_fpr_tpr(FPR, TPR, ix, ix2, FPR_GL, TPR_GL, W2, save = save)
 
@@ -153,10 +157,9 @@ plot_diff_fpr_tpr(DFPR, DTPR, ix, ix2, DFPR_GL, DTPR_GL, W2, save = save)
 
 surface_plot(L1, L2, BIC, reg = "GGL", name = 'eBIC', save = save)
 
-#%%
-# accuracy/model selection impact on total error analysis
 
-#L2 = l2opt*np.linspace(-.5,.5,5) + l2opt
+#%% accuracy/model selection impact on total error analysis
+
 L2 = l2opt * np.linspace(.2, 1.2,6)
 L1 = lambda_parametrizer(L2, w2 = 0.5)
 grid1 = L1.shape[0]
@@ -183,8 +186,6 @@ for g1 in np.arange(grid1):
     for g2 in np.arange(grid2):
             
         start = time()
-        #sol, info = PPDNA(S, L1[g1], L2[g1], reg, Omega_0, Theta_0 = Theta_0, X_0 = X_0, \
-        #                                                eps_ppdna = EPS[g2] , verbose = False)
         sol, info = ADMM_MGL(S, L1[g1], L2[g1], reg , Omega_0 , Theta_0 = Theta_0, X_0 = X_0, rho = 1, max_iter = 1000, \
                              tol = EPS[g2], stopping_criterion = 'kkt', verbose = False)
         end = time()
