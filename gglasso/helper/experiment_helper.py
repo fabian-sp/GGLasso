@@ -508,8 +508,8 @@ def single_heatmap_animation(Theta, method = 'truth', save = False):
 def plot_multiple_heatmap(k, Theta, results, axs):
     
     plot_single_heatmap(k, Theta, 'truth', axs[0,0])
-    plot_single_heatmap(k, results.get('PPDNA').get('Theta'), 'PPDNA', axs[0,1])
-    plot_single_heatmap(k, results.get('LTGL').get('Theta'), 'ADMM', axs[1,0])
+    plot_single_heatmap(k, results.get('ADMM').get('Theta'), 'ADMM', axs[0,1])
+    plot_single_heatmap(k, results.get('LTGL').get('Theta'), 'LTGL', axs[1,0])
     plot_single_heatmap(k, results.get('SGL').get('Theta'), 'SGL', axs[1,1])
     
     return

@@ -29,7 +29,6 @@ L = int(p/M)
 reg = 'FGL'
 
 Sigma, Theta = time_varying_power_network(p, K, M)
-#np.linalg.norm(np.eye(p) - Sigma@Theta)/np.linalg.norm(np.eye(p))
 
 #single_heatmap_animation(Theta)
 
@@ -157,7 +156,7 @@ results['LTGL'] = {'Theta' : ltgl.precision_}
 Theta_admm = results.get('ADMM').get('Theta')
 Theta_ppdna = results.get('PPDNA').get('Theta')
 Theta_ltgl = results.get('LTGL').get('Theta')
-Theta_glasso = results.get('SGL').get('Theta')
+Theta_sgl = results.get('SGL').get('Theta')
 
 
 print("Norm(Regain-ADMM)/Norm(ADMM):", np.linalg.norm(Theta_ltgl - Theta_admm)/ np.linalg.norm(Theta_admm))
@@ -178,7 +177,7 @@ plot_deviation(results, save = save)
 
 
 # animate truth and solution
-single_heatmap_animation(Theta_glasso, method = 'SGL', save = False)
+single_heatmap_animation(Theta_sgl, method = 'SGL', save = False)
 multiple_heatmap_animation(Theta, results, save = False)
 
 
