@@ -179,8 +179,8 @@ def get_default_color_coding():
     color_dict = {}    
     color_dict['truth'] = sns.color_palette("YlGnBu", 10)[-1] #'darkblue'
     color_dict['SGL'] = mypal[7]
-    color_dict['ADMM'] = mypal[1]
-    color_dict['PPDNA'] = mypal[0]
+    color_dict['ADMM'] = mypal[0]
+    color_dict['PPDNA'] = mypal[1]
     color_dict['LTGL'] = mypal[5]
 
     return color_dict
@@ -237,7 +237,7 @@ def plot_evolution(results, block = None, L = None, start = None, stop = None, s
     with sns.axes_style("whitegrid"):
         fig,axs = plt.subplots(nrows = 2, ncols = 2, figsize = default_size_small)
         plot_block_evolution(axs[0,0], start, stop, results.get('truth').get('Theta'), 'truth', color_dict)
-        plot_block_evolution(axs[0,1], start, stop, results.get('PPDNA').get('Theta'), 'PPDNA', color_dict)
+        plot_block_evolution(axs[0,1], start, stop, results.get('ADMM').get('Theta'), 'ADMM', color_dict)
         plot_block_evolution(axs[1,0], start, stop, results.get('LTGL').get('Theta'), 'LTGL', color_dict)
         plot_block_evolution(axs[1,1], start, stop, results.get('SGL').get('Theta'), 'SGL', color_dict)
     
