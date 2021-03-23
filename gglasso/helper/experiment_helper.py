@@ -137,25 +137,6 @@ def deviation(Theta):
     return d
 
 
-def consensus(sol, G):
-    L = G.shape[1]
-    #groupsize = (G!=-1).sum(axis=2)[0]
-    K = G.shape[2]
-    nnz = np.zeros(L)
-    
-    val =  np.zeros((L,K))
-    adj = -1 * np.ones((L,K))
-    for l in np.arange(L):
-        for k in np.arange(K):
-            if G[0,l,k] == -1:
-                val[l,k] = np.nan
-                continue
-            else:
-                val[l,k] = sol[k][G[0,l,k], G[1,l,k]]
-                nnz[l] += abs(sol[k][G[0,l,k], G[1,l,k]]) >= 1e-5
-                adj[l,k] = abs(sol[k][G[0,l,k], G[1,l,k]]) >= 1e-5
-                
-    return nnz, adj, val 
 #################################################################################################################
 ############################ DRAWING FUNCTIONS ##################################################################
 #################################################################################################################

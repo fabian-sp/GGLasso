@@ -40,11 +40,11 @@ class glasso_problem:
         
         Parameters
         ----------
-        S : 2d/3d-array or list
+        S : 2d/3d-array or list/dict
             Empirical covariance matrices. 
                 - For SGL, use 2d array of shape (p,p). 
                 - For MGL use 3d array of shape (K,p,p). 
-                - For GGL with non-conforming dimensions, use a list of length K. WIll be transformed to a dict with keys 1,..K.
+                - For GGL with non-conforming dimensions, use a list/dict of length K. Will be transformed to a dict with keys 1,..K.
             For each instance, S^k has to be symmetric and positive semidefinite.
             Note: S will be saled to correlations and scaled back after solving.
             
@@ -120,10 +120,13 @@ class glasso_problem:
             prefix = ("FUSED" if self.reg == "FGL" else "GROUP")
         else:
             prefix = "SINGLE"
+        if self.latent:
+            suffix = "WITH LATENT VARIABLES"
+        else:
+            suffix = ""
         return (
             " \n"
-            + prefix
-            + " GRAPHICAL LASSO PROBLEM"
+            + prefix + " GRAPHICAL LASSO PROBLEM " + suffix
             + "\n"
             + "Regularization parameters:\n"
             + f"{self.reg_params}"
@@ -152,9 +155,9 @@ class glasso_problem:
                 self._check_covariance_2d()
                 
                 
-        elif type(self.S) == list:
+        elif type(self.S) == list or type(self.S) == dict:
             
-            assert len(self.S > 1), "Covariance data is a list with only one entry. This is a Single Graphical Lasso problem. Specify S as 2d-array."
+            assert len(self.S) > 1, "Covariance data is a list/dict with only one entry. This is a Single Graphical Lasso problem. Specify S as 2d-array."
             assert self.G is not None, "For non-conforming dimensions, the input G has to be specified for bookeeping the overlapping variables."
             
             self.conforming = False
@@ -165,7 +168,7 @@ class glasso_problem:
             check_G(self.G, self.p)
             
         else:
-            raise TypeError(f"Incorrect input type of S. You input {type(self.S)}, but np.ndarray or list is expected.")
+            raise TypeError(f"Incorrect input type of S. You input {type(self.S)}, but np.ndarray or list/dict is expected.")
     
     ##############################################
     #### CHECK INPUT DATA 
@@ -220,7 +223,7 @@ class glasso_problem:
         """
         rescales X with the given scale
         X: object of type like input data S
-        scale: array with diagonal elements of unscaled input S --> use self._scaled
+        scale: array (or list) with diagonal elements of unscaled input S --> use self._scale
         """
         Y = X.copy()
         if not self.multiple:
@@ -245,7 +248,7 @@ class glasso_problem:
             self._scale = np.diag(self.S)
             self.S = scale_array_by_diagonal(self.S)
         else:
-            self._scale = np.vstack([np.diag(self.S[k]) for k in range(self.K)])
+            self._scale = [np.diag(self.S[k]) for k in range(self.K)]
             for k in range(self.K):
                 self.S[k] = scale_array_by_diagonal(self.S[k])
         return
@@ -437,13 +440,13 @@ class glasso_problem:
     def _default_modelselect_params(self):
         
         params = dict()
-        params['lambda1_range'] = np.logspace(-3,0,10)
+        params['lambda1_range'] = np.logspace(0,-3,5)
         if self.multiple:
             params['w2_range'] = np.logspace(-1,-3,5)
-            #params['lambda2_range'] = np.logspace(-3,1,10)
+            #params['lambda2_range'] = np.logspace(0,-3,10)
             
         if self.latent:
-            params['mu1_range'] = np.logspace(-2,0,10)
+            params['mu1_range'] = np.logspace(0,-2,5)
         else:
             params['mu1_range'] = None
         

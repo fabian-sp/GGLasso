@@ -7,7 +7,7 @@ import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
 
 from gglasso.helper.basic_linalg import Sdot, adjacency_matrix
-from gglasso.helper.experiment_helper import mean_sparsity, sparsity, consensus
+from gglasso.helper.experiment_helper import mean_sparsity, sparsity
 
 from gglasso.helper.experiment_helper import get_K_identity as id_array
 from gglasso.helper.ext_admm_helper import get_K_identity as id_dict
@@ -47,16 +47,60 @@ def lambda_grid(l1, l2 = None, w2 = None):
         
     return L1.squeeze(), L2.squeeze(), w2
 
-def grid_search(solver, S, N, p, reg, l1, l2 = None, w2 = None, method= 'eBIC', gamma = 0.3, G = None, latent = False, mu_range = None, ix_mu = None, verbose = False):
+def grid_search(solver, S, N, p, reg, l1, l2 = None, w2 = None, method= 'eBIC', gamma = 0.3, \
+                G = None, latent = False, mu_range = None, ix_mu = None, verbose = False):
     """
-    method for doing model selection using grid search and AIC/eBIC
-    we work the grid columnwise, i.e. hold l1 constant and change l2
+    method for doing model selection for MGL problems using grid search and AIC/eBIC
+    parameters to select: lambda1 (sparsity), lambda2 (group sparsity or total variation)
     
-    gamma: parameter inn [0,1] for eBIC
+    In the grid lambda1 changes over columns, lambda2 over the rows.
+    The grid is ran columnwise, i.e. hold l1 constant and change l2.
     
-    set latent = True if you want to include latent factors. 
-    ix_mu: array of shape K, len(l1): indicates for each lambda and each instance which value in mu we use (can be obtained with K_single_grid)
-    mu_range: arrays of possible mu values
+    
+    Parameters
+    ----------
+    solver : solver method 
+        DESCRIPTION.
+    S : 3d array or dict
+        empirical covaraince matrices.
+    N : array
+        sample size for each k=1,..K.
+    p : array or int
+        dimension/number of variables for each k=1,..,K.
+    reg : str
+        "GGL" for Group Graphical Lasso.
+        "FGL" for Fused Graphical Lasso.
+    l1 : array
+        grid values for lambda1. Will be sorted in descending order.
+    l2 : array, optional
+        grid values for lambda2. Specify either l2 or w2.
+    w2 : array, optional
+        grid values for w2. 
+    method : str, optional
+        method for choosing the optimal grid point, either 'eBIC' or 'AIC'. The default is 'eBIC'.
+    gamma : float, optional
+        Parameter for the eBIC, needs to be in [0,1]. The default is 0.3.
+    G : array, optional
+        bookkeeping array for groups, only needed if dimensions are non-conforming. The default is None.
+    latent : boolean, optional
+        whether to model latent variables or not. The default is False.
+    mu_range : array, optional
+        grid values for mu1. Only needed when latent=True.
+    ix_mu : array, optional
+        shape (K,len(l1)). Indices for each element of l1 and each instance k which mu to choose from mu_range.
+        Only needed when latent=True. Is computed by K_single_grid-method.
+    verbose : boolean, optional
+        verbosity. The default is False.
+
+    Returns
+    -------
+    stats : dict
+        statistics of the grid search, for example BIC values, sparsity, rank of latent compinent at the grid points.
+    ix : double
+        index of L1/L2 grid which is selected.
+    curr_best : dict
+        solution of Multiple Graphical Lasso problem at the best grid point.
+
     """
     
     assert method in ['AIC', 'eBIC']
@@ -64,6 +108,9 @@ def grid_search(solver, S, N, p, reg, l1, l2 = None, w2 = None, method= 'eBIC', 
     
     if latent:
         assert np.all(mu_range > 0)
+    
+    # l1 should be in descending order, start with sparse solutions!
+    l1 = np.sort(l1)[::-1]
 
     L1, L2, W2 = lambda_grid(l1, l2, w2)
     
@@ -88,7 +135,7 @@ def grid_search(solver, S, N, p, reg, l1, l2 = None, w2 = None, method= 'eBIC', 
     SKIP = np.zeros((grid1, grid2), dtype = bool)
     
     
-    kwargs = {'reg': reg, 'S': S, 'tol': 1e-4, 'rtol': 1e-4, 'verbose': False, 'measure': False}
+    kwargs = {'reg': reg, 'S': S, 'tol': 1e-6, 'rtol': 1e-5, 'verbose': False, 'measure': False}
     if type(S) == dict:
         K = len(S.keys())
         Omega_0 = id_dict(p)
@@ -360,7 +407,8 @@ def single_grid_search(S, lambda_range, N, method = 'eBIC', gamma = 0.3, latent 
     
     RANK = np.zeros((L,M))
     
-    kwargs = {'S':S, 'Omega_0': np.eye(p), 'X_0': np.eye(p), 'tol': 1e-5, 'rtol': 1e-4, 'verbose': False, 'measure': False}
+    kwargs = {'S':S, 'Omega_0': np.eye(p), 'X_0': np.eye(p), 'tol': 1e-6, 'rtol': 1e-5,\
+              'verbose': False, 'measure': False}
     
     estimates = np.zeros((L,M,p,p))
     lowrank = np.zeros((L,M,p,p))
