@@ -93,7 +93,7 @@ class glasso_problem:
         
         # initialize and set regularization params
         self.reg_params = None
-        self.modelselect_params = None
+        self.modelselect_params = self._default_modelselect_params()
         self.set_reg_params(reg_params)
         
         if self.multiple:
@@ -404,8 +404,7 @@ class glasso_problem:
                                  tol = self.tol , rtol = self.rtol, latent = self.latent, mu1 = self.reg_params['mu1'], **self.solver_params)
                 
                 
-        elif self.conforming:
-            
+        elif self.conforming:         
             sol, info = ADMM_MGL(S = self.S, lambda1 = self.reg_params['lambda1'], lambda2 = self.reg_params['lambda2'], reg = self.reg,\
                      Omega_0 = self.Omega_0, latent = self.latent, mu1 = self.reg_params['mu1'],\
                          tol = self.tol, rtol = self.rtol, **self.solver_params)
@@ -459,14 +458,10 @@ class glasso_problem:
         """
         if modelselect_params is None:
             modelselect_params = dict()
+            print("NOTE: No grid for model selection is specified and thus default values are used. A grid can be specified with the argument modelselect_params.")
+            
         else:
             assert type(modelselect_params) == dict
-        
-        # when initialized set to default
-        if self.modelselect_params is None:
-            print("NOTE: No grid for model selection is specified and thus default values are used. A grid can be specified with the argument modelselect_params.")
-            self.modelselect_params = self._default_modelselect_params()
-        
         
         # update with given input
         # update with empty dict does not change the dictionary
@@ -512,6 +507,9 @@ class glasso_problem:
         
         self.set_modelselect_params(modelselect_params)
         
+        if not np.all(self.modelselect_params['lambda1_range'] == np.sort(self.modelselect_params['lambda1_range'])[::-1]):
+            print("NOTE: Ideally the lambda1 range is sorted in descending order, so the grid search is performed from sparse to dense.")
+        
         ###############################
         # SINGLE GL --> GRID SEARCH lambda1/mu
         ###############################
@@ -550,14 +548,17 @@ class glasso_problem:
             # SECOND STAGE --> GRID SEARCH lambda1/lambda2
             ############################### 
     
-            stats, _, sol = grid_search(solver, S = self.S, N = self.N, p = self.p, reg = self.reg, l1 = self.modelselect_params['lambda1_range'], \
+            stats, best_ix, sol = grid_search(solver, S = self.S, N = self.N, p = self.p, reg = self.reg, l1 = self.modelselect_params['lambda1_range'], \
                                         l2 = None, w2 = self.modelselect_params['w2_range'], method= method, gamma = gamma, \
                                         G = self.G, latent = self.latent, mu_range = self.modelselect_params['mu1_range'], ix_mu = ix_mu, verbose = False)
             
-            # update the regularization parameters to the best grid point
+            # update the lambda1/lambda2 regularization parameters to the best grid point
             self.set_reg_params(stats['BEST'])
+            # update the mu1 parameters accordingly
+            if self.latent:
+                best_mu = self.modelselect_params['mu1_range'][ix_mu[:,best_ix]]
+                self.set_reg_params({'mu': best_mu})
         
-            
         ###############################
         # SET SOLUTION AND STORE INFOS
         ###############################
