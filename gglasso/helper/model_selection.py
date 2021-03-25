@@ -16,8 +16,9 @@ from gglasso.solver.single_admm_solver import ADMM_SGL
 
 plt.rc('text', usetex=True)
 
-TOL = 1e-6
-RTOL = 1e-5
+# tolerances for solving on grids (pick this smaller if there is a no-convergence-warning)
+TOL = 1e-7
+RTOL = 1e-6
         
 def lambda_parametrizer(l1 = 0.05, w2 = 0.5):
     """transforms given l1 and w2 into the respective l2"""

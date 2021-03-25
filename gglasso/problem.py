@@ -556,8 +556,9 @@ class glasso_problem:
             self.set_reg_params(stats['BEST'])
             # update the mu1 parameters accordingly
             if self.latent:
-                best_mu = self.modelselect_params['mu1_range'][ix_mu[:,best_ix]]
-                self.set_reg_params({'mu': best_mu})
+                # best_ix is index of best (lambda2,lambda1), we need the column of the L1 grid
+                best_mu = self.modelselect_params['mu1_range'][ix_mu[:,best_ix[1]]]
+                self.set_reg_params({'mu1': best_mu})
         
         ###############################
         # SET SOLUTION AND STORE INFOS
