@@ -28,7 +28,7 @@ def ADMM_SGL(S, lambda1, Omega_0, Theta_0=np.array([]), X_0=np.array([]),
     assert Omega_0.shape == S.shape
     assert S.shape[0] == S.shape[1]
     assert lambda1 > 0
-    
+
     assert stopping_criterion in ["boyd", "kkt"]
 
     if latent:
@@ -41,7 +41,7 @@ def ADMM_SGL(S, lambda1, Omega_0, Theta_0=np.array([]), X_0=np.array([]),
 
     # initialize
     Omega_t = Omega_0.copy()
-    
+
     if len(Theta_0) == 0:
         Theta_0 = Omega_0.copy()
     if len(X_0) == 0:
@@ -86,7 +86,7 @@ def ADMM_SGL(S, lambda1, Omega_0, Theta_0=np.array([]), X_0=np.array([]),
         if measure:
             end = time.time()
             runtime[iter_t] = end - start
-        
+
         # Stopping criterion
         if stopping_criterion == 'boyd':
             r_t,s_t,e_pri,e_dual = ADMM_stopping_criterion(Omega_t, Omega_t_1, Theta_t, L_t, X_t,\
@@ -103,14 +103,14 @@ def ADMM_SGL(S, lambda1, Omega_0, Theta_0=np.array([]), X_0=np.array([]),
             if eta_A <= tol:
                 status = 'optimal'
                 break
-                   
+
         if verbose:
             print(f"Current accuracy: ", residual[iter_t])
-    
+
     ##################################################################
     ### MAIN LOOP FINISHED
     ##################################################################
-    
+
     # retrieve status (partially optimal or max iter)
     if status != 'optimal':
         if stopping_criterion == 'boyd':
@@ -122,7 +122,7 @@ def ADMM_SGL(S, lambda1, Omega_0, Theta_0=np.array([]), X_0=np.array([]),
                 status = 'max iterations reached'
         else:
             status = 'max iterations reached'
-            
+
     print(f"ADMM terminated after {iter_t+1} iterations with status: {status}.")
 
     assert abs((Omega_t).T - Omega_t).max() <= 1e-5, "Solution is not symmetric"
@@ -192,7 +192,7 @@ def kkt_stopping_criterion(Omega, Theta, L, X, S, lambda1, latent=False, mu1=Non
         term4 = np.linalg.norm(L - proxL) / (1 + np.linalg.norm(L))
 
     residual = max(term1, term2, term3, term4)
-    
+
     return residual
 
 
@@ -259,6 +259,10 @@ def block_SGL(S, lambda1, Omega_0, Theta_0=None, X_0=None, rho=1.,
 
     # compute connected components of S with lambda_1 threshold
     numC, allC = get_connected_components(S, lambda1)
+    # check the number of built components > 1
+    if numC == 1:
+        print("Number of the connected components:", numC)
+        print("To increase the number of connected components, make lambda1 bigger")
 
     allOmega = list()
     allTheta = list()
