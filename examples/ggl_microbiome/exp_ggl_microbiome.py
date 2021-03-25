@@ -19,9 +19,9 @@ from gglasso.helper.model_selection import lambda_parametrizer, grid_search, K_s
 from gglasso.problem import glasso_problem
 
 #%% load data
-K = 5
+K = 4
 
-all_csv, S, G, ix_location, ix_exist, p, num_samples = load_and_transform(K, min_inst = 5, compute_G = True)
+all_csv, S, G, ix_location, ix_exist, p, num_samples = load_and_transform(K, min_inst = 3, compute_G = True)
 
 #save_G('', G)
 #G = load_G('')
@@ -43,38 +43,6 @@ print(P)
 
 P.model_selection(modelselect_params = modelselect_params, method = 'eBIC', gamma = 0.1)
 
-#%%
+tmp = P.modelselect_stats.copy()
 
-sol2, sol3, range_stats = K_single_grid(S, l1, num_samples, latent = True, mu_range = mu1)
-
-#%%
-
-w2 = np.logspace(-1, -4, 4)
-#w2 = np.linspace(0.02, 0.01, 5)
-
-grid_stats, ix, sol1 = grid_search(ext_ADMM_MGL, S, num_samples, p, reg, l1 = l1, method = 'eBIC', w2 = w2, G = G,\
-                                   latent = True, mu = mu1, ix_mu = range_stats['ix_mu'])
-
-L1 = grid_stats['L1']
-L2 = grid_stats['L2']
-
-W1 = map_l_to_w(L1,L2)[0]
-W2 = map_l_to_w(L1,L2)[1]
-
-#surface_plot(L1,L2, grid_stats['BIC'])
-
-
-
-#%%
-
-this_mu = mu1[range_stats['ix_mu'][:,range_stats['ix_uniform']]]
-#this_mu = mu1[ix_mu[:,ix_uniform]]
-
-Omega_0 = get_K_identity(p)
-lambda1 = L1[ix]
-lambda2 = lambda_parametrizer(lambda1, w2 = 0.01)
-sol, info = ext_ADMM_MGL(S, lambda1, lambda2, 'GGL', Omega_0, G, eps_admm = 1e-3, verbose = True, \
-                         latent = True, mu1 = this_mu)
-
-res_multiple2 = sol.copy()
-
+tmp2 = P.stage1_stats.copy()
