@@ -147,6 +147,19 @@ def ext_ADMM_MGL(S, lambda1, lambda2, reg , Omega_0, G,\
     runtime = np.zeros(max_iter)
     residual = np.zeros(max_iter)
     status = ''
+    
+    if verbose:
+        print("------------ADMM Algorithm for Multiple Graphical Lasso----------------")
+
+        if stopping_criterion == 'boyd':
+            hdr_fmt = "%4s\t%10s\t%10s\t%10s\t%10s"
+            out_fmt = "%4d\t%10.4g\t%10.4g\t%10.4g\t%10.4g"
+            print(hdr_fmt % ("iter", "r_t", "s_t", "eps_pri", "eps_dual"))
+        elif stopping_criterion == 'kkt':
+            hdr_fmt = "%4s\t%10s"
+            out_fmt = "%4d\t%10.4g"
+            print(hdr_fmt % ("iter", "kkt residual"))
+            
     ##################################################################
     ### MAIN LOOP STARTS
     ##################################################################
@@ -154,10 +167,7 @@ def ext_ADMM_MGL(S, lambda1, lambda2, reg , Omega_0, G,\
         
         if measure:
             start = time.time()
-            
-        if verbose:
-            print(f"------------Iteration {iter_t} of the ADMM Algorithm----------------")
-        
+ 
         # Omega Update
         Omega_t_1 = Omega_t.copy()
         for k in np.arange(K):
@@ -199,9 +209,11 @@ def ext_ADMM_MGL(S, lambda1, lambda2, reg , Omega_0, G,\
             r_t,s_t,e_pri,e_dual = ADMM_stopping_criterion(Omega_t, Omega_t_1, Theta_t, L_t, Lambda_t, Lambda_t_1, X0_t, X1_t,\
                                                            S, rho, p, tol, rtol, latent)
             
-            #print(f"(r_k, s_k, e_pi, e_dual): {(r_t,s_t,e_pri,e_dual)}")
             residual[iter_t] = max(r_t,s_t)
-        
+            
+            if verbose:
+                print(out_fmt % (iter_t,r_t,s_t,e_pri,e_dual))
+                
             if (r_t <= e_pri) and  (s_t <= e_dual):
                 status = 'optimal'
                 break
@@ -210,7 +222,10 @@ def ext_ADMM_MGL(S, lambda1, lambda2, reg , Omega_0, G,\
             eta_A = kkt_stopping_criterion(Omega_t, Theta_t, L_t, Lambda_t, dict((k, rho*v) for k,v in X0_t.items()), dict((k, rho*v) for k,v in X1_t.items()),\
                                                 S , G, lambda1, lambda2, reg, latent, mu1)
             residual[iter_t] = eta_A
-        
+            
+            if verbose:
+                print(out_fmt % (iter_t,eta_A))
+                
             if eta_A <= tol:
                 status = 'optimal'
                 break
