@@ -662,10 +662,10 @@ def single_surface_plot(L1, L2, C, ax, name = 'eBIC'):
     Z = np.log(C)
     ax.plot_surface(X, Y, Z , cmap = plt.cm.ocean, linewidth=0, antialiased=True)
     
-    #ax.set_xlabel('lambda_1')
-    #ax.set_ylabel('lambda_2')
-    ax.set_xlabel(r'$w_1$', fontsize = 14)
-    ax.set_ylabel(r'$w_2$', fontsize = 14)
+    ax.set_xlabel(r'$\lambda_1$', fontsize = 14)
+    ax.set_ylabel(r'$\lambda_2$', fontsize = 14)
+    #ax.set_xlabel(r'$w_1$', fontsize = 14)
+    #ax.set_ylabel(r'$w_2$', fontsize = 14)
     ax.set_zlabel(name, fontsize = 14)
     ax.view_init(elev = 25, azim = 110)
     
@@ -684,17 +684,20 @@ def single_surface_plot(L1, L2, C, ax, name = 'eBIC'):
     
     return
 
-def surface_plot(L1, L2, C, name = 'eBIC', gammas = None):
-    
+def surface_plot(L1, L2, C, name = 'eBIC'):
     fig = plt.figure(figsize = (8,5))  
-    if len(C.shape) == 2:
+    
+    if name == 'eBIC':
+        gammas = list(C.keys())
+        
+    if type(C) == np.ndarray:
         ax = fig.gca(projection='3d')
         single_surface_plot(L1, L2, C, ax, name = name)
              
     else:
-        for j in np.arange(C.shape[0]):
+        for j in np.arange(len(gammas)):
             ax = fig.add_subplot(2, 2, j+1, projection='3d')
-            single_surface_plot(L1, L2, C[j,:,:], ax, name = name)
+            single_surface_plot(L1, L2, C[gammas[j]], ax, name = name)
             if gammas is not None:
                 ax.set_title(rf"$\gamma = $ {gammas[j]}")
     
