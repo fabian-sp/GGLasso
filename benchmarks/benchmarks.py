@@ -159,7 +159,7 @@ def sklearn_time_benchmark(models=dict, X=np.array([]), Z=np.array([]), n_iter=1
     return time_dict, accuracy_dict, precision_dict
 
 
-def admm_time_benchmark(S=np.array([]), Omega_0=np.array([]), Z=np.array([]), lambda1=0.01, n_iter=1+10, max_iter=50000,
+def admm_time_benchmark(S=np.array([]), Omega_0=np.array([]), Z=np.array([]), lambda1=0.01, n_iter=int, max_iter=50000,
                         admm_params=dict):
     cov_dict = dict()
     precision_dict = dict()
