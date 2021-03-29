@@ -1,5 +1,6 @@
 import pytest as pt
 import numpy as np
+from numpy.testing import assert_array_almost_equal
 from sklearn.covariance import GraphicalLasso
 
 from gglasso.helper.data_generation import group_power_network, time_varying_power_network,  sample_covariance_matrix
@@ -92,12 +93,12 @@ def template_extADMM_consistent(latent = False):
     solADMM, info = ADMM_MGL(S, lambda1, lambda2, 'GGL', Omega_0_arr, tol = 1e-8, rtol = 1e-8, verbose = False, latent = latent, mu1 = 0.01)
     
     for k in np.arange(K):
-        assert solext['Theta'][k] == pt.approx(solADMM['Theta'][k,:,:], abs = 1e-2), f"Absolute error in norm: {np.linalg.norm(solext['Theta'][k] - solADMM['Theta'][k,:,:])}"
-    
+        assert_array_almost_equal(solext['Theta'][k], solADMM['Theta'][k,:,:], 2)
+        
     if latent:
         for k in np.arange(K):
-            assert solext['L'][k] == pt.approx(solADMM['L'][k,:,:], abs = 1e-2), f"Absolute error in norm: {np.linalg.norm(solext['L'][k] - solADMM['L'][k,:,:])}"
-    
+            assert_array_almost_equal(solext['L'][k], solADMM['L'][k,:,:], 2)
+        
     return
 
 def test_extADMM_consistent():
@@ -132,7 +133,7 @@ def test_block_SGL():
     sol1 = full_sol['Theta']
     sol2 = block_sol['Theta']
     
-    assert sol1 == pt.approx(sol2, abs = 1e-3), f"Absolute error in norm: {np.linalg.norm(sol1-sol2)}"
+    assert_array_almost_equal(sol1, sol2, 3)
     
     return
 
@@ -155,7 +156,7 @@ def template_admm_vs_ppdna(p = 50, K = 3, N = 1000, reg = "GGL"):
     sol2, info2 = warmPPDNA(S, lambda1, lambda2, reg, Omega_0, eps = 1e-6 , verbose = False, measure = False)
     
     
-    assert sol['Theta'] == pt.approx(sol2['Theta'], abs = 1e-2), f"Absolute error in norm: {np.linalg.norm(sol['Theta']-sol2['Theta'])}"
+    assert_array_almost_equal(sol['Theta'], sol2['Theta'], 2)
     
     return 
     
@@ -198,8 +199,8 @@ def test_SGL_scikit():
     Omega_0 = np.eye(p)
     sol, info = ADMM_SGL(S, lambda1, Omega_0, tol=1e-7, rtol=1e-5, verbose=False, latent=False)
 
-    assert sol_scikit == pt.approx(sol['Theta'], abs = 1e-3), f"Absolute error in norm: {np.linalg.norm(sol['Theta']-sol_scikit)}"
-
+    assert_array_almost_equal(sol_scikit, sol['Theta'], 3)
+    
     return
 
 
