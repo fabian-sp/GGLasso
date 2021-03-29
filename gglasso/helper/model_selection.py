@@ -11,7 +11,7 @@ from gglasso.helper.experiment_helper import mean_sparsity, sparsity
 
 from gglasso.helper.experiment_helper import get_K_identity as id_array
 from gglasso.helper.ext_admm_helper import get_K_identity as id_dict
-from gglasso.solver.single_admm_solver import ADMM_SGL
+from gglasso.solver.single_admm_solver import ADMM_SGL, block_SGL
 
 
 plt.rc('text', usetex=True)
@@ -230,7 +230,7 @@ def grid_search(solver, S, N, p, reg, l1, l2 = None, w2 = None, method= 'eBIC', 
     
     return stats, ix, curr_best
 
-def K_single_grid(S, lambda_range, N, method = 'eBIC', gamma = 0.3, latent = False, mu_range = None):
+def K_single_grid(S, lambda_range, N, method = 'eBIC', gamma = 0.3, latent = False, mu_range = None, use_block = True):
     """
     method for doing model selection for K single Graphical Lasso problems, using grid search and AIC/eBIC
     parameters to select: lambda1 (sparsity), mu1 (lowrank, if latent=True)
@@ -256,6 +256,9 @@ def K_single_grid(S, lambda_range, N, method = 'eBIC', gamma = 0.3, latent = Fal
         whether to model latent variables or not. The default is False.
     mu_range : array, optional
         grid values for mu1. Only needed when latent=True.
+    use_block : boolean, optional
+        whether to use ADMM on each connected component. Typically, for large and sparse graphs, this is a speedup. Only possible for latent=False.
+    
 
     Returns
     -------
@@ -319,7 +322,7 @@ def K_single_grid(S, lambda_range, N, method = 'eBIC', gamma = 0.3, latent = Fal
             S_k = S[k,:,:].copy()
         
         best, est_k, lr_k, stats_k = single_grid_search(S = S_k, lambda_range = lambda_range, N = N[k], method = method, gamma = gamma, \
-                                                             latent = latent, mu_range = mu_range)
+                                                             latent = latent, mu_range = mu_range, use_block = use_block)
         estimates[k] = est_k.copy()
         lowrank[k] = lr_k.copy()
         
@@ -402,7 +405,7 @@ def K_single_grid(S, lambda_range, N, method = 'eBIC', gamma = 0.3, latent = Fal
     return est_uniform, est_indv, statistics
 
 
-def single_grid_search(S, lambda_range, N, method = 'eBIC', gamma = 0.3, latent = False, mu_range = None):
+def single_grid_search(S, lambda_range, N, method = 'eBIC', gamma = 0.3, latent = False, mu_range = None, use_block = True):
     """
     method for model selection for SGL problem, doing grid search and selection via eBIC or AIC
 
@@ -422,6 +425,8 @@ def single_grid_search(S, lambda_range, N, method = 'eBIC', gamma = 0.3, latent 
         whether to model latent variables or not. The default is False.  
     mu_range : array, optional
         range of mu1 values (low rank regularization parameter). Only needed when latent = True.
+    use_block : boolean, optional
+        whether to use ADMM on each connected component. Typically, for large and sparse graphs, this is a speedup. Only possible for latent=False.
     
     Returns
     -------
@@ -480,8 +485,11 @@ def single_grid_search(S, lambda_range, N, method = 'eBIC', gamma = 0.3, latent 
             if latent:
                 kwargs['mu1'] = mu_range[m]
                 kwargs['latent'] = True
-                        
-            sol, info = ADMM_SGL(**kwargs)
+            
+            if use_block and not latent:
+                sol = block_SGL(**kwargs)
+            else:
+                sol, _ = ADMM_SGL(**kwargs)
             
             Theta_sol = sol['Theta']
             estimates[j,m,:,:] = Theta_sol.copy()

@@ -515,7 +515,8 @@ class glasso_problem:
         ###############################
         if not self.multiple:
             sol, _, _, stats = single_grid_search(S = self.S, lambda_range = self.modelselect_params['lambda1_range'], N = self.N, \
-                               method = method, gamma = gamma, latent = self.latent, mu_range = self.modelselect_params['mu1_range'])
+                               method = method, gamma = gamma, latent = self.latent, mu_range = self.modelselect_params['mu1_range'],
+                               use_block = True)
             
             # update the regularization parameters to the best grid point
             self.set_reg_params(stats['BEST'])
@@ -532,7 +533,8 @@ class glasso_problem:
             ############################### 
             if self.latent:
                 est_uniform, est_indv, stage1_statistics = K_single_grid(S = self.S, lambda_range = self.modelselect_params['lambda1_range'], N = self.N, method = method,\
-                                                                  gamma = gamma, latent = self.latent, mu_range = self.modelselect_params['mu1_range'])            
+                                                                  gamma = gamma, latent = self.latent, mu_range = self.modelselect_params['mu1_range'],
+                                                                  use_block = True)            
                 
                 ix_mu = stage1_statistics['ix_mu']
                 
