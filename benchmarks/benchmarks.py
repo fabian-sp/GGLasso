@@ -22,44 +22,91 @@ from gglasso.helper.basic_linalg import adjacency_matrix
 from regain.covariance import GraphicalLasso as rg_GL
 
 
-def network_generation(p_list=list, N_list=list, K=int, M=int, S_dict=dict(), Theta_dict=dict(), X_dict=dict()):
-    for p, N in zip(p_list, N_list):
-        Sigma, Theta = group_power_network(p, K=K, M=M)  # Theta is true precision matrix
-        S, samples = sample_covariance_matrix(Sigma, N)
+def network_generation(p=int, N=int, K=1, M=int, S_dict=dict(), Theta_dict=dict(), X_dict=dict()):
+    Sigma, Theta = group_power_network(p, K=K, M=M)  # Theta is true precision matrix
+    S, samples = sample_covariance_matrix(Sigma, N)
 
-        S = S[0, :, :]
-        Theta = Theta[0, :, :]  # true precision matrix
-        X = samples[0, :, :].T
+    S = S[0, :, :]
+    Theta = Theta[0, :, :]  # true precision matrix
+    X = samples[0, :, :].T
 
-        S_dict[p, N] = S
-        X_dict[p, N] = X
-        Theta_dict[p, N] = Theta
-
-    return S_dict, X_dict, Theta_dict
+    return S, X, Theta
 
 
-def models_to_dict(models=None, lambda1=0.01, tol_list=list, rtol_list=list, enet_list=list, max_iter=50000):
+def dict_shape(dict_=dict):
+    shape_list = []
+
+    for i in dict_.values():
+        shape_list.append(np.array(i).shape)
+    return shape_list
+
+
+def benchmark_parameters(sk_tol_list=[1e-4, 1e-5, 1e-6, 1e-7], sk_rtol_list=[1e-4, 1e-5], enet_list=[1, 0.5, 0.1],
+                         rg_tol_list=[1e-4, 1e-5, 1e-6, 1e-7], rg_rtol_list=[1e-4, 1e-5],
+                         admm_tol_list=[1e-4, 1e-5, 1e-6, 1e-7], admm_rtol_list=[1e-4, 1e-5],
+                         admm_stop=['boyd'], admm_method=['single', 'block']):
+    # Sklearn params
+    sk_tol_list = sk_tol_list
+    sk_rtol_list = sk_rtol_list
+    enet_list = enet_list
+    sk_params = {"tol": sk_tol_list, "rtol": sk_rtol_list, "enet": enet_list}
+
+    # Regain params
+    rg_tol_list = rg_tol_list
+    rg_rtol_list = rg_rtol_list
+    rg_params = {"tol": rg_tol_list, "rtol": rg_rtol_list}
+
+    # ADMM params
+    admm_tol_list = admm_tol_list
+    admm_rtol_list = admm_rtol_list
+    admm_stop = admm_stop
+    admm_method = admm_method
+    admm_params = {"tol": admm_tol_list, "rtol": admm_rtol_list, "stop": admm_stop, "method": admm_method}
+
+    print("\n Sklearn model parameters:", sk_params)
+    print("\n Regain model parameters:", rg_params)
+    print("\n ADMM model parameters:", admm_params)
+
+    return sk_params, rg_params, admm_params
+
+
+def models_to_dict(models=None, lambda1=0.01, max_iter=50000, sk_params=dict, rg_params=dict):
     if models is None:
         models = list(str)
     models_dict = dict()
 
     for model in models:
-        for tol, rtol, enet_tol in itertools.product(tol_list, rtol_list, enet_list):
 
-            if model == "regain":
-                models_dict[str(model) + "_tol_" + str(tol) + "_rtol_" + str(rtol)] \
-                    = rg_GL(alpha=lambda1, tol=tol, rtol=rtol, max_iter=max_iter,
-                            assume_centered=True)
+        if model == "regain":
 
-            elif model == "sklearn":
-                models_dict[str(model) + "_tol_" + str(tol) + "_enet_" + str(enet_tol)] \
-                    = sk_GL(alpha=lambda1, tol=tol, enet_tol=enet_tol, max_iter=max_iter,
-                            assume_centered=True)
+            for key in rg_params.keys():
+                if key == "tol":
+                    tol_list = rg_params[key]
+                elif key == "rtol":
+                    rtol_list = rg_params[key]
+
+            for tol, rtol in itertools.product(tol_list, rtol_list):
+                key = str(model) + "_tol_" + str(tol) + "_rtol_" + str(rtol)
+                models_dict[key] = rg_GL(alpha=lambda1, tol=tol, rtol=rtol, max_iter=max_iter, assume_centered=True)
+
+        elif model == "sklearn":
+
+            for key in sk_params.keys():
+                if key == "tol":
+                    tol_list = sk_params[key]
+                elif key == "rtol":
+                    rtol_list = sk_params[key]
+                elif key == "enet":
+                    enet_list = sk_params[key]
+
+            for tol, rtol, enet in itertools.product(tol_list, rtol_list, enet_list):
+                key = str(model) + "_tol_" + str(tol) + "_enet_" + str(enet)
+                models_dict[key] = sk_GL(alpha=lambda1, tol=tol, enet_tol=enet, max_iter=max_iter, assume_centered=True)
 
     return models_dict
 
 
-def model_solution(model=str, X=np.array([]), lambda1=0.01, max_iter=50000, tol=float, rtol=float, enet=float):
+def model_solution(model="sklearn", X=np.array([]), lambda1=0.01, max_iter=50000, tol=1e-10, rtol=1e-4, enet=0.001):
     time_list = []
     if model == "sklearn":
 
@@ -84,9 +131,12 @@ def model_solution(model=str, X=np.array([]), lambda1=0.01, max_iter=50000, tol=
     return Z.precision_, time_list
 
 
-def sklearn_time_benchmark(models=dict, X=np.array([]), Z=np.array([]), n_iter=10,
-                           cov_dict=dict(), precision_dict=dict(),
-                           time_dict=dict(), accuracy_dict=dict()):
+def sklearn_time_benchmark(models=dict, X=np.array([]), Z=np.array([]), n_iter=10):
+    cov_dict = dict()
+    precision_dict = dict()
+    time_dict = dict()
+    accuracy_dict = dict()
+
     for model, model_instant in models.items():
 
         time_list = []
@@ -109,10 +159,18 @@ def sklearn_time_benchmark(models=dict, X=np.array([]), Z=np.array([]), n_iter=1
     return time_dict, accuracy_dict, precision_dict
 
 
-def admm_time_benchmark(S=np.array([]), Omega_0=np.array([]), Z=np.array([]), lambda1=0.01, n_iter=10, max_iter=50000,
-                        method_list=list, stop_list=list, tol_list=list, rtol_list=list,
-                        cov_dict=dict(), precision_dict=dict(),
-                        time_dict=dict(), accuracy_dict=dict()):
+def admm_time_benchmark(S=np.array([]), Omega_0=np.array([]), Z=np.array([]), lambda1=0.01, n_iter=1+10, max_iter=50000,
+                        admm_params=dict):
+    cov_dict = dict()
+    precision_dict = dict()
+    accuracy_dict = dict()
+    time_dict = dict()
+
+    tol_list = admm_params["tol"]
+    rtol_list = admm_params["rtol"]
+    method_list = admm_params["method"]
+    stop_list = admm_params["stop"]
+
     for method in method_list:
         for tol, rtol, stop in itertools.product(tol_list, rtol_list, stop_list):
 
@@ -122,15 +180,15 @@ def admm_time_benchmark(S=np.array([]), Omega_0=np.array([]), Z=np.array([]), la
             for _ in trange(n_iter, desc=key, leave=True):
                 if method == "single":
                     start = time.time()
-                    Z_i, info = ADMM_SGL(S, lambda1=lambda1, Omega_0=Omega_0, max_iter=max_iter,
-                                         tol=tol, rtol=rtol, stopping_criterion=stop)
+                    Z_i, info = ADMM_SGL(S, lambda1=lambda1, Omega_0=Omega_0, max_iter=max_iter, tol=tol, rtol=rtol,
+                                         stopping_criterion=stop)
                     end = time.time()
                     time_list.append(end - start)
 
                 elif method == "block":
                     start = time.time()
-                    Z_i = block_SGL(S, lambda1=lambda1, Omega_0=Omega_0, max_iter=max_iter,
-                                    tol=tol, rtol=rtol, stopping_criterion=stop)
+                    Z_i = block_SGL(S, lambda1=lambda1, Omega_0=Omega_0, max_iter=max_iter, tol=tol, rtol=rtol,
+                                    stopping_criterion=stop)
                     end = time.time()
                     time_list.append(end - start)
 
@@ -146,46 +204,43 @@ def admm_time_benchmark(S=np.array([]), Omega_0=np.array([]), Z=np.array([]), la
     return time_dict, accuracy_dict, precision_dict
 
 
-def time_benchmark(X_dict=dict, S_dict=dict, lambda1=0.01, Z_model=str, Z_tol=1e-10, Z_rtol=1e-4, Z_enet=0.1,
-                   sk_models=["sklearn", "regain"], admm_models=["single", "block"], admm_stop=['boyd'],
-                   tol_list=list, rtol_list=list, enet_list=list, max_iter=50000,
-                   t_dict=dict(), acc_dict=dict(), prec_dict=dict()):
+def time_benchmark(X=list, S=list, lambda1=0.01, max_iter=50000, Z_model=str, sk_models=["sklearn", "regain"],
+                   n_iter=int, sk_params=dict, rg_params=dict, admm_params=dict):
     assert Z_model in ('sklearn', 'regain')
+    acc_dict = dict()
+    prec_dict = dict()
+    t_dict = dict()
 
-    for X, S in zip(X_dict.values(), S_dict.values()):
+    # Model solution Z
+    Z, Z_time = model_solution(model=Z_model, X=X, lambda1=lambda1)
 
-        # Sklearn and regain benchmarking
-        Z, Z_time = model_solution(model=Z_model, X=X, lambda1=lambda1,
-                                   tol=Z_tol, rtol=Z_rtol, enet=Z_enet,
-                                   max_iter=max_iter)
+    # Sklearn and regain benchmarking
+    models = models_to_dict(models=sk_models, lambda1=lambda1, max_iter=max_iter,
+                            sk_params=sk_params, rg_params=rg_params)
 
-        models = models_to_dict(models=sk_models, lambda1=lambda1, tol_list=tol_list,
-                                rtol_list=rtol_list, enet_list=enet_list, max_iter=max_iter)
+    sk_time, sk_accuracy, Z_sk = sklearn_time_benchmark(models, X=X, Z=Z, n_iter=n_iter)
 
-        sk_time, sk_accuracy, Z_sk = sklearn_time_benchmark(models, X=X, Z=Z, n_iter=5)
+    # ADMM benchmarking
+    Omega_0 = np.eye(len(S))
 
-        # ADMM benchmarking
-        Omega_0 = np.eye(len(S))
+    admm_time, admm_accuracy, Z_admm = admm_time_benchmark(S=S, Omega_0=Omega_0, Z=Z, lambda1=lambda1, n_iter=1+n_iter,
+                                                           admm_params=admm_params)
 
-        admm_time, admm_accuracy, Z_admm = admm_time_benchmark(S=S, Omega_0=Omega_0, Z=Z, lambda1=lambda1,
-                                                               method_list=admm_models, stop_list=admm_stop,
-                                                               tol_list=tol_list, rtol_list=rtol_list, n_iter=1 + 5)
+    # Join results in a single dictionary
+    times = sk_time.copy()
+    times.update(admm_time)
+    for key, value in times.items():
+        t_dict[key + "_p_" + str(len(S)) + "_N_" + str(len(X))] = value
 
-        # Join results in a single dictionary
-        times = sk_time.copy()
-        times.update(admm_time)
-        for key, value in times.items():
-            t_dict[key + "_p_" + str(len(S)) + "_N_" + str(len(X))] = value
+    accs = sk_accuracy.copy()
+    accs.update(admm_accuracy)
+    for key, value in accs.items():
+        acc_dict[key + "_p_" + str(len(S)) + "_N_" + str(len(X))] = value
 
-        accs = sk_accuracy.copy()
-        accs.update(admm_accuracy)
-        for key, value in accs.items():
-            acc_dict[key + "_p_" + str(len(S)) + "_N_" + str(len(X))] = value
-
-        precs = Z_sk.copy()
-        precs.update(Z_admm)
-        for key, value in precs.items():
-            prec_dict[key + "_p_" + str(len(S)) + "_N_" + str(len(X))] = value
+    precs = Z_sk.copy()
+    precs.update(Z_admm)
+    for key, value in precs.items():
+        prec_dict[key + "_p_" + str(len(S)) + "_N_" + str(len(X))] = value
 
     return t_dict, acc_dict, prec_dict
 
@@ -207,7 +262,6 @@ def sparsity_benchmark(Theta_dict=dict, Z_dict=dict, t_rounding=float, sparsity_
 
 
 def dict_to_dataframe(times=dict, acc_dict=dict, spars_dict=dict):
-
     assert len(times) == len(acc_dict) == len(spars_dict)
 
     df = pd.DataFrame(data={'name': times.keys(),
@@ -224,7 +278,6 @@ def dict_to_dataframe(times=dict, acc_dict=dict, spars_dict=dict):
     df = df.drop(redundant_cols, axis=1)
 
     return df
-
 
 # def gini(array):
 #     """Calculate the Gini coefficient of a numpy array."""
