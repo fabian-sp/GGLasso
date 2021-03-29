@@ -207,9 +207,10 @@ def admm_time_benchmark(S=np.array([]), Omega_0=np.array([]), Z=np.array([]), la
 def time_benchmark(X=list, S=list, lambda1=0.01, max_iter=50000, Z_model=str, sk_models=["sklearn", "regain"],
                    n_iter=int, sk_params=dict, rg_params=dict, admm_params=dict):
     assert Z_model in ('sklearn', 'regain')
-    acc_dict = dict()
-    prec_dict = dict()
-    t_dict = dict()
+
+    accuracy_dict = dict()
+    precision_dict = dict()
+    time_dict = dict()
 
     # Model solution Z
     Z, Z_time = model_solution(model=Z_model, X=X, lambda1=lambda1)
@@ -230,19 +231,19 @@ def time_benchmark(X=list, S=list, lambda1=0.01, max_iter=50000, Z_model=str, sk
     times = sk_time.copy()
     times.update(admm_time)
     for key, value in times.items():
-        t_dict[key + "_p_" + str(len(S)) + "_N_" + str(len(X))] = value
+        time_dict[key + "_p_" + str(len(S)) + "_N_" + str(len(X))] = value
 
     accs = sk_accuracy.copy()
     accs.update(admm_accuracy)
     for key, value in accs.items():
-        acc_dict[key + "_p_" + str(len(S)) + "_N_" + str(len(X))] = value
+        accuracy_dict[key + "_p_" + str(len(S)) + "_N_" + str(len(X))] = value
 
     precs = Z_sk.copy()
     precs.update(Z_admm)
     for key, value in precs.items():
-        prec_dict[key + "_p_" + str(len(S)) + "_N_" + str(len(X))] = value
+        precision_dict[key + "_p_" + str(len(S)) + "_N_" + str(len(X))] = value
 
-    return t_dict, acc_dict, prec_dict
+    return time_dict, accuracy_dict, precision_dict
 
 
 def hamming_distance(X, Z, t=1e-10):
