@@ -41,15 +41,14 @@ def dict_shape(dict_=dict):
     return shape_list
 
 
-def benchmark_parameters(sk_tol_list=[1e-4, 1e-5, 1e-6, 1e-7], sk_rtol_list=[1e-4, 1e-5], enet_list=[1, 0.5, 0.1],
+def benchmark_parameters(sk_tol_list=[1e-4, 1e-5, 1e-6, 1e-7], enet_list=[1, 0.5, 0.1],
                          rg_tol_list=[1e-4, 1e-5, 1e-6, 1e-7], rg_rtol_list=[1e-4, 1e-5],
                          admm_tol_list=[1e-4, 1e-5, 1e-6, 1e-7], admm_rtol_list=[1e-4, 1e-5],
                          admm_stop=['boyd'], admm_method=['single', 'block']):
     # Sklearn params
     sk_tol_list = sk_tol_list
-    sk_rtol_list = sk_rtol_list
     enet_list = enet_list
-    sk_params = {"tol": sk_tol_list, "rtol": sk_rtol_list, "enet": enet_list}
+    sk_params = {"tol": sk_tol_list, "enet": enet_list}
 
     # Regain params
     rg_tol_list = rg_tol_list
@@ -94,12 +93,10 @@ def models_to_dict(models=None, lambda1=0.01, max_iter=50000, sk_params=dict, rg
             for key in sk_params.keys():
                 if key == "tol":
                     tol_list = sk_params[key]
-                elif key == "rtol":
-                    rtol_list = sk_params[key]
                 elif key == "enet":
                     enet_list = sk_params[key]
 
-            for tol, rtol, enet in itertools.product(tol_list, rtol_list, enet_list):
+            for tol, enet in itertools.product(tol_list, enet_list):
                 key = str(model) + "_tol_" + str(tol) + "_enet_" + str(enet)
                 models_dict[key] = sk_GL(alpha=lambda1, tol=tol, enet_tol=enet, max_iter=max_iter, assume_centered=True)
 
