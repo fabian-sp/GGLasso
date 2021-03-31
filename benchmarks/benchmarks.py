@@ -41,9 +41,9 @@ def dict_shape(dict_=dict):
     return shape_list
 
 
-def benchmark_parameters(sk_tol_list=[1e-4, 1e-5, 1e-6, 1e-7], enet_list=[1, 0.5, 0.1],
-                         rg_tol_list=[1e-4, 1e-5, 1e-6, 1e-7], rg_rtol_list=[1e-4, 1e-5],
-                         admm_tol_list=[1e-4, 1e-5, 1e-6, 1e-7], admm_rtol_list=[1e-4, 1e-5],
+def benchmark_parameters(sk_tol_list=[0.5, 0.25, 0.1], enet_list=[0.5, 0.25, 0.1],
+                         rg_tol_list=[1e-4, 1e-5, 1e-6], rg_rtol_list=[1e-3, 1e-4, 1e-5],
+                         admm_tol_list=[1e-6, 1e-7, 1e-8], admm_rtol_list=[1e-5, 1e-6, 1e-7],
                          admm_stop=['boyd'], admm_method=['single', 'block']):
     # Sklearn params
     sk_tol_list = sk_tol_list
@@ -69,7 +69,7 @@ def benchmark_parameters(sk_tol_list=[1e-4, 1e-5, 1e-6, 1e-7], enet_list=[1, 0.5
     return sk_params, rg_params, admm_params
 
 
-def models_to_dict(models=None, lambda1=0.01, max_iter=50000, sk_params=dict, rg_params=dict):
+def models_to_dict(models=None, lambda1=0.1, max_iter=50000, sk_params=dict, rg_params=dict):
     if models is None:
         models = list(str)
     models_dict = dict()
@@ -156,7 +156,7 @@ def sklearn_time_benchmark(models=dict, X=np.array([]), Z=np.array([]), n_iter=1
     return time_dict, accuracy_dict, precision_dict
 
 
-def admm_time_benchmark(S=np.array([]), Omega_0=np.array([]), Z=np.array([]), lambda1=0.01, n_iter=int, max_iter=50000,
+def admm_time_benchmark(S=np.array([]), Omega_0=np.array([]), Z=np.array([]), lambda1=0.1, n_iter=int, max_iter=50000,
                         admm_params=dict):
     cov_dict = dict()
     precision_dict = dict()
@@ -201,7 +201,7 @@ def admm_time_benchmark(S=np.array([]), Omega_0=np.array([]), Z=np.array([]), la
     return time_dict, accuracy_dict, precision_dict
 
 
-def time_benchmark(X=list, S=list, lambda1=0.01, max_iter=50000, Z_model=str, sk_models=["sklearn", "regain"],
+def time_benchmark(X=list, S=list, lambda1=0.1, max_iter=50000, Z_model=str, sk_models=["sklearn", "regain"],
                    n_iter=int, sk_params=dict, rg_params=dict, admm_params=dict):
     assert Z_model in ('sklearn', 'regain')
 
@@ -249,7 +249,9 @@ def hamming_distance(X, Z, t=1e-10):
     return (A + B == 1).sum()
 
 
-def sparsity_benchmark(Theta_dict=dict, Z_dict=dict, t_rounding=float, sparsity_dict=dict()):
+def sparsity_benchmark(Theta_dict=dict, Z_dict=dict, t_rounding=float):
+    sparsity_dict = dict()
+
     for Theta in Theta_dict.values():
 
         for key, Z in Z_dict.items():
@@ -275,7 +277,25 @@ def dict_to_dataframe(times=dict, acc_dict=dict, spars_dict=dict):
     redundant_cols = ['split', "tol_str", "rtol_str", "p_str", "N_str"]
     df = df.drop(redundant_cols, axis=1)
 
+    convert_dict = {'tol': float, 'rtol': float, "p": int, "N": int}
+    df = df.astype(convert_dict)
+
     return df
+
+
+def plot_log_distance(df=pd.DataFrame(), upper_bound=float, lower_bound=float):
+    fig = px.scatter(df[(df["accuracy"] < upper_bound) & (df["accuracy"] > lower_bound)],
+                     x="time", y="accuracy", text="name", color="method",
+                     log_y=True, facet_col='p', facet_col_wrap=3,
+                     labels={
+                         "time": "Time, s",
+                         "accuracy": "Log_distance",
+                         "method": "method"
+                     },
+                     template="plotly_white",
+                     title="Log-distance between Z and Z' with respect to ADMM convergence rates")
+    fig.update_traces(mode='markers+lines')
+    return fig
 
 # def gini(array):
 #     """Calculate the Gini coefficient of a numpy array."""
