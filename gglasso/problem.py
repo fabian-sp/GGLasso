@@ -1,3 +1,6 @@
+"""
+author: Fabian Schaipp
+"""
 import numpy as np
 
 from .helper.basic_linalg import trp, adjacency_matrix, scale_array_by_diagonal

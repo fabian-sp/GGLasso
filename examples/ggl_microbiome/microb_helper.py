@@ -65,6 +65,8 @@ def load_and_transform(K = 5, min_inst = 2, compute_G = False):
         file = "../../data/microbiome/OTU_data_" + str(num+1) + ".csv"
         dt = pd.read_csv(file, index_col = 0).sort_index()
         all_csv[num] = dt.copy()
+        
+        assert (dt.T.dtypes == 'int64').all(), f"instance {num}: {dt.dtypes.unique()}"
     
     # function takes list as input
     ix_exist, ix_location = construct_indexer(list(all_csv.values()))
