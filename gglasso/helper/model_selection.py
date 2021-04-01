@@ -7,14 +7,18 @@ import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
 
 from gglasso.helper.basic_linalg import Sdot, adjacency_matrix
-from gglasso.helper.experiment_helper import mean_sparsity, sparsity, consensus
+from gglasso.helper.experiment_helper import mean_sparsity, sparsity
 
 from gglasso.helper.experiment_helper import get_K_identity as id_array
 from gglasso.helper.ext_admm_helper import get_K_identity as id_dict
-from gglasso.solver.single_admm_solver import ADMM_SGL
+from gglasso.solver.single_admm_solver import ADMM_SGL, block_SGL
 
 
 plt.rc('text', usetex=True)
+
+# tolerances for solving on grids (pick this smaller if there is a no-convergence-warning)
+TOL = 1e-7
+RTOL = 1e-6
         
 def lambda_parametrizer(l1 = 0.05, w2 = 0.5):
     """transforms given l1 and w2 into the respective l2"""
@@ -47,16 +51,60 @@ def lambda_grid(l1, l2 = None, w2 = None):
         
     return L1.squeeze(), L2.squeeze(), w2
 
-def grid_search(solver, S, N, p, reg, l1, l2 = None, w2 = None, method= 'eBIC', gamma = 0.3, G = None, latent = False, mu_range = None, ix_mu = None, verbose = False):
+def grid_search(solver, S, N, p, reg, l1, l2 = None, w2 = None, method= 'eBIC', gamma = 0.3, \
+                G = None, latent = False, mu_range = None, ix_mu = None, verbose = False):
     """
-    method for doing model selection using grid search and AIC/eBIC
-    we work the grid columnwise, i.e. hold l1 constant and change l2
+    method for doing model selection for MGL problems using grid search and AIC/eBIC
+    parameters to select: lambda1 (sparsity), lambda2 (group sparsity or total variation)
     
-    gamma: parameter inn [0,1] for eBIC
+    In the grid lambda1 changes over columns, lambda2 over the rows.
+    The grid is ran columnwise, i.e. hold l1 constant and change l2.
     
-    set latent = True if you want to include latent factors. 
-    ix_mu: array of shape K, len(l1): indicates for each lambda and each instance which value in mu we use (can be obtained with K_single_grid)
-    mu_range: arrays of possible mu values
+    
+    Parameters
+    ----------
+    solver : solver method 
+        DESCRIPTION.
+    S : array of shape (K,p,p) or dict
+        empirical covariance matrices.
+    N : array
+        sample size for each k=1,..K.
+    p : array or int
+        dimension/number of variables for each k=1,..,K.
+    reg : str
+        "GGL" for Group Graphical Lasso.
+        "FGL" for Fused Graphical Lasso.
+    l1 : array
+        grid values for lambda1. Ideally, this is sorted in descending order.
+    l2 : array, optional
+        grid values for lambda2. Specify either l2 or w2.
+    w2 : array, optional
+        grid values for w2. 
+    method : str, optional
+        method for choosing the optimal grid point, either 'eBIC' or 'AIC'. The default is 'eBIC'.
+    gamma : float, optional
+        Parameter for the eBIC, needs to be in [0,1]. The default is 0.3.
+    G : array, optional
+        bookkeeping array for groups, only needed if dimensions are non-conforming. The default is None.
+    latent : boolean, optional
+        whether to model latent variables or not. The default is False.
+    mu_range : array, optional
+        grid values for mu1. Only needed when latent=True.
+    ix_mu : array, optional
+        shape (K,len(l1)). Indices for each element of l1 and each instance k which mu to choose from mu_range.
+        Only needed when latent=True. Is computed by K_single_grid-method.
+    verbose : boolean, optional
+        verbosity. The default is False.
+
+    Returns
+    -------
+    stats : dict
+        statistics of the grid search, for example BIC values, sparsity, rank of latent compinent at the grid points.
+    ix : double
+        index of L1/L2 grid which is selected.
+    curr_best : dict
+        solution of Multiple Graphical Lasso problem at the best grid point.
+
     """
     
     assert method in ['AIC', 'eBIC']
@@ -64,6 +112,7 @@ def grid_search(solver, S, N, p, reg, l1, l2 = None, w2 = None, method= 'eBIC', 
     
     if latent:
         assert np.all(mu_range > 0)
+    
 
     L1, L2, W2 = lambda_grid(l1, l2, w2)
     
@@ -88,7 +137,7 @@ def grid_search(solver, S, N, p, reg, l1, l2 = None, w2 = None, method= 'eBIC', 
     SKIP = np.zeros((grid1, grid2), dtype = bool)
     
     
-    kwargs = {'reg': reg, 'S': S, 'tol': 1e-4, 'rtol': 1e-4, 'verbose': False, 'measure': False}
+    kwargs = {'reg': reg, 'S': S, 'tol': TOL, 'rtol': RTOL, 'verbose': False, 'measure': False}
     if type(S) == dict:
         K = len(S.keys())
         Omega_0 = id_dict(p)
@@ -181,17 +230,45 @@ def grid_search(solver, S, N, p, reg, l1, l2 = None, w2 = None, method= 'eBIC', 
     
     return stats, ix, curr_best
 
-def K_single_grid(S, lambda_range, N, method = 'eBIC', gamma = 0.3, latent = False, mu_range = None):
+def K_single_grid(S, lambda_range, N, method = 'eBIC', gamma = 0.3, latent = False, mu_range = None, use_block = True):
     """
-    method for doing model selection for single Graphical Lasso estimation
-    it returns two estimates, one with the individual optimal reg. param. for each instance and one with the uniform optimal
-    lambda_range: range of lambda values
-    N: vector with sample sizes for each instance
+    method for doing model selection for K single Graphical Lasso problems, using grid search and AIC/eBIC
+    parameters to select: lambda1 (sparsity), mu1 (lowrank, if latent=True)
     
-    gamma: parameter for eBIC
+    A grid search on lambda1/mu1 is run on each instance independently.
+    It returns two estimates:
+        1) est_indv: choosing optimal lambda1/mu1 pair for each k=1,..,K independently
+        2) est_uniform: choosing optimal lambda1 for all k=1,..,K uniformly and the respective optimal mu1 for each k=1,..,K independently
+
+    Parameters
+    ----------
+    S : array of shape (K,p,p) or dict
+        empirical covariance matrices.
+    lambda_range : array
+        grid values for lambda1. Ideally, this is sorted in descending order.
+    N : array
+        sample size for each k=1,..K.
+    method : str, optional
+        method for choosing the optimal grid point, either 'eBIC' or 'AIC'. The default is 'eBIC'.
+    gamma : float, optional
+        Parameter for the eBIC, needs to be in [0,1]. The default is 0.3.
+    latent : boolean, optional
+        whether to model latent variables or not. The default is False.
+    mu_range : array, optional
+        grid values for mu1. Only needed when latent=True.
+    use_block : boolean, optional
+        whether to use ADMM on each connected component. Typically, for large and sparse graphs, this is a speedup. Only possible for latent=False.
     
-    latent: boolean which indicates if low rank term should be estimated (i.e. Latent Variable Graphical Lasso)
-    mu_range: range of penalty parameters for trace norm (only needed if latent = True)
+
+    Returns
+    -------
+    est_uniform : dict
+        uniformly chosen best grid point (see above for details)
+    est_indv : dict
+        individually chosen best grid point
+    statistics : dict
+        statistics of the grid search, for example BIC values, sparsity, rank of latent compinent at the grid points.
+
     """
     assert method in ['AIC', 'eBIC']
     
@@ -209,7 +286,7 @@ def K_single_grid(S, lambda_range, N, method = 'eBIC', gamma = 0.3, latent = Fal
     else:
         mu_range = np.array([0])
         M = 1
-        
+    
     L = len(lambda_range)
     
     # create grid for stats, if latent = False MU is array of zeros
@@ -245,7 +322,7 @@ def K_single_grid(S, lambda_range, N, method = 'eBIC', gamma = 0.3, latent = Fal
             S_k = S[k,:,:].copy()
         
         best, est_k, lr_k, stats_k = single_grid_search(S = S_k, lambda_range = lambda_range, N = N[k], method = method, gamma = gamma, \
-                                                             latent = latent, mu_range = mu_range)
+                                                             latent = latent, mu_range = mu_range, use_block = use_block)
         estimates[k] = est_k.copy()
         lowrank[k] = lr_k.copy()
         
@@ -328,7 +405,41 @@ def K_single_grid(S, lambda_range, N, method = 'eBIC', gamma = 0.3, latent = Fal
     return est_uniform, est_indv, statistics
 
 
-def single_grid_search(S, lambda_range, N, method = 'eBIC', gamma = 0.3, latent = False, mu_range = None):
+def single_grid_search(S, lambda_range, N, method = 'eBIC', gamma = 0.3, latent = False, mu_range = None, use_block = True):
+    """
+    method for model selection for SGL problem, doing grid search and selection via eBIC or AIC
+
+    Parameters
+    ----------
+    S : array of shape (p,p)
+        empirical covariance matrix.
+    lambda_range : array
+        range of lambda1 values (sparsity regularization parameter). Ideally, this is sorted in descending order.
+    N : int
+        sample size.
+    method : str, optional
+        method for choosing the optimal grid point, either 'eBIC' or 'AIC'. The default is 'eBIC'.
+    gamma : float, optional
+        Parameter for the eBIC, needs to be in [0,1]. The default is 0.3.
+    latent : boolean, optional
+        whether to model latent variables or not. The default is False.  
+    mu_range : array, optional
+        range of mu1 values (low rank regularization parameter). Only needed when latent = True.
+    use_block : boolean, optional
+        whether to use ADMM on each connected component. Typically, for large and sparse graphs, this is a speedup. Only possible for latent=False.
+    
+    Returns
+    -------
+    best_sol : dict
+        solution of SGL problem at best grid point.
+    estimates : array
+        solutions of Theta variable at all grid points.
+    lowrank : array
+        solutions of L variable at all grid points.
+    stats : dict
+        statistics of the grid search, for example BIC values, sparsity, rank of latent compinent at the grid points.
+
+    """
     p = S.shape[0]
     
     if latent:
@@ -337,7 +448,7 @@ def single_grid_search(S, lambda_range, N, method = 'eBIC', gamma = 0.3, latent 
     else:
         mu_range = np.array([0])
         M = 1
-        
+       
     L = len(lambda_range)
     
     gammas = [0.1, 0.3, 0.5, 0.7]
@@ -360,7 +471,8 @@ def single_grid_search(S, lambda_range, N, method = 'eBIC', gamma = 0.3, latent 
     
     RANK = np.zeros((L,M))
     
-    kwargs = {'S':S, 'Omega_0': np.eye(p), 'X_0': np.eye(p), 'tol': 1e-5, 'rtol': 1e-4, 'verbose': False, 'measure': False}
+    kwargs = {'S': S, 'Omega_0': np.eye(p), 'X_0': np.eye(p), 'tol': TOL, 'rtol': RTOL,\
+              'verbose': False, 'measure': False}
     
     estimates = np.zeros((L,M,p,p))
     lowrank = np.zeros((L,M,p,p))
@@ -373,8 +485,11 @@ def single_grid_search(S, lambda_range, N, method = 'eBIC', gamma = 0.3, latent 
             if latent:
                 kwargs['mu1'] = mu_range[m]
                 kwargs['latent'] = True
-                        
-            sol, info = ADMM_SGL(**kwargs)
+            
+            if use_block and not latent:
+                sol = block_SGL(**kwargs)
+            else:
+                sol, _ = ADMM_SGL(**kwargs)
             
             Theta_sol = sol['Theta']
             estimates[j,m,:,:] = Theta_sol.copy()
@@ -555,10 +670,10 @@ def single_surface_plot(L1, L2, C, ax, name = 'eBIC'):
     Z = np.log(C)
     ax.plot_surface(X, Y, Z , cmap = plt.cm.ocean, linewidth=0, antialiased=True)
     
-    #ax.set_xlabel('lambda_1')
-    #ax.set_ylabel('lambda_2')
-    ax.set_xlabel(r'$w_1$', fontsize = 14)
-    ax.set_ylabel(r'$w_2$', fontsize = 14)
+    ax.set_xlabel(r'$\lambda_1$', fontsize = 14)
+    ax.set_ylabel(r'$\lambda_2$', fontsize = 14)
+    #ax.set_xlabel(r'$w_1$', fontsize = 14)
+    #ax.set_ylabel(r'$w_2$', fontsize = 14)
     ax.set_zlabel(name, fontsize = 14)
     ax.view_init(elev = 25, azim = 110)
     
@@ -577,18 +692,20 @@ def single_surface_plot(L1, L2, C, ax, name = 'eBIC'):
     
     return
 
-def surface_plot(L1, L2, C, name = 'eBIC', gammas = None):
-    
+def surface_plot(L1, L2, C, name = 'eBIC'):
     fig = plt.figure(figsize = (8,5))  
-    if len(C.shape) == 2:
+    
+    if name == 'eBIC':
+        gammas = list(C.keys())
+        
+    if type(C) == np.ndarray:
         ax = fig.gca(projection='3d')
         single_surface_plot(L1, L2, C, ax, name = name)
-        
-        
+             
     else:
-        for j in np.arange(C.shape[0]):
+        for j in np.arange(len(gammas)):
             ax = fig.add_subplot(2, 2, j+1, projection='3d')
-            single_surface_plot(L1, L2, C[j,:,:], ax, name = name)
+            single_surface_plot(L1, L2, C[gammas[j]], ax, name = name)
             if gammas is not None:
                 ax.set_title(rf"$\gamma = $ {gammas[j]}")
     

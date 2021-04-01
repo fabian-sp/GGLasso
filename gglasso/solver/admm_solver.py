@@ -130,6 +130,19 @@ def ADMM_MGL(S, lambda1, lambda2, reg , Omega_0 , \
     residual = np.zeros(max_iter)
     objective = np.zeros(max_iter)
     status = ''
+    
+    if verbose:
+        print("------------ADMM Algorithm for Multiple Graphical Lasso----------------")
+
+        if stopping_criterion == 'boyd':
+            hdr_fmt = "%4s\t%10s\t%10s\t%10s\t%10s"
+            out_fmt = "%4d\t%10.4g\t%10.4g\t%10.4g\t%10.4g"
+            print(hdr_fmt % ("iter", "r_t", "s_t", "eps_pri", "eps_dual"))
+        elif stopping_criterion == 'kkt':
+            hdr_fmt = "%4s\t%10s"
+            out_fmt = "%4d\t%10.4g"
+            print(hdr_fmt % ("iter", "kkt residual"))
+            
     ##################################################################
     ### MAIN LOOP STARTS
     ##################################################################
@@ -138,8 +151,6 @@ def ADMM_MGL(S, lambda1, lambda2, reg , Omega_0 , \
         if measure:
             start = time.time()
 
-        if verbose:
-            print(f"------------Iteration {iter_t} of the ADMM Algorithm----------------")
         
         # Omega Update
         Omega_t_1 = Omega_t.copy()
@@ -173,7 +184,10 @@ def ADMM_MGL(S, lambda1, lambda2, reg , Omega_0 , \
             r_t,s_t,e_pri,e_dual = ADMM_stopping_criterion(Omega_t, Omega_t_1, Theta_t, L_t, X_t,\
                                                            S, rho, tol, rtol, latent)
             residual[iter_t] = max(r_t,s_t)
-        
+            
+            if verbose:
+                print(out_fmt % (iter_t,r_t,s_t,e_pri,e_dual))
+                
             if (r_t <= e_pri) and  (s_t <= e_dual):
                 status = 'optimal'
                 break
@@ -181,14 +195,14 @@ def ADMM_MGL(S, lambda1, lambda2, reg , Omega_0 , \
         elif stopping_criterion == 'kkt':
             eta_A = kkt_stopping_criterion(Omega_t, Theta_t, L_t, rho*X_t, S , lambda1, lambda2, nk, reg, latent, mu1)
             residual[iter_t] = eta_A
-        
+            
+            if verbose:
+                print(out_fmt % (iter_t,eta_A))
+            
             if eta_A <= tol:
                 status = 'optimal'
                 break
         
-        if verbose:
-            print(f"Current accuracy: ", residual[iter_t])
-            
     ##################################################################
     ### MAIN LOOP FINISHED
     ##################################################################
