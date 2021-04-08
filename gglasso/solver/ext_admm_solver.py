@@ -18,20 +18,82 @@ def ext_ADMM_MGL(S, lambda1, lambda2, reg , Omega_0, G,\
                  X0 = None, X1 = None, tol = 1e-5 , rtol = 1e-4, stopping_criterion = 'boyd',\
                  rho= 1., max_iter = 1000, verbose = False, measure = False, latent = False, mu1 = None):
     """
-    This is an ADMM algorithm for solving the Multiple Graphical Lasso problem
-    where not all instances have the same number of dimensions
-    reg specifies the type of penalty, i.e. Group or Fused Graphical Lasso
+    This is an ADMM algorithm for solving the Group Graphical Lasso problem
+    where not all instances have the same number of dimensions, i.e. some variables are present in some instances and not in others.
+    A group sparsity penalty is applied to all pairs of variables present in multiple instances.
     
-    Omega_0: start point -- must be specified as a dictionary with the keys 0,...,K-1 (as integers)
-    S: empirical covariance matrices -- must be specified as a dictionary with the keys 0,...,K-1 (as integers)
-    lambda1: can be a vector of length K or a float
+    IMPORTANT: As the arrays are non-conforming in dimensions here, we operate on dictionaries with keys 1,..,K (as int) and each value is a array of shape (p_k,p_k).
     
-    latent: boolean to indidate whether low rank term should be estimated
-    mu1: low rank penalty parameter (if latent=True), can be a vector of length K or a float
+    GGL problem formulation (latent=False):
+        min_{Omega,Theta,Lambda} sum_{k=1}^K -log det(Omega^k) + Tr(S^k*Omega^k) + sum_{k=1}^K lambda1*||Theta^k||_{1,od} 
+                                    + sum_{l} lambda2 * beta_l * ||Lambda_[l]||_2
+        subject to Omega^k = Theta^k  k=1,..,K
+                   Lambda^k = Theta^k k=1,..,K 
     
-    G: array containing the group penalty indices
+        where l indexes the groups of overlapping variables and Lambda_[l] is the array of all respective components.
+        To account for differing group sizes we multiply with beta_l = sqrt(len(Lambda[l])).
     
-    In the code, X are the SCALED dual variables, for the KKT stop criterion they have to be unscaled again!
+    Latent Variable GGL problem formulation (latent=True):
+        min_{Omega,Theta,Lambda,L} sum_{k=1}^K -log det(Omega^k) + Tr(S^k*Omega^k) + sum_{k=1}^K lambda1*||Theta^k||_{1,od} 
+                                    + sum_{l} lambda2 * beta_l * ||Lambda_[l]||_2 + sum_{k=1}^K mu1*||L^k||_\star 
+        subject to Omega^k = Theta^k - L^k  k=1,..,K
+                   Lambda^k = Theta^k       k=1,..,K 
+    
+    Note:
+        - typically, Omega_t sequence is positive definite, Theta_t sequence is sparse.
+        - in the code, X0_t and X1_t are the SCALED (with 1/rho) dual variables for the equality constraint. 
+
+    Parameters
+    ----------
+    S : dict 
+        empirical covariance matrices. S should have keys 1,..,K (as integers) and S[k] contains the (p_k,p_k)-array of the empirical cov. matrix of the k-th instance. 
+        Each S[k] needs to be symmetric and semipositive definite.
+    lambda1 : float, positive
+        sparsity regularization parameter.
+    lambda2 : float, positive
+        group sparsity regularization parameter.
+    reg : str
+        so far only Group Graphical Lasso is available, hence choose "GGL".
+    Omega_0 : dict
+        starting point for the Omega variable. Should be of same form as S. If no better starting point is available, choose
+        Omega_0[k] = np.eye(p_k) for k=1,...,K
+    G : array
+        bookkeeping arrays which contains information where the respective entries for each group can be found.
+    X0 : dict, optional
+        starting point for the X0 variable. If not specified, it is set to zeros.
+    X1 : dict, optional
+        starting point for the X1 variable. If not specified, it is set to zeros.
+    rho : float, positive, optional
+        step size paramater for the augmented Lagrangian in ADMM. The default is 1. Tune this parameter for optimal performance.
+    max_iter : int, optional
+        maximum number of iterations. The default is 1000.
+    tol : float, positive, optional
+        tolerance for the primal residual. See "Distributed Optimization and Statistical Learning via the Alternating Direction Method of Multipliers", Boyd et al. for details.
+        The default is 1e-7.
+    rtol : float, positive, optional
+        tolerance for the dual residual. The default is 1e-4.
+    stopping_criterion : str, optional
+        'boyd': Stopping criterion after Boyd et al.
+        'kkt': KKT residual is chosen as stopping criterion. This is computationally expensive to compute.
+        The default is 'boyd'.
+    verbose : boolean, optional
+        verbosity of the solver. The default is False.
+    measure : boolean, optional
+        turn on/off measurements of runtime per iteration. The default is False.
+    latent : boolean, optional
+        Solve the GGL problem with or without latent variables (see above for the exact formulations).
+        The default is False.
+    mu1 : float, positive, optional
+        low-rank regularization parameter, possibly different for each instance k=1,..,K. Only needs to be specified if latent=True.
+
+    Returns
+    -------
+    sol : dict
+        contains the solution, i.e. Omega, Theta, X0, X1 (and L if latent=True) after termination. All elements are dictionaries with keys 1,..,K and (p_k,p_k)-arrays as values.
+    info : dict
+        status and measurement information from the solver.
+
+    
     """
     K = len(S.keys())
     p = np.zeros(K, dtype= int)
@@ -85,6 +147,19 @@ def ext_ADMM_MGL(S, lambda1, lambda2, reg , Omega_0, G,\
     runtime = np.zeros(max_iter)
     residual = np.zeros(max_iter)
     status = ''
+    
+    if verbose:
+        print("------------ADMM Algorithm for Multiple Graphical Lasso----------------")
+
+        if stopping_criterion == 'boyd':
+            hdr_fmt = "%4s\t%10s\t%10s\t%10s\t%10s"
+            out_fmt = "%4d\t%10.4g\t%10.4g\t%10.4g\t%10.4g"
+            print(hdr_fmt % ("iter", "r_t", "s_t", "eps_pri", "eps_dual"))
+        elif stopping_criterion == 'kkt':
+            hdr_fmt = "%4s\t%10s"
+            out_fmt = "%4d\t%10.4g"
+            print(hdr_fmt % ("iter", "kkt residual"))
+            
     ##################################################################
     ### MAIN LOOP STARTS
     ##################################################################
@@ -92,10 +167,7 @@ def ext_ADMM_MGL(S, lambda1, lambda2, reg , Omega_0, G,\
         
         if measure:
             start = time.time()
-            
-        if verbose:
-            print(f"------------Iteration {iter_t} of the ADMM Algorithm----------------")
-        
+ 
         # Omega Update
         Omega_t_1 = Omega_t.copy()
         for k in np.arange(K):
@@ -137,9 +209,11 @@ def ext_ADMM_MGL(S, lambda1, lambda2, reg , Omega_0, G,\
             r_t,s_t,e_pri,e_dual = ADMM_stopping_criterion(Omega_t, Omega_t_1, Theta_t, L_t, Lambda_t, Lambda_t_1, X0_t, X1_t,\
                                                            S, rho, p, tol, rtol, latent)
             
-            #print(f"(r_k, s_k, e_pi, e_dual): {(r_t,s_t,e_pri,e_dual)}")
             residual[iter_t] = max(r_t,s_t)
-        
+            
+            if verbose:
+                print(out_fmt % (iter_t,r_t,s_t,e_pri,e_dual))
+                
             if (r_t <= e_pri) and  (s_t <= e_dual):
                 status = 'optimal'
                 break
@@ -148,7 +222,10 @@ def ext_ADMM_MGL(S, lambda1, lambda2, reg , Omega_0, G,\
             eta_A = kkt_stopping_criterion(Omega_t, Theta_t, L_t, Lambda_t, dict((k, rho*v) for k,v in X0_t.items()), dict((k, rho*v) for k,v in X1_t.items()),\
                                                 S , G, lambda1, lambda2, reg, latent, mu1)
             residual[iter_t] = eta_A
-        
+            
+            if verbose:
+                print(out_fmt % (iter_t,eta_A))
+                
             if eta_A <= tol:
                 status = 'optimal'
                 break

@@ -16,7 +16,6 @@ def get_K_identity(p):
         
     return X
 
-
 def load_G(path):
     G1 = np.loadtxt(path + 'G1.txt')
     G2 = np.loadtxt(path + 'G2.txt')
@@ -44,6 +43,42 @@ def construct_trivial_G(p, K):
             
     return G
 
+def construct_indexer(samples):
+    """
+    Creates DataFrames which store information which variables exist in which instances (and where they can be found)
+    
+    Parameters
+    ----------
+    samples : list
+        list of pd.DataFrame, each element should be of shape (n_variables, n_samples).
+        The index of the DataFrame should contain unique identifiers (at best integers) for each variable.
+
+    Returns
+    -------
+    ix_exist : DataFrame
+        DESCRIPTION.
+    ix_location : DataFrame
+        DESCRIPTION.
+
+    """
+    K = len(samples)
+    
+    all_ix = pd.Index([])
+    
+    for k in np.arange(K):      
+        all_ix = all_ix.union(samples[k].index)
+
+    # create info of which location each feature has in each instance
+    ix_exist = pd.DataFrame(index = all_ix, columns = np.arange(K)) 
+    ix_location = pd.DataFrame(index = all_ix, columns = np.arange(K)) 
+    for k in np.arange(K):
+        exist = all_ix.isin(samples[k].index)
+        locations = [samples[k].index.get_loc(i) for i in all_ix[exist]]
+        ix_exist.loc[:,k] = exist
+        ix_location.loc[exist,k] = locations
+    
+    return ix_exist, ix_location
+
 def check_G(G, p):
     """
     function to check a bookkeeping group penalty matrix G
@@ -55,7 +90,7 @@ def check_G(G, p):
     
     assert np.all(G.sum(axis = 2) >= -K), "G has rows with only -1 entries"
     
-    assert np.all(((G==-1).sum(axis = 0) == 2) | ((G==-1).sum(axis = 0) == 0))
+    assert np.all(((G==-1).sum(axis = 0) == 2) | ((G==-1).sum(axis = 0) == 0)), "Only row or column index specified in some group"
     
     assert np.all((G[0,:,:] + G[1,:,:] == -2) | (G[0,:,:] != G[1,:,:])), "G has entries on the diagonal!"
     
@@ -84,9 +119,10 @@ def create_group_array(ix_exist, ix_location, min_inst = 2):
     G2 = np.zeros((L,K), dtype = int)
     bar = 0.1
     
+    print("Creation of bookeeping array..." )
     for l in np.arange(L):
         if l/L >= bar:
-            print("Creation of bookeeping array: " + str(bar*100) + "% finished")
+            print(str(round(bar*100)) + "% finished")
             bar += .1
         p = all_ix[all_pairs[l]]
         # nonexisting features are marked with -1 
@@ -107,3 +143,22 @@ def create_group_array(ix_exist, ix_location, min_inst = 2):
     
     return G
 
+def consensus(sol, G):
+    L = G.shape[1]
+    #groupsize = (G!=-1).sum(axis=2)[0]
+    K = G.shape[2]
+    nnz = np.zeros(L)
+    
+    val =  np.zeros((L,K))
+    adj = -1 * np.ones((L,K))
+    for l in np.arange(L):
+        for k in np.arange(K):
+            if G[0,l,k] == -1:
+                val[l,k] = np.nan
+                continue
+            else:
+                val[l,k] = sol[k][G[0,l,k], G[1,l,k]]
+                nnz[l] += abs(sol[k][G[0,l,k], G[1,l,k]]) >= 1e-5
+                adj[l,k] = abs(sol[k][G[0,l,k], G[1,l,k]]) >= 1e-5
+                
+    return nnz, adj, val 

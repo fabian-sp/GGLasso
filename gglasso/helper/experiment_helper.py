@@ -35,7 +35,7 @@ def lambda_grid(num1 = 5, num2 = 2, reg = 'GGL'):
     creates a grid of lambda 1 lambda 1 values
     idea: the grid goes from smaller to higher values when going down/right
     """
-    #l2 = np.logspace(start = -4, stop = -1, num = num2, base = 10)   
+    
     if reg == 'GGL':
         l2 = np.logspace(start = -3, stop = -1, num = num2, base = 10)
         w2 = np.linspace(0.2, 0.5, num1)
@@ -102,9 +102,9 @@ def discovery_rate(S_sol , S_true, t = 1e-5):
 def error(S_sol , S_true):
     return np.linalg.norm(S_sol - S_true)/np.linalg.norm(S_true)
 
-def hamming_distance(X,Z):
-    A = adjacency_matrix(X)
-    B = adjacency_matrix(Z)
+def hamming_distance(X, Z, t = 1e-10):
+    A = adjacency_matrix(X, t=t)
+    B = adjacency_matrix(Z, t=t)
     
     return (A+B == 1).sum()
     
@@ -137,31 +137,13 @@ def deviation(Theta):
     return d
 
 
-def consensus(sol, G):
-    L = G.shape[1]
-    #groupsize = (G!=-1).sum(axis=2)[0]
-    K = G.shape[2]
-    nnz = np.zeros(L)
-    
-    val =  np.zeros((L,K))
-    adj = -1 * np.ones((L,K))
-    for l in np.arange(L):
-        for k in np.arange(K):
-            if G[0,l,k] == -1:
-                val[l,k] = np.nan
-                continue
-            else:
-                val[l,k] = sol[k][G[0,l,k], G[1,l,k]]
-                nnz[l] += abs(sol[k][G[0,l,k], G[1,l,k]]) >= 1e-5
-                adj[l,k] = abs(sol[k][G[0,l,k], G[1,l,k]]) >= 1e-5
-                
-    return nnz, adj, val 
 #################################################################################################################
 ############################ DRAWING FUNCTIONS ##################################################################
 #################################################################################################################
 
-path_ggl = 'plots/ggl_powerlaw/'
-path_fgl = 'plots/fgl_powerlaw/'
+path_ggl_powerlaw = '../plots/ggl_powerlaw/'
+path_fgl_powerlaw = '../plots/fgl_powerlaw/'
+path_ggl_runtime = '../plots/ggl_runtime/' 
 
 default_size_big = (10,7)
 default_size_small = (6,5)
@@ -177,42 +159,13 @@ def get_default_color_coding():
     
     color_dict = {}    
     color_dict['truth'] = sns.color_palette("YlGnBu", 10)[-1] #'darkblue'
-    color_dict['GLASSO'] = mypal[7]
-    color_dict['ADMM'] = mypal[1]
-    color_dict['PPDNA'] = mypal[0]
+    color_dict['SGL'] = mypal[7]
+    color_dict['ADMM'] = mypal[0]
+    color_dict['PPDNA'] = mypal[1]
     color_dict['LTGL'] = mypal[5]
 
     return color_dict
 
-def get_graph_aes(with_edge_col = True):
-    aes = {'node_size' : 100, 'node_color' : 'lightslategrey', 'edge_color' : 'lightslategrey', 'width' : 1.5}
-    
-    if not with_edge_col:
-        del aes['edge_color']
-    return aes
-                
-def draw_group_graph(Theta , t = 1e-9):
-    """
-    Draws a network with Theta as precision matrix
-    """
-    
-    assert len(Theta.shape) == 3
-    (K,p,p) = Theta.shape
-    A = adjacency_matrix(Theta , t)
-    
-    gA = A.sum(axis=0)
-    G = nx.from_numpy_array(gA)
-    aes = get_graph_aes(with_edge_col = False)
-    
-    edge_col = []
-    for e in G.edges:
-        edge_col.append( gA[e[0], e[1]])
-    
-    fig = plt.figure()
-    #nx.draw_shell(G, with_labels = True, edge_color = edge_col, edge_cmap = plt.cm.RdYlGn, edge_vmin = 0, edge_vmax = K, **aes)
-    nx.draw_spring(G, with_labels = True, edge_color = edge_col, edge_cmap = plt.cm.RdYlGn, edge_vmin = 0, edge_vmax = K, **aes)
-    
-    return fig
 
 def draw_group_heatmap(Theta, method = 'truth', ax = None, t = 1e-5, save = False):
     (K,p,p) = Theta.shape
@@ -222,13 +175,17 @@ def draw_group_heatmap(Theta, method = 'truth', ax = None, t = 1e-5, save = Fals
     col = get_default_color_coding()[method]
     this_cmap = sns.light_palette(col, as_cmap=True)
     
+    
     if ax == None:
         fig,ax = plt.subplots(nrows = 1, ncols = 1, figsize = default_size_big)
+        fig.suptitle("Distribution of edges (color indicates number of instances with edge present)")
     with sns.axes_style("white"):
         sns.heatmap(A.sum(axis=0), mask = mask, ax = ax, square = True, cmap = this_cmap, vmin = 0, vmax = K, linewidths=.5, cbar_kws={"shrink": .5})
+
     if save:
-        fig.savefig(path_ggl + method +'_heatmap.pdf')
-       
+        fig.savefig(path_ggl_powerlaw + method +'_heatmap.pdf')
+    
+    
     return
         
 def plot_block_evolution(ax, start, stop, Theta, method, color_dict):
@@ -261,14 +218,14 @@ def plot_evolution(results, block = None, L = None, start = None, stop = None, s
     with sns.axes_style("whitegrid"):
         fig,axs = plt.subplots(nrows = 2, ncols = 2, figsize = default_size_small)
         plot_block_evolution(axs[0,0], start, stop, results.get('truth').get('Theta'), 'truth', color_dict)
-        plot_block_evolution(axs[0,1], start, stop, results.get('PPDNA').get('Theta'), 'PPDNA', color_dict)
+        plot_block_evolution(axs[0,1], start, stop, results.get('ADMM').get('Theta'), 'ADMM', color_dict)
         plot_block_evolution(axs[1,0], start, stop, results.get('LTGL').get('Theta'), 'LTGL', color_dict)
-        plot_block_evolution(axs[1,1], start, stop, results.get('GLASSO').get('Theta'), 'GLASSO', color_dict)
+        plot_block_evolution(axs[1,1], start, stop, results.get('SGL').get('Theta'), 'SGL', color_dict)
     
     fig.suptitle('Precision matrix entries - evolution over time')
     
     if save:
-        fig.savefig(path_fgl + 'block_' + str(block) + '_evolution.pdf')
+        fig.savefig(path_fgl_powerlaw + 'block_' + str(block) + '_evolution.pdf')
     return
 
 def plot_deviation(results, latent = None, save = False):
@@ -283,7 +240,7 @@ def plot_deviation(results, latent = None, save = False):
     
         for m in list(results.keys()):
             d = deviation(results.get(m).get('Theta'))
-            if m in ['truth', 'GLASSO']:
+            if m in ['truth', 'SGL']:
                 ls = '--'
             else:
                 ls = '-'
@@ -300,7 +257,7 @@ def plot_deviation(results, latent = None, save = False):
             ax2.legend(labels = ['Latent variables'], loc = 'upper right')
         
     if save:
-        fig.savefig(path_fgl + 'deviation.pdf')
+        fig.savefig(path_fgl_powerlaw + 'deviation.pdf')
 
     return
 
@@ -347,10 +304,9 @@ def plot_runtime(iA, iP, vecN, save = False):
             lns = p1+p2+p3+p4
             labs = [l.get_label() for l in lns]
             fig.legend(lns, labs, loc="upper right")
-            
-        path_rt = 'plots//ggl_runtime//'  
+             
         if save:
-            fig.savefig(path_rt + 'runtimeN.pdf', dpi = 300)
+            fig.savefig(path_ggl_runtime + 'runtimeN.pdf', dpi = 300)
 
 def plot_fpr_tpr(FPR, TPR, ix, ix2, FPR_GL = None, TPR_GL = None, W2 = [], save = False):
     """
@@ -365,8 +321,8 @@ def plot_fpr_tpr(FPR, TPR, ix, ix2, FPR_GL = None, TPR_GL = None, W2 = [], save 
         if FPR_GL is not None:
             ax.plot(FPR_GL, TPR_GL, c = 'grey', linestyle = '--', **plot_aes)
         
-        ax.plot(FPR[ix], TPR[ix], marker = 'o', fillstyle = 'none', markersize = 12, markeredgecolor = 'grey')
-        ax.plot(FPR[ix2], TPR[ix2], marker = 'D', fillstyle = 'none', markersize = 12, markeredgecolor = 'grey')
+        ax.plot(FPR[ix], TPR[ix], marker = 'o', color = "white", fillstyle = 'none', markersize = 12, markeredgecolor = 'grey')
+        ax.plot(FPR[ix2], TPR[ix2], marker = 'D', color = "white", fillstyle = 'none', markersize = 12, markeredgecolor = 'grey')
     
         ax.set_xlim(-.01,1)
         ax.set_ylim(-.01,1)
@@ -375,12 +331,16 @@ def plot_fpr_tpr(FPR, TPR, ix, ix2, FPR_GL = None, TPR_GL = None, W2 = [], save 
         ax.set_ylabel('True Positive Rate')
         labels = [f"w2 = {w}" for w in W2] 
         if FPR_GL is not None:
-            labels.append("GLASSO")
+            labels.append("SGL")
+            
+        labels.append("eBIC")
+        labels.append("AIC")    
+            
         ax.legend(labels = labels, loc = 'lower right')
         
     fig.suptitle('Discovery rate for different regularization strengths')
     if save:
-        fig.savefig(path_ggl + 'fpr_tpr.pdf', dpi = 300)
+        fig.savefig(path_ggl_powerlaw + 'fpr_tpr.pdf', dpi = 300)
     
     return
 
@@ -394,12 +354,12 @@ def plot_diff_fpr_tpr(DFPR, DTPR, ix, ix2, DFPR_GL = None, DTPR_GL = None, W2 = 
     
     with sns.axes_style("whitegrid"):
         fig, ax = plt.subplots(1,1, figsize = default_size_small)
-        ax.plot(DFPR.T, DTPR.T, **plot_aes)
+        ax.plot(DFPR.T, DTPR.T, label = W2, **plot_aes)
         if DFPR_GL is not None:
             ax.plot(DFPR_GL, DTPR_GL, c = 'grey', linestyle = '--', **plot_aes)
         
-        ax.plot(DFPR[ix], DTPR[ix], marker = 'o', fillstyle = 'none', markersize = 12, markeredgecolor = 'grey')
-        ax.plot(DFPR[ix2], DTPR[ix2], marker = 'D', fillstyle = 'none', markersize = 12, markeredgecolor = 'grey')
+        ax.plot(DFPR[ix], DTPR[ix], marker = 'o', color = "white", fillstyle = 'none', markersize = 12, markeredgecolor = 'grey')
+        ax.plot(DFPR[ix2], DTPR[ix2], marker = 'D', color = "white", fillstyle = 'none', markersize = 12, markeredgecolor = 'grey')
                 
         ax.set_xlim(-10,300)
         #ax.set_ylim(-.01,1)
@@ -408,12 +368,15 @@ def plot_diff_fpr_tpr(DFPR, DTPR, ix, ix2, DFPR_GL = None, DTPR_GL = None, W2 = 
         ax.set_ylabel('TP Differential Edges')
         labels = [f"w2 = {w}" for w in W2]
         if DFPR_GL is not None:
-            labels.append("GLASSO")
+            labels.append("SGL")
+        
+        labels.append("eBIC")
+        labels.append("AIC")
         ax.legend(labels = labels, loc = 'lower right')
         
     fig.suptitle('Discovery of differential edges')
     if save:
-        fig.savefig(path_ggl + 'diff_fpr_tpr.pdf', dpi = 300)
+        fig.savefig(path_ggl_powerlaw + 'diff_fpr_tpr.pdf', dpi = 300)
     
     return
 
@@ -437,27 +400,30 @@ def plot_error_accuracy(EPS, ERR, L2, save = False):
         
     fig.suptitle('Total error for different solution accuracies')
     if save:
-        fig.savefig(path_ggl + 'error.pdf', dpi = 300)
+        fig.savefig(path_ggl_powerlaw + 'error.pdf', dpi = 300)
     
     return
 
 def plot_gamma_influence(gammas, GTPR, GFPR, save = False):
     fig, ax = plt.subplots(1,1, figsize = default_size_big)   
-    ax2 = ax.twinx() 
+    
     ax.plot(gammas, GTPR, c = 'green', label = 'TPR')
+    ax2 = ax.twinx() 
     ax2.plot(gammas, GFPR, c = 'red', label = 'FPR')
     
     ax.grid(linestyle = '--') 
+    ax.set_ylabel('gamma')    
     ax.set_ylabel('TPR')
     ax2.set_ylabel('FPR')
+
     fig.legend()
     
     if save:
-        fig.savefig(path_ggl + 'gamma.pdf', dpi = 300)
+        fig.savefig(path_ggl_powerlaw + 'gamma.pdf', dpi = 300)
         
     return 
 
-def surface_plot(L1, L2, C, name = 'eBIC', save = False):
+def surface_plot(L1, L2, C, reg, name = 'eBIC', save = False):
     fig = plt.figure(figsize = default_size_big)
     ax = fig.gca(projection='3d')
     
@@ -471,9 +437,13 @@ def surface_plot(L1, L2, C, name = 'eBIC', save = False):
     ax.set_ylabel('lambda2')
     ax.set_zlabel(name)
     #ax.view_init(elev = 20, azim = 60)
+    if reg == "FGL":
+        save_path = path_fgl_powerlaw
+    else:
+        save_path = path_ggl_powerlaw
     
     if save:
-        fig.savefig(path_fgl + 'surface.png', dpi = 500)
+        fig.savefig(save_path + 'surface.pdf', dpi = 500)
 #################################################################################################################
 ############################ GIF ################################################################################
 #################################################################################################################
@@ -519,9 +489,9 @@ def single_heatmap_animation(Theta, method = 'truth', save = False):
 def plot_multiple_heatmap(k, Theta, results, axs):
     
     plot_single_heatmap(k, Theta, 'truth', axs[0,0])
-    plot_single_heatmap(k, results.get('PPDNA').get('Theta'), 'PPDNA', axs[0,1])
-    plot_single_heatmap(k, results.get('LTGL').get('Theta'), 'ADMM', axs[1,0])
-    plot_single_heatmap(k, results.get('GLASSO').get('Theta'), 'GLASSO', axs[1,1])
+    plot_single_heatmap(k, results.get('ADMM').get('Theta'), 'ADMM', axs[0,1])
+    plot_single_heatmap(k, results.get('LTGL').get('Theta'), 'LTGL', axs[1,0])
+    plot_single_heatmap(k, results.get('SGL').get('Theta'), 'SGL', axs[1,1])
     
     return
 

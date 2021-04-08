@@ -33,7 +33,7 @@ def Gdot(X, Y):
 def Sdot(X,Y):
     return np.trace(X.T @ Y)
 
-def adjacency_matrix(S , t = 1e-5):
+def adjacency_matrix(S, t = 1e-10):
     A = (np.abs(S) >= t).astype(int)
     # do not count diagonal entries as edges
     if len(S.shape) == 3:
