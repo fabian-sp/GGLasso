@@ -86,7 +86,7 @@ def models_to_dict(models=None, lambda1=0.1, max_iter=50000, sk_params=dict, rg_
 
             for tol, rtol in itertools.product(tol_list, rtol_list):
                 key = str(model) + "_tol_" + str(tol) + "_rtol_" + str(rtol)
-                models_dict[key] = rg_GL(alpha=lambda1, tol=tol, rtol=rtol, max_iter=max_iter, assume_centered=True)
+                models_dict[key] = rg_GL(alpha=lambda1, tol=tol, rtol=rtol, max_iter=max_iter, assume_centered=False)
 
         elif model == "sklearn":
 
@@ -98,7 +98,7 @@ def models_to_dict(models=None, lambda1=0.1, max_iter=50000, sk_params=dict, rg_
 
             for tol, enet in itertools.product(tol_list, enet_list):
                 key = str(model) + "_tol_" + str(tol) + "_enet_" + str(enet)
-                models_dict[key] = sk_GL(alpha=lambda1, tol=tol, enet_tol=enet, max_iter=max_iter, assume_centered=True)
+                models_dict[key] = sk_GL(alpha=lambda1, tol=tol, enet_tol=enet, max_iter=max_iter, assume_centered=False)
 
     return models_dict
 
@@ -108,8 +108,8 @@ def model_solution(model="sklearn", X=np.array([]), lambda1=0.01, max_iter=50000
     if model == "sklearn":
 
         start = time.time()
-        Z = sk_GL(alpha=lambda1, max_iter=max_iter, tol=tol, enet_tol=enet, assume_centered=True).fit(X)
-        info = sk_GL(alpha=lambda1, max_iter=max_iter, tol=tol, enet_tol=enet, assume_centered=True)
+        Z = sk_GL(alpha=lambda1, max_iter=max_iter, tol=tol, enet_tol=enet, assume_centered=False).fit(X)
+        info = sk_GL(alpha=lambda1, max_iter=max_iter, tol=tol, enet_tol=enet, assume_centered=False)
         end = time.time()
 
         time_list.append(end - start)
@@ -117,8 +117,8 @@ def model_solution(model="sklearn", X=np.array([]), lambda1=0.01, max_iter=50000
     elif model == "regain":
 
         start = time.time()
-        Z = rg_GL(alpha=lambda1, max_iter=max_iter, tol=tol, rtol=rtol, assume_centered=True).fit(X)
-        info = rg_GL(alpha=lambda1, max_iter=max_iter, tol=tol, enet_tol=enet, assume_centered=True)
+        Z = rg_GL(alpha=lambda1, max_iter=max_iter, tol=tol, rtol=rtol, assume_centered=False).fit(X)
+        info = rg_GL(alpha=lambda1, max_iter=max_iter, tol=tol, enet_tol=enet, assume_centered=False)
         end = time.time()
 
         time_list.append(end - start)
@@ -249,7 +249,7 @@ def hamming_distance(X, Z, t=1e-10):
     return (A + B == 1).sum()
 
 
-def sparsity_benchmark(Theta_dict=dict, Z_dict=dict, t_rounding=float):
+def hamming_dict(Theta_dict=dict, Z_dict=dict, t_rounding=float):
     sparsity_dict = dict()
 
     for Theta in Theta_dict.values():
@@ -264,10 +264,10 @@ def sparsity_benchmark(Theta_dict=dict, Z_dict=dict, t_rounding=float):
 def dict_to_dataframe(times=dict, acc_dict=dict, spars_dict=dict):
     assert len(times) == len(acc_dict) == len(spars_dict)
 
-    df = pd.DataFrame(data={'name': times.keys(),
-                            'time': times.values(),
-                            "accuracy": acc_dict.values(),
-                            "hamming": spars_dict.values()})
+    df = pd.DataFrame(data={'name': list(times.keys()),
+                            'time': list(times.values()),
+                            "accuracy": list(acc_dict.values()),
+                            "hamming": list(spars_dict.values())})
 
     df['split'] = df['name'].str.split('_')
 
@@ -280,7 +280,22 @@ def dict_to_dataframe(times=dict, acc_dict=dict, spars_dict=dict):
     convert_dict = {'tol': float, 'rtol': float, "p": int, "N": int}
     df = df.astype(convert_dict)
 
+    df = df.sort_values(by=['time'])
+
     return df
+
+
+def drop_duplicates(df):
+    assert 'method' in df.columns
+    assert 'accuracy' in df.columns
+
+    new_df = df[:1]
+    for method in df.method.unique():
+        filtered = df[df['method'] == method]
+        filtered = filtered.drop_duplicates(subset='accuracy', keep='first')
+        new_df = pd.concat([filtered, new_df])
+
+    return new_df[:-1]
 
 
 def plot_log_distance(df=pd.DataFrame(), upper_bound=float, lower_bound=float):
@@ -294,8 +309,30 @@ def plot_log_distance(df=pd.DataFrame(), upper_bound=float, lower_bound=float):
                      },
                      template="plotly_white",
                      title="Log-distance between Z and Z' with respect to ADMM convergence rates")
-    fig.update_traces(mode='markers+lines')
+
+    fig.update_traces(mode='markers+lines', marker_line_width=1, marker_size=10)
+    fig.update_xaxes(matches=None)
+    fig.update_yaxes(exponentformat="power")
+
     return fig
+
+
+def sparsity_benchmark(df):
+    for i in ['method', 'accuracy', 'p', 'hamming']:
+        assert i in df.columns
+
+    spar_df = df[(df["accuracy"] < 0.01) & (df["accuracy"] > 0.0001)]
+
+    names = dict()
+    frames = dict()
+    for p in spar_df["p"].unique():
+        for method in spar_df["method"].unique():
+            names[method] = spar_df[(spar_df["p"] == p) & (spar_df["method"] == method)]["hamming"].min()
+        frame = pd.DataFrame(names.items(), columns=['method', 'min_hamming'])
+        frame = frame.sort_values(by='min_hamming', ascending=True)
+        frames[p] = frame.reset_index(drop=True)
+
+    return frames
 
 # def gini(array):
 #     """Calculate the Gini coefficient of a numpy array."""
