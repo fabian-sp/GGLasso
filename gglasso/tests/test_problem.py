@@ -1,5 +1,7 @@
+"""
+author: Fabian Schaipp
+"""
 import numpy as np
-import time
 
 from gglasso.helper.data_generation import time_varying_power_network, group_power_network,sample_covariance_matrix
 from gglasso.problem import glasso_problem

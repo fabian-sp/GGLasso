@@ -4,12 +4,12 @@ author: Fabian Schaipp
 
 import numpy as np
 
-from gglasso.helper.basic_linalg import Sdot, adjacency_matrix
-from gglasso.helper.utils import mean_sparsity, sparsity
+from .basic_linalg import Sdot, adjacency_matrix
+from .utils import mean_sparsity, sparsity
 
-from gglasso.helper.utils import get_K_identity as id_array
-from gglasso.helper.ext_admm_helper import get_K_identity as id_dict
-from gglasso.solver.single_admm_solver import ADMM_SGL, block_SGL
+from .utils import get_K_identity as id_array
+from .ext_admm_helper import get_K_identity as id_dict
+from ..solver.single_admm_solver import ADMM_SGL, block_SGL
 
 
 # tolerances for solving on grids (pick this smaller if there is a no-convergence-warning)

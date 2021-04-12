@@ -48,7 +48,7 @@ def lambda_grid(num1 = 5, num2 = 2, reg = 'GGL'):
     return L1.squeeze(), L2.squeeze(), w2
            
         
-def discovery_rate(S_sol , S_true, t = 1e-5):
+def discovery_rate(S_sol , S_true, t = 1e-10):
     if len(S_true.shape) == 2:
         print("Warning: function designed for 3-dim arrays")
         S_true = S_true[np.newaxis,:,:]

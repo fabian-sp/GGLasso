@@ -1,3 +1,6 @@
+"""
+author: Fabian Schaipp
+"""
 import pytest as pt
 import numpy as np
 from numpy.testing import assert_array_almost_equal
@@ -38,8 +41,11 @@ def template_ADMM_MGL(p = 100, K = 5, N = 1000, reg = 'GGL', latent = False):
     Omega_0 = get_K_identity(K,p)
     
     sol, info = ADMM_MGL(S, lambda1, lambda2, reg, Omega_0, tol = 1e-5, rtol = 1e-5, verbose = True, measure = True, latent = latent, mu1 = 0.01)
-     
     assert info['status'] == 'optimal'
+    
+    _, info2 = ADMM_MGL(S, lambda1, lambda2, reg, Omega_0, tol = 1e-20, rtol = 1e-20, max_iter = 2, latent = latent, mu1 = 0.01)
+    assert info2['status'] == 'max iterations reached'
+    
     return
 
 def test_ADMM_GGL(): 
@@ -205,7 +211,9 @@ def test_SGL_scikit():
     sol_scikit = model.precision_
 
     Omega_0 = np.eye(p)
+    
     sol, info = ADMM_SGL(S, lambda1, Omega_0, tol=1e-7, rtol=1e-5, verbose=True, latent=False)
+    
     # run into max_iter
     sol2, info2 = ADMM_SGL(S, lambda1, Omega_0, stopping_criterion = 'kkt', tol=1e-20, max_iter = 200, verbose=True, latent=False)
     
