@@ -22,7 +22,7 @@ from gglasso.helper.basic_linalg import adjacency_matrix
 from regain.covariance import GraphicalLasso as rg_GL
 
 
-def network_generation(p=int, N=int, K=1, M=int, S_dict=dict(), Theta_dict=dict(), X_dict=dict()):
+def network_generation(p=int, N=int, K=1, M=int):
     Sigma, Theta = group_power_network(p, K=K, M=M)  # Theta is true precision matrix
     S, samples = sample_covariance_matrix(Sigma, N)
 
@@ -98,7 +98,8 @@ def models_to_dict(models=None, lambda1=0.1, max_iter=50000, sk_params=dict, rg_
 
             for tol, enet in itertools.product(tol_list, enet_list):
                 key = str(model) + "_tol_" + str(tol) + "_enet_" + str(enet)
-                models_dict[key] = sk_GL(alpha=lambda1, tol=tol, enet_tol=enet, max_iter=max_iter, assume_centered=False)
+                models_dict[key] = sk_GL(alpha=lambda1, tol=tol, enet_tol=enet, max_iter=max_iter,
+                                         assume_centered=False)
 
     return models_dict
 
@@ -118,7 +119,7 @@ def model_solution(model="sklearn", X=np.array([]), lambda1=0.01, max_iter=50000
 
         start = time.time()
         Z = rg_GL(alpha=lambda1, max_iter=max_iter, tol=tol, rtol=rtol, assume_centered=False).fit(X)
-        info = rg_GL(alpha=lambda1, max_iter=max_iter, tol=tol, enet_tol=enet, assume_centered=False)
+        info = rg_GL(alpha=lambda1, max_iter=max_iter, tol=tol, rtol=rtol, assume_centered=False)
         end = time.time()
 
         time_list.append(end - start)
@@ -221,7 +222,8 @@ def time_benchmark(X=list, S=list, lambda1=0.1, max_iter=50000, Z_model=str, sk_
     # ADMM benchmarking
     Omega_0 = np.eye(len(S))
 
-    admm_time, admm_accuracy, Z_admm = admm_time_benchmark(S=S, Omega_0=Omega_0, Z=Z, lambda1=lambda1, n_iter=1+n_iter,
+    admm_time, admm_accuracy, Z_admm = admm_time_benchmark(S=S, Omega_0=Omega_0, Z=Z, lambda1=lambda1,
+                                                           n_iter=1 + n_iter,
                                                            admm_params=admm_params)
 
     # Join results in a single dictionary
@@ -285,6 +287,24 @@ def dict_to_dataframe(times=dict, acc_dict=dict, spars_dict=dict):
     return df
 
 
+def time_dict_to_data_frame(time_dict=dict):
+    time_df = pd.DataFrame.from_dict(time_dict, orient='index', columns=['time'])
+    time_df.reset_index(level=0, inplace=True)
+
+    time_df['split'] = time_df['index'].str.split('_')
+    columns_names = ["method", "p_str", "p", "N_str", "N"]
+    time_df[columns_names] = pd.DataFrame(time_df['split'].tolist(), index=time_df['split'].index)
+
+    redundant_cols = ["p_str", "N_str"]
+    time_df = time_df.drop(redundant_cols, axis=1)
+
+    convert_dict = {"p": int, "N": int}
+    time_df = time_df.astype(convert_dict)
+    time_df = time_df.sort_values(by=['time'])
+
+    return time_df
+
+
 def drop_duplicates(df):
     assert 'method' in df.columns
     assert 'accuracy' in df.columns
@@ -317,7 +337,22 @@ def plot_log_distance(df=pd.DataFrame(), upper_bound=float, lower_bound=float):
     return fig
 
 
-def sparsity_benchmark(df):
+def plot_scalability(df=pd.DataFrame()):
+    fig = px.scatter(df, x="time", y="p", text="N", color="method",
+                     labels={
+                         "time": "Time, s",
+                         "p": "Number of features, p",
+                         "method": "method"
+                     },
+                     template="plotly_white",
+                     title="Scalability plot")
+
+    fig.update_traces(mode='markers+lines', marker_line_width=1, marker_size=10)
+
+    return fig
+
+
+def sparsity_benchmark(df=pd.DataFrame()):
     for i in ['method', 'accuracy', 'p', 'hamming']:
         assert i in df.columns
 
@@ -333,6 +368,52 @@ def sparsity_benchmark(df):
         frames[p] = frame.reset_index(drop=True)
 
     return frames
+
+
+def sk_scaling(X, model, k_iter=5, time_list=None):
+    if time_list is None:
+        time_list = []
+
+    for _ in trange(k_iter, desc=str(model), leave=True):
+        sk_start = time.time()
+        Z_i = model.fit(X)
+        sk_end = time.time()
+
+        sk_time = sk_end - sk_start
+        time_list.append(sk_time)
+
+    if model.n_iter_ == model.max_iter:
+        status = True
+    else:
+        status = False
+
+    return time_list, status
+
+
+def single_scaling(S, lambda1, Omega_0, max_iter, tol, rtol, n_iter, time_list=[]):
+    for _ in trange(n_iter, leave=True):
+        single_start = time.time()
+        Z_i, info = ADMM_SGL(S, lambda1=lambda1, Omega_0=Omega_0, max_iter=max_iter,
+                             tol=tol, rtol=rtol, stopping_criterion="boyd")
+        single_end = time.time()
+
+        single_time = single_end - single_start
+        time_list.append(single_time)
+
+    return time_list
+
+
+def block_scaling(S, lambda1, Omega_0, max_iter, tol, rtol, n_iter, time_list=[]):
+    for _ in trange(n_iter):
+        block_start = time.time()
+        Z_i = block_SGL(S, lambda1=lambda1, Omega_0=Omega_0, max_iter=max_iter,
+                        tol=tol, rtol=rtol, stopping_criterion="boyd")
+        block_end = time.time()
+
+        block_time = block_end - block_start
+        time_list.append(block_time)
+
+    return time_list
 
 # def gini(array):
 #     """Calculate the Gini coefficient of a numpy array."""
