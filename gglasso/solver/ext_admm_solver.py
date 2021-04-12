@@ -230,8 +230,6 @@ def ext_ADMM_MGL(S, lambda1, lambda2, reg , Omega_0, G,\
                 status = 'optimal'
                 break
             
-        if verbose:
-            print(f"Current accuracy: ", eta_A)
         
     ##################################################################
     ### MAIN LOOP FINISHED

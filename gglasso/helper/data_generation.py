@@ -149,23 +149,23 @@ def ensure_sparsity(Sigma, Theta):
     
     return Sigma, Theta
 
-def plot_degree_distribution(Theta):
-    A = adjacency_matrix(Theta)
-    if len(Theta.shape) == 3:
-        G=nx.from_numpy_array(A[0,:,:])
-    else:
-        G=nx.from_numpy_array(A)
+# def plot_degree_distribution(Theta):
+#     A = adjacency_matrix(Theta)
+#     if len(Theta.shape) == 3:
+#         G=nx.from_numpy_array(A[0,:,:])
+#     else:
+#         G=nx.from_numpy_array(A)
     
-    degrees = np.array([d for n,d in list(G.degree)])
+#     degrees = np.array([d for n,d in list(G.degree)])
     
-    plt.figure()
-    #sns.distplot(degrees, kde = False, hist_kws = {"range" : (0,10)}, norm_hist = True)
-    M = degrees.max()
-    plt.hist(degrees, bins = np.arange(M), density = True, rwidth = 0.5, align = 'left')
-    plt.xticks = np.arange(M)
-    plt.plot(np.arange(M), 2.8**(-np.arange(M)))
+#     plt.figure()
+#     #sns.distplot(degrees, kde = False, hist_kws = {"range" : (0,10)}, norm_hist = True)
+#     M = degrees.max()
+#     plt.hist(degrees, bins = np.arange(M), density = True, rwidth = 0.5, align = 'left')
+#     plt.xticks = np.arange(M)
+#     plt.plot(np.arange(M), 2.8**(-np.arange(M)))
     
-    return degrees
+#     return degrees
     
 def sample_covariance_matrix(Sigma, N):
     """

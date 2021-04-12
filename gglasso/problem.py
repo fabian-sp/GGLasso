@@ -384,12 +384,12 @@ class glasso_problem:
 
         """
         
-        assert solver in ["admm", "ppdna"], "There are two solver types supported, ADMM and PPDNA. Specify the argument solver = 'admm' or solver = 'ppdna'."
+        assert solver in ["admm"], "There are two solver types supported, ADMM and PPDNA. Specify the argument solver = 'admm' or solver = 'ppdna'."
         
-        if solver == "ppdna":
-            assert self.multiple,"PPDNA solver is only supported for MULTIPLE Graphical Lassp problems."
-            assert not self.latent, "PPDNA solver is only supported for problems without latent variables."
-            assert self.conforming, "PPDNA solver is only supported for problems with conforming dimensions."
+        # if solver == "ppdna":
+        #     assert self.multiple,"PPDNA solver is only supported for MULTIPLE Graphical Lassp problems."
+        #     assert not self.latent, "PPDNA solver is only supported for problems without latent variables."
+        #     assert self.conforming, "PPDNA solver is only supported for problems with conforming dimensions."
         
         
         self.set_start_point(Omega_0)
@@ -555,7 +555,7 @@ class glasso_problem:
     
             stats, best_ix, sol = grid_search(solver, S = self.S, N = self.N, p = self.p, reg = self.reg, l1 = self.modelselect_params['lambda1_range'], \
                                         l2 = None, w2 = self.modelselect_params['w2_range'], method= method, gamma = gamma, \
-                                        G = self.G, latent = self.latent, mu_range = self.modelselect_params['mu1_range'], ix_mu = ix_mu, verbose = False)
+                                        G = self.G, latent = self.latent, mu_range = self.modelselect_params['mu1_range'], ix_mu = ix_mu, verbose = True)
             
             # update the lambda1/lambda2 regularization parameters to the best grid point
             self.set_reg_params(stats['BEST'])

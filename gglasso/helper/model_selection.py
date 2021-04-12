@@ -3,8 +3,8 @@ author: Fabian Schaipp
 """
 
 import numpy as np
-import matplotlib.pyplot as plt
-from mpl_toolkits.mplot3d import Axes3D
+#import matplotlib.pyplot as plt
+#from mpl_toolkits.mplot3d import Axes3D
 
 from gglasso.helper.basic_linalg import Sdot, adjacency_matrix
 from gglasso.helper.experiment_helper import mean_sparsity, sparsity
@@ -13,8 +13,6 @@ from gglasso.helper.experiment_helper import get_K_identity as id_array
 from gglasso.helper.ext_admm_helper import get_K_identity as id_dict
 from gglasso.solver.single_admm_solver import ADMM_SGL, block_SGL
 
-
-plt.rc('text', usetex=True)
 
 # tolerances for solving on grids (pick this smaller if there is a no-convergence-warning)
 TOL = 1e-7
@@ -27,11 +25,11 @@ def lambda_parametrizer(l1 = 0.05, w2 = 0.5):
 
     return l2
 
-def map_l_to_w(l1, l2):
-    w1 = l1 + (1/np.sqrt(2)) *l2
-    w2 = l2/(w1*np.sqrt(2))
+# def map_l_to_w(l1, l2):
+#     w1 = l1 + (1/np.sqrt(2)) *l2
+#     w2 = l2/(w1*np.sqrt(2))
     
-    return (w1,w2)
+#     return (w1,w2)
     
 def lambda_grid(l1, l2 = None, w2 = None):
     """
@@ -116,8 +114,9 @@ def grid_search(solver, S, N, p, reg, l1, l2 = None, w2 = None, method= 'eBIC', 
 
     L1, L2, W2 = lambda_grid(l1, l2, w2)
     
-    print(L1)
-    print(L2)
+    if verbose:
+        print(L1)
+        print(L2)
     
     grid1 = L1.shape[0]; grid2 = L2.shape[1]
     AIC = np.zeros((grid1, grid2))
@@ -295,7 +294,6 @@ def K_single_grid(S, lambda_range, N, method = 'eBIC', gamma = 0.3, latent = Fal
     gammas = [0.1, 0.3, 0.5, 0.7]
     gammas.append(gamma)
     gammas = list(set(gammas))
-    #gamma_ix = gammas.index(gamma)
     
     BIC = dict()
     for g in gammas:
@@ -534,54 +532,46 @@ def single_grid_search(S, lambda_range, N, method = 'eBIC', gamma = 0.3, latent 
 ## CRITERIA AIC/EBIC
 ################################################################
     
-def aic(S, Theta, N, L = None):
+def aic(S, Theta, N):
     """
     AIC information criterion after Danaher et al.
     excludes the diagonal
     """
     if type(S) == dict:
-        aic = aic_dict(S, Theta, N, L)
+        aic = aic_dict(S, Theta, N)
     elif type(S) == np.ndarray:
-        aic = aic_array(S, Theta, N, L)
+        aic = aic_array(S, Theta, N)
     else:
         raise KeyError("Not a valid input type -- should be either dictionary or ndarray")
     
     return aic
 
-def aic_dict(S, Theta, N, L = None):
+def aic_dict(S, Theta, N):
     """
     S, Theta are dictionaries
     N is array of sample sizes
     """
     K = len(S.keys())
-    if np.all(L is None):
-        L = dict()
-        for k in np.arange(K):
-            L[k] = np.zeros(S[k].shape)     
+     
     aic = 0
     for k in np.arange(K):
         aic += aic_single(S[k], Theta[k], N[k])
     return aic
 
-def aic_array(S,Theta, N, L = None):
+def aic_array(S,Theta, N):
     (K,p,p) = S.shape
     
-    if np.all(L is None):
-        L = np.zeros((K,p,p))  
     if type(N) == int:
         N = np.ones(K) * N
     
     aic = 0
     for k in np.arange(K):
-        aic += aic_single(S[k,:,:], Theta[k,:,:], N[k], L[k,:,:])
+        aic += aic_single(S[k,:,:], Theta[k,:,:], N[k])
 
     return aic
 
-def aic_single(S, Theta, N, L = None):
+def aic_single(S, Theta, N):
     (p,p) = S.shape
-    
-    if np.all(L is None):
-        L = np.zeros((p,p))
         
     A = adjacency_matrix(Theta , t = 1e-5)
     aic = N*Sdot(S, Theta) - N*robust_logdet(Theta) + A.sum()
@@ -657,56 +647,57 @@ def robust_logdet(A, t = 1e-6):
         l = np.linalg.slogdet(A)
         return l[0]*l[1]
     
-    
-def single_surface_plot(L1, L2, C, ax, name = 'eBIC'):
-    
-    #xx = (~np.isnan(C).any(axis=0))
-    #L1 = L1[:,xx]
-    #L2 = L2[:,xx]
-    #C = C[:,xx]
-    
-    X = np.log10(L1)
-    Y = np.log10(L2)
-    Z = np.log(C)
-    ax.plot_surface(X, Y, Z , cmap = plt.cm.ocean, linewidth=0, antialiased=True)
-    
-    ax.set_xlabel(r'$\lambda_1$', fontsize = 14)
-    ax.set_ylabel(r'$\lambda_2$', fontsize = 14)
-    #ax.set_xlabel(r'$w_1$', fontsize = 14)
-    #ax.set_ylabel(r'$w_2$', fontsize = 14)
-    ax.set_zlabel(name, fontsize = 14)
-    ax.view_init(elev = 25, azim = 110)
-    
-    plt.xticks(fontsize = 8)
-    plt.yticks(fontsize = 8)
-    ax.zaxis.set_tick_params(labelsize=8)
-    
-    ax.tick_params(axis='both', which='major', pad=.5)
-    
-    for label in ax.xaxis.get_ticklabels()[::2]:
-        label.set_visible(False)
-    for label in ax.yaxis.get_ticklabels()[::2]:
-        label.set_visible(False)
-    for label in ax.zaxis.get_ticklabels()[::2]:
-        label.set_visible(False)
-    
-    return
+#plt.rc('text', usetex=True)
 
-def surface_plot(L1, L2, C, name = 'eBIC'):
-    fig = plt.figure(figsize = (8,5))  
+# def single_surface_plot(L1, L2, C, ax, name = 'eBIC'):
     
-    if name == 'eBIC':
-        gammas = list(C.keys())
+#     #xx = (~np.isnan(C).any(axis=0))
+#     #L1 = L1[:,xx]
+#     #L2 = L2[:,xx]
+#     #C = C[:,xx]
+    
+#     X = np.log10(L1)
+#     Y = np.log10(L2)
+#     Z = np.log(C)
+#     ax.plot_surface(X, Y, Z , cmap = plt.cm.ocean, linewidth=0, antialiased=True)
+    
+#     ax.set_xlabel(r'$\lambda_1$', fontsize = 14)
+#     ax.set_ylabel(r'$\lambda_2$', fontsize = 14)
+#     #ax.set_xlabel(r'$w_1$', fontsize = 14)
+#     #ax.set_ylabel(r'$w_2$', fontsize = 14)
+#     ax.set_zlabel(name, fontsize = 14)
+#     ax.view_init(elev = 25, azim = 110)
+    
+#     plt.xticks(fontsize = 8)
+#     plt.yticks(fontsize = 8)
+#     ax.zaxis.set_tick_params(labelsize=8)
+    
+#     ax.tick_params(axis='both', which='major', pad=.5)
+    
+#     for label in ax.xaxis.get_ticklabels()[::2]:
+#         label.set_visible(False)
+#     for label in ax.yaxis.get_ticklabels()[::2]:
+#         label.set_visible(False)
+#     for label in ax.zaxis.get_ticklabels()[::2]:
+#         label.set_visible(False)
+    
+#     return
+
+# def surface_plot(L1, L2, C, name = 'eBIC'):
+#     fig = plt.figure(figsize = (8,5))  
+    
+#     if name == 'eBIC':
+#         gammas = list(C.keys())
         
-    if type(C) == np.ndarray:
-        ax = fig.gca(projection='3d')
-        single_surface_plot(L1, L2, C, ax, name = name)
+#     if type(C) == np.ndarray:
+#         ax = fig.gca(projection='3d')
+#         single_surface_plot(L1, L2, C, ax, name = name)
              
-    else:
-        for j in np.arange(len(gammas)):
-            ax = fig.add_subplot(2, 2, j+1, projection='3d')
-            single_surface_plot(L1, L2, C[gammas[j]], ax, name = name)
-            if gammas is not None:
-                ax.set_title(rf"$\gamma = $ {gammas[j]}")
+#     else:
+#         for j in np.arange(len(gammas)):
+#             ax = fig.add_subplot(2, 2, j+1, projection='3d')
+#             single_surface_plot(L1, L2, C[gammas[j]], ax, name = name)
+#             if gammas is not None:
+#                 ax.set_title(rf"$\gamma = $ {gammas[j]}")
     
-    return fig
+#     return fig
