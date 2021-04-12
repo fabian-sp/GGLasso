@@ -4,7 +4,7 @@ from numpy.testing import assert_array_almost_equal
 from sklearn.covariance import GraphicalLasso
 
 from gglasso.helper.data_generation import group_power_network, time_varying_power_network,  sample_covariance_matrix
-from gglasso.helper.experiment_helper import get_K_identity
+from gglasso.helper.utils import get_K_identity
 from gglasso.solver.single_admm_solver import ADMM_SGL, block_SGL, get_connected_components
 from gglasso.solver.admm_solver import ADMM_MGL
 from gglasso.solver.ppdna_solver import PPDNA, warmPPDNA
@@ -160,7 +160,7 @@ def template_admm_vs_ppdna(p = 50, K = 3, N = 1000, reg = "GGL"):
     
     sol2, info2 = warmPPDNA(S, lambda1, lambda2, reg, Omega_0, eps = 1e-6 , verbose = False, measure = True)
     
-    sol3, info3 = PPDNA(S, lambda1, lambda2, reg, Omega_0, eps_ppdna = 1e-6 , verbose = False, measure = True)
+    sol3, info3 = PPDNA(S, lambda1, lambda2, reg, Omega_0, eps_ppdna = 1e-6 , verbose = True, measure = True)
     
     
     assert_array_almost_equal(sol['Theta'], sol2['Theta'], 2)

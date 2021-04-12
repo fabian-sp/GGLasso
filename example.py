@@ -9,7 +9,7 @@ import numpy as np
 from gglasso.solver.ppdna_solver import PPDNA, warmPPDNA
 from gglasso.solver.admm_solver import ADMM_MGL
 from gglasso.helper.data_generation import time_varying_power_network, group_power_network,sample_covariance_matrix
-from gglasso.helper.experiment_helper import get_K_identity
+from gglasso.helper.utils import get_K_identity
 from gglasso.helper.model_selection import grid_search, K_single_grid
 
 p = 100
