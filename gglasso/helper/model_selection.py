@@ -23,11 +23,11 @@ def lambda_parametrizer(l1 = 0.05, w2 = 0.5):
 
     return l2
 
-# def map_l_to_w(l1, l2):
-#     w1 = l1 + (1/np.sqrt(2)) *l2
-#     w2 = l2/(w1*np.sqrt(2))
+def map_l_to_w(l1, l2):
+    w1 = l1 + (1/np.sqrt(2)) *l2
+    w2 = l2/(w1*np.sqrt(2))
     
-#     return (w1,w2)
+    return (w1,w2)
     
 def lambda_grid(l1, l2 = None, w2 = None):
     """
@@ -157,9 +157,9 @@ def grid_search(solver, S, N, p, reg, l1, l2 = None, w2 = None, method= 'eBIC', 
             if verbose:
                 print("Current grid point: ", (L1[g1,g2],L2[g1,g2]) )
             
-            if SKIP[g1,g2]:
-                print("SKIP")
-                continue
+            # if SKIP[g1,g2]:
+            #     print("SKIP")
+            #     continue
             
             # set lambda1 and lambda2
             kwargs['lambda1'] = L1[g1,g2]  

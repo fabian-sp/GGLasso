@@ -112,8 +112,6 @@ def template_problem_SGL(S, N, latent = False):
     P = glasso_problem(S = S, N = N, reg = None, latent = latent)
     print(P)
     
-    modelselectparams = dict()
-    modelselectparams['lambda1_range'] = np.logspace(-3,0,4)
     
     P.solve()
     reg_params = {'lambda1': 0.01}
@@ -125,13 +123,16 @@ def template_problem_SGL(S, N, latent = False):
     P.solve()
     
     # test model selection
-    if latent:
-        modelselectparams['mu1_range'] = np.logspace(-2,0,4)
-    else:
-        modelselectparams['mu1_range'] = None
+    # modelselectparams = dict()
+    # modelselectparams['lambda1_range'] = np.logspace(-3,0,4)
+    
+    # if latent:
+    #     modelselectparams['mu1_range'] = np.logspace(-2,0,4)
+    # else:
+    #     modelselectparams['mu1_range'] = None
     
     P.model_selection(method = 'AIC')
-    P.model_selection(modelselect_params = modelselectparams, method = 'eBIC', gamma = 0.1)
+    P.model_selection(modelselect_params = None, method = 'eBIC', gamma = 0.1)
     
     #tmp = P.modelselect_stats.copy()
     _ = P.solution.calc_ebic(gamma = 0.1)

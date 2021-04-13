@@ -144,6 +144,11 @@ def create_group_array(ix_exist, ix_location, min_inst = 2):
     return G
 
 def consensus(sol, G):
+    """
+    nnz: nonzeros per group
+    adj: adjacency matrix per group (edge present or not)
+    val: value of precision matrix per group, per dataset
+    """
     L = G.shape[1]
     #groupsize = (G!=-1).sum(axis=2)[0]
     K = G.shape[2]

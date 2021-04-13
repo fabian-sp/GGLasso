@@ -384,7 +384,7 @@ class glasso_problem:
 
         """
         
-        assert solver in ["admm"], "There are two solver types supported, ADMM and PPDNA. Specify the argument solver = 'admm' or solver = 'ppdna'."
+        assert solver in ["admm"], "Currently only the ADMM solver is supported as it is implemented for all cases."
         
         # if solver == "ppdna":
         #     assert self.multiple,"PPDNA solver is only supported for MULTIPLE Graphical Lassp problems."
