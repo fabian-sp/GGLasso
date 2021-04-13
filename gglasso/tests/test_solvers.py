@@ -1,10 +1,13 @@
+"""
+author: Fabian Schaipp
+"""
 import pytest as pt
 import numpy as np
 from numpy.testing import assert_array_almost_equal
 from sklearn.covariance import GraphicalLasso
 
 from gglasso.helper.data_generation import group_power_network, time_varying_power_network,  sample_covariance_matrix
-from gglasso.helper.experiment_helper import get_K_identity
+from gglasso.helper.utils import get_K_identity
 from gglasso.solver.single_admm_solver import ADMM_SGL, block_SGL, get_connected_components
 from gglasso.solver.admm_solver import ADMM_MGL
 from gglasso.solver.ppdna_solver import PPDNA, warmPPDNA
@@ -37,9 +40,12 @@ def template_ADMM_MGL(p = 100, K = 5, N = 1000, reg = 'GGL', latent = False):
     
     Omega_0 = get_K_identity(K,p)
     
-    sol, info = ADMM_MGL(S, lambda1, lambda2, reg, Omega_0, tol = 1e-5, rtol = 1e-5, verbose = False, latent = latent, mu1 = 0.01)
-     
+    sol, info = ADMM_MGL(S, lambda1, lambda2, reg, Omega_0, tol = 1e-5, rtol = 1e-5, verbose = True, measure = True, latent = latent, mu1 = 0.01)
     assert info['status'] == 'optimal'
+    
+    _, info2 = ADMM_MGL(S, lambda1, lambda2, reg, Omega_0, tol = 1e-20, rtol = 1e-20, max_iter = 2, latent = latent, mu1 = 0.01)
+    assert info2['status'] == 'max iterations reached'
+    
     return
 
 def test_ADMM_GGL(): 
@@ -87,17 +93,21 @@ def template_extADMM_consistent(latent = False):
     # constructs the "trivial" groups, i.e. all variables present in all instances  
     G = construct_trivial_G(p, K)
     
-    solext, _ = ext_ADMM_MGL(Sdict, lambda1, lambda2/np.sqrt(K), 'GGL', Omega_0, G, tol = 1e-8, rtol = 1e-8, verbose = False, latent = latent, mu1 = 0.01)
+    solext, _ = ext_ADMM_MGL(Sdict, lambda1, lambda2/np.sqrt(K), 'GGL', Omega_0, G, tol = 1e-8, rtol = 1e-8, verbose = True, latent = latent, mu1 = 0.01)
+    solext2, _ = ext_ADMM_MGL(Sdict, lambda1, lambda2/np.sqrt(K), 'GGL', Omega_0, G, stopping_criterion = 'kkt', tol = 1e-8, verbose = True, latent = latent, mu1 = 0.01)
     
     Omega_0_arr = get_K_identity(K,p)
     solADMM, info = ADMM_MGL(S, lambda1, lambda2, 'GGL', Omega_0_arr, tol = 1e-8, rtol = 1e-8, verbose = False, latent = latent, mu1 = 0.01)
     
+    
     for k in np.arange(K):
         assert_array_almost_equal(solext['Theta'][k], solADMM['Theta'][k,:,:], 2)
+        assert_array_almost_equal(solext2['Theta'][k], solADMM['Theta'][k,:,:], 2)
         
     if latent:
         for k in np.arange(K):
             assert_array_almost_equal(solext['L'][k], solADMM['L'][k,:,:], 2)
+            assert_array_almost_equal(solext2['L'][k], solADMM['L'][k,:,:], 2)
         
     return
 
@@ -152,11 +162,15 @@ def template_admm_vs_ppdna(p = 50, K = 3, N = 1000, reg = "GGL"):
     
     Omega_0 = get_K_identity(K,p)
     
-    sol, info = ADMM_MGL(S, lambda1, lambda2, reg, Omega_0, tol = 1e-6, rtol = 1e-5, verbose = False, latent = False)
-    sol2, info2 = warmPPDNA(S, lambda1, lambda2, reg, Omega_0, eps = 1e-6 , verbose = False, measure = False)
+    sol, info = ADMM_MGL(S, lambda1, lambda2, reg, Omega_0, stopping_criterion = 'kkt', tol = 1e-6, rtol = 1e-5, verbose = True, latent = False)
+    
+    sol2, info2 = warmPPDNA(S, lambda1, lambda2, reg, Omega_0, eps = 1e-6 , verbose = False, measure = True)
+    
+    sol3, info3 = PPDNA(S, lambda1, lambda2, reg, Omega_0, eps_ppdna = 1e-6 , verbose = True, measure = True)
     
     
     assert_array_almost_equal(sol['Theta'], sol2['Theta'], 2)
+    assert_array_almost_equal(sol2['Theta'], sol3['Theta'], 2)
     
     return 
     
@@ -197,9 +211,14 @@ def test_SGL_scikit():
     sol_scikit = model.precision_
 
     Omega_0 = np.eye(p)
-    sol, info = ADMM_SGL(S, lambda1, Omega_0, tol=1e-7, rtol=1e-5, verbose=False, latent=False)
-
+    
+    sol, info = ADMM_SGL(S, lambda1, Omega_0, tol=1e-7, rtol=1e-5, verbose=True, latent=False)
+    
+    # run into max_iter
+    sol2, info2 = ADMM_SGL(S, lambda1, Omega_0, stopping_criterion = 'kkt', tol=1e-20, max_iter = 200, verbose=True, latent=False)
+    
     assert_array_almost_equal(sol_scikit, sol['Theta'], 3)
+    assert_array_almost_equal(sol_scikit, sol2['Theta'], 3)
     
     return
 

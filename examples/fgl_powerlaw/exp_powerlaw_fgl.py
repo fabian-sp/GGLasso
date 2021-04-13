@@ -14,7 +14,8 @@ from sklearn.covariance import GraphicalLasso
 from gglasso.solver.ppdna_solver import warmPPDNA
 from gglasso.solver.admm_solver import ADMM_MGL
 from gglasso.helper.data_generation import time_varying_power_network, sample_covariance_matrix
-from gglasso.helper.experiment_helper import get_K_identity, lambda_grid, discovery_rate, error, deviation
+from gglasso.helper.experiment_helper import lambda_grid, discovery_rate, error
+from gglasso.helper.utils import get_K_identity, deviation
 from gglasso.helper.experiment_helper import plot_evolution, plot_deviation, surface_plot, multiple_heatmap_animation, single_heatmap_animation
 from gglasso.helper.model_selection import aic, ebic
 
@@ -165,7 +166,9 @@ print("Norm(PPDNA-ADMM)/Norm(ADMM):", np.linalg.norm(Theta_ppdna - Theta_admm)/ 
 # whether to save the plots as pdf-files
 save = False
 
-surface_plot(L1, L2, BIC, reg = "FGL", name = 'eBIC', save = save)
+fig = surface_plot(L1, L2, BIC, name = 'eBIC')
+if save:
+    fig.savefig('../plots/fgl_powerlaw/surface.pdf', dpi = 500)
 
 plot_evolution(results, block = 0, L = L, save = save)
 

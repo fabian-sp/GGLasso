@@ -1,8 +1,5 @@
 """
 author: Fabian Schaipp
-"""
-"""
-author: Fabian Schaipp
 
 Example script for Group Graphical Lasso with non-conforming dimension, i.e. some variables exist in some instances but not in all
 We use 5 datasets of microbiome gut OTU counts. Not all OTUs are present in all datasets hence we are in the situation above.
@@ -16,9 +13,9 @@ from matplotlib import pyplot as plt
 
 from microb_helper import load_and_transform
 
-from gglasso.helper.experiment_helper import adjacency_matrix, sparsity
+from gglasso.helper.experiment_helper import surface_plot
+from gglasso.helper.utils import sparsity
 from gglasso.helper.ext_admm_helper import check_G, consensus
-from gglasso.helper.model_selection import ebic, surface_plot
 
 
 from gglasso.problem import glasso_problem

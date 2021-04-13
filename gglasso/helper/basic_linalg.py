@@ -45,25 +45,25 @@ def adjacency_matrix(S, t = 1e-10):
 
 
 def scale_array_by_diagonal(X, d = None):
-        """
-        scales a 2d-array X with 1/sqrt(d), i.e.
+    """
+    scales a 2d-array X with 1/sqrt(d), i.e.
+    
+    X_ij/sqrt(d_i*d_j)
+    in matrix notation: W^-1 @ X @ W^-1 with W^2 = diag(d)
+    
+    if d = None, use square root diagonal, i.e. W^2 = diag(X)
+    see (2.4) in https://fan.princeton.edu/papers/09/Covariance.pdf
+    """
+    assert len(X.shape) == 2
+    if d is None:
+        d = np.diag(X)
+    else:
+        assert len(d) == X.shape[0]
         
-        X_ij/sqrt(d_i*d_j)
-        in matrix notation: W^-1 @ X @ W^-1 with W^2 = diag(d)
-        
-        if d = None, use square root diagonal, i.e. W^2 = diag(X)
-        see (2.4) in https://fan.princeton.edu/papers/09/Covariance.pdf
-        """
-        assert len(X.shape) == 2
-        if d is None:
-            d = np.diag(X)
-        else:
-            assert len(d) == X.shape[0]
-            
-        scale = np.tile(np.sqrt(d),(X.shape[0],1))
-        scale = scale.T * scale
-        
-        return X/scale
+    scale = np.tile(np.sqrt(d),(X.shape[0],1))
+    scale = scale.T * scale
+    
+    return X/scale
 
 
 
