@@ -170,36 +170,49 @@ def admm_time_benchmark(S=np.array([]), Omega_0=np.array([]), Z=np.array([]), la
     stop_list = admm_params["stop"]
 
     for method in method_list:
-        for tol, rtol, stop in itertools.product(tol_list, rtol_list, stop_list):
 
-            time_list = []
-            key = method + "-" + str(stop) + "_tol_" + str(tol) + "_rtol_" + str(rtol)
+        for tol in tol_list:
 
-            for _ in trange(n_iter, desc=key, leave=True):
-                if method == "single":
-                    start = time.time()
-                    Z_i, info = ADMM_SGL(S, lambda1=lambda1, Omega_0=Omega_0, max_iter=max_iter, tol=tol, rtol=rtol,
-                                         stopping_criterion=stop)
-                    end = time.time()
-                    time_list.append(end - start)
+            i = 0
+            for rtol in rtol_list:
 
-                elif method == "block":
-                    start = time.time()
-                    Z_i = block_SGL(S, lambda1=lambda1, Omega_0=Omega_0, max_iter=max_iter, tol=tol, rtol=rtol,
-                                    stopping_criterion=stop)
-                    end = time.time()
-                    time_list.append(end - start)
+                if i == 0:
+                    Omega_0 = Omega_0
+                else:
+                    # to reduce the convergence time we use the starting point from previous iterations of rtol
+                    Omega_0 = Z_i["Omega"]
 
-            # mean time in "n" iterations, the first iteration we skip because of numba init
-            time_dict[key] = np.mean(time_list[1:])
+                time_list = []
+                key = method + "-" + str(stop_list[0]) + "_tol_" + str(tol) + "_rtol_" + str(rtol)
 
-            cov_dict["cov_" + key] = Z_i["Omega"]
-            precision_dict["precision_" + key] = Z_i["Theta"]
+                for _ in trange(n_iter, desc=key, leave=True):
+                    if method == "single":
+                        start = time.time()
+                        Z_i, info = ADMM_SGL(S, lambda1=lambda1, Omega_0=Omega_0, max_iter=max_iter, tol=tol, rtol=rtol,
+                                             stopping_criterion=stop_list[0])
+                        end = time.time()
+                        time_list.append(end - start)
 
-            accuracy = np.linalg.norm(Z - np.array(Z_i["Theta"])) / np.linalg.norm(Z)
-            accuracy_dict["accuracy_" + key] = accuracy
+                    elif method == "block":
+                        start = time.time()
+                        Z_i = block_SGL(S, lambda1=lambda1, Omega_0=Omega_0, max_iter=max_iter, tol=tol, rtol=rtol,
+                                        stopping_criterion=stop_list[0])
+                        end = time.time()
+                        time_list.append(end - start)
+
+                # mean time in "n" iterations, the first iteration we skip because of numba init
+                time_dict[key] = np.mean(time_list[1:])
+
+                cov_dict["cov_" + key] = Z_i["Omega"]
+                precision_dict["precision_" + key] = Z_i["Theta"]
+
+                accuracy = np.linalg.norm(Z - np.array(Z_i["Theta"])) / np.linalg.norm(Z)
+                accuracy_dict["accuracy_" + key] = accuracy
+
+                i += 1
 
     return time_dict, accuracy_dict, precision_dict
+
 
 
 def time_benchmark(X=list, S=list, lambda1=0.1, max_iter=50000, Z_model=str, sk_models=["sklearn", "regain"],
