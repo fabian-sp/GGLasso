@@ -50,17 +50,19 @@ def power_law_network(p=100, M=10):
     if D.min() < 1e-8:
         A += (0.1+abs(D.min())) * np.eye(p)    
         
-    D = np.linalg.eigvalsh(A)
-    assert D.min() > 0, f"generated matrix A is not positive definite, min EV is {D.min()}"
+    #D = np.linalg.eigvalsh(A)
+    #assert D.min() > 0, f"generated matrix A is not positive definite, min EV is {D.min()}"
     
     Ainv = np.linalg.pinv(A, hermitian = True)
     
-    for i in np.arange(p):
-        for j in np.arange(p):
-            if i == j:
-                Sigma[i,j] = Ainv[i,j]/np.sqrt(Ainv[i,i] * Ainv[j,j])
-            else:
-                Sigma[i,j] = 0.6 * Ainv[i,j]/np.sqrt(Ainv[i,i] * Ainv[j,j])
+    # scale by inverse of diagonal and 0.6*1/sqrt(d_ii*d_jj) on off-diag
+    d = np.diag(Ainv)
+    scale = np.tile(np.sqrt(d),(Ainv.shape[0],1))
+    scale = (1/0.6)*(scale.T * scale)
+    
+    Sigma = Ainv/scale
+    np.fill_diagonal(Sigma, 1)
+    
      
     assert abs(Sigma.T - Sigma).max() <= 1e-8
     D = np.linalg.eigvalsh(Sigma)
