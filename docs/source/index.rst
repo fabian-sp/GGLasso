@@ -17,6 +17,7 @@ The package is available on `Github`_ .
    :caption: Contents:
 
    math_description
+   solvers
    admm
 
 

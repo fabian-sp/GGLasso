@@ -9,7 +9,7 @@ Single Graphical Lasso problems (SGL)
 Consider a multivariate Gaussian variable
 
 .. math::
-   X \sim \mathcal{N}(\mu, \Sigma)
+   \mathcal{X} \sim \mathcal{N}(\mu, \Sigma) \in \mathbb{R}^p
 
 Zeros in the precision matrix, :math:`\Sigma^{-1}` correspond to conditional independence of two components of :math:`X` which motivates a sparse estimation of :math:`\Sigma^{-1}`.
 Typically, we are given a sample of :math:`N` independent samples of :math:`X` for which we can compute the empirical covariance matrix :math:`S`.
@@ -18,9 +18,9 @@ Even though :math:`S^{-1}` (if exists) is the maximum-likelihood estimator of th
 This leads to the nonsmooth convex optimization problem, known under the name of Graphical Lasso [1]_, given by
 
 .. math::
-   \min_{\Theta \in \mathbb{S}^p} - \log \det \Theta + \mathrm{Tr}(S\Theta) + \lambda \|\Theta\|_{1,od}
+   \min_{\Theta \in \mathbb{S}^p_{++}} - \log \det \Theta + \mathrm{Tr}(S\Theta) + \lambda \|\Theta\|_{1,od}
 
-where :math:`\|\cdot\|_{1,od}` is the sum of absolute values of all off-diagonal elements and :math:`\mathrm{Tr}` is the trace of a matrix.
+where :math:`\mathbb{S}^p_{++}` is the cone of symmetric positive definite matrices of size :math:`p \times p`, :math:`\|\cdot\|_{1,od}` is the sum of absolute values of all off-diagonal elements and :math:`\mathrm{Tr}` is the trace of a matrix.
 
 SGL with latent variables
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -35,8 +35,14 @@ where :math:`\|\cdot\|_{\star}` is the nuclear norm (sum of singular values). :m
 Multiple Graphical Lasso problems (MGL)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-In many applications, compositional or temporal data is available. Hence, there has been an increased interest in estimating precision matrices for multiple instances jointly [2]_, [3]_. Group Graphical Lasso (GGL) describes the problem of estimating precision matrices across multiple instances of the same class under the assumption that the sparsity patterns are similar.
-On the other hand, for time-varying data Fused Graphical Lasso was designed in order to get time-consistent estimates of the precision matrices.
+In many applications, compositional or temporal data is available. Hence, there has been an increased interest in estimating precision matrices for multiple instances jointly [2]_, [3]_. Mathematically, we consider :math:`K` Gaussians
+
+.. math::
+   \mathcal{X}^{(k)} \sim \mathcal{N}(\mu^{(k)}, \Sigma^{(k)})\in \mathbb{R}^{p}
+
+
+Group Graphical Lasso (GGL) describes the problem of estimating precision matrices across multiple instances of the same class under the assumption that the sparsity patterns are similar.
+On the other hand, for time-varying data Fused Graphical Lasso was designed in order to get time-consistent estimates of the precision matrices, i.e. :math:`K` is the temporal index.
 
 More generally, the problem formulation of Multiple Graphical Lasso is given by
 
@@ -73,14 +79,32 @@ Analogous to SGL, we can extend MGL problems with latent variables. For instance
 .. math::
    \min_{\Theta, L}\quad \sum_{k=1}^{K} \left(-\log\det(\Theta^{(k)}- L^{(k)}) + \langle S^{(k)},  \Theta^{(k)} - L^{(k)} \rangle \right)+ \mathcal{P}(\Theta) +\sum_{k=1}^{K} \mu_k \|L^{(k)}\|_{\star}.
 
+GGL - the nonconforming case
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+So far, we have assumed that each component of :math:`\mathcal{X}^{(k)}` is present in each of the :math:`K` instances. However, in many practical situations this will not be the case. For example, assume that we have :math:`K` datasets of microbiome abundances but not every microbiome species (OTU) was measured in each dataset. Hence, we may want to estimate the association network but with a group sparsity penalty on all overlapping pairs of species. 
+
+Conseqeuntly, assume that we have :math:`\mathcal{X}^{(k)} \sim \mathcal{N}(\mu^{(k)}, \Sigma^{(k)})\in \mathbb{R}^{p_k}` and that there exist groups of overlapping pairs of variables :math:`G_1, \dots, G_L` with 
+
+.. math::
+	G_l = \{(i_l^k, j_l^k) \in \mathbb{N}^2 \vert k \in K_l \}, \quad K_l \subset K
+
+where :math:`k \in K_l` if and only if the pair of variables corresponding to :math:`G_l` exists in :math:`\mathcal{X}^{(k)}`. In that case :math:`(i_l^k, j_l^k)` are the indices of the relevant entry in :math:`\Theta^{(k)}` for group :math:`l`.
+
+Now, the associated GGL regularizer becomes 
+
+.. math::
+	\mathcal{P}(\Theta) = \lambda_1 \sum_{i \neq j, k} |\Theta_{ij}^{(k)}| + \lambda_2 \sum_{l=1}^{L}\beta_l \|\Theta_{[l]}\|
+
+where 
+:math:`\Theta_{[l]}` is the vector with entries :math:`\{\Theta_{i_l^k j_l^k}^{(k)} \vert~ k \in K_l\} \in \mathbb{R}^{|K_l|}`. The scaling factor :math:`\beta_l > 0` is set to :math:`\beta_l = \sqrt{|K_l|}` in order to account for distinct group sizes.
+
+In ``GGLasso`` we implemented an ADMM algorithm for the above described problem formulation, possibly extended with latent variables. 
 
 Optimization algorithms
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-A popular algorithm for solving SGL and MGL problems is the ADMM algorithm [2]_, [3]_, [5]_. Alternatively, a proximal point algorithm with a semismooth Newton method for solving the subproblem was proposed (called PPDNA). 
-
-The ``GGLasso`` package contains and ADMM solver for all problem formulations as well as the PPDNA solver for MGL problems without latent variables.
+All of the above problem formulations are instances of nonlinear, convex and nonsmooth optimization problems. See :ref:`Algorithms` for an overview of solvers which we implemented for these problems and a short guide on how to use them.
 
 References
 ^^^^^^^^^^^
