@@ -1,5 +1,7 @@
+"""
+author: Fabian Schaipp
+"""
 import numpy as np
-import time
 
 from gglasso.helper.data_generation import time_varying_power_network, group_power_network,sample_covariance_matrix
 from gglasso.problem import glasso_problem
@@ -20,6 +22,7 @@ def template_problem_MGL(S, N, reg = 'GGL', latent = False, G = None):
     template for testing the MGL problem object
     """
     P = glasso_problem(S = S, N = N, reg = reg, latent = latent, G = G)
+    print(P)
     
     modelselectparams = dict()
     modelselectparams['lambda1_range'] = np.logspace(-3,0,4)
@@ -30,9 +33,24 @@ def template_problem_MGL(S, N, reg = 'GGL', latent = False, G = None):
     else:
         modelselectparams['mu1_range'] = None
     
+    
+    P.solve()
+    reg_params = {'lambda1': 0.01, 'lambda2': 0.001}
+    if latent:
+        reg_params['mu1'] = 1.
+    
+    # set reg params and solve again
+    P.set_reg_params(reg_params)
+    P.solve()
+    
+    # test model selection
+    P.model_selection(method = 'AIC')
     P.model_selection(modelselect_params = modelselectparams, method = 'eBIC', gamma = 0.1)
+    
     #tmp = P.modelselect_stats.copy()
-    P.solution.calc_ebic(gamma = 0.1)
+    _ = P.solution.calc_ebic(gamma = 0.1)
+    P.solution.calc_adjacency()
+    
     return
 
 def test_GGL():
@@ -92,18 +110,33 @@ def template_problem_SGL(S, N, latent = False):
     template for testing the SGL problem object
     """
     P = glasso_problem(S = S, N = N, reg = None, latent = latent)
+    print(P)
     
-    modelselectparams = dict()
-    modelselectparams['lambda1_range'] = np.logspace(-3,0,4)
     
+    P.solve()
+    reg_params = {'lambda1': 0.01}
     if latent:
-        modelselectparams['mu1_range'] = np.logspace(-2,0,4)
-    else:
-        modelselectparams['mu1_range'] = None
+        reg_params['mu1'] = 1.
     
-    P.model_selection(modelselect_params = modelselectparams, method = 'eBIC', gamma = 0.1)
+    # set reg params and solve again
+    P.set_reg_params(reg_params)
+    P.solve()
+    
+    # test model selection
+    # modelselectparams = dict()
+    # modelselectparams['lambda1_range'] = np.logspace(-3,0,4)
+    
+    # if latent:
+    #     modelselectparams['mu1_range'] = np.logspace(-2,0,4)
+    # else:
+    #     modelselectparams['mu1_range'] = None
+    
+    P.model_selection(method = 'AIC')
+    P.model_selection(modelselect_params = None, method = 'eBIC', gamma = 0.1)
+    
     #tmp = P.modelselect_stats.copy()
-    P.solution.calc_ebic(gamma = 0.1)
+    _ = P.solution.calc_ebic(gamma = 0.1)
+    P.solution.calc_adjacency()
     return
 
 def test_SGL():

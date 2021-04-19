@@ -16,7 +16,8 @@ from sklearn.covariance import GraphicalLasso
 from gglasso.solver.admm_solver import ADMM_MGL
 from gglasso.solver.ppdna_solver import warmPPDNA
 from gglasso.helper.data_generation import group_power_network, sample_covariance_matrix
-from gglasso.helper.experiment_helper import get_K_identity, lambda_parametrizer, lambda_grid, discovery_rate, error, hamming_distance
+from gglasso.helper.experiment_helper import lambda_parametrizer, lambda_grid, discovery_rate, error
+from gglasso.helper.utils import get_K_identity, hamming_distance
 from gglasso.helper.experiment_helper import draw_group_heatmap, plot_fpr_tpr, plot_diff_fpr_tpr, plot_error_accuracy, surface_plot, plot_gamma_influence
 from gglasso.helper.model_selection import aic, ebic
 
@@ -137,7 +138,7 @@ Theta_0 = get_K_identity(K,p)
 
 solP, infoP = warmPPDNA(S, l1opt, l2opt, reg, Omega_0, Theta_0 = Theta_0, eps = 1e-5 , verbose = True, measure = True)
 
-solA, infoA = ADMM_MGL(S, l1opt, l2opt, reg , Omega_0, Theta_0 = Theta_0, tol = 1e-10, rtol = 1e-10, verbose = True, measure = True)
+solA, infoA = ADMM_MGL(S, l1opt, l2opt, reg , Omega_0, Theta_0 = Theta_0, tol = 1e-12, rtol = 1e-12, verbose = True, measure = True)
 
 Theta_sol = solA['Theta']
 Omega_sol = solA['Omega']
@@ -155,8 +156,10 @@ plot_fpr_tpr(FPR, TPR, ix, ix2, FPR_GL, TPR_GL, W2, save = save)
 
 plot_diff_fpr_tpr(DFPR, DTPR, ix, ix2, DFPR_GL, DTPR_GL, W2, save = save)
 
-surface_plot(L1, L2, BIC, reg = "GGL", name = 'eBIC', save = save)
 
+fig = surface_plot(L1, L2, BIC, name = 'eBIC')
+if save:
+    fig.savefig('../plots/ggl_powerlaw/surface.pdf', dpi = 500)
 
 #%% accuracy/model selection impact on total error analysis
 

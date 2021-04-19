@@ -48,7 +48,7 @@ def ADMM_MGL(S, lambda1, lambda2, reg , Omega_0 , \
         "GGL": Group Graphical Lasso
         "FGL": Fused Graphical Lasso
     Omega_0 : array (K,p,p)
-        starting point for the Omega variable. Use get_K_identity(K, p) from gglasso.helper.experiment_helper if no better starting point is known.
+        starting point for the Omega variable. Use get_K_identity(K, p) from gglasso.helper.utils if no better starting point is known.
     Theta_0 : array (p,p), optional
         starting point for the Theta variable. If not specified, it is set to the same as Omega_0.
     X_0 : array (p,p), optional

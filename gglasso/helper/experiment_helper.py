@@ -11,14 +11,11 @@ import seaborn as sns
 import networkx as nx
 
 from .basic_linalg import adjacency_matrix
+from .utils import deviation
 
-
-def get_K_identity(K, p):
-    res = np.zeros((K,p,p))
-    for k in np.arange(K):
-        res[k,:,:] = np.eye(p)
-    
-    return res
+#################################################################################################################
+############################ FOR EXPERIMENT SETUP ##################################################################
+#################################################################################################################
 
 def lambda_parametrizer(l2 = 0.05, w2 = 0.5):
     
@@ -50,22 +47,8 @@ def lambda_grid(num1 = 5, num2 = 2, reg = 'GGL'):
         
     return L1.squeeze(), L2.squeeze(), w2
            
-
-def sparsity(S):
-    (p,p) = S.shape
-    A = adjacency_matrix(S)
-    s = A.sum()/(p**2-p)
-    return s
-
-def mean_sparsity(S):
-    if type(S) == dict:
-        s = [sparsity(S[k]) for k in S.keys()]
-    elif type(S) == np.ndarray:
-        s = [sparsity(S[k,:,:]) for k in range(S.shape[0])]
         
-    return np.mean(s)
-        
-def discovery_rate(S_sol , S_true, t = 1e-5):
+def discovery_rate(S_sol , S_true, t = 1e-10):
     if len(S_true.shape) == 2:
         print("Warning: function designed for 3-dim arrays")
         S_true = S_true[np.newaxis,:,:]
@@ -101,40 +84,6 @@ def discovery_rate(S_sol , S_true, t = 1e-5):
 
 def error(S_sol , S_true):
     return np.linalg.norm(S_sol - S_true)/np.linalg.norm(S_true)
-
-def hamming_distance(X, Z, t = 1e-10):
-    A = adjacency_matrix(X, t=t)
-    B = adjacency_matrix(Z, t=t)
-    
-    return (A+B == 1).sum()
-    
-def l1norm_od(Theta):
-    """
-    calculates the off-diagonal l1-norm of a matrix
-    """
-    (p1,p2) = Theta.shape
-    res = 0
-    for i in np.arange(p1):
-        for j in np.arange(p2):
-            if i == j:
-                continue
-            else:
-                res += abs(Theta[i,j])
-                
-    return res
-
-def deviation(Theta):
-    """
-    calculates the deviation of subsequent Theta estimates
-    deviation = off-diagonal l1 norm
-    """
-    #tmp = np.roll(Theta, 1, axis = 0)
-    (K,p,p) = Theta.shape
-    d = np.zeros(K-1)
-    for k in np.arange(K-1):
-        d[k] = l1norm_od(Theta[k+1,:,:] - Theta[k,:,:]) / l1norm_od(Theta[k,:,:])
-        
-    return d
 
 
 #################################################################################################################
@@ -423,27 +372,55 @@ def plot_gamma_influence(gammas, GTPR, GFPR, save = False):
         
     return 
 
-def surface_plot(L1, L2, C, reg, name = 'eBIC', save = False):
-    fig = plt.figure(figsize = default_size_big)
-    ax = fig.gca(projection='3d')
+        
+def surface_plot(L1, L2, C, name = 'eBIC'):
+    fig = plt.figure(figsize = (8,5))  
+        
+    if type(C) == np.ndarray:
+        ax = fig.gca(projection='3d')
+        single_surface_plot(L1, L2, C, ax, name = name)
+             
+    else:
+        gammas = list(C.keys())
+        
+        for j in np.arange(len(gammas)):
+            ax = fig.add_subplot(2, 2, j+1, projection='3d')
+            single_surface_plot(L1, L2, C[gammas[j]], ax, name = name)
+            if gammas is not None:
+                ax.set_title(rf"$\gamma = $ {gammas[j]}")
+    
+    return fig
+
+def single_surface_plot(L1, L2, C, ax, name = 'eBIC'):
     
     X = np.log10(L1)
     Y = np.log10(L2)
     Z = np.log(C)
-    with sns.axes_style("white"):
-        ax.plot_surface(X, Y, Z , cmap = plt.cm.ocean,linewidth=0, antialiased=False)
+    ax.plot_surface(X, Y, Z , cmap = plt.cm.ocean, linewidth=0, antialiased=True)
     
-    ax.set_xlabel('lambda1')
-    ax.set_ylabel('lambda2')
-    ax.set_zlabel(name)
-    #ax.view_init(elev = 20, azim = 60)
-    if reg == "FGL":
-        save_path = path_fgl_powerlaw
-    else:
-        save_path = path_ggl_powerlaw
+    ax.set_xlabel(r'$\lambda_1$', fontsize = 14)
+    ax.set_ylabel(r'$\lambda_2$', fontsize = 14)
+    #ax.set_xlabel(r'$w_1$', fontsize = 14)
+    #ax.set_ylabel(r'$w_2$', fontsize = 14)
+    ax.set_zlabel(name, fontsize = 14)
+    ax.view_init(elev = 25, azim = 110)
     
-    if save:
-        fig.savefig(save_path + 'surface.pdf', dpi = 500)
+    plt.xticks(fontsize = 8)
+    plt.yticks(fontsize = 8)
+    ax.zaxis.set_tick_params(labelsize=8)
+    
+    ax.tick_params(axis='both', which='major', pad=.5)
+    
+    for label in ax.xaxis.get_ticklabels()[::2]:
+        label.set_visible(False)
+    for label in ax.yaxis.get_ticklabels()[::2]:
+        label.set_visible(False)
+    for label in ax.zaxis.get_ticklabels()[::2]:
+        label.set_visible(False)
+    
+    return
+
+
 #################################################################################################################
 ############################ GIF ################################################################################
 #################################################################################################################
@@ -517,3 +494,4 @@ def multiple_heatmap_animation(Theta, results, save = False):
     return anim    
 
 #################################################################################################################
+

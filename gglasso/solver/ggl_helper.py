@@ -6,11 +6,6 @@ import numpy as np
 #from tick.prox import ProxTV
 from numba import njit
 
-# deactivate numba performance warnings
-from numba.errors import NumbaPerformanceWarning
-import warnings
-warnings.simplefilter('ignore', category=NumbaPerformanceWarning)
-
 from ..helper.basic_linalg import trp,Gdot,Sdot
 from .fgl_helper import condat_method
 
@@ -360,18 +355,18 @@ def construct_gamma(A, beta, D = np.array([]), Q = np.array([])):
                       
     return Gamma
 
-
-def eval_jacobian_phiplus(B, Gamma, Q):
-    # Gamma is constructed with construct_gamma
-    # Q is the right-eigenvector matrix of the point A
+# old version
+# def eval_jacobian_phiplus(B, Gamma, Q):
+#     # Gamma is constructed with construct_gamma
+#     # Q is the right-eigenvector matrix of the point A
         
-    res = Q @ (Gamma * (trp(Q) @ B @ Q)) @ trp(Q)
+#     res = Q @ (Gamma * (trp(Q) @ B @ Q)) @ trp(Q)
     
-    assert np.abs(res - trp(res)).max() <= 1e-4, f"symmetry failed by  {np.abs(res - trp(res)).max()}"
-    return res
+#     assert np.abs(res - trp(res)).max() <= 1e-4, f"symmetry failed by  {np.abs(res - trp(res)).max()}"
+#     return res
 
 @njit() 
-def eval_jacobian_phiplus_numba(B, Gamma, Q):
+def eval_jacobian_phiplus(B, Gamma, Q):
     # numba version of function eval_jacobian_phiplus
     # numba only supports @ for 2D-arrays --> loop through K
     (K,p,p) = B.shape
@@ -396,7 +391,7 @@ def hessian_Y(D , Gamma, eigQ, W, sigma_t):
     argument is D
     Gamma and W are constructed beforehand in order to evaluate more efficiently
     """
-    tmp1 = eval_jacobian_phiplus_numba( D, Gamma, eigQ)
+    tmp1 = eval_jacobian_phiplus(D, Gamma, eigQ)
     tmp2 = eval_jacobian_prox_p( D , W)
 
     res = - sigma_t * (tmp1 + tmp2)
