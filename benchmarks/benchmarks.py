@@ -41,7 +41,7 @@ def dict_shape(dict_=dict):
     return shape_list
 
 
-def benchmark_parameters(sk_tol_list=[0.5, 0.25, 0.1], enet_list=[0.5, 0.25, 0.1],
+def benchmark_parameters(S_dict=dict, sk_tol_list=[0.5, 0.25, 0.1], enet_list=[0.5, 0.25, 0.1],
                          rg_tol_list=[1e-4, 1e-5, 1e-6], rg_rtol_list=[1e-3, 1e-4, 1e-5],
                          admm_tol_list=[1e-6, 1e-7, 1e-8], admm_rtol_list=[1e-5, 1e-6, 1e-7],
                          admm_stop=['boyd'], admm_method=['single', 'block']):
@@ -53,7 +53,11 @@ def benchmark_parameters(sk_tol_list=[0.5, 0.25, 0.1], enet_list=[0.5, 0.25, 0.1
     # Regain params
     rg_tol_list = rg_tol_list
     rg_rtol_list = rg_rtol_list
-    rg_params = {"tol": rg_tol_list, "rtol": rg_rtol_list}
+
+    init_shape_list = []
+    for i in S_dict.values():
+        init_shape_list.append(len(i))
+    rg_params = {"tol": rg_tol_list, "rtol": rg_rtol_list, "init_shape": init_shape_list}
 
     # ADMM params
     admm_tol_list = admm_tol_list
@@ -83,10 +87,14 @@ def models_to_dict(models=None, lambda1=0.1, max_iter=50000, sk_params=dict, rg_
                     tol_list = rg_params[key]
                 elif key == "rtol":
                     rtol_list = rg_params[key]
+                elif key == "init_shape":
+                    init_shape_list = rg_params[key]
 
-            for tol, rtol in itertools.product(tol_list, rtol_list):
-                key = str(model) + "_tol_" + str(tol) + "_rtol_" + str(rtol)
-                models_dict[key] = rg_GL(alpha=lambda1, tol=tol, rtol=rtol, max_iter=max_iter, assume_centered=False)
+            for shape in init_shape_list:
+                for tol, rtol in itertools.product(tol_list, rtol_list):
+                    key = str(model) + "_tol_" + str(tol) + "_rtol_" + str(rtol) + "_p_" + str(shape)
+                    models_dict[key] = rg_GL(alpha=lambda1, tol=tol, rtol=rtol, max_iter=max_iter,
+                                             assume_centered=False, init=np.eye(shape))
 
         elif model == "sklearn":
 
@@ -243,17 +251,26 @@ def time_benchmark(X=list, S=list, lambda1=0.1, max_iter=50000, Z_model=str, sk_
     times = sk_time.copy()
     times.update(admm_time)
     for key, value in times.items():
-        time_dict[key + "_p_" + str(len(S)) + "_N_" + str(len(X))] = value
+        if "regain" in key.split("_"):
+            time_dict[key + "_N_" + str(len(X))] = value
+        else:
+            time_dict[key + "_p_" + str(len(S)) + "_N_" + str(len(X))] = value
 
     accs = sk_accuracy.copy()
     accs.update(admm_accuracy)
     for key, value in accs.items():
-        accuracy_dict[key + "_p_" + str(len(S)) + "_N_" + str(len(X))] = value
+        if "regain" in key.split("_"):
+            accuracy_dict[key + "_N_" + str(len(X))] = value
+        else:
+            accuracy_dict[key + "_p_" + str(len(S)) + "_N_" + str(len(X))] = value
 
     precs = Z_sk.copy()
     precs.update(Z_admm)
     for key, value in precs.items():
-        precision_dict[key + "_p_" + str(len(S)) + "_N_" + str(len(X))] = value
+        if "regain" in key.split("_"):
+            precision_dict[key + "_N_" + str(len(X))] = value
+        else:
+            precision_dict[key + "_p_" + str(len(S)) + "_N_" + str(len(X))] = value
 
     return time_dict, accuracy_dict, precision_dict
 
