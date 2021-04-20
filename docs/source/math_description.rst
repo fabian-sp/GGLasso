@@ -15,7 +15,7 @@ Zeros in the precision matrix, :math:`\Sigma^{-1}` correspond to conditional ind
 Typically, we are given a sample of :math:`N` independent samples of :math:`X` for which we can compute the empirical covariance matrix :math:`S`.
 Even though :math:`S^{-1}` (if exists) is the maximum-likelihood estimator of the precision matrix, it is not guaranteed to be sparse. 
 
-This leads to the nonsmooth convex optimization problem, known under the name of Graphical Lasso [1]_, given by
+This leads to the nonsmooth convex optimization problem, known under the name of Graphical Lasso [ref1]_, given by
 
 .. math::
    \min_{\Theta \in \mathbb{S}^p_{++}} - \log \det \Theta + \mathrm{Tr}(S\Theta) + \lambda \|\Theta\|_{1,od}
@@ -25,7 +25,7 @@ where :math:`\mathbb{S}^p_{++}` is the cone of symmetric positive definite matri
 SGL with latent variables
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-In presence of latent variables, the precision matrix of the marginal of observable variables turns out to have the structure *sparse - low rank* [4]_. The problem can then be formulated as  
+In presence of latent variables, the precision matrix of the marginal of observable variables turns out to have the structure *sparse - low rank* [ref4]_. The problem can then be formulated as  
 
 .. math::
    \min_{\Theta, L \in \mathbb{S}^p} - \log \det (\Theta -L) + \mathrm{Tr}(S(\Theta-L)) + \lambda \|\Theta\|_{1,od} + \mu \|L\|_{\star}
@@ -35,7 +35,7 @@ where :math:`\|\cdot\|_{\star}` is the nuclear norm (sum of singular values). :m
 Multiple Graphical Lasso problems (MGL)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-In many applications, compositional or temporal data is available. Hence, there has been an increased interest in estimating precision matrices for multiple instances jointly [2]_, [3]_. Mathematically, we consider :math:`K` Gaussians
+In many applications, compositional or temporal data is available. Hence, there has been an increased interest in estimating precision matrices for multiple instances jointly [ref2]_, [ref3]_. Mathematically, we consider :math:`K` Gaussians
 
 .. math::
    \mathcal{X}^{(k)} \sim \mathcal{N}(\mu^{(k)}, \Sigma^{(k)})\in \mathbb{R}^{p}
@@ -74,10 +74,12 @@ with positive numbers :math:`\lambda_1, \lambda_2`. The first term promotes off-
 MGL with latent variables
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Analogous to SGL, we can extend MGL problems with latent variables. For instance, and ADMM algorithm and software are available for FGL [3]_. The problem formulation then becomes 
+Analogous to SGL, we can extend MGL problems with latent variables.  The problem formulation then becomes 
 
 .. math::
    \min_{\Theta, L}\quad \sum_{k=1}^{K} \left(-\log\det(\Theta^{(k)}- L^{(k)}) + \langle S^{(k)},  \Theta^{(k)} - L^{(k)} \rangle \right)+ \mathcal{P}(\Theta) +\sum_{k=1}^{K} \mu_k \|L^{(k)}\|_{\star}.
+
+An ADMM algorithm and software is already available for FGL [ref3]_, however in [ref3]_ also the deviation of the low rank matrices is included in the penalty.
 
 GGL - the nonconforming case
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -109,11 +111,16 @@ All of the above problem formulations are instances of nonlinear, convex and non
 References
 ^^^^^^^^^^^
 
-.. [1]  Friedman, J., Hastie, T., and Tibshirani, R. (2007).  Sparse inverse covariance estimation with the Graphical Lasso. Biostatistics, 9(3):432–441.
-.. [2]  Danaher, P., Wang, P., and Witten, D. M. (2013).  The joint Graphical Lasso for inverse covariance estimation across multiple classes. Journal of the Royal Statistical Society: Series B (Statistical Methodology), 76(2):373–397.
-.. [3] Tomasi, F., Tozzo, V., Salzo, S., and Verri, A. (2018).  Latent variable time-varying network inference. InProceedings of the 24th ACM SIGKDD International Conference on Knowledge Discovery & Data Mining. ACM.
-.. [4]  Chandrasekaran, V., Parrilo, P. A., and Willsky, A. S. (2012). Latent variable graphical model selection via convex optimization. The Annals of Statistics,40(4):1935–1967.
-.. [5] Ma,  S., Xue,  L., and Zou, H.  (2013). Alternating direction methods for latent variable gaussian graphical model selection. Neural Computation, 25(8):2172–2198.
+.. [ref1]  Friedman, J., Hastie, T., and Tibshirani, R. (2007).  Sparse inverse covariance estimation with the Graphical Lasso. Biostatistics, 9(3):432–441.
+.. [ref2]  Danaher, P., Wang, P., and Witten, D. M. (2013).  The joint graphical lasso for inverse covariance estimation across multiple classes. Journal of the Royal Statistical Society: Series B (Statistical Methodology), 76(2):373–397.
+.. [ref3] Tomasi, F., Tozzo, V., Salzo, S., and Verri, A. (2018).  Latent Variable Time-varying Network Inference. InProceedings of the 24th ACM SIGKDD International Conference on Knowledge Discovery & Data Mining. ACM.
+.. [ref4]  Chandrasekaran, V., Parrilo, P. A., and Willsky, A. S. (2012). Latent variable graphical model selection via convex optimization. The Annals of Statistics,40(4):1935–1967.
+.. [ref5] Ma,  S., Xue,  L., and Zou, H.  (2013). Alternating Direction Methods for Latent Variable Gaussian Graphical Model Selection. Neural Computation, 25(8):2172–2198.
+.. [ref6] Zhang, Y., Zhang, N., Sun, D., and Toh, K.-C. (2020). A proximal point dual Newton algorithm for solving group graphical Lasso problems.SIAM J. Optim.,30(3):2197–2220.
+.. [ref7] Zhang, N., Zhang, Y.,  Sun, D., and  Toh, K.-C. (2019). An efficient linearly convergent regularized proximal point algorithm for fused multiple graphical lasso problems.
+.. [ref8] Boyd, S., Parikh, N., Chu, E., Peleato, B., and Eckstein, J. (2011). Distributed Optimization and Statistical Learning via the Alternating Direction Method of Multipliers. Found. Trends Mach. Learn., 3(1):1–122.
+.. [ref9] Witten, D. M., Friedman, J. H., and Simon, N. (2011). New Insights and Faster Computations for the Graphical Lasso. J. Comput. Graph. Statist., 20(4):892–900.
+
 
 
 
