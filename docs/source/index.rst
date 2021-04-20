@@ -17,7 +17,8 @@ The package is available on `Github`_ .
    :caption: Contents:
 
    getting-started
-   math_description
+   math-description
    solvers
+   problem-object
    
 

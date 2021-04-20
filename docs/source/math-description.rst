@@ -28,7 +28,7 @@ SGL with latent variables
 In presence of latent variables, the precision matrix of the marginal of observable variables turns out to have the structure *sparse - low rank* [ref4]_. The problem can then be formulated as  
 
 .. math::
-   \min_{\Theta, L \in \mathbb{S}^p} - \log \det (\Theta -L) + \mathrm{Tr}(S(\Theta-L)) + \lambda \|\Theta\|_{1,od} + \mu \|L\|_{\star}
+   \min_{\Theta, L \in \mathbb{S}^p} - \log \det (\Theta -L) + \mathrm{Tr}(S(\Theta-L)) + \lambda_1 \|\Theta\|_{1,od} + \mu \|L\|_{\star}
 
 where :math:`\|\cdot\|_{\star}` is the nuclear norm (sum of singular values). :math:`\Theta` represents the sparse part while :math:`L` encodes the low rank component.
 
@@ -116,11 +116,11 @@ References
 .. [ref3] Tomasi, F., Tozzo, V., Salzo, S., and Verri, A. (2018). Latent Variable Time-varying Network Inference. InProceedings of the 24th ACM SIGKDD International Conference on Knowledge Discovery & Data Mining. ACM.
 .. [ref4]  Chandrasekaran, V., Parrilo, P. A., and Willsky, A. S. (2012). Latent variable graphical model selection via convex optimization. The Annals of Statistics, 40(4):1935–1967.
 .. [ref5] Ma,  S., Xue,  L., and Zou, H.  (2013). Alternating Direction Methods for Latent Variable Gaussian Graphical Model Selection. Neural Computation, 25(8):2172–2198.
-.. [ref6] Zhang, Y., Zhang, N., Sun, D., and Toh, K.-C. (2020). A proximal point dual Newton algorithm for solving group graphical Lasso problems.SIAM J. Optim., 30(3):2197–2220.
+.. [ref6] Zhang, Y., Zhang, N., Sun, D., and Toh, K.-C. (2020). A proximal point dual Newton algorithm for solving group graphical Lasso problems. SIAM J. Optim., 30(3):2197–2220.
 .. [ref7] Zhang, N., Zhang, Y.,  Sun, D., and  Toh, K.-C. (2019). An efficient linearly convergent regularized proximal point algorithm for fused multiple graphical lasso problems.
 .. [ref8] Boyd, S., Parikh, N., Chu, E., Peleato, B., and Eckstein, J. (2011). Distributed Optimization and Statistical Learning via the Alternating Direction Method of Multipliers. Found. Trends Mach. Learn., 3(1):1–122.
 .. [ref9] Witten, D. M., Friedman, J. H., and Simon, N. (2011). New Insights and Faster Computations for the Graphical Lasso. J. Comput. Graph. Statist., 20(4):892–900.
-
+.. [ref10] Foygel, R. and Drton, M. (2010). Extended Bayesian Information Criteria for Gaussian Graphical Models. In Lafferty, J., Williams, C., Shawe-Taylor, J.,Zemel, R., and Culotta, A., editors, Advances in Neural Information Processing Systems, volume 23. Curran Associates, Inc.
 
 
 
