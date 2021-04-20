@@ -350,7 +350,7 @@ class glasso_problem:
     #### SOLVING
     ##############################################
       
-    def solve(self, Omega_0 = None, solver_params = dict(), tol = 1e-5, rtol = 1e-4, solver = 'admm'):
+    def solve(self, Omega_0 = None, solver_params = dict(), tol = 1e-8, rtol = 1e-7, solver = 'admm'):
         """
         Method for solving the Graphical Lasso problem formulation.
         After solving, an instance of GGLassoEstimator will be created and assigned to self.solution.
