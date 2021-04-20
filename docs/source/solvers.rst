@@ -4,7 +4,7 @@ Algorithms
 The ``GGLasso`` package contains solvers for several (Multiple) Graphical Lasso problem formulations. See :ref:`Mathematical description` for an overview of problem formulations.
 This page aims to give an overview of the functions you need to call for solving a certain problem.
 
-A popular algorithm for solving SGL and MGL problems is the ADMM[ref8]_, [ref5]_, [ref2]_, [ref3]_. Alternatively, a proximal point dual Newton algorithm (PPDNA) was proposed for GGL [ref6]_ and FGL [ref7]_.
+A popular algorithm for solving SGL and MGL problems is the ADMM [ref8]_, [ref5]_, [ref2]_, [ref3]_. Alternatively, a proximal point dual Newton algorithm (PPDNA) was proposed for GGL [ref6]_ and FGL [ref7]_.
 
 The ``GGLasso`` package contains and ADMM solver for all problem formulations as well as the PPDNA solver for MGL problems without latent variables.
 
@@ -30,7 +30,7 @@ For MGL problems without latent variables two solvers are available, namely
 
 Note that the formulation of the FGL regularizer differs sligtly in [ref2]_, [ref3]_ and our implementation.
 
-Both ADMM and PPDNA have the option ``reg`` which can be set either to ``reg = 'GGL'`` for Group Graphical Lasso rpboelms or ``reg = 'FGL'`` for Fused Graphical Lasso problems. 
+Both ADMM and PPDNA have the option ``reg`` which can be set either to ``reg = 'GGL'`` for Group Graphical Lasso problems or ``reg = 'FGL'`` for Fused Graphical Lasso problems. 
 
 
 For MGL problems with latent variables, only the ADMM solver is available. 
@@ -38,4 +38,14 @@ For MGL problems with latent variables, only the ADMM solver is available.
 Nonconforming GGL 
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-For 
+For the setting which we describe in :ref:`GGL - the nonconforming case`, we implemented an ADMM solver, see ``from gglasso.solver.ext_admm_solver import ext_ADMM_MGL``.
+This solver is slightly more complicated to call as you have to tell the solver where the overlapping pairs of variables can be found in the repsective precision matrices. This can be done with the function argument ``G`` which can be seen as a bookeeping array: you should specify a ``(2,L,K)``-shaped array where :math:`L` is the number of groups. 
+
+If your sample data is a list of ``pd.DataFrame`` objects where each Dataframe has the shape ``(n_variables,n_samples)`` and the index contains unique identifiers for all variables, you can create ``G`` by simply calling the following two functions from ``gglasso.helper.ext_admm_helper``.
+
+.. code-block:: python
+
+     ix_exist, ix_location = construct_indexer(list_of_samples) 
+     G = create_group_array(ix_exist, ix_location)
+
+Here ``list_of_samples`` stands for your list of data samples as described above.

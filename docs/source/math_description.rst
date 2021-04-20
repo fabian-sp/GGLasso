@@ -86,7 +86,7 @@ GGL - the nonconforming case
 
 So far, we have assumed that each component of :math:`\mathcal{X}^{(k)}` is present in each of the :math:`K` instances. However, in many practical situations this will not be the case. For example, assume that we have :math:`K` datasets of microbiome abundances but not every microbiome species (OTU) was measured in each dataset. Hence, we may want to estimate the association network but with a group sparsity penalty on all overlapping pairs of species. 
 
-Conseqeuntly, assume that we have :math:`\mathcal{X}^{(k)} \sim \mathcal{N}(\mu^{(k)}, \Sigma^{(k)})\in \mathbb{R}^{p_k}` and that there exist groups of overlapping pairs of variables :math:`G_1, \dots, G_L` with 
+Consequently, assume that we have :math:`\mathcal{X}^{(k)} \sim \mathcal{N}(\mu^{(k)}, \Sigma^{(k)})\in \mathbb{R}^{p_k}` and that there exist groups of overlapping pairs of variables :math:`G_1, \dots, G_L` with 
 
 .. math::
 	G_l = \{(i_l^k, j_l^k) \in \mathbb{N}^2 \vert k \in K_l \}, \quad K_l \subset K
@@ -112,11 +112,11 @@ References
 ^^^^^^^^^^^
 
 .. [ref1]  Friedman, J., Hastie, T., and Tibshirani, R. (2007).  Sparse inverse covariance estimation with the Graphical Lasso. Biostatistics, 9(3):432–441.
-.. [ref2]  Danaher, P., Wang, P., and Witten, D. M. (2013).  The joint graphical lasso for inverse covariance estimation across multiple classes. Journal of the Royal Statistical Society: Series B (Statistical Methodology), 76(2):373–397.
-.. [ref3] Tomasi, F., Tozzo, V., Salzo, S., and Verri, A. (2018).  Latent Variable Time-varying Network Inference. InProceedings of the 24th ACM SIGKDD International Conference on Knowledge Discovery & Data Mining. ACM.
-.. [ref4]  Chandrasekaran, V., Parrilo, P. A., and Willsky, A. S. (2012). Latent variable graphical model selection via convex optimization. The Annals of Statistics,40(4):1935–1967.
+.. [ref2]  Danaher, P., Wang, P., and Witten, D. M. (2013). The joint graphical lasso for inverse covariance estimation across multiple classes. Journal of the Royal Statistical Society: Series B (Statistical Methodology), 76(2):373–397.
+.. [ref3] Tomasi, F., Tozzo, V., Salzo, S., and Verri, A. (2018). Latent Variable Time-varying Network Inference. InProceedings of the 24th ACM SIGKDD International Conference on Knowledge Discovery & Data Mining. ACM.
+.. [ref4]  Chandrasekaran, V., Parrilo, P. A., and Willsky, A. S. (2012). Latent variable graphical model selection via convex optimization. The Annals of Statistics, 40(4):1935–1967.
 .. [ref5] Ma,  S., Xue,  L., and Zou, H.  (2013). Alternating Direction Methods for Latent Variable Gaussian Graphical Model Selection. Neural Computation, 25(8):2172–2198.
-.. [ref6] Zhang, Y., Zhang, N., Sun, D., and Toh, K.-C. (2020). A proximal point dual Newton algorithm for solving group graphical Lasso problems.SIAM J. Optim.,30(3):2197–2220.
+.. [ref6] Zhang, Y., Zhang, N., Sun, D., and Toh, K.-C. (2020). A proximal point dual Newton algorithm for solving group graphical Lasso problems.SIAM J. Optim., 30(3):2197–2220.
 .. [ref7] Zhang, N., Zhang, Y.,  Sun, D., and  Toh, K.-C. (2019). An efficient linearly convergent regularized proximal point algorithm for fused multiple graphical lasso problems.
 .. [ref8] Boyd, S., Parikh, N., Chu, E., Peleato, B., and Eckstein, J. (2011). Distributed Optimization and Statistical Learning via the Alternating Direction Method of Multipliers. Found. Trends Mach. Learn., 3(1):1–122.
 .. [ref9] Witten, D. M., Friedman, J. H., and Simon, N. (2011). New Insights and Faster Computations for the Graphical Lasso. J. Comput. Graph. Statist., 20(4):892–900.

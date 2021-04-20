@@ -16,15 +16,8 @@ The package is available on `Github`_ .
    :maxdepth: 2
    :caption: Contents:
 
+   getting-started
    math_description
    solvers
-   admm
+   
 
-
-
-Indices and tables
-==================
-
-* :ref:`genindex`
-* :ref:`modindex`
-* :ref:`search`
