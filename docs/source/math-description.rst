@@ -28,7 +28,7 @@ SGL with latent variables
 In presence of latent variables, the precision matrix of the marginal of observable variables turns out to have the structure *sparse - low rank* [ref4]_. The problem can then be formulated as  
 
 .. math::
-   \min_{\Theta, L \in \mathbb{S}^p} - \log \det (\Theta -L) + \mathrm{Tr}(S(\Theta-L)) + \lambda_1 \|\Theta\|_{1,od} + \mu \|L\|_{\star}
+   \min_{\Theta, L \in \mathbb{S}^p} - \log \det (\Theta -L) + \mathrm{Tr}(S(\Theta-L)) + \lambda_1 \|\Theta\|_{1,od} + \mu_1 \|L\|_{\star}
 
 where :math:`\|\cdot\|_{\star}` is the nuclear norm (sum of singular values). :math:`\Theta` represents the sparse part while :math:`L` encodes the low rank component.
 
@@ -77,7 +77,7 @@ MGL with latent variables
 Analogous to SGL, we can extend MGL problems with latent variables.  The problem formulation then becomes 
 
 .. math::
-   \min_{\Theta, L}\quad \sum_{k=1}^{K} \left(-\log\det(\Theta^{(k)}- L^{(k)}) + \langle S^{(k)},  \Theta^{(k)} - L^{(k)} \rangle \right)+ \mathcal{P}(\Theta) +\sum_{k=1}^{K} \mu_k \|L^{(k)}\|_{\star}.
+   \min_{\Theta, L}\quad \sum_{k=1}^{K} \left(-\log\det(\Theta^{(k)}- L^{(k)}) + \langle S^{(k)},  \Theta^{(k)} - L^{(k)} \rangle \right)+ \mathcal{P}(\Theta) +\sum_{k=1}^{K} \mu_{1,k} \|L^{(k)}\|_{\star}.
 
 An ADMM algorithm and software is already available for FGL [ref3]_, however in [ref3]_ also the deviation of the low rank matrices is included in the penalty.
 

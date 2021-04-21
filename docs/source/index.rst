@@ -20,5 +20,6 @@ The package is available on `Github`_ .
    math-description
    solvers
    problem-object
+   admm
    
 
