@@ -1,50 +1,37 @@
-import sys
 import time
 import numpy as np
 import pandas as pd
 import itertools
-import plotly.express as px
+
 from tqdm import trange
-
 from sklearn.covariance import GraphicalLasso as sk_GL
-from sklearn.covariance import empirical_covariance
 from sklearn import set_config
-
 set_config(print_changed_only=False)
 
-# sys.path.append('..')
 from gglasso.solver.single_admm_solver import ADMM_SGL
 from gglasso.solver.single_admm_solver import block_SGL
-from gglasso.helper.data_generation import time_varying_power_network, group_power_network, sample_covariance_matrix
-from gglasso.helper.model_selection import single_grid_search
-from gglasso.helper.basic_linalg import adjacency_matrix
 
 from regain.covariance import GraphicalLasso as rg_GL
-
-
-def network_generation(p=int, N=int, K=1, M=int):
-    Sigma, Theta = group_power_network(p, K=K, M=M)  # Theta is true precision matrix
-    S, samples = sample_covariance_matrix(Sigma, N)
-
-    S = S[0, :, :]
-    Theta = Theta[0, :, :]  # true precision matrix
-    X = samples[0, :, :].T
-
-    return S, X, Theta
-
-
-def dict_shape(dict_=dict):
-    shape_list = []
-
-    for i in dict_.values():
-        shape_list.append(np.array(i).shape)
-    return shape_list
 
 
 def benchmark_parameters(S_dict=dict, sk_tol_list=[0.5, 0.25, 0.1], enet_list=[0.5, 0.25, 0.1],
                          rg_tol_list=[1e-4, 1e-5, 1e-6], rg_rtol_list=[1e-3, 1e-4, 1e-5],
                          admm_tol_list=[1e-6, 1e-7, 1e-8], admm_rtol_list=[1e-5, 1e-6, 1e-7],
                          admm_stop=['boyd'], admm_method=['single', 'block']):
+    """
+    Specify model hyperparameters.
+    :param S_dict:
+    :param sk_tol_list:
+    :param enet_list:
+    :param rg_tol_list:
+    :param rg_rtol_list:
+    :param admm_tol_list:
+    :param admm_rtol_list:
+    :param admm_stop:
+    :param admm_method:
+    :return:
+    """
+
     # Sklearn params
     sk_tol_list = sk_tol_list
     enet_list = enet_list
@@ -222,7 +209,6 @@ def admm_time_benchmark(S=np.array([]), Omega_0=np.array([]), Z=np.array([]), la
     return time_dict, accuracy_dict, precision_dict
 
 
-
 def time_benchmark(X=list, S=list, lambda1=0.1, max_iter=50000, Z_model=str, sk_models=["sklearn", "regain"],
                    n_iter=int, sk_params=dict, rg_params=dict, admm_params=dict):
     assert Z_model in ('sklearn', 'regain')
@@ -273,113 +259,6 @@ def time_benchmark(X=list, S=list, lambda1=0.1, max_iter=50000, Z_model=str, sk_
             precision_dict[key + "_p_" + str(len(S)) + "_N_" + str(len(X))] = value
 
     return time_dict, accuracy_dict, precision_dict
-
-
-def hamming_distance(X, Z, t=1e-10):
-    A = adjacency_matrix(X, t=t)
-    B = adjacency_matrix(Z, t=t)
-    return (A + B == 1).sum()
-
-
-def hamming_dict(Theta_dict=dict, Z_dict=dict, t_rounding=float):
-    sparsity_dict = dict()
-
-    for Theta in Theta_dict.values():
-
-        for key, Z in Z_dict.items():
-            if Theta.shape == Z.shape:
-                sparsity_dict[key] = hamming_distance(Theta, Z, t=t_rounding)
-
-    return sparsity_dict
-
-
-def dict_to_dataframe(times=dict, acc_dict=dict, spars_dict=dict):
-    assert len(times) == len(acc_dict) == len(spars_dict)
-
-    df = pd.DataFrame(data={'name': list(times.keys()),
-                            'time': list(times.values()),
-                            "accuracy": list(acc_dict.values()),
-                            "hamming": list(spars_dict.values())})
-
-    df['split'] = df['name'].str.split('_')
-
-    columns_names = ["method", "tol_str", "tol", "rtol_str", "rtol", "p_str", "p", "N_str", "N"]
-    df[columns_names] = pd.DataFrame(df['split'].tolist(), index=df['split'].index)
-
-    redundant_cols = ['split', "tol_str", "rtol_str", "p_str", "N_str"]
-    df = df.drop(redundant_cols, axis=1)
-
-    convert_dict = {'tol': float, 'rtol': float, "p": int, "N": int}
-    df = df.astype(convert_dict)
-
-    df = df.sort_values(by=['time'])
-
-    return df
-
-
-def time_dict_to_data_frame(time_dict=dict):
-    time_df = pd.DataFrame.from_dict(time_dict, orient='index', columns=['time'])
-    time_df.reset_index(level=0, inplace=True)
-
-    time_df['split'] = time_df['index'].str.split('_')
-    columns_names = ["method", "p_str", "p", "N_str", "N"]
-    time_df[columns_names] = pd.DataFrame(time_df['split'].tolist(), index=time_df['split'].index)
-
-    redundant_cols = ["p_str", "N_str"]
-    time_df = time_df.drop(redundant_cols, axis=1)
-
-    convert_dict = {"p": int, "N": int}
-    time_df = time_df.astype(convert_dict)
-    time_df = time_df.sort_values(by=['time'])
-
-    return time_df
-
-
-def drop_duplicates(df):
-    assert 'method' in df.columns
-    assert 'accuracy' in df.columns
-
-    new_df = df[:1]
-    for method in df.method.unique():
-        filtered = df[df['method'] == method]
-        filtered = filtered.drop_duplicates(subset='accuracy', keep='first')
-        new_df = pd.concat([filtered, new_df])
-
-    return new_df[:-1]
-
-
-def plot_log_distance(df=pd.DataFrame(), upper_bound=float, lower_bound=float):
-    fig = px.scatter(df[(df["accuracy"] < upper_bound) & (df["accuracy"] > lower_bound)],
-                     x="time", y="accuracy", text="name", color="method",
-                     log_y=True, facet_col='p', facet_col_wrap=3,
-                     labels={
-                         "time": "Time, s",
-                         "accuracy": "Log_distance",
-                         "method": "method"
-                     },
-                     template="plotly_white",
-                     title="Log-distance between Z and Z' with respect to ADMM convergence rates")
-
-    fig.update_traces(mode='markers+lines', marker_line_width=1, marker_size=10)
-    fig.update_xaxes(matches=None)
-    fig.update_yaxes(exponentformat="power")
-
-    return fig
-
-
-def plot_scalability(df=pd.DataFrame()):
-    fig = px.scatter(df, x="time", y="p", text="N", color="method",
-                     labels={
-                         "time": "Time, s",
-                         "p": "Number of features, p",
-                         "method": "method"
-                     },
-                     template="plotly_white",
-                     title="Scalability plot")
-
-    fig.update_traces(mode='markers+lines', marker_line_width=1, marker_size=10)
-
-    return fig
 
 
 def sparsity_benchmark(df=pd.DataFrame()):
@@ -445,22 +324,3 @@ def block_scaling(S, lambda1, Omega_0, max_iter, tol, rtol, n_iter, time_list=[]
 
     return time_list
 
-# def gini(array):
-#     """Calculate the Gini coefficient of a numpy array."""
-#
-#     # based on bottom eq: http://www.statsdirect.com/help/content/image/stat0206_wmf.gif
-#     # from: http://www.statsdirect.com/help/default.htm#nonparametric_methods/gini.htm
-#     array = array.flatten()  # all values are treated equally, arrays must be 1d
-#     if np.amin(array) < 0:
-#         array -= np.amin(array)  # values cannot be negative
-#     array += 1e-20  # values cannot be 0
-#     array = np.sort(array)  # values must be sorted
-#     index = np.arange(1, array.shape[0] + 1)  # index per array element
-#     n = array.shape[0]  # number of array elements
-#
-#     gini_coef = (np.sum((2 * index - n - 1) * array)) / (n * np.sum(array))  # Gini coefficient
-#
-#     return gini_coef
-
-# sparsity_sk = list(map(gini, Z_sk.values()))
-# sparsity_admm =  list(map(gini, Z_admm.values()))
