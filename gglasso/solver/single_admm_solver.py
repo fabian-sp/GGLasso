@@ -30,10 +30,9 @@ def ADMM_SGL(S, lambda1, Omega_0, Theta_0=np.array([]), X_0=np.array([]),
        
        s.t. \quad \Omega = \Theta - L
        
-    NOTE:
-        
-    * Typically, ``sol['Omega']`` is positive definite and ``sol['Theta']`` is sparse.
-    * We use scaled ADMM, i.e. X are the scaled (with 1/rho) dual variables for the equality constraint. 
+    Note:
+        * Typically, ``sol['Omega']`` is positive definite and ``sol['Theta']`` is sparse.
+        * We use scaled ADMM, i.e. X are the scaled (with 1/rho) dual variables for the equality constraint. 
 
     Parameters
     ----------
@@ -286,10 +285,9 @@ def block_SGL(S, lambda1, Omega_0, Theta_0=None, X_0=None, rho=1.,
        s.t. \quad \Omega = \Theta
     
         
-    NOTE:
-        
-    * In the original paper the l1-norm is applied as well on the diagonal (here: off-diagonal) which results in a small modification.
-    * The returned solution for X is not guaranteed to be identical to the dual variable of the full solution, but can be used as starting point (e.g. in grid search).
+    Note:
+        * In the original paper the l1-norm is applied as well on the diagonal (here: off-diagonal) which results in a small modification.
+        * The returned solution for X is not guaranteed to be identical to the dual variable of the full solution, but can be used as starting point (e.g. in grid search).
     
     Parameters
     ----------

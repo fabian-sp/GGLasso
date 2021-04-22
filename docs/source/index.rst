@@ -18,8 +18,8 @@ The package is available on `Github`_ .
 
    getting-started
    math-description
-   solvers
    problem-object
-   admm
+   solvers-overview
+   solvers-doc
    
 

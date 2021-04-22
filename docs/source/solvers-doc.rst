@@ -1,3 +1,6 @@
+Detailled solver documentation
+=====================================
+
 SGL
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
@@ -9,3 +12,9 @@ MGL
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 .. autofunction:: gglasso.solver.admm_solver.ADMM_MGL
+
+
+GGL nonconforming
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+.. autofunction:: gglasso.solver.ext_admm_solver.ext_ADMM_MGL

@@ -31,10 +31,9 @@ def ADMM_MGL(S, lambda1, lambda2, reg , Omega_0 , \
        
        s.t. \quad \Omega^{(k)} = \Theta^{(k)} - L^{(k)} \quad k=1,\dots,K
     
-    NOTE:
-        
-    * Typically, ``sol['Omega']`` is positive definite and ``sol['Theta']`` is sparse.
-    * We use scaled ADMM, i.e. X are the scaled (with 1/rho) dual variables for the equality constraint. 
+    Note:    
+        * Typically, ``sol['Omega']`` is positive definite and ``sol['Theta']`` is sparse.
+        * We use scaled ADMM, i.e. X are the scaled (with 1/rho) dual variables for the equality constraint. 
 
     Parameters
     ----------
