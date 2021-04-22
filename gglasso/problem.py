@@ -18,7 +18,15 @@ assert_tol = 1e-5
 class glasso_problem:
     """
     Class for Graphical Lasso problems. After solving, you can access the estimators with ``self.solution``. See documentation of ``GGLassoEstimator`` for details.
+    
+    Important attributes which determine the problem type:
+        * ``self.multiple``: specifies if SGL or MGL.
+        * ``self.latent``: specifies if latent variables are modeled.
+        * ``self.reg``: specifies if FGL or GGL (if MGL).
+        * ``self.conforming``: specifies if all variables are present in all instances (for GGL).
         
+    An instance of this class can be printed in order to inspect the derived problem formulation.    
+    
     Parameters
     ----------
     S : 2d/3d-array or list/dict
@@ -28,8 +36,8 @@ class glasso_problem:
         * For MGL use 3d array of shape (K,p,p). 
         * For GGL with non-conforming dimensions, use a list/dict of length K. Will be transformed to a dict with keys 1,..K.
         
-        For each instance, S^k has to be symmetric and positive semidefinite.
-        Note: S will be scaled to correlations and scaled back after solving.
+        For MGL, each ``S[k]`` has to be symmetric and positive semidefinite.
+        Note: y default ``S`` will be scaled to correlations and scaled back after solving, see option ``do_scaling``.
         
     N : int or integer array of length K
         Number of samples for each instance k=1,..,K.
@@ -37,10 +45,10 @@ class glasso_problem:
     reg : str, optional
         Type of regularization for MGL problems.
         
-        * "FGL" = Fused Graphical Lasso
-        * "GGL" = Group Graphical Lasso
+        * 'FGL' = Fused Graphical Lasso
+        * 'GGL' = Group Graphical Lasso
         
-        The default is "GGL".
+        The default is 'GGL'.
         
     reg_params : dict, optional
         Dictionary of regularization parameters. Possible keys are:
@@ -50,9 +58,11 @@ class glasso_problem:
         * mu1: float or array of length K, positive. Only needed if ``latent = True``.
                
     latent : boolean, optional
-        Specify whether latent variables should be modeleld.
-        For True, inverse covariance is assumed to have form Theta-L (sparse - low rank).
-        For False, inverse covariance is assumed to have form Theta (sparse).
+        Specify whether latent variables should be modeled.
+        
+        * ``latent = True``: inverse covariance is assumed to have form :math:`\Theta-L` (sparse - low rank).
+        * ``latent = False``: inverse covariance is assumed to have form :math:`\Theta` (sparse).
+        
         The default is False.
         
     G : 3d-array of shape(2,L,K), optional
@@ -345,7 +355,7 @@ class glasso_problem:
             
             * For SGL, specifiy a symmetric 2d-array of shape (p,p).
             * For MGL, specifiy a symmetric (for each k) 3d-array of shape (K,p,p).
-            * For non-conforming MGL, specifiy a dictionary with keys 1,...,K and symmetric 2d-arrays of shape (p^k,p^k) as values.
+            * For non-conforming MGL, specifiy a dictionary with keys 1,...,K and symmetric 2d-arrays of shape :math:`(p_k,p_k)` as values.
         
         solver_params : dict, optional
             Parameters for the solvers. Is given as kwargs for the solver. See doc of the solvers for more details.

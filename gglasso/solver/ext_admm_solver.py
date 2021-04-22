@@ -35,7 +35,7 @@ def ext_ADMM_MGL(S, lambda1, lambda2, reg , Omega_0, G,\
         \quad  \quad  \Lambda^{(k)} = \Theta^{(k)} \quad k=1,\dots,K 
     
     where l indexes the groups of overlapping variables and :math:`\Lambda_{[l]}` is the array of all respective components.
-    To account for differing group sizes we multiply with :math:`\beta_l`, the square root of the group size.
+    To account for differing group sizes we multiply with :math:`\\beta_l`, the square root of the group size.
     
     If ``latent=True``, this function solves
     
