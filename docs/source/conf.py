@@ -36,6 +36,7 @@ extensions = ['sphinx.ext.autodoc',
                 'sphinx.ext.coverage',
                 'sphinx.ext.mathjax',
                 'sphinx.ext.napoleon',
+                'sphinx_gallery.gen_gallery',
                 'sphinx.ext.autosummary','sphinx.ext.autosectionlabel']
 
 # Add any paths that contain templates here, relative to this directory.
@@ -61,3 +62,10 @@ html_theme = 'sphinx_rtd_theme'
 html_static_path = ['_static']
 
 pygments_style = 'sphinx'
+
+
+# -- Example gallery -----------------------
+sphinx_gallery_conf = {
+     'examples_dirs': '../../examples',   # path to your example scripts
+     'gallery_dirs': 'auto_examples',  # path to where to save gallery generated output
+}

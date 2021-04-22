@@ -17,6 +17,7 @@ The package is available on `Github`_ .
    :caption: Contents:
 
    getting-started
+   auto_examples/index
    math-description
    problem-object
    solvers-overview

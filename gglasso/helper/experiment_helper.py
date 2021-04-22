@@ -29,19 +29,19 @@ def lambda_grid(num1 = 5, num2 = 2, reg = 'GGL'):
     num1: number of grid point for lambda 1
     num2: number of grid point for lambda 2
     reg: grid for GGL or FGL (interpretation changes)
-    creates a grid of lambda 1 lambda 1 values
+    creates a grid of lambda1 / lambda2 values
     idea: the grid goes from smaller to higher values when going down/right
     """
     
     if reg == 'GGL':
-        l2 = np.logspace(start = -3, stop = -1, num = num2, base = 10)
+        l2 = np.logspace(start = -1, stop = -3, num = num2, base = 10)
         w2 = np.linspace(0.2, 0.5, num1)
         l2grid, w2grid = np.meshgrid(l2,w2)
         L1 = lambda_parametrizer(l2grid, w2grid)
         L2 = l2grid.copy()
     elif reg == 'FGL':
-        l2 = 2*np.logspace(start = -3, stop = -1, num = num2, base = 10)
-        l1 = 2*np.logspace(start = -3, stop = -1, num = num1, base = 10)
+        l2 = 2*np.logspace(start = -1, stop = -3, num = num2, base = 10)
+        l1 = 2*np.logspace(start = -1, stop = -3, num = num1, base = 10)
         L2, L1 = np.meshgrid(l2,l1)
         w2 = None
         
