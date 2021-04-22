@@ -403,7 +403,7 @@ def single_surface_plot(L1, L2, C, ax, name = 'eBIC'):
     #ax.set_xlabel(r'$w_1$', fontsize = 14)
     #ax.set_ylabel(r'$w_2$', fontsize = 14)
     ax.set_zlabel(name, fontsize = 14)
-    ax.view_init(elev = 25, azim = 110)
+    ax.view_init(elev = 18, azim = 51)
     
     plt.xticks(fontsize = 8)
     plt.yticks(fontsize = 8)

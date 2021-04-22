@@ -4,7 +4,7 @@ Group Graphical Lasso example
 
 We investigate the recovery performance of Group Graphical Lasso on Powerlaw networks, compared to estimating the precision matrices independently with SGL.
 
-We generate a precision matrix with block-wise powerlaw networks. In each instance, one of the blocks is randomly set to zero. Hence, the true underlying precision matrices are gorup sparse.  
+We generate a precision matrix with block-wise powerlaw networks. In each instance, one of the blocks is randomly set to zero. Hence, the true underlying precision matrices are group sparse.  
 """
 
 import numpy as np
@@ -31,9 +31,9 @@ Sigma, Theta = group_power_network(p, K, M)
 S, sample = sample_covariance_matrix(Sigma, N)
 
 # %%
-#  Parameter selection (MGL)
+#  Parameter selection (GGL)
 # ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-# We do a grid search over :math:`lambda_1`and :math:`lambda_2` values.
+# We do a grid search over :math:`\lambda_1` and :math:`\lambda_2` values.
 # On each grid point we evaluate True/False Discovery Rate (TPR/FPR), True/False Discovery of Differential edges and AIC and eBIC.
 #
 # Note: the package contains functions for doing this grid search, but here we also want to evaluate True and False positive rates on each grid points.
@@ -87,12 +87,16 @@ for g2 in np.arange(grid2):
 ix= np.unravel_index(np.nanargmin(BIC), BIC.shape)
 ix2= np.unravel_index(np.nanargmin(AIC), AIC.shape)
 
+l1opt = L1[ix]
+l2opt = L2[ix]
+
+print("Optimal lambda values: (l1,l2) = ", (l1opt,l2opt))
 
 # %%
 #  Parameter selection (SGL)
 # ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 #
-# We now solve K independent SGL problems and find the best :math:`lambda_1` parameter.
+# We now solve K independent SGL problems and find the best :math:`\lambda_1` parameter.
 #
 #
 
@@ -121,21 +125,11 @@ for a in np.arange(len(ALPHA)):
 # Solving
 # ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 #
-# To demonstrate again how to call the ADMM solver, we solve to high accuracy again for the best values of :math:`lambda_1`and :math:`lambda_2`.
+# To demonstrate again how to call the ADMM solver, we solve to high accuracy again for the best values of :math:`\lambda_1` and :math:`lambda_2`.
 #
-
-l1opt = L1[ix]
-l2opt = L2[ix]
-
-print("Optimal lambda values: (l1,l2) = ", (l1opt,l2opt))
 
 Omega_0 = get_K_identity(K,p)
 solA, infoA = ADMM_MGL(S, l1opt, l2opt, reg , Omega_0, tol = 1e-10, rtol = 1e-10, verbose = True, measure = True)
-
-# with sns.axes_style("white"):
-#     fig,axs = plt.subplots(nrows = 1, ncols = 2, figsize = (10,3))
-#     draw_group_heatmap(Theta, method = 'truth', ax = axs[0])
-#     draw_group_heatmap(solA['Theta'], method = 'ADMM', ax = axs[1])
 
 # %%
 # Plotting

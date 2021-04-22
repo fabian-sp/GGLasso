@@ -15,6 +15,14 @@ import sys
 sys.path.insert(0, os.path.abspath('../gglasso'))
 #import gglasso
 
+# -- Surpress Numba warnings -------------------------------------------------
+from numba.core.errors import NumbaPerformanceWarning
+import warnings
+
+warnings.simplefilter('ignore', category=NumbaPerformanceWarning)
+warnings.simplefilter('ignore', category=UserWarning)
+
+
 # -- Project information -----------------------------------------------------
 
 project = 'GGLasso'
