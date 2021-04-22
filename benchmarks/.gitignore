@@ -1,4 +1,4 @@
-# Hide plotss
-~*.png
+# Hide plots
+*.png
 ~draft_benchmarks.ipynb
 
