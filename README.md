@@ -38,3 +38,12 @@ For testing and in order to understand how to call the solvers, run `example.py`
 
 Experiments for Group and Fused GL recovery rates are in `experiments/exp_powerlaw_ggl` `experiments/exp_powerlaw_fgl`. Experiments for runtime comparison between ADMM and PPDNA are in `experiments/exp_runtime_ggl`. They use synthetic data and produce the figures shown in the thesis.<br>
 In order to run these and save the figures, set the working directory to the directory where the scripts are located.
+
+## Citation
+
+If you use this work in a research publication,
+please cite the specific version that you used using the citation metadata on Zenodo [![DOI](link)](link).
+
+## License
+
+Please see the file [LICENSE.md](LICENSE.md) for further information about how the content is licensed.
