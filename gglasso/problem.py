@@ -55,7 +55,7 @@ class glasso_problem:
             
         * ``'lambda1'``: float, positive
         * ``'lambda2'``: float, positive
-        *``' mu1'``: float or array of length K, positive. Only needed if ``latent = True``.
+        * ``'mu1'``: float or array of length K, positive. Only needed if ``latent = True``.
                
     latent : boolean, optional
         Specify whether latent variables should be modeled.
@@ -300,10 +300,12 @@ class glasso_problem:
         Parameters
         ----------
         reg_params : dict, optional
+        
             Possible keys:
-            * ``'lambda1'``: float, positive
-            * ``'lambda2'``: float, positive
-            * ``' mu1'``: float or array of length K, positive. Only needed if ``latent = True``.
+                * ``'lambda1'``: float, positive
+                * ``'lambda2'``: float, positive
+                * ``'mu1'``: float or array of length K, positive. Only needed if ``latent = True``.
+            
         """
         
         if reg_params is None:
@@ -455,13 +457,17 @@ class glasso_problem:
         """
         Set the ranges of regularization parameters for the grid searches.
         
+        Parameters
+        ----------
         modelselect_params : dict
             Contains values for (a subset of) the grid parameters for :math:`\lambda_1`, :math:`\lambda_2`, :math:`\mu_1`.
             Each dictionary value should be an array. For optimal performance sort :math:`\lambda_1` in a descending order.
+            
             Possible dictionary keys:
-                * ``lambda1_range``: range for :math:`\lambda_1` parameter.
-                * ``lambda2_range``: range for :math:`\lambda_2` parameter.
-                * ``mu1_range``: range for :math:`\mu_1` parameter.
+                * ``'lambda1_range'``: range for :math:`\lambda_1` parameter.
+                * ``'lambda2_range'``: range for :math:`\lambda_2` parameter.
+                * ``'mu1_range'``: range for :math:`\mu_1` parameter.
+                
         """
         
         if modelselect_params is None:
@@ -600,7 +606,7 @@ class GGLassoEstimator(BaseEstimator):
     """
         Estimator object for the solution to the Graphical Lasso problems. 
         Reading as well the documentation of ``glasso_problem`` is highly recommended.
-        Attribute naming is inspired from scikit-learn.
+        Attribute naming is inspired by scikit-learn.
         
         Important attributes:
             
@@ -612,7 +618,7 @@ class GGLassoEstimator(BaseEstimator):
         Parameters
         ----------
         S : 2d/3d-array or dict
-            Empircial covariance matrices.
+            Empirical covariance matrices.
         N : int or integer array of length K.
             Number of samples for each instance k=1,..,K.
         p : int or array of integers
@@ -624,7 +630,7 @@ class GGLassoEstimator(BaseEstimator):
         latent : boolean, optional
             Indicates whether latent variables are modeled. 
         conforming : boolean, optional
-            Indicates whehther dimensions of MGL problem are conforming. If False, then all attributes are dictionaries with keys 1,..,K. 
+            Indicates whether dimensions of MGL problem are conforming. If ``False``, then all attributes are dictionaries with keys 1,..,K. 
 
         """
     def __init__(self, S, N, p, K, multiple = True, latent = False, conforming = True):

@@ -2,7 +2,11 @@
 Basic example
 =================================
 
-We demonstrate how to use ``GGLasso`` for a SGL problem.
+We demonstrate how to use ``GGLasso`` for a SGL problem. 
+First, we generate a sparse powerlaw network of 20 nodes. We generate an according precision matrix and sample from it. Here, we use a very large 
+number of samples (N=5000) to demonstrate that it is possible to recover (approximately) the original graph if sufficiently many samples are available.
+
+In many practical applications however, we face the situation of  p>N.
 
 """
 
@@ -15,7 +19,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 p = 20
-N = 1000
+N = 5000
 
 Sigma, Theta = group_power_network(p, K = 1, M = 1, nxseed = 1235)
 S, sample = sample_covariance_matrix(Sigma, N)
@@ -45,7 +49,7 @@ print(P)
 # Next, do model selection by solving the problem on a range of :math:`\lambda_1` values.
 #
 
-lambda1_range = np.logspace(0, -3, 10)
+lambda1_range = np.logspace(0, -3, 20)
 modelselect_params = {'lambda1_range': lambda1_range}
 
 P.model_selection(modelselect_params = modelselect_params, method = 'eBIC', gamma = 1)
