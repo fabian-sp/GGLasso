@@ -1,5 +1,5 @@
 """
-Group Graphical Lasso example
+Group Graphical Lasso experiment
 =================================
 
 We investigate the recovery performance of Group Graphical Lasso on Powerlaw networks, compared to estimating the precision matrices independently with SGL.
@@ -26,7 +26,7 @@ M = 10
 
 reg = 'GGL'
 
-Sigma, Theta = group_power_network(p, K, M)
+Sigma, Theta = group_power_network(p, K, M, nxseed = 2340)
 
 S, sample = sample_covariance_matrix(Sigma, N)
 
@@ -93,8 +93,8 @@ l2opt = L2[ix]
 print("Optimal lambda values: (l1,l2) = ", (l1opt,l2opt))
 
 # %%
-#  Parameter selection (SGL)
-# ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+#  Solving group sparse problems with SGL
+# ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 #
 # We now solve K independent SGL problems and find the best :math:`\lambda_1` parameter.
 #
@@ -132,8 +132,8 @@ Omega_0 = get_K_identity(K,p)
 solA, infoA = ADMM_MGL(S, l1opt, l2opt, reg , Omega_0, tol = 1e-10, rtol = 1e-10, verbose = True, measure = True)
 
 # %%
-# Plotting
-# ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+# Plotting: TPR, FPR, differential edges
+# ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 #
 # We plot FPR and TPR for all grid points for GGL and SGL. 
 # The circle-shape marker marks the point which would have been selected by eBIC. The diamond-shaped marker marks the point selected by AIC.

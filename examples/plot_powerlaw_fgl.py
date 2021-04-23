@@ -1,5 +1,5 @@
 """
-Fused Graphical Lasso example
+Fused Graphical Lasso experiment
 =================================
 
 We investigate the performance of Fused Graphical Lasso on powerlaw networks, compared to estimating the precision matrices independently with SGL.
@@ -8,6 +8,8 @@ In particular, we demonstrate that FGL - in contrast to - is capable of estimati
 We generate a precision matrix with block-wise powerlaw networks. 
 At time K=5, one of the blocks disappears and another block appears. A third block decays exponentially over time (indexed by K).
 """
+
+# sphinx_gallery_thumbnail_number = 2
 
 from time import time
 import numpy as np
@@ -30,14 +32,35 @@ L = int(p/M)
 
 reg = 'FGL'
 
-Sigma, Theta = time_varying_power_network(p, K, M)
+Sigma, Theta = time_varying_power_network(p, K, M, nxseed = 2340)
 
 S, sample = sample_covariance_matrix(Sigma, N)
 
-single_heatmap_animation(Theta)
 
 results = {}
 results['truth'] = {'Theta' : Theta}
+
+#%%
+#  Animate precision matrix over time
+# ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+# colored squares represent non-zero entries
+# 
+
+anim = single_heatmap_animation(Theta)
+
+# import matplotlib.animation as animation
+# import matplotlib.pyplot as plt
+
+# def _update_line(num):
+#     line.set_data(data[..., :num])
+#     return line,
+
+
+# fig, ax = plt.subplots()
+# data = np.random.RandomState(0).rand(2, 25)
+# line, = ax.plot([], [], 'r-')
+# ax.set(xlim=(0, 1), ylim=(0, 1))
+# ani = animation.FuncAnimation(fig, _update_line, 25, interval=100, blit=True)
 
 # %%
 #  Parameter selection (FGL)
@@ -101,8 +124,8 @@ print("Optimal lambda values: (l1,l2) = ", (l1opt,l2opt))
 
 
 # %%
-#  Parameter selection (SGL)
-# ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+#  Solving time-varying problems with SGL
+# ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 #
 # We now solve K independent SGL problems and find the best :math:`\lambda_1` parameter.
 #
@@ -160,8 +183,8 @@ print(f"Running time for LTGL was {end-start} seconds.")
 results['LTGL'] = {'Theta' : ltgl.precision_}
 
 # %%
-#  Plotting
-# ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+#  Plotting: deviation, eBIC surface, recovery
+# ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 #
 # Description of plots:
 #

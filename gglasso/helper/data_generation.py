@@ -12,9 +12,8 @@ import networkx as nx
 from .basic_linalg import trp
 
 
-def power_law_network(p=100, M=10):
+def power_law_network(p=100, M=10, nxseed = None):
     
-    nxseed = 2340
     L = int(p/M)
     assert M*L == p
     
@@ -22,8 +21,12 @@ def power_law_network(p=100, M=10):
     Sigma = np.zeros((p,p))
     
     for m in np.arange(M):
-    
-        G_m = nx.generators.random_graphs.random_powerlaw_tree(n = L, gamma = 2.8, tries = max(5*p,1000), seed = int(nxseed + m))
+        
+        if nxseed is not None:
+            G_m = nx.generators.random_graphs.random_powerlaw_tree(n = L, gamma = 2.8, tries = max(5*p,1000), seed = int(nxseed + m))
+        else:
+            G_m = nx.generators.random_graphs.random_powerlaw_tree(n = L, gamma = 2.8, tries = max(5*p,1000))
+            
         A_m = nx.to_numpy_array(G_m)
         
         # generate random numbers for the nonzero entries
@@ -70,7 +73,7 @@ def power_law_network(p=100, M=10):
          
     return Sigma
 
-def time_varying_power_network(p=100, K=10, M=10):
+def time_varying_power_network(p=100, K=10, M=10, nxseed = None):
     """
     generates a power law network. The first block disappears at half-time, while the second block appears
     third block decays exponentially
@@ -84,7 +87,7 @@ def time_varying_power_network(p=100, K=10, M=10):
     assert M*L == p
     assert M >=3
     
-    Sigma_0 = power_law_network(p = p, M = M) 
+    Sigma_0 = power_law_network(p = p, M = M, nxseed = nxseed) 
     
     for k in np.arange(K):
         Sigma_k = Sigma_0.copy()
@@ -109,7 +112,7 @@ def time_varying_power_network(p=100, K=10, M=10):
     
     return Sigma, Theta
     
-def group_power_network(p=100, K=10, M=10):
+def group_power_network(p=100, K=10, M=10, nxseed = None):
     """
     generates a power law network. In each single network one block disappears (randomly)
     p: dimension
@@ -121,7 +124,7 @@ def group_power_network(p=100, K=10, M=10):
     L = int(p/M)
     assert M*L == p
     
-    Sigma_0 = power_law_network(p = p, M = M)
+    Sigma_0 = power_law_network(p = p, M = M, nxseed = nxseed)
     # contains the number of the block disappearing for each k=1,..,K
     block = np.random.randint(M, size = K)
     
