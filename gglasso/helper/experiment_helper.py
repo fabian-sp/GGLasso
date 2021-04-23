@@ -449,13 +449,13 @@ def single_heatmap_animation(Theta, method = 'truth', save = False):
     fig, ax = plt.subplots(1,1, figsize=(10,10))
     fargs = (Theta, method, ax,)
     
-    def init():
-        ax.cla()
+    def _init():
+        #ax.cla()
         A = np.zeros((p, p))
         mask = (A == 0) 
         sns.heatmap(A, mask = mask, ax = ax, square = True, cmap = 'Blues', vmin = 0, vmax = 1, linewidths=.5, cbar = False)
 
-    anim = FuncAnimation(fig, plot_single_heatmap, frames = K, init_func=init, interval= 1000, fargs = fargs, repeat = True)
+    anim = FuncAnimation(fig, plot_single_heatmap, frames = K, init_func= _init, interval= 1000, fargs = fargs, repeat = True)
     
     if save:    
         anim.save("single_network.gif", writer='imagemagick')

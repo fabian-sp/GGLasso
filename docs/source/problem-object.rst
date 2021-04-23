@@ -10,6 +10,12 @@ Class glasso_problem
 .. automethod:: gglasso.problem.glasso_problem.solve
 .. automethod:: gglasso.problem.glasso_problem.model_selection
 
+Other methods of glasso_problem
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.. automethod:: gglasso.problem.glasso_problem.set_modelselect_params
+.. automethod:: gglasso.problem.glasso_problem.set_reg_params
+.. automethod:: gglasso.problem.glasso_problem.set_start_point
+
 Class GGLassoEstimator
 ^^^^^^^^^^^^^^^^^^^^^^^^
 

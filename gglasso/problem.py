@@ -53,9 +53,9 @@ class glasso_problem:
     reg_params : dict, optional
         Dictionary of regularization parameters. Possible keys are:
             
-        * lambda1: float, positive
-        * lambda2, float, positive
-        * mu1: float or array of length K, positive. Only needed if ``latent = True``.
+        * ``'lambda1'``: float, positive
+        * ``'lambda2'``: float, positive
+        *``' mu1'``: float or array of length K, positive. Only needed if ``latent = True``.
                
     latent : boolean, optional
         Specify whether latent variables should be modeled.
@@ -295,12 +295,15 @@ class glasso_problem:
         
     def set_reg_params(self, reg_params = None):
         """
-        Set the regularization parameters for the problem.
+        Sets/updates the regularization parameters for the problem.
         
         Parameters
         ----------
         reg_params : dict, optional
-            Contains values for (a subset of) the regularization parameters :math:`\lambda_1`, :math:`\lambda_2`, :math:`\mu_1`.
+            Possible keys:
+            * ``'lambda1'``: float, positive
+            * ``'lambda2'``: float, positive
+            * ``' mu1'``: float or array of length K, positive. Only needed if ``latent = True``.
         """
         
         if reg_params is None:
@@ -455,6 +458,10 @@ class glasso_problem:
         modelselect_params : dict
             Contains values for (a subset of) the grid parameters for :math:`\lambda_1`, :math:`\lambda_2`, :math:`\mu_1`.
             Each dictionary value should be an array. For optimal performance sort :math:`\lambda_1` in a descending order.
+            Possible dictionary keys:
+                * ``lambda1_range``: range for :math:`\lambda_1` parameter.
+                * ``lambda2_range``: range for :math:`\lambda_2` parameter.
+                * ``mu1_range``: range for :math:`\mu_1` parameter.
         """
         
         if modelselect_params is None:
@@ -485,6 +492,7 @@ class glasso_problem:
         ----------
         modelselect_params : dict, optional
             Dictionary with (a subset of) parameters for the grid search. This allows you to specify the grid which is used.
+            Calls ``self.set_modelselect_params()``, see doc of this method for details.
         method : str, optional
             Method for choosing the best solution in the grid. 
             Options are 'AIC' (Akaike Information criterion) and 'eBIC' (extended Bayesia information criterion)
@@ -511,7 +519,7 @@ class glasso_problem:
         # SINGLE GL --> GRID SEARCH lambda1/mu
         ###############################
         if not self.multiple:
-            sol, _, _, stats = single_grid_search(S = self.S, lambda_range = self.modelselect_params['lambda1_range'], N = self.N, \
+            sol, all_estimates, _, stats = single_grid_search(S = self.S, lambda_range = self.modelselect_params['lambda1_range'], N = self.N, \
                                method = method, gamma = gamma, latent = self.latent, mu_range = self.modelselect_params['mu1_range'],
                                use_block = True)
             
@@ -654,7 +662,9 @@ class GGLassoEstimator(BaseEstimator):
         return
     
     def calc_ebic(self, gamma = 0.5):
-        
+        """
+        calculates the eBIC for a given value of :math:`\gamma`. Note that this can differ from eBIC values in model selection because of the scaling.
+        """
         if self.multiple:
             self.ebic_ = ebic(self.sample_covariance_, self.precision_, self.n_samples, gamma = gamma)          
         else:
