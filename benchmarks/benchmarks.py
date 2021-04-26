@@ -323,4 +323,3 @@ def block_scaling(S, lambda1, Omega_0, max_iter, tol, rtol, n_iter, time_list=[]
         time_list.append(block_time)
 
     return time_list
-
