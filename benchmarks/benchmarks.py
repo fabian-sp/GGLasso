@@ -132,6 +132,10 @@ def sklearn_time_benchmark(models=dict, X=np.array([]), Z=np.array([]), n_iter=1
 
     for model, model_instant in models.items():
 
+        if "regain" in model.split("_"):
+            if model_instant.get_params()['init'].shape != Z.shape:
+                continue
+
         time_list = []
         for _ in trange(n_iter, desc=model, leave=True):
             start = time.time()
