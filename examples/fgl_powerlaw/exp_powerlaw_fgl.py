@@ -29,7 +29,7 @@ L = int(p/M)
 
 reg = 'FGL'
 
-Sigma, Theta = time_varying_power_network(p, K, M)
+Sigma, Theta = time_varying_power_network(p, K, M, nxseed = 2340)
 
 #single_heatmap_animation(Theta)
 

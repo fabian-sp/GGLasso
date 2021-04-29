@@ -1,7 +1,7 @@
 """
 author: Fabian Schaipp
 
-This file contains the proximal point algorithm proposed by Zhang et al.
+This file contains the proximal point algorithm proposed by Zhang et al., A proximal point dual Newton algorithm for solving group graphical Lasso problems.
 """
 
 import numpy as np
@@ -152,8 +152,60 @@ def PPA_subproblem(Omega_t, Theta_t, X_t, S, reg, ppa_sub_params = None, verbose
 
 def PPDNA(S, lambda1, lambda2, reg, Omega_0, Theta_0 = np.array([]), X_0 = np.array([]), ppdna_params = None, eps_ppdna = 1e-5 , verbose = False, measure = False):
     """
-    This is the outer proximal point algorithm
-    Algorithm 2 in Zhang et al.
+    Proximal Point algorithm for the Multiple Graphical Lasso problem (MGL).
+    It solves
+    
+    .. math::
+       \min_{\Omega, \Theta} \sum_{k=1}^{K} (-\log\det(\Omega^{(k)}) + \mathrm{Tr}(S^{(k)} \Omega^{(k)}) ) + \mathcal{P}(\Theta)
+       
+       s.t. \quad \Omega^{(k)} = \Theta^{(k)} \quad k=1,\dots,K
+    
+    Here, :math:`\mathcal{P}` is a regularization function which depends on the application. Group Graphical Lasso (GGL) or Fused Graphical Lasso (FGL) is implemented.
+    
+    Parameters
+    ----------
+    S : array (K,p,p)
+        empirical covariance matrices, i.e. S[k,:,:] contains the empirical cov. matrix of the k-th instance. 
+        Each S[k,:,:] needs to be symmetric and semipositive definite.
+    lambda1 : float, positive
+        sparsity regularization parameter.
+    lambda2 : float, positive
+        group sparsity/ total variation regularization parameter.
+    reg : str
+        choose either
+        
+        * 'GGL': Group Graphical Lasso
+        * 'FGL': Fused Graphical Lasso
+        
+    Omega_0 : array (K,p,p)
+        starting point for the Omega variable. Use get_K_identity(K, p) from ``gglasso.helper.utils`` if no better starting point is known.
+    Theta_0 : array (p,p), optional
+        starting point for the Theta variable. If not specified, it is set to the same as Omega_0.
+    X_0 : array (p,p), optional
+        starting point for the X variable. If not specified, it is set to zero array.
+    ppdna_params : dict, optional
+        dictionary with solver parameters. Possible keys:
+        
+        * max_iter: maximum number of iterations, default is 20.
+        * sigma_0: step size starting point. STep size is increased by 1.3 in every iteration. Default for sigma_0 is 100.
+        
+    max_iter : int, optional
+        maximum number of iterations. The default is 1000.
+    eps_ppdna : float, positive, optional
+        tolerance for the kkt residual. See 'A proximal point dual Newton algorithm for solving group graphical Lasso problems', Zhang et al. for details.
+        The default is 1e-5.
+    verbose : boolean, optional
+        verbosity of the solver. The default is False.
+    measure : boolean, optional
+        turn on/off measurements of runtime per iteration. The default is False.
+    
+    Returns
+    -------
+    sol : dict
+        contains the solution, i.e. Omega, Theta, X after termination. All arrays are of shape (K,p,p).
+    info : dict
+        status and measurement information from the solver.
+
     """
     
     assert Omega_0.shape == S.shape

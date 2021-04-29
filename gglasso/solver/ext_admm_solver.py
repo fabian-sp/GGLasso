@@ -22,38 +22,47 @@ def ext_ADMM_MGL(S, lambda1, lambda2, reg , Omega_0, G,\
     where not all instances have the same number of dimensions, i.e. some variables are present in some instances and not in others.
     A group sparsity penalty is applied to all pairs of variables present in multiple instances.
     
-    IMPORTANT: As the arrays are non-conforming in dimensions here, we operate on dictionaries with keys 1,..,K (as int) and each value is a array of shape (p_k,p_k).
+    IMPORTANT: As the arrays are non-conforming in dimensions here, we operate on dictionaries with keys 1,..,K (as int) and each value is a array of shape :math:`(p_k,p_k)`.
     
-    GGL problem formulation (latent=False):
-        min_{Omega,Theta,Lambda} sum_{k=1}^K -log det(Omega^k) + Tr(S^k*Omega^k) + sum_{k=1}^K lambda1*||Theta^k||_{1,od} 
-                                    + sum_{l} lambda2 * beta_l * ||Lambda_[l]||_2
-        subject to Omega^k = Theta^k  k=1,..,K
-                   Lambda^k = Theta^k k=1,..,K 
+    If ``latent=False``, this function solves
     
-        where l indexes the groups of overlapping variables and Lambda_[l] is the array of all respective components.
-        To account for differing group sizes we multiply with beta_l = sqrt(len(Lambda[l])).
+    .. math::
+        \min_{\Omega,\Theta,\Lambda} \sum_{k=1}^K - \log \det(\Omega^{(k)}) + \mathrm{Tr}(S^{(k)}\Omega^{(k)}) + \sum_{k=1}^K \lambda_1 ||\Theta^{(k)}||_{1,od} 
+                                    + \sum_{l} \lambda_2 \\beta_l ||\Lambda_{[l]}||_2
+        
+        s.t. \quad \Omega^{(k)} = \Theta^{(k)} \quad  k=1,\dots,K
+             
+        \quad  \quad  \Lambda^{(k)} = \Theta^{(k)} \quad k=1,\dots,K 
     
-    Latent Variable GGL problem formulation (latent=True):
-        min_{Omega,Theta,Lambda,L} sum_{k=1}^K -log det(Omega^k) + Tr(S^k*Omega^k) + sum_{k=1}^K lambda1*||Theta^k||_{1,od} 
-                                    + sum_{l} lambda2 * beta_l * ||Lambda_[l]||_2 + sum_{k=1}^K mu1*||L^k||_\star 
-        subject to Omega^k = Theta^k - L^k  k=1,..,K
-                   Lambda^k = Theta^k       k=1,..,K 
+    where l indexes the groups of overlapping variables and :math:`\Lambda_{[l]}` is the array of all respective components.
+    To account for differing group sizes we multiply with :math:`\\beta_l`, the square root of the group size.
+    
+    If ``latent=True``, this function solves
+    
+    .. math::
+        \min_{\Omega,\Theta,\Lambda,L} \sum_{k=1}^K - \log \det(\Omega^{(k)}) + \mathrm{Tr}(S^{(k)}\Omega^{(k)}) + \sum_{k=1}^K \lambda_1 ||\Theta^{(k)}||_{1,od} 
+        
+        + \sum_{l} \lambda_2 \\beta_l ||\Lambda_{[l]}||_2 +\sum_{k=1}^{K} \mu_{1,k} \|L^{(k)}\|_{\star}
+        
+        s.t. \quad \Omega^{(k)} = \Theta^{(k)} - L^{(k)} \quad  k=1,\dots,K
+             
+        \quad  \quad  \Lambda^{(k)} = \Theta^{(k)} \quad k=1,\dots,K 
     
     Note:
-        - typically, Omega_t sequence is positive definite, Theta_t sequence is sparse.
-        - in the code, X0_t and X1_t are the SCALED (with 1/rho) dual variables for the equality constraint. 
+       * Typically, ``sol['Omega']`` is positive definite and ``sol['Theta']`` is sparse.
+       * We use scaled ADMM, i.e. X0 and X1 are the scaled (with 1/rho) dual variables for the equality constraints.  
 
     Parameters
     ----------
     S : dict 
-        empirical covariance matrices. S should have keys 1,..,K (as integers) and S[k] contains the (p_k,p_k)-array of the empirical cov. matrix of the k-th instance. 
+        empirical covariance matrices. S should have keys 1,..,K (as integers) and S[k] contains the :math:`(p_k,p_k)`-array of the empirical cov. matrix of the k-th instance. 
         Each S[k] needs to be symmetric and semipositive definite.
     lambda1 : float, positive
         sparsity regularization parameter.
     lambda2 : float, positive
         group sparsity regularization parameter.
     reg : str
-        so far only Group Graphical Lasso is available, hence choose "GGL".
+        so far only Group Graphical Lasso is available, hence choose 'GGL'.
     Omega_0 : dict
         starting point for the Omega variable. Should be of same form as S. If no better starting point is available, choose
         Omega_0[k] = np.eye(p_k) for k=1,...,K
@@ -73,8 +82,10 @@ def ext_ADMM_MGL(S, lambda1, lambda2, reg , Omega_0, G,\
     rtol : float, positive, optional
         tolerance for the dual residual. The default is 1e-4.
     stopping_criterion : str, optional
-        'boyd': Stopping criterion after Boyd et al.
-        'kkt': KKT residual is chosen as stopping criterion. This is computationally expensive to compute.
+    
+        * 'boyd': Stopping criterion after Boyd et al.
+        * 'kkt': KKT residual is chosen as stopping criterion. This is computationally expensive to compute.
+        
         The default is 'boyd'.
     verbose : boolean, optional
         verbosity of the solver. The default is False.

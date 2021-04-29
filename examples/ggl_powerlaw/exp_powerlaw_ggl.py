@@ -1,11 +1,10 @@
 """
-author: Fabian Schaipp
+Group Graphical Lasso example
+=================================
 
-Set the working directory to the file location if you want to save the plots.
-
-This is a script for investigating Group Graphical Lasso on Powerlaw networks.
-Sigma denotes the true covariance matrix, Theta the true precision matrix.
+We investigate Group Graphical Lasso on Powerlaw networks.
 """
+
 from time import time
 import numpy as np
 from matplotlib import pyplot as plt
@@ -31,7 +30,7 @@ reg = 'GGL'
 # whether to save the plots as pdf-files
 save = False
 
-Sigma, Theta = group_power_network(p, K, M)
+Sigma, Theta = group_power_network(p, K, M, nxseed = 2340)
 
 draw_group_heatmap(Theta, save = save)
 

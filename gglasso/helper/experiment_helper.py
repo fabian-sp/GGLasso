@@ -29,19 +29,19 @@ def lambda_grid(num1 = 5, num2 = 2, reg = 'GGL'):
     num1: number of grid point for lambda 1
     num2: number of grid point for lambda 2
     reg: grid for GGL or FGL (interpretation changes)
-    creates a grid of lambda 1 lambda 1 values
+    creates a grid of lambda1 / lambda2 values
     idea: the grid goes from smaller to higher values when going down/right
     """
     
     if reg == 'GGL':
-        l2 = np.logspace(start = -3, stop = -1, num = num2, base = 10)
+        l2 = np.logspace(start = -1, stop = -3, num = num2, base = 10)
         w2 = np.linspace(0.2, 0.5, num1)
         l2grid, w2grid = np.meshgrid(l2,w2)
         L1 = lambda_parametrizer(l2grid, w2grid)
         L2 = l2grid.copy()
     elif reg == 'FGL':
-        l2 = 2*np.logspace(start = -3, stop = -1, num = num2, base = 10)
-        l1 = 2*np.logspace(start = -3, stop = -1, num = num1, base = 10)
+        l2 = 2*np.logspace(start = -1, stop = -3, num = num2, base = 10)
+        l1 = 2*np.logspace(start = -1, stop = -3, num = num1, base = 10)
         L2, L1 = np.meshgrid(l2,l1)
         w2 = None
         
@@ -403,7 +403,7 @@ def single_surface_plot(L1, L2, C, ax, name = 'eBIC'):
     #ax.set_xlabel(r'$w_1$', fontsize = 14)
     #ax.set_ylabel(r'$w_2$', fontsize = 14)
     ax.set_zlabel(name, fontsize = 14)
-    ax.view_init(elev = 25, azim = 110)
+    ax.view_init(elev = 18, azim = 51)
     
     plt.xticks(fontsize = 8)
     plt.yticks(fontsize = 8)
@@ -449,13 +449,13 @@ def single_heatmap_animation(Theta, method = 'truth', save = False):
     fig, ax = plt.subplots(1,1, figsize=(10,10))
     fargs = (Theta, method, ax,)
     
-    def init():
-        ax.cla()
+    def _init():
+        #ax.cla()
         A = np.zeros((p, p))
         mask = (A == 0) 
         sns.heatmap(A, mask = mask, ax = ax, square = True, cmap = 'Blues', vmin = 0, vmax = 1, linewidths=.5, cbar = False)
 
-    anim = FuncAnimation(fig, plot_single_heatmap, frames = K, init_func=init, interval= 1000, fargs = fargs, repeat = True)
+    anim = FuncAnimation(fig, plot_single_heatmap, frames = K, init_func= _init, interval= 1000, fargs = fargs, repeat = True)
     
     if save:    
         anim.save("single_network.gif", writer='imagemagick')

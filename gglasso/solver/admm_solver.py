@@ -14,25 +14,26 @@ def ADMM_MGL(S, lambda1, lambda2, reg , Omega_0 , \
              tol = 1e-5 , rtol = 1e-4, stopping_criterion = 'boyd', \
              rho= 1., max_iter = 1000, verbose = False, measure = False, latent = False, mu1 = None):
     """
-    This is an ADMM solver for the (Latent) Multiple Graphical Lasso problem (MGL). It jointly estimates K precision matrices of shape (p,p).
+    This is an ADMM solver for the (Latent variable) Multiple Graphical Lasso problem (MGL). It jointly estimates K precision matrices of shape (p,p).
 
-    MGL problem formulation (latent=False):
-        min_{Omega,Theta} sum_{k=1}^K -log det(Omega^k) + Tr(S^k*Omega^k) + P(Theta) 
-        subject to Omega^k = Theta^k k=1,..,K
+    If ``latent=False``, this function solves
     
-    P() is a regularization function which depends on the application. Group Graphical Lasso (GGL) or Fused Graphical Lasso (FGL) is implemented.
-        
-        For GGL:    P(Theta) = sum_{k=1}^K lambda1*||Theta^k||_{1,od} + sum_{i,j} lambda2 * ||Theta_[ij]||_2
-                    where Theta_[ij] is the K-array of all ij components.
-        For FGL:    P(Theta) = sum_{k=1}^K lambda1*||Theta^k||_{1,od} + sum_{k=1}^{K-1} lambda2 * ||Theta^k+1 - Theta^k||_{1,od}
-                    
-    Latent Variable MGL problem formulation (latent=True):
-        min_{Omega,Theta,L} sum_{k=1}^K -log det(Omega^k) + Tr(S^k*Omega^k) + P(Theta) + sum_{k=1}^K mu1*||L^k||_\star 
-        subject to Omega^k = Theta^k - L^k  k=1,..,K
+    .. math::
+       \min_{\Omega, \Theta} \sum_{k=1}^{K} (-\log\det(\Omega^{(k)}) + \mathrm{Tr}(S^{(k)} \Omega^{(k)}) ) + \mathcal{P}(\Theta)
+       
+       s.t. \quad \Omega^{(k)} = \Theta^{(k)} \quad k=1,\dots,K
+       
+    Here, :math:`\mathcal{P}` is a regularization function which depends on the application. Group Graphical Lasso (GGL) or Fused Graphical Lasso (FGL) is implemented.        
+    If ``latent=True``, this function solves
     
-    Note:
-        - typically, Omega_t sequence is positive definite, Theta_t sequence is sparse.
-        - in the code, X_t are the SCALED (with 1/rho) dual variables for the equality constraint. 
+    .. math::
+       \min_{\Omega, \Theta, L}\quad \sum_{k=1}^{K} (-\log\det(\Omega^{(k)}) + \mathrm{Tr}(S^{(k)},\Omega^{(k)}) ) + \mathcal{P}(\Theta) +\sum_{k=1}^{K} \mu_{1,k} \|L^{(k)}\|_{\star}
+       
+       s.t. \quad \Omega^{(k)} = \Theta^{(k)} - L^{(k)} \quad k=1,\dots,K
+    
+    Note:    
+        * Typically, ``sol['Omega']`` is positive definite and ``sol['Theta']`` is sparse.
+        * We use scaled ADMM, i.e. X are the scaled (with 1/rho) dual variables for the equality constraint. 
 
     Parameters
     ----------
@@ -45,10 +46,12 @@ def ADMM_MGL(S, lambda1, lambda2, reg , Omega_0 , \
         group sparsity/ total variation regularization parameter.
     reg : str
         choose either
-        "GGL": Group Graphical Lasso
-        "FGL": Fused Graphical Lasso
+        
+        * 'GGL': Group Graphical Lasso
+        * 'FGL': Fused Graphical Lasso
+        
     Omega_0 : array (K,p,p)
-        starting point for the Omega variable. Use get_K_identity(K, p) from gglasso.helper.utils if no better starting point is known.
+        starting point for the Omega variable. Use get_K_identity(K, p) from ``gglasso.helper.utils`` if no better starting point is known.
     Theta_0 : array (p,p), optional
         starting point for the Theta variable. If not specified, it is set to the same as Omega_0.
     X_0 : array (p,p), optional
@@ -61,13 +64,15 @@ def ADMM_MGL(S, lambda1, lambda2, reg , Omega_0 , \
     max_iter : int, optional
         maximum number of iterations. The default is 1000.
     tol : float, positive, optional
-        tolerance for the primal residual. See "Distributed Optimization and Statistical Learning via the Alternating Direction Method of Multipliers", Boyd et al. for details.
+        tolerance for the primal residual. See 'Distributed Optimization and Statistical Learning via the Alternating Direction Method of Multipliers', Boyd et al. for details.
         The default is 1e-7.
     rtol : float, positive, optional
         tolerance for the dual residual. The default is 1e-4.
     stopping_criterion : str, optional
-        'boyd': Stopping criterion after Boyd et al.
-        'kkt': KKT residual is chosen as stopping criterion. This is computationally expensive to compute.
+        
+        * 'boyd': Stopping criterion after Boyd et al.
+        * 'kkt': KKT residual is chosen as stopping criterion. This is computationally expensive to compute.
+        
         The default is 'boyd'.
     verbose : boolean, optional
         verbosity of the solver. The default is False.
@@ -82,7 +87,7 @@ def ADMM_MGL(S, lambda1, lambda2, reg , Omega_0 , \
     Returns
     -------
     sol : dict
-        contains the solution, i.e. Omega, Theta, X (and L if latent=True) after termination. All arrays are of shape (K,p,p).
+        contains the solution, i.e. Omega, Theta, X (and L if ``latent=True``) after termination. All arrays are of shape (K,p,p).
     info : dict
         status and measurement information from the solver.
 
