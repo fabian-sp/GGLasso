@@ -26,7 +26,7 @@ def template_problem_MGL(S, N, reg = 'GGL', latent = False, G = None):
     
     modelselectparams = dict()
     modelselectparams['lambda1_range'] = np.logspace(-3,0,4)
-    modelselectparams['w2_range'] = np.logspace(-1,-3,3)
+    modelselectparams['lambda2_range'] = np.logspace(-1,-3,3)
               
     if latent:
         modelselectparams['mu1_range'] = np.logspace(-2,0,4)
