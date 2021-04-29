@@ -7,4 +7,4 @@ seaborn
 networkx
 regain
 warnings
-decorator=4.4.2
+decorator==4.4.2
