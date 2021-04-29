@@ -14,7 +14,11 @@ In order to install `gglasso` in your Python environment, run
 
     python setup.py
 
-A detailled documentation and example gallery will soon be released on *Read The Docs*.
+Test your installation with 
+
+    pytest gglasso/ -v
+
+A detailled documentation and example gallery will soon be released on *Read The Docs*. See `examples/plot_basic_example` for a basic example of usage.
 
 ### Advanced options
 
