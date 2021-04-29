@@ -362,6 +362,7 @@ def block_SGL(S, lambda1, Omega_0, Theta_0=None, X_0=None, rho=1.,
     sol['Omega'] = block_diag(*allOmega)[np.ix_(per1, per1)]
     sol['Theta'] = block_diag(*allTheta)[np.ix_(per1, per1)]
     sol['X'] = block_diag(*allX)[np.ix_(per1, per1)]
+    sol["numC"] = numC
 
     return sol
 

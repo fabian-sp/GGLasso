@@ -59,13 +59,16 @@ def benchmarks_dataframe(times=dict, acc_dict=dict, spars_dict=dict):
 
     df['split'] = df['name'].str.split('_')
 
-    columns_names = ["method", "tol_str", "tol", "rtol_str", "rtol", "p_str", "p", "N_str", "N"]
+    columns_names = ["method", "tol_str", "tol",
+                     "rtol_str", "rtol",
+                     "p_str", "p", "N_str", "N",
+                     "l1_str", "l1"]
     df[columns_names] = pd.DataFrame(df['split'].tolist(), index=df['split'].index)
 
-    redundant_cols = ['split', "tol_str", "rtol_str", "p_str", "N_str"]
+    redundant_cols = ['split', "tol_str", "rtol_str", "p_str", "N_str", "l1_str"]
     df = df.drop(redundant_cols, axis=1)
 
-    convert_dict = {'tol': float, 'rtol': float, "p": int, "N": int}
+    convert_dict = {'tol': float, 'rtol': float, "p": int, "N": int, "l1": float}
     df = df.astype(convert_dict)
 
     df = df.sort_values(by=['time'])

@@ -2,16 +2,20 @@ import time
 import numpy as np
 import pandas as pd
 import itertools
+import multiprocessing
 
 from tqdm import trange
 from sklearn.covariance import GraphicalLasso as sk_GL
 from sklearn import set_config
+
 set_config(print_changed_only=False)
 
 from gglasso.solver.single_admm_solver import ADMM_SGL
 from gglasso.solver.single_admm_solver import block_SGL
 
 from regain.covariance import GraphicalLasso as rg_GL
+
+from concurrent.futures import ProcessPoolExecutor
 
 
 def benchmark_parameters(S_dict=dict, sk_tol_list=[0.5, 0.25, 0.1], enet_list=[0.5, 0.25, 0.1],
@@ -81,7 +85,7 @@ def models_to_dict(models=None, lambda1=0.1, max_iter=50000, sk_params=dict, rg_
                 for tol, rtol in itertools.product(tol_list, rtol_list):
                     key = str(model) + "_tol_" + str(tol) + "_rtol_" + str(rtol) + "_p_" + str(shape)
                     models_dict[key] = rg_GL(alpha=lambda1, tol=tol, rtol=rtol, max_iter=max_iter,
-                                             assume_centered=False, init=np.eye(shape))
+                                             assume_centered=False, init=np.eye(shape), verbose=True)
 
         elif model == "sklearn":
 
@@ -94,7 +98,7 @@ def models_to_dict(models=None, lambda1=0.1, max_iter=50000, sk_params=dict, rg_
             for tol, enet in itertools.product(tol_list, enet_list):
                 key = str(model) + "_tol_" + str(tol) + "_enet_" + str(enet)
                 models_dict[key] = sk_GL(alpha=lambda1, tol=tol, enet_tol=enet, max_iter=max_iter,
-                                         assume_centered=False)
+                                         assume_centered=False, verbose=True)
 
     return models_dict
 
@@ -103,19 +107,19 @@ def model_solution(model="sklearn", X=np.array([]), lambda1=0.01, max_iter=50000
     time_list = []
     if model == "sklearn":
 
-        start = time.time()
+        start = time.perf_counter()
         Z = sk_GL(alpha=lambda1, max_iter=max_iter, tol=tol, enet_tol=enet, assume_centered=False).fit(X)
-        info = sk_GL(alpha=lambda1, max_iter=max_iter, tol=tol, enet_tol=enet, assume_centered=False)
-        end = time.time()
+        info = sk_GL(alpha=lambda1, max_iter=max_iter, tol=tol, enet_tol=enet, assume_centered=False, verbose=True)
+        end = time.perf_counter()
 
         time_list.append(end - start)
 
     elif model == "regain":
 
-        start = time.time()
+        start = time.perf_counter()
         Z = rg_GL(alpha=lambda1, max_iter=max_iter, tol=tol, rtol=rtol, assume_centered=False).fit(X)
-        info = rg_GL(alpha=lambda1, max_iter=max_iter, tol=tol, rtol=rtol, assume_centered=False)
-        end = time.time()
+        info = rg_GL(alpha=lambda1, max_iter=max_iter, tol=tol, rtol=rtol, assume_centered=False, verbose=True)
+        end = time.perf_counter()
 
         time_list.append(end - start)
 
@@ -138,9 +142,9 @@ def sklearn_time_benchmark(models=dict, X=np.array([]), Z=np.array([]), n_iter=1
 
         time_list = []
         for _ in trange(n_iter, desc=model, leave=True):
-            start = time.time()
+            start = time.perf_counter()
             Z_i = model_instant.fit(X)
-            end = time.time()
+            end = time.perf_counter()
 
             time_list.append(end - start)
 
@@ -177,27 +181,40 @@ def admm_time_benchmark(S=np.array([]), Omega_0=np.array([]), Z=np.array([]), la
 
                 if i == 0:
                     Omega_0 = Omega_0
+                    Theta_0 = Omega_0.copy()
+                    X_0 = np.zeros((S.shape[0], S.shape[0]))
                 else:
                     # to reduce the convergence time we use the starting point from previous iterations of rtol
                     Omega_0 = Z_i["Omega"]
+                    Theta_0 = Z_i["Theta"]
+                    X_0 = Z_i["X"]
 
                 time_list = []
                 key = method + "-" + str(stop_list[0]) + "_tol_" + str(tol) + "_rtol_" + str(rtol)
 
                 for _ in trange(n_iter, desc=key, leave=True):
                     if method == "single":
-                        start = time.time()
-                        Z_i, info = ADMM_SGL(S, lambda1=lambda1, Omega_0=Omega_0, max_iter=max_iter, tol=tol, rtol=rtol,
+                        start = time.perf_counter()
+                        Z_i, info = ADMM_SGL(S, lambda1=lambda1,
+                                             Omega_0=Omega_0, Theta_0=Theta_0, X_0=X_0,
+                                             max_iter=max_iter, tol=tol, rtol=rtol,
                                              stopping_criterion=stop_list[0])
-                        end = time.time()
+                        end = time.perf_counter()
                         time_list.append(end - start)
 
                     elif method == "block":
-                        start = time.time()
-                        Z_i = block_SGL(S, lambda1=lambda1, Omega_0=Omega_0, max_iter=max_iter, tol=tol, rtol=rtol,
+                        start = time.perf_counter()
+                        Z_i = block_SGL(S, lambda1=lambda1,
+                                        Omega_0=Omega_0, Theta_0=Theta_0, X_0=X_0,
+                                        max_iter=max_iter, tol=tol, rtol=rtol,
                                         stopping_criterion=stop_list[0])
-                        end = time.time()
+                        end = time.perf_counter()
                         time_list.append(end - start)
+                        print("Number of connected components:", Z_i["numC"])
+
+                if method == "block":
+                    # show number of connected components
+                    key = str(Z_i["numC"]) + key
 
                 # mean time in "n" iterations, the first iteration we skip because of numba init
                 time_dict[key] = np.mean(time_list[1:])
@@ -213,7 +230,7 @@ def admm_time_benchmark(S=np.array([]), Omega_0=np.array([]), Z=np.array([]), la
     return time_dict, accuracy_dict, precision_dict
 
 
-def time_benchmark(X=list, S=list, lambda1=0.1, max_iter=50000, Z_model=str, sk_models=["sklearn", "regain"],
+def time_benchmark(X=list, S=list, lambda1=list, max_iter=50000, Z_model=str, sk_models=["sklearn", "regain"],
                    n_iter=int, sk_params=dict, rg_params=dict, admm_params=dict):
     assert Z_model in ('sklearn', 'regain')
 
@@ -242,25 +259,25 @@ def time_benchmark(X=list, S=list, lambda1=0.1, max_iter=50000, Z_model=str, sk_
     times.update(admm_time)
     for key, value in times.items():
         if "regain" in key.split("_"):
-            time_dict[key + "_N_" + str(len(X))] = value
+            time_dict[key + "_N_" + str(len(X)) + "_l1_" + str(lambda1)] = value
         else:
-            time_dict[key + "_p_" + str(len(S)) + "_N_" + str(len(X))] = value
+            time_dict[key + "_p_" + str(len(S)) + "_N_" + str(len(X)) + "_l1_" + str(lambda1)] = value
 
     accs = sk_accuracy.copy()
     accs.update(admm_accuracy)
     for key, value in accs.items():
         if "regain" in key.split("_"):
-            accuracy_dict[key + "_N_" + str(len(X))] = value
+            accuracy_dict[key + "_N_" + str(len(X)) + "_l1_" + str(lambda1)] = value
         else:
-            accuracy_dict[key + "_p_" + str(len(S)) + "_N_" + str(len(X))] = value
+            accuracy_dict[key + "_p_" + str(len(S)) + "_N_" + str(len(X)) + "_l1_" + str(lambda1)] = value
 
     precs = Z_sk.copy()
     precs.update(Z_admm)
     for key, value in precs.items():
         if "regain" in key.split("_"):
-            precision_dict[key + "_N_" + str(len(X))] = value
+            precision_dict[key + "_N_" + str(len(X)) + "_l1_" + str(lambda1)] = value
         else:
-            precision_dict[key + "_p_" + str(len(S)) + "_N_" + str(len(X))] = value
+            precision_dict[key + "_p_" + str(len(S)) + "_N_" + str(len(X)) + "_l1_" + str(lambda1)] = value
 
     return time_dict, accuracy_dict, precision_dict
 
@@ -288,9 +305,9 @@ def sk_scaling(X, model, k_iter=5, time_list=None):
         time_list = []
 
     for _ in trange(k_iter, desc=str(model), leave=True):
-        sk_start = time.time()
+        sk_start = time.perf_counter()
         Z_i = model.fit(X)
-        sk_end = time.time()
+        sk_end = time.perf_counter()
 
         sk_time = sk_end - sk_start
         time_list.append(sk_time)
@@ -305,10 +322,10 @@ def sk_scaling(X, model, k_iter=5, time_list=None):
 
 def single_scaling(S, lambda1, Omega_0, max_iter, tol, rtol, n_iter, time_list=[]):
     for _ in trange(n_iter, leave=True):
-        single_start = time.time()
+        single_start = time.perf_counter()
         Z_i, info = ADMM_SGL(S, lambda1=lambda1, Omega_0=Omega_0, max_iter=max_iter,
                              tol=tol, rtol=rtol, stopping_criterion="boyd")
-        single_end = time.time()
+        single_end = time.perf_counter()
 
         single_time = single_end - single_start
         time_list.append(single_time)
@@ -318,10 +335,10 @@ def single_scaling(S, lambda1, Omega_0, max_iter, tol, rtol, n_iter, time_list=[
 
 def block_scaling(S, lambda1, Omega_0, max_iter, tol, rtol, n_iter, time_list=[]):
     for _ in trange(n_iter):
-        block_start = time.time()
+        block_start = time.perf_counter()
         Z_i = block_SGL(S, lambda1=lambda1, Omega_0=Omega_0, max_iter=max_iter,
                         tol=tol, rtol=rtol, stopping_criterion="boyd")
-        block_end = time.time()
+        block_end = time.perf_counter()
 
         block_time = block_end - block_start
         time_list.append(block_time)

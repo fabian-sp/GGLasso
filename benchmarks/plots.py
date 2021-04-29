@@ -36,18 +36,19 @@ def plot_accuracy(df=pd.DataFrame(), upper_bound=float, lower_bound=float):
 
 def plot_scalability(df=pd.DataFrame()):
     """
-    Plot how well different implementations of ADMM scale.
+    Plot how well the implementations of ADMM scale according to a different choice of lambda.
     :param df: pandas.DataFrame()
     :return: px.scatter()
     """
-    fig = px.scatter(df, x="time", y="p", text="N", color="method",
+    fig = px.scatter(df, x="p", y="time", text="N", color="method",
+                     log_y=True, facet_col='l1', facet_col_wrap=3,
                      labels={
                          "time": "Time, s",
                          "p": "Number of features, p",
                          "method": "method"
                      },
                      template="plotly_white",
-                     title="Scalability plot")
+                     title="Scalability of ADMM with different lambdas")
 
     fig.update_traces(mode='markers+lines', marker_line_width=1, marker_size=10)
 
