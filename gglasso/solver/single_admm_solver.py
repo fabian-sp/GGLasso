@@ -37,11 +37,11 @@ def ADMM_SGL(S, lambda1, Omega_0, Theta_0=np.array([]), X_0=np.array([]),
     Parameters
     ----------
     S : array (p,p)
-        empirical covariance matrix. Needs to be symmetric and semipositive definite.
+        empirical covariance matrix. Needs to be symmetric and positive semidefinite.
     lambda1 : float, positive
         sparsity regularization parameter.
     Omega_0 : array (p,p)
-        starting point for the Omega variable. Choose np.eye(p) if no better starting point is known.
+        starting point for the Omega variable. Choose ``np.eye(p)`` if no better starting point is known.
     Theta_0 : array (p,p), optional
         starting point for the Theta variable. If not specified, it is set to the same as Omega_0.
     X_0 : array (p,p), optional
@@ -275,7 +275,7 @@ def block_SGL(S, lambda1, Omega_0, Theta_0=None, X_0=None, rho=1.,
               measure=False):
     """
     This is a wrapper for solving SGL problems on connected components of the solution and solving each block separately.
-    See Witten, Friedman, Simon "NEW INSIGHTS FOR THE GRAPHICAL LASSO" for details.
+    See Witten, Friedman, Simon "New Insights for the Graphical Lasso" for details.
     
     It solves
     
@@ -292,11 +292,11 @@ def block_SGL(S, lambda1, Omega_0, Theta_0=None, X_0=None, rho=1.,
     Parameters
     ----------
     S : array (p,p)
-        empirical covariance matrix. Needs to be symmetric and semipositive definite.
+        empirical covariance matrix. Needs to be symmetric and positive semidefinite.
     lambda1 : float, positive
         sparsity regularization parameter.
     Omega_0 : array (p,p)
-        starting point for the Omega variable. Choose np.eye(p) if no better starting point is known.
+        starting point for the Omega variable. Choose ``np.eye(p)`` if no better starting point is known.
     Theta_0 : array (p,p), optional
         starting point for the Theta variable. If not specified, it is set to the same as Omega_0.
     X_0 : array (p,p), optional

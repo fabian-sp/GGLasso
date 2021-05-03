@@ -24,11 +24,11 @@ Class GGLassoEstimator
 
 Model selection
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Choosing the regularization parameters :math:`\lambda_1` and :math:`\lambda_2` (and :math:`\mu_1` in the latent variable case) has a crucial impact how well the Graphical Lasso solution recovers true edges/ non-zero entries of the precision matrix.
+Choosing the regularization parameters :math:`\lambda_1` and :math:`\lambda_2` (and :math:`\mu_1` in the latent variable case) has crucial impact how well the Graphical Lasso solution recovers true edges/ non-zero entries of the precision matrix.
 
 ``GGLasso`` contains model selection functionalities for each of the problem described in :ref:`Mathematical description`. Model selection is done via grid searches on the regularization parameters where the quality of a solution is assessed either with the AIC (Akaike Information Criterion) or the eBIC (Extended Bayesian Information Criterion).
 
-Typically, the eBIC chooses sparser solutions and thus leads to less false discoveries. For a single precision matrix estimate :math:`\hat{\Theta}` of dimension :math:`p` with :math:`N` samples ìt is given by
+Typically, the eBIC chooses sparser solutions and thus leads to less false discoveries. For a single precision matrix estimate :math:`\hat{\Theta}` of dimension :math:`p` with :math:`N` samples it is given by
 
 .. math::
    eBIC_\gamma(\lambda_1) = N \left(-\log \det \hat{\Theta} + \langle S, \hat{\Theta}\rangle\right) + E \log N + 4 E \gamma \log p

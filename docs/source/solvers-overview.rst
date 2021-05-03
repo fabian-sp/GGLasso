@@ -6,7 +6,7 @@ This page aims to give an overview of the functions you need to call for solving
 
 A popular algorithm for solving SGL and MGL problems is the ADMM [ref8]_, [ref5]_, [ref2]_, [ref3]_. Alternatively, a proximal point dual Newton algorithm (PPDNA) was proposed for GGL [ref6]_ and FGL [ref7]_.
 
-The ``GGLasso`` package contains and ADMM solver for all problem formulations as well as the PPDNA solver for MGL problems without latent variables. Far a detailled documentation of all of the solvers described below, see :ref:`Detailled solver documentation`
+The ``GGLasso`` package contains and ADMM solver for all problem formulations as well as the PPDNA solver for MGL problems without latent variables. For a detailled documentation of all of the solvers described below, see :ref:`Detailled solver documentation`
 
 
 **Note**: all solvers need as input an empirical covariance matrix (or a collection of matrices for MGL) and a starting point. Using the identity matrix as starting point, if no better guess is available, typically works fine. 
