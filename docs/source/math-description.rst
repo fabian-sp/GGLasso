@@ -25,7 +25,13 @@ where :math:`\mathbb{S}^p_{++}` is the cone of symmetric positive definite matri
 SGL with latent variables
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-In presence of latent variables, the precision matrix of the marginal of observable variables turns out to have the structure *sparse - low rank* [ref4]_. The problem can then be formulated as  
+In presence of latent variables, the precision matrix of the marginal of observable variables turns out to have the structure *sparse - low rank* [ref4]_. 
+
+.. image:: pictures/combined.png
+  :width: 800
+  :alt: Illustration of the precision matrix
+
+The problem can then be formulated as  
 
 .. math::
    \min_{\Theta, L \in \mathbb{S}^p} - \log \det (\Theta -L) + \mathrm{Tr}(S(\Theta-L)) + \lambda_1 \|\Theta\|_{1,od} + \mu_1 \|L\|_{\star}
@@ -38,7 +44,7 @@ Multiple Graphical Lasso problems (MGL)
 In many applications, compositional or temporal data is available. Hence, there has been an increased interest in estimating precision matrices for multiple instances jointly [ref2]_, [ref3]_. Mathematically, we consider :math:`K` Gaussians
 
 .. math::
-   \mathcal{X}^{(k)} \sim \mathcal{N}(\mu^{(k)}, \Sigma^{(k)})\in \mathbb{R}^{p}
+   \mathcal{X}^{(k)} \sim \mathcal{N}(\mu^{(k)}, \Sigma^{(k)})\in \mathbb{R}^{p}.
 
 
 Group Graphical Lasso (GGL) describes the problem of estimating precision matrices across multiple instances of the same class under the assumption that the sparsity patterns are similar.
@@ -49,7 +55,11 @@ More generally, the problem formulation of Multiple Graphical Lasso is given by
 .. math::
    \min_{\Theta}\quad \sum_{k=1}^{K} \left(-\log\det(\Theta^{(k)}) + \langle S^{(k)},  \Theta^{(k)} \rangle \right)+ \mathcal{P}(\Theta).
 
-In the above, the feasible set is the :math:`K`-fold product of :math:`\mathbb{S}^p_{++}`. We denote an element of this space :math:`\Theta =  (\Theta^{(1)}, \dots , \Theta^{(K)})`. As input, we have the empirical covariance matrices :math:`S =  (S^{(1)}, \dots , S^{(K)})` given.
+In the above, the feasible set is the :math:`K`-fold product of :math:`\mathbb{S}^p_{++}`, see an illustration below. We denote an element of this space :math:`\Theta =  (\Theta^{(1)}, \dots , \Theta^{(K)})`. As input, we have the empirical covariance matrices :math:`S =  (S^{(1)}, \dots , S^{(K)})` given.
+
+.. image:: pictures/multiple.png
+  :width: 600
+  :alt: Illustration of the precision matrix
 
 Group Graphical Lasso (GGL)
 """"""""""""""""""""""""""""""""""""""""""""""""""  
