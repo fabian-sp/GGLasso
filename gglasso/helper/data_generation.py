@@ -1,5 +1,5 @@
 """
-Generates data for numerical experiments in the thesis
+Generates data for numerical experiments
 
 Power law network: methodology is inspired by "The joint graphical lasso for inverse covariance estimation across
 multiple classes" from Danaher et al.
@@ -12,7 +12,36 @@ import networkx as nx
 from .basic_linalg import trp
 
 
-def power_law_network(p=100, M=10, nxseed = None):
+def generate_precision_matrix(p=100, M=10, style = 'powerlaw', gamma = 2.8, prob = 0.1, nxseed = None):
+    """
+    Generates a sparse precision matrix with associated covariance matrix from a random network.
+    
+    
+    Parameters
+    ----------
+    p : int, optional
+        size of the matrix. The default is 100.
+    M : int, optional
+        number of subblocks. p/M must result in an integer. The default is 10.
+    style : str, optional
+        Type of the random network. Available network types:
+            * 'powerlaw': a powerlaw network.
+            * 'erdos': a Erdos-Renyi network.
+        
+        The default is 'powerlaw'.
+    gamma : float, optional
+        parameter for powerlaw network. The default is 2.8.
+    prob : float, optional
+        probability of edge creation for Erdos-Renyi network. The default is 0.1.
+    nxseed : int, optional
+        Seed for network creation. The default is None.
+
+    Returns
+    -------
+    Sigma : array of shape (p,p)
+        Covariance matrix.
+
+    """
     
     L = int(p/M)
     assert M*L == p
@@ -23,10 +52,14 @@ def power_law_network(p=100, M=10, nxseed = None):
     for m in np.arange(M):
         
         if nxseed is not None:
-            G_m = nx.generators.random_graphs.random_powerlaw_tree(n = L, gamma = 2.8, tries = max(5*p,1000), seed = int(nxseed + m))
+            nxseed = int(nxseed +m)
+        
+        if style == 'powerlaw':
+            G_m = nx.generators.random_graphs.random_powerlaw_tree(n=L, gamma=gamma, tries=max(5*p,1000), seed = nxseed)
+        elif style == 'erdos':
+            G_m = nx.generators.random_graphs.erdos_renyi_graph(n=L , p=prob, seed=nxseed, directed=False)
         else:
-            G_m = nx.generators.random_graphs.random_powerlaw_tree(n = L, gamma = 2.8, tries = max(5*p,1000))
-            
+            raise ValueError(f"{style} is not a valid choice for the network generation.")
         A_m = nx.to_numpy_array(G_m)
         
         # generate random numbers for the nonzero entries
@@ -38,7 +71,7 @@ def power_law_network(p=100, M=10, nxseed = None):
         
         A[m*L:(m+1)*L, m*L:(m+1)*L] = A_m
     
-    row_sum_od = 1.5 * abs(A).sum(axis = 1)
+    row_sum_od = 1.5 * abs(A).sum(axis = 1) +1e-10
     # broadcasting in order to divide ROW-wise
     A = A / row_sum_od[:,np.newaxis]
     
@@ -87,7 +120,7 @@ def time_varying_power_network(p=100, K=10, M=10, nxseed = None):
     assert M*L == p
     assert M >=3
     
-    Sigma_0 = power_law_network(p = p, M = M, nxseed = nxseed) 
+    Sigma_0 = generate_precision_matrix(p = p, M = M, style = 'powerlaw', nxseed = nxseed) 
     
     for k in np.arange(K):
         Sigma_k = Sigma_0.copy()
@@ -124,7 +157,7 @@ def group_power_network(p=100, K=10, M=10, nxseed = None):
     L = int(p/M)
     assert M*L == p
     
-    Sigma_0 = power_law_network(p = p, M = M, nxseed = nxseed)
+    Sigma_0 = generate_precision_matrix(p = p, M = M, style = 'powerlaw', nxseed = nxseed)
     # contains the number of the block disappearing for each k=1,..,K
     block = np.random.randint(M, size = K)
     
@@ -157,18 +190,26 @@ def sample_covariance_matrix(Sigma, N):
     samples data for a given covariance matrix Sigma (with K layers)
     return: sample covariance matrix S
     """
-    assert abs(Sigma - trp(Sigma)).max() <= 1e-10
-    (K,p,p) = Sigma.shape
-
-    sample = np.zeros((K,p,N))
-    for k in np.arange(K):
-        sample[k,:,:] = np.random.multivariate_normal(np.zeros(p), Sigma[k,:,:], N).T
-
-    S = np.zeros((K,p,p))
-    for k in np.arange(K):
-        # normalize with N --> bias = True
-        S[k,:,:] = np.cov(sample[k,:,:], bias = True)
+    if len(Sigma.shape) == 2:
+        assert abs(Sigma - Sigma.T).max() <= 1e-10
+        (p,p) = Sigma.shape
         
+        sample = np.random.multivariate_normal(np.zeros(p), Sigma, N).T
+        S = np.cov(sample, bias = True)
+        
+    else:
+        assert abs(Sigma - trp(Sigma)).max() <= 1e-10
+        (K,p,p) = Sigma.shape
+
+        sample = np.zeros((K,p,N))
+        for k in np.arange(K):
+            sample[k,:,:] = np.random.multivariate_normal(np.zeros(p), Sigma[k,:,:], N).T
+    
+        S = np.zeros((K,p,p))
+        for k in np.arange(K):
+            # normalize with N --> bias = True
+            S[k,:,:] = np.cov(sample[k,:,:], bias = True)
+            
     return S,sample
 
 
