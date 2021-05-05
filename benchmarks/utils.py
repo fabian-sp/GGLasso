@@ -4,9 +4,14 @@ time, sparsity and scaling benchmarks.
 """
 import pandas as pd
 import numpy as np
+import itertools
 
 from gglasso.helper.utils import hamming_distance
 from gglasso.helper.data_generation import group_power_network, sample_covariance_matrix
+
+from sklearn.covariance import GraphicalLasso as sk_GL
+
+from regain.covariance import GraphicalLasso as rg_GL
 
 
 def network_generation(p=int, N=int, K=1, M=int):
@@ -58,19 +63,14 @@ def benchmarks_dataframe(times=dict, acc_dict=dict, spars_dict=dict):
                             "hamming": list(spars_dict.values())})
 
     df['split'] = df['name'].str.split('_')
-
-    columns_names = ["method", "tol_str", "tol",
-                     "rtol_str", "rtol",
-                     "p_str", "p", "N_str", "N",
-                     "l1_str", "l1"]
+    columns_names = ["method", "tol_str", "tol", "rtol_str", "rtol", "p_str", "p", "l1_str", "l1"]
     df[columns_names] = pd.DataFrame(df['split'].tolist(), index=df['split'].index)
 
-    redundant_cols = ['split', "tol_str", "rtol_str", "p_str", "N_str", "l1_str"]
+    redundant_cols = ['split', "tol_str", "rtol_str", "p_str", "l1_str"]
     df = df.drop(redundant_cols, axis=1)
 
-    convert_dict = {'tol': float, 'rtol': float, "p": int, "N": int, "l1": float}
+    convert_dict = {'tol': float, 'rtol': float, "p": int, "l1": float}
     df = df.astype(convert_dict)
-
     df = df.sort_values(by=['time'])
 
     return df
@@ -145,3 +145,36 @@ def hamming_dict(Theta_dict=dict, Z_dict=dict, t_rounding=float):
                 sparsity_dict[key] = hamming_distance(Theta, Z, t=t_rounding)
 
     return sparsity_dict
+
+
+def sk_models_dict(lambda_list=list, sk_params=dict, max_iter=50000):
+    sk_dict = dict()
+    for key in sk_params.keys():
+        if key == "tol":
+            tol_list = sk_params[key]
+        elif key == "enet":
+            enet_list = sk_params[key]
+
+    for tol, enet, lambda1 in itertools.product(tol_list, enet_list, lambda_list):
+        key = "sklearn" + "_tol_" + str(tol) + "_enet_" + str(enet) + "_l1_" + str(lambda1)
+        sk_dict[key] = sk_GL(alpha=lambda1, tol=tol, enet_tol=enet, max_iter=max_iter,
+                             assume_centered=False, verbose=True)
+    return sk_dict
+
+
+def regain_models_dict(lambda_list=list, rg_params=dict, max_iter=50000):
+    regain_dict = dict()
+    for key in rg_params.keys():
+        if key == "tol":
+            tol_list = rg_params[key]
+        elif key == "rtol":
+            rtol_list = rg_params[key]
+        elif key == "init_shape":
+            init_shape_list = rg_params[key]
+
+    for tol, rtol, shape, lambda1 in itertools.product(tol_list, rtol_list, init_shape_list, lambda_list):
+        key = "regain" + "_tol_" + str(tol) + "_rtol_" + str(rtol) + "_p_" + str(shape) + "_l1_" + str(lambda1)
+
+        regain_dict[key] = rg_GL(alpha=lambda1, tol=tol, rtol=rtol, max_iter=max_iter,
+                                 assume_centered=False, init=np.eye(shape), verbose=True)
+    return regain_dict
