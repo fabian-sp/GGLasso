@@ -53,3 +53,23 @@ def plot_scalability(df=pd.DataFrame()):
     fig.update_traces(mode='markers+lines', marker_line_width=1, marker_size=10)
 
     return fig
+
+
+def plot_lambdas(df=pd.DataFrame(), upper_bound=float, lower_bound=float):
+    df = df[(df["accuracy"] < upper_bound) & (df["accuracy"] > lower_bound)]
+    df = df.groupby(['method_str', "p", "l1"], as_index=False)['time'].mean()
+
+    fig = px.scatter(df, x="p", y="time", text="p", color="method_str",
+                     log_y=True, facet_col='l1', facet_col_wrap=3,
+                     labels={
+                         "time": "Time, s",
+                         "p": "Number of features, p",
+                         "method": "method"
+                     },
+                     template="plotly_white",
+                     title="Scalability of ADMM with different lambdas.<br>Accuracy is between 0.01 and 0.0001")
+
+    fig.update_traces(mode='markers+lines', marker_line_width=1, marker_size=10)
+    # fig.update_annotations(text="Accuracy is between 0.01 and 0.0001")
+
+    return fig

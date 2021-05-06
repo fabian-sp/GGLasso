@@ -71,6 +71,7 @@ def benchmarks_dataframe(times=dict, acc_dict=dict, spars_dict=dict):
 
     convert_dict = {'tol': float, 'rtol': float, "p": int, "l1": float}
     df = df.astype(convert_dict)
+    df['method_str'] = df['method'].str.replace('\d+', '')
     df = df.sort_values(by=['time'])
 
     return df
