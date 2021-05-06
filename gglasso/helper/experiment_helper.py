@@ -34,7 +34,7 @@ def lambda_grid(num1 = 5, num2 = 2, reg = 'GGL'):
     """
     
     if reg == 'GGL':
-        l2 = np.logspace(start = -1, stop = -3, num = num2, base = 10)
+        l2 = np.logspace(start = -0.5, stop = -2.5, num = num2, base = 10)
         w2 = np.linspace(0.2, 0.5, num1)
         l2grid, w2grid = np.meshgrid(l2,w2)
         L1 = lambda_parametrizer(l2grid, w2grid)
@@ -286,12 +286,14 @@ def plot_fpr_tpr(FPR, TPR, ix, ix2, FPR_GL = None, TPR_GL = None, W2 = [], save 
         labels.append("AIC")    
             
         ax.legend(labels = labels, loc = 'lower right')
-        
+    
+    ax.set_xlim()
+    
     fig.suptitle('Discovery rate for different regularization strengths')
     if save:
         fig.savefig(path_ggl_powerlaw + 'fpr_tpr.pdf', dpi = 300)
     
-    return
+    return fig, ax
 
 def plot_diff_fpr_tpr(DFPR, DTPR, ix, ix2, DFPR_GL = None, DTPR_GL = None, W2 = [], save = False):
     """
@@ -327,7 +329,7 @@ def plot_diff_fpr_tpr(DFPR, DTPR, ix, ix2, DFPR_GL = None, DTPR_GL = None, W2 = 
     if save:
         fig.savefig(path_ggl_powerlaw + 'diff_fpr_tpr.pdf', dpi = 300)
     
-    return
+    return fig, ax
 
 
 def plot_error_accuracy(EPS, ERR, L2, save = False):
@@ -351,7 +353,7 @@ def plot_error_accuracy(EPS, ERR, L2, save = False):
     if save:
         fig.savefig(path_ggl_powerlaw + 'error.pdf', dpi = 300)
     
-    return
+    return fig, ax
 
 def plot_gamma_influence(gammas, GTPR, GFPR, save = False):
     fig, ax = plt.subplots(1,1, figsize = default_size_big)   

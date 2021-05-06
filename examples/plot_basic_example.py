@@ -9,8 +9,9 @@ number of samples (N=5000) to demonstrate that it is possible to recover (approx
 In many practical applications however, we face the situation of p>N.
 
 """
+# sphinx_gallery_thumbnail_number = 2
 
-from gglasso.helper.data_generation import group_power_network, sample_covariance_matrix
+from gglasso.helper.data_generation import generate_precision_matrix, group_power_network, sample_covariance_matrix
 from gglasso.problem import glasso_problem
 from gglasso.helper.basic_linalg import adjacency_matrix
 
@@ -23,17 +24,18 @@ p = 20
 N = 5000
 
 Sigma, Theta = group_power_network(p, K = 1, M = 1, nxseed = 1235)
+Sigma, Theta = generate_precision_matrix(p=p, M=1, style = 'powerlaw', gamma = 2.8, nxseed = 12345)
+
 S, sample = sample_covariance_matrix(Sigma, N)
-# remove redundant dimension
-Theta = Theta[0]; S = S[0]; sample= sample[0]
 
 print("Shape of empirical covariance matrix: ", S.shape)
 print("Shape of the sample array: ", sample.shape)
 
 
 #%%
-
 # Draw the graph of the true precision matrix.
+# ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
 A = adjacency_matrix(Theta)
 np.fill_diagonal(A,1)
 
@@ -44,6 +46,8 @@ plt.figure()
 nx.draw_networkx(G, pos = pos, node_color = "darkblue", edge_color = "darkblue", font_color = 'white', with_labels = True)
 
 #%%
+# Basic usage of ``glasso_problem``.
+# ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 # We now create an instance of ``glasso_problem``. The problem formulation is derived automatically from the input shape of ``S``.
 #
 
@@ -63,6 +67,8 @@ P.model_selection(modelselect_params = modelselect_params, method = 'eBIC', gamm
 print(P.reg_params)
 
 #%%
+# Plotting the recovered graph and matrix
+# ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 # access the solution and draw the corresponding graph
 #
 

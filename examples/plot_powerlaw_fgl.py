@@ -32,7 +32,7 @@ L = int(p/M)
 
 reg = 'FGL'
 
-Sigma, Theta = time_varying_power_network(p, K, M, nxseed = 2340)
+Sigma, Theta = time_varying_power_network(p, K, M, scale = False, nxseed = 2340)
 
 S, sample = sample_covariance_matrix(Sigma, N)
 
@@ -200,6 +200,7 @@ results['LTGL'] = {'Theta' : ltgl.precision_}
 Theta_admm = results.get('ADMM').get('Theta')
 Theta_ltgl = results.get('LTGL').get('Theta')
 Theta_sgl = results.get('SGL').get('Theta')
+
 
 
 print("Norm(Regain-ADMM)/Norm(ADMM):", np.linalg.norm(Theta_ltgl - Theta_admm)/ np.linalg.norm(Theta_admm))

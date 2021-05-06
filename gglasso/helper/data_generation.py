@@ -12,7 +12,7 @@ import networkx as nx
 from .basic_linalg import trp
 
 
-def generate_precision_matrix(p=100, M=10, style = 'powerlaw', gamma = 2.8, prob = 0.1, nxseed = None):
+def generate_precision_matrix(p=100, M=10, style = 'powerlaw', gamma = 2.8, prob = 0.1, scale = False, nxseed = None):
     """
     Generates a sparse precision matrix with associated covariance matrix from a random network.
     
@@ -33,6 +33,9 @@ def generate_precision_matrix(p=100, M=10, style = 'powerlaw', gamma = 2.8, prob
         parameter for powerlaw network. The default is 2.8.
     prob : float, optional
         probability of edge creation for Erdos-Renyi network. The default is 0.1.
+    scale : boolean, optional
+        whether Sigma (cov. matrix) is scaled by diagonal entries (as described by Danaher et al.). If set to True, then the generated precision matrix is not
+        the inverse of Sigma anymore.
     nxseed : int, optional
         Seed for network creation. The default is None.
 
@@ -40,6 +43,9 @@ def generate_precision_matrix(p=100, M=10, style = 'powerlaw', gamma = 2.8, prob
     -------
     Sigma : array of shape (p,p)
         Covariance matrix.
+    
+    Theta: array of shape (p,p)
+        Precisiion matrix, inverse of Sigma. If ``scale=True`` we return ``None``.
 
     """
     
@@ -69,9 +75,13 @@ def generate_precision_matrix(p=100, M=10, style = 'powerlaw', gamma = 2.8, prob
         
         A_m = A_m * (B1*B2)
         
+        # only use upper triangle and symmetrize
+        #A_m = np.triu(A_m)
+        #A_m = .5 * (A_m + A_m.T)
+        
         A[m*L:(m+1)*L, m*L:(m+1)*L] = A_m
     
-    row_sum_od = 1.5 * abs(A).sum(axis = 1) +1e-10
+    row_sum_od = 1.5 * abs(A).sum(axis = 1) + 1e-10
     # broadcasting in order to divide ROW-wise
     A = A / row_sum_od[:,np.newaxis]
     
@@ -92,21 +102,26 @@ def generate_precision_matrix(p=100, M=10, style = 'powerlaw', gamma = 2.8, prob
     Ainv = np.linalg.pinv(A, hermitian = True)
     
     # scale by inverse of diagonal and 0.6*1/sqrt(d_ii*d_jj) on off-diag
-    d = np.diag(Ainv)
-    scale = np.tile(np.sqrt(d),(Ainv.shape[0],1))
-    scale = (1/0.6)*(scale.T * scale)
-    
-    Sigma = Ainv/scale
-    np.fill_diagonal(Sigma, 1)
-    
-     
+    if scale:
+        d = np.diag(Ainv)
+        scale_mat = np.tile(np.sqrt(d),(Ainv.shape[0],1))
+        scale_mat = (1/0.6)*(scale_mat.T * scale_mat)
+        np.fill_diagonal(scale_mat, d)
+
+        Sigma = Ainv/scale_mat
+        Theta = None
+        
+    else:
+        Sigma = Ainv.copy()
+        Theta = A.copy()
+          
     assert abs(Sigma.T - Sigma).max() <= 1e-8
     D = np.linalg.eigvalsh(Sigma)
     assert D.min() > 0, "generated matrix Sigma is not positive definite"
          
-    return Sigma
+    return Sigma, Theta
 
-def time_varying_power_network(p=100, K=10, M=10, nxseed = None):
+def time_varying_power_network(p=100, K=10, M=10, scale = True, nxseed = None):
     """
     generates a power law network. The first block disappears at half-time, while the second block appears
     third block decays exponentially
@@ -120,7 +135,7 @@ def time_varying_power_network(p=100, K=10, M=10, nxseed = None):
     assert M*L == p
     assert M >=3
     
-    Sigma_0 = generate_precision_matrix(p = p, M = M, style = 'powerlaw', nxseed = nxseed) 
+    Sigma_0,_ = generate_precision_matrix(p = p, M = M, style = 'powerlaw', scale = scale, nxseed = nxseed) 
     
     for k in np.arange(K):
         Sigma_k = Sigma_0.copy()
@@ -145,7 +160,7 @@ def time_varying_power_network(p=100, K=10, M=10, nxseed = None):
     
     return Sigma, Theta
     
-def group_power_network(p=100, K=10, M=10, nxseed = None):
+def group_power_network(p=100, K=10, M=10, scale = True, nxseed = None):
     """
     generates a power law network. In each single network one block disappears (randomly)
     p: dimension
@@ -157,7 +172,7 @@ def group_power_network(p=100, K=10, M=10, nxseed = None):
     L = int(p/M)
     assert M*L == p
     
-    Sigma_0 = generate_precision_matrix(p = p, M = M, style = 'powerlaw', nxseed = nxseed)
+    Sigma_0,_ = generate_precision_matrix(p = p, M = M, style = 'powerlaw', scale = scale, nxseed = nxseed)
     # contains the number of the block disappearing for each k=1,..,K
     block = np.random.randint(M, size = K)
     

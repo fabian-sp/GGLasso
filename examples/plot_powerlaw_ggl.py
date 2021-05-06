@@ -21,12 +21,12 @@ from gglasso.helper.model_selection import aic, ebic
 
 p = 100
 K = 5
-N = 5000
+N = 500
 M = 10
 
 reg = 'GGL'
 
-Sigma, Theta = group_power_network(p, K, M, nxseed = 2340)
+Sigma, Theta = group_power_network(p, K, M, scale = False, nxseed = 2340)
 
 S, sample = sample_covariance_matrix(Sigma, N)
 
@@ -79,7 +79,7 @@ for g2 in np.arange(grid2):
         DFPR[g1,g2] = dr['FPR_DIFF']
         ERR[g1,g2] = error(Theta_sol, Theta)
         AIC[g1,g2] = aic(S, Theta_sol, N)
-        BIC[g1,g2] = ebic(S, Theta_sol, N, gamma = 0.1)
+        BIC[g1,g2] = ebic(S, Theta_sol, N, gamma = 0.3)
         
             
 
@@ -131,6 +131,7 @@ for a in np.arange(len(ALPHA)):
 Omega_0 = get_K_identity(K,p)
 solA, infoA = ADMM_MGL(S, l1opt, l2opt, reg , Omega_0, tol = 1e-10, rtol = 1e-10, verbose = True, measure = True)
 
+
 # %%
 # Plotting: TPR, FPR, differential edges
 # ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -140,7 +141,9 @@ solA, infoA = ADMM_MGL(S, l1opt, l2opt, reg , Omega_0, tol = 1e-10, rtol = 1e-10
 # 
 # Differential edges are edges which are present in at least one but not all of the K precision matrices.
    
-plot_fpr_tpr(FPR, TPR, ix, ix2, FPR_GL, TPR_GL, W2)
+fig,ax = plot_fpr_tpr(FPR, TPR, ix, ix2, FPR_GL, TPR_GL, W2)
+ax.set_xlim(-0.01, 0.1)
+ax.set_ylim(0.7,1)
 
-plot_diff_fpr_tpr(DFPR, DTPR, ix, ix2, DFPR_GL, DTPR_GL, W2)
+fig,ax = plot_diff_fpr_tpr(DFPR, DTPR, ix, ix2, DFPR_GL, DTPR_GL, W2)
 
