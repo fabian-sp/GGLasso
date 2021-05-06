@@ -160,7 +160,7 @@ def time_varying_power_network(p=100, K=10, M=10, scale = True, nxseed = None):
     
     return Sigma, Theta
     
-def group_power_network(p=100, K=10, M=10, scale = True, nxseed = None):
+def group_power_network(p=100, K=10, M=10, scale = False, nxseed = None):
     """
     generates a power law network. In each single network one block disappears (randomly)
     p: dimension
