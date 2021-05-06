@@ -93,11 +93,11 @@ def template_extADMM_consistent(latent = False):
     # constructs the "trivial" groups, i.e. all variables present in all instances  
     G = construct_trivial_G(p, K)
     
-    solext, _ = ext_ADMM_MGL(Sdict, lambda1, lambda2/np.sqrt(K), 'GGL', Omega_0, G, tol = 1e-8, rtol = 1e-8, verbose = True, latent = latent, mu1 = 0.01)
+    solext, _ = ext_ADMM_MGL(Sdict, lambda1, lambda2/np.sqrt(K), 'GGL', Omega_0, G, tol = 1e-9, rtol = 1e-9, verbose = True, latent = latent, mu1 = 0.01)
     solext2, _ = ext_ADMM_MGL(Sdict, lambda1, lambda2/np.sqrt(K), 'GGL', Omega_0, G, stopping_criterion = 'kkt', tol = 1e-8, verbose = True, latent = latent, mu1 = 0.01)
     
     Omega_0_arr = get_K_identity(K,p)
-    solADMM, info = ADMM_MGL(S, lambda1, lambda2, 'GGL', Omega_0_arr, tol = 1e-8, rtol = 1e-8, verbose = False, latent = latent, mu1 = 0.01)
+    solADMM, info = ADMM_MGL(S, lambda1, lambda2, 'GGL', Omega_0_arr, tol = 1e-9, rtol = 1e-9, verbose = False, latent = latent, mu1 = 0.01)
     
     
     for k in np.arange(K):

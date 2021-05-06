@@ -49,3 +49,15 @@ If your data samples are a list of ``pd.DataFrame`` objects where each Dataframe
      G = create_group_array(ix_exist, ix_location)
 
 Here, ``list_of_samples`` stands for your list of data samples as described above.
+
+
+Further Remarks - proximal operators
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+The ADMM for Graphical Lasso relies on the efficient computation of proximal operators, in particular for the log-determinant function and the regularization function. For a convex function :math:`f` its proximal operator is given by
+
+.. math::
+	\mathrm{prox}_f(x) = \arg \min_z f(z) + \frac{1}{2} \|z-x\|^2
+
+For solving the FGL problem with ADMM, the proximal operator of the total variation norm (TV), i.e. :math:`x\mapsto \sum_{i=1}^{N-1} |x_{i+1} - x_i|`, needs to be computed. 
+This is a case where the proximal operator is not known in closed form. An efficient algorithm for the TV-prox is Condat's algorithm [ref11]_. ``GGLasso`` contains an efficient implementation of this algorithm using ``numba``. This is implemented in ``prox_tv`` from ``gglasso.solver.ggl_helper``. Further, according to [ref7]_ and [ref6]_ we implemented the Clarke differential of this and other proximal operators (for example the :math:`\ell_1`-norm, :math:`\ell_2`-norm and a weighted sum of these norms). For details, see ``gglasso.solver.ggl_helper``.

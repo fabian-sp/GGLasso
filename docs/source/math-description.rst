@@ -131,7 +131,7 @@ References
 .. [ref8] Boyd, S., Parikh, N., Chu, E., Peleato, B., and Eckstein, J. (2011). Distributed Optimization and Statistical Learning via the Alternating Direction Method of Multipliers. Found. Trends Mach. Learn., 3(1):1–122.
 .. [ref9] Witten, D. M., Friedman, J. H., and Simon, N. (2011). New Insights and Faster Computations for the Graphical Lasso. J. Comput. Graph. Statist., 20(4):892–900.
 .. [ref10] Foygel, R. and Drton, M. (2010). Extended Bayesian Information Criteria for Gaussian Graphical Models. In Lafferty, J., Williams, C., Shawe-Taylor, J.,Zemel, R., and Culotta, A., editors, Advances in Neural Information Processing Systems, volume 23. Curran Associates, Inc.
-
+.. [ref11] Condat, L. (2013). A Direct Algorithm for 1-D Total Variation Denoising, IEEE Signal Processing Letters, vol. 20, no. 11, pp. 1054-1057.
 
 
 
