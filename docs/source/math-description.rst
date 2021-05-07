@@ -41,7 +41,8 @@ where :math:`\|\cdot\|_{\star}` is the nuclear norm (sum of singular values). :m
 Multiple Graphical Lasso problems (MGL)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-In many applications, compositional or temporal data is available. Hence, there has been an increased interest in estimating precision matrices for multiple instances jointly [ref2]_, [ref3]_. Mathematically, we consider :math:`K` Gaussians
+In many applications, observations of the same variables but coming from different distributions or in a temporal context are available. For example, consider gene expression data coming from cancer tissue samples and normal tissue samples [ref2]_.
+Hence, there has been an increased interest in estimating precision matrices for multiple instances jointly [ref2]_, [ref3]_. Mathematically, we consider :math:`K` Gaussians
 
 .. math::
    \mathcal{X}^{(k)} \sim \mathcal{N}(\mu^{(k)}, \Sigma^{(k)})\in \mathbb{R}^{p}.
@@ -89,7 +90,7 @@ Analogous to SGL, we can extend MGL problems with latent variables.  The problem
 .. math::
    \min_{\Theta, L}\quad \sum_{k=1}^{K} \left(-\log\det(\Theta^{(k)}- L^{(k)}) + \langle S^{(k)},  \Theta^{(k)} - L^{(k)} \rangle \right)+ \mathcal{P}(\Theta) +\sum_{k=1}^{K} \mu_{1,k} \|L^{(k)}\|_{\star}.
 
-An ADMM algorithm and software is already available for FGL [ref3]_, however in [ref3]_ also the deviation of the low rank matrices is included in the penalty.
+Software is already available for FGL (with and without latent variables) in [ref3]_, however also the deviation of the low rank matrices is included in the penalty.
 
 GGL - the nonconforming case
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
