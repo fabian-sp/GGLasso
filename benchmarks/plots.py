@@ -16,20 +16,27 @@ def plot_accuracy(df=pd.DataFrame(), upper_bound=float, lower_bound=float):
     Specify the lower bound for the solution accuracy.
     :return: px.scatter()
     """
+    df = df.sort_values(by=['p', 'time'])
+
+    # filter by lambda
+    df = df[df["l1"] == 0.1]
+
     fig = px.scatter(df[(df["accuracy"] < upper_bound) & (df["accuracy"] > lower_bound)],
-                     x="time", y="accuracy", text="name", color="method",
-                     log_y=True, facet_col='p', facet_col_wrap=3,
+                     y="time", x="accuracy", text="l1", color="method_str",
+                     log_y=True, log_x=True, facet_col='p', facet_col_wrap=3,
                      labels={
                          "time": "Time, s",
-                         "accuracy": "Log_distance",
+                         "accuracy": "Accuracy",
                          "method": "method"
                      },
                      template="plotly_white",
-                     title="Log-distance between Z and Z' with respect to ADMM convergence rates")
+                     title="ADMM performance benchmark.<br>Accuracy is between 0.01 and 0.0001")
 
     fig.update_traces(mode='markers+lines', marker_line_width=1, marker_size=10)
     fig.update_xaxes(matches=None)
     fig.update_yaxes(exponentformat="power")
+
+    return fig
 
     return fig
 

@@ -4,14 +4,17 @@ time, sparsity and scaling benchmarks.
 """
 import pandas as pd
 import numpy as np
-import itertools
+import pickle
+import time
 
 from gglasso.helper.utils import hamming_distance
 from gglasso.helper.data_generation import group_power_network, sample_covariance_matrix
 
-from sklearn.covariance import GraphicalLasso as sk_GL
-
 from regain.covariance import GraphicalLasso as rg_GL
+
+from sklearn.covariance import GraphicalLasso as sk_GL
+from sklearn import set_config
+set_config(print_changed_only=False)
 
 
 def network_generation(p=int, N=int, K=1, M=int):
@@ -38,6 +41,78 @@ def network_generation(p=int, N=int, K=1, M=int):
     X = samples[0, :, :].T
 
     return S, X, Theta
+
+
+def benchmark_parameters(sk_tol_list=[0.5], enet_list=[0.5],
+                         rg_tol_list=[1e-4, 1e-5, 1e-6], rg_rtol_list=[1e-3, 1e-4, 1e-5],
+                         gglasso_tol_list=[1e-6, 1e-7, 1e-8], gglasso_rtol_list=[1e-5, 1e-6, 1e-7],
+                         gglasso_stop=['boyd'], gglasso_method=['single', 'block'],
+                         lambda_list = [0.5, 0.1, 0.05]):
+    """
+    Specify model hyperparameters.
+    :param S_dict:
+    :param sk_tol_list:
+    :param enet_list:
+    :param rg_tol_list:
+    :param rg_rtol_list:
+    :param admm_tol_list:
+    :param admm_rtol_list:
+    :param admm_stop:
+    :param admm_method:
+    :return:
+    """
+
+    # Sklearn params
+    sk_tol_list = sk_tol_list
+    enet_list = enet_list
+    sk_params = {"tol": sk_tol_list, "enet": enet_list}
+
+    # Regain params
+    rg_tol_list = rg_tol_list
+    rg_rtol_list = rg_rtol_list
+    rg_params = {"tol": rg_tol_list, "rtol": rg_rtol_list}
+
+    # ADMM params
+    gglasso_tol_list = gglasso_tol_list
+    gglasso_rtol_list = gglasso_rtol_list
+    gglasso_stop = gglasso_stop
+    gglasso_method = gglasso_method
+    gglasso_params = {"tol": gglasso_tol_list, "rtol": gglasso_rtol_list, "stop": gglasso_stop,
+                      "method": gglasso_method}
+
+    print("\n Sklearn model parameters:", sk_params)
+    print("\n Regain model parameters:", rg_params)
+    print("\n ADMM model parameters:", gglasso_params)
+    print("\n Lambda list:", lambda_list)
+
+    return sk_params, rg_params, gglasso_params, lambda_list
+
+
+def model_solution(model="sklearn", X=np.array([]), lambda1=float, max_iter=50000, tol=1e-10, rtol=1e-4, enet=0.001):
+    time_list = []
+    if model == "sklearn":
+
+        start = time.perf_counter()
+        Z = sk_GL(alpha=lambda1, max_iter=max_iter, tol=tol, enet_tol=enet, assume_centered=False).fit(X)
+        info = sk_GL(alpha=lambda1, max_iter=max_iter, tol=tol, enet_tol=enet, assume_centered=False, verbose=True)
+        end = time.perf_counter()
+
+        time_list.append(end - start)
+
+    elif model == "regain":
+
+        start = time.perf_counter()
+        Z = rg_GL(alpha=lambda1, init=np.eye(X.shape[1]), max_iter=max_iter, tol=tol, rtol=rtol,
+                  assume_centered=False).fit(X)
+        info = rg_GL(alpha=lambda1, init=np.eye(X.shape[1]), max_iter=max_iter, tol=tol, rtol=rtol,
+                     assume_centered=False, verbose=True)
+        end = time.perf_counter()
+
+        time_list.append(end - start)
+
+    print(model, info)
+
+    return Z.precision_, time_list, info
 
 
 def benchmarks_dataframe(times=dict, acc_dict=dict, spars_dict=dict):
@@ -148,34 +223,32 @@ def hamming_dict(Theta_dict=dict, Z_dict=dict, t_rounding=float):
     return sparsity_dict
 
 
-def sk_models_dict(lambda_list=list, sk_params=dict, max_iter=50000):
-    sk_dict = dict()
-    for key in sk_params.keys():
-        if key == "tol":
-            tol_list = sk_params[key]
-        elif key == "enet":
-            enet_list = sk_params[key]
+def sparsity_benchmark(df=pd.DataFrame()):
+    for i in ['method', 'accuracy', 'p', 'hamming']:
+        assert i in df.columns
 
-    for tol, enet, lambda1 in itertools.product(tol_list, enet_list, lambda_list):
-        key = "sklearn" + "_tol_" + str(tol) + "_enet_" + str(enet) + "_l1_" + str(lambda1)
-        sk_dict[key] = sk_GL(alpha=lambda1, tol=tol, enet_tol=enet, max_iter=max_iter,
-                             assume_centered=False, verbose=True)
-    return sk_dict
+    spar_df = df[(df["accuracy"] < 0.01) & (df["accuracy"] > 0.0001)]
+
+    names = dict()
+    frames = dict()
+    for p in spar_df["p"].unique():
+        for method in spar_df["method"].unique():
+            names[method] = spar_df[(spar_df["p"] == p) & (spar_df["method"] == method)]["hamming"].min()
+        frame = pd.DataFrame(names.items(), columns=['method', 'min_hamming'])
+        frame = frame.sort_values(by='min_hamming', ascending=True)
+        frames[p] = frame.reset_index(drop=True)
+
+    return frames
 
 
-def regain_models_dict(lambda_list=list, rg_params=dict, max_iter=50000):
-    regain_dict = dict()
-    for key in rg_params.keys():
-        if key == "tol":
-            tol_list = rg_params[key]
-        elif key == "rtol":
-            rtol_list = rg_params[key]
-        elif key == "init_shape":
-            init_shape_list = rg_params[key]
+def save_dict(D=dict, name=str):
+    name = str(name) + '.pickle'
+    with open(name, 'wb') as handle:
+        pickle.dump(D, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
-    for tol, rtol, shape, lambda1 in itertools.product(tol_list, rtol_list, init_shape_list, lambda_list):
-        key = "regain" + "_tol_" + str(tol) + "_rtol_" + str(rtol) + "_p_" + str(shape) + "_l1_" + str(lambda1)
 
-        regain_dict[key] = rg_GL(alpha=lambda1, tol=tol, rtol=rtol, max_iter=max_iter,
-                                 assume_centered=False, init=np.eye(shape), verbose=True)
-    return regain_dict
+def load_dict(dict_name=str):
+    name = str(dict_name) + '.pickle'
+    with open(name, 'rb') as handle:
+        D = pickle.load(handle)
+    return D
