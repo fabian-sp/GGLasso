@@ -37,7 +37,7 @@ class glasso_problem:
         * For GGL with non-conforming dimensions, use a list/dict of length K. Will be transformed to a dict with keys 1,..K.
         
         For MGL, each ``S[k]`` has to be symmetric and positive semidefinite.
-        Note: y default ``S`` will be scaled to correlations and scaled back after solving, see option ``do_scaling``.
+        Note: by default ``S`` will be scaled to correlations and scaled back after solving, see option ``do_scaling``.
         
     N : int or integer array of length K
         Number of samples for each instance k=1,..,K.
@@ -501,7 +501,7 @@ class glasso_problem:
             Calls ``self.set_modelselect_params()``, see doc of this method for details.
         method : str, optional
             Method for choosing the best solution in the grid. 
-            Options are 'AIC' (Akaike Information criterion) and 'eBIC' (extended Bayesia information criterion)
+            Options are 'AIC' (Akaike Information criterion) and 'eBIC' (extended Bayesia information criterion).
             The default is 'eBIC'.
         gamma : float, optional
             Gamma value for eBIC. Should be between 0 and 1. The larger gamma, the more eBIC tends to pick sparse solutions. 

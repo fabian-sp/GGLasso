@@ -56,7 +56,7 @@ def ext_ADMM_MGL(S, lambda1, lambda2, reg , Omega_0, G,\
     ----------
     S : dict 
         empirical covariance matrices. S should have keys 1,..,K (as integers) and S[k] contains the :math:`(p_k,p_k)`-array of the empirical cov. matrix of the k-th instance. 
-        Each S[k] needs to be symmetric and semipositive definite.
+        Each S[k] needs to be symmetric and positive semidefinite.
     lambda1 : float, positive
         sparsity regularization parameter.
     lambda2 : float, positive

@@ -39,7 +39,7 @@ def ADMM_MGL(S, lambda1, lambda2, reg , Omega_0 , \
     ----------
     S : array (K,p,p)
         empirical covariance matrices, i.e. S[k,:,:] contains the empirical cov. matrix of the k-th instance. 
-        Each S[k,:,:] needs to be symmetric and semipositive definite.
+        Each S[k,:,:] needs to be symmetric and positive semidefinite.
     lambda1 : float, positive
         sparsity regularization parameter.
     lambda2 : float, positive

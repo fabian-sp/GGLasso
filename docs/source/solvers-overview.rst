@@ -6,7 +6,7 @@ This page aims to give an overview of the functions you need to call for solving
 
 A popular algorithm for solving SGL and MGL problems is the ADMM [ref8]_, [ref5]_, [ref2]_, [ref3]_. Alternatively, a proximal point dual Newton algorithm (PPDNA) was proposed for GGL [ref6]_ and FGL [ref7]_.
 
-The ``GGLasso`` package contains and ADMM solver for all problem formulations as well as the PPDNA solver for MGL problems without latent variables. Far a detailled documentation of all of the solvers described below, see :ref:`Detailled solver documentation`
+The ``GGLasso`` package contains and ADMM solver for all problem formulations as well as the PPDNA solver for MGL problems without latent variables. For a detailled documentation of all of the solvers described below, see :ref:`Detailled solver documentation`.
 
 
 **Note**: all solvers need as input an empirical covariance matrix (or a collection of matrices for MGL) and a starting point. Using the identity matrix as starting point, if no better guess is available, typically works fine. 
@@ -49,3 +49,20 @@ If your data samples are a list of ``pd.DataFrame`` objects where each Dataframe
      G = create_group_array(ix_exist, ix_location)
 
 Here, ``list_of_samples`` stands for your list of data samples as described above.
+
+In our repository, you can also find a `Microbiome example`_ showcasing the usage of nonconforming GGL problems.
+
+.. _Microbiome example: https://github.com/fabian-sp/GGLasso/blob/master/examples/ggl_microbiome/exp_ggl_microbiome.py
+
+
+
+Further Remarks - proximal operators
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+The ADMM for Graphical Lasso relies on the efficient computation of proximal operators, in particular for the log-determinant function and the regularization function. For a convex function :math:`f` its proximal operator is given by
+
+.. math::
+	\mathrm{prox}_f(x) = \arg \min_z f(z) + \frac{1}{2} \|z-x\|^2
+
+For solving the FGL problem with ADMM, the proximal operator of the total variation norm (TV), i.e. :math:`x\mapsto \sum_{i=1}^{N-1} |x_{i+1} - x_i|`, needs to be computed. 
+This is a case where the proximal operator is not known in closed form. An efficient algorithm for the TV-prox is Condat's algorithm [ref11]_. ``GGLasso`` contains an efficient implementation of this algorithm using ``numba``. This is implemented in ``prox_tv`` from ``gglasso.solver.ggl_helper``. Further, according to [ref7]_ and [ref6]_ we implemented the Clarke differential of this and other proximal operators (for example the :math:`\ell_1`-norm, :math:`\ell_2`-norm and a weighted sum of these norms). For details, see ``gglasso.solver.ggl_helper``.

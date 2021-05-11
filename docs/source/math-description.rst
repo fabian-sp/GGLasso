@@ -25,7 +25,13 @@ where :math:`\mathbb{S}^p_{++}` is the cone of symmetric positive definite matri
 SGL with latent variables
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-In presence of latent variables, the precision matrix of the marginal of observable variables turns out to have the structure *sparse - low rank* [ref4]_. The problem can then be formulated as  
+In presence of latent variables, the precision matrix of the marginal of observable variables turns out to have the structure *sparse - low rank* [ref4]_. 
+
+.. image:: pictures/combined.png
+  :width: 800
+  :alt: Illustration of the precision matrix
+
+The problem can then be formulated as  
 
 .. math::
    \min_{\Theta, L \in \mathbb{S}^p} - \log \det (\Theta -L) + \mathrm{Tr}(S(\Theta-L)) + \lambda_1 \|\Theta\|_{1,od} + \mu_1 \|L\|_{\star}
@@ -35,10 +41,11 @@ where :math:`\|\cdot\|_{\star}` is the nuclear norm (sum of singular values). :m
 Multiple Graphical Lasso problems (MGL)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-In many applications, compositional or temporal data is available. Hence, there has been an increased interest in estimating precision matrices for multiple instances jointly [ref2]_, [ref3]_. Mathematically, we consider :math:`K` Gaussians
+In many applications, observations of the same variables but coming from different distributions or in a temporal context are available. For example, consider gene expression data coming from cancer tissue samples and normal tissue samples [ref2]_.
+Hence, there has been an increased interest in estimating precision matrices for multiple instances jointly [ref2]_, [ref3]_. Mathematically, we consider :math:`K` Gaussians
 
 .. math::
-   \mathcal{X}^{(k)} \sim \mathcal{N}(\mu^{(k)}, \Sigma^{(k)})\in \mathbb{R}^{p}
+   \mathcal{X}^{(k)} \sim \mathcal{N}(\mu^{(k)}, \Sigma^{(k)})\in \mathbb{R}^{p}.
 
 
 Group Graphical Lasso (GGL) describes the problem of estimating precision matrices across multiple instances of the same class under the assumption that the sparsity patterns are similar.
@@ -49,7 +56,11 @@ More generally, the problem formulation of Multiple Graphical Lasso is given by
 .. math::
    \min_{\Theta}\quad \sum_{k=1}^{K} \left(-\log\det(\Theta^{(k)}) + \langle S^{(k)},  \Theta^{(k)} \rangle \right)+ \mathcal{P}(\Theta).
 
-In the above, the feasible set is the :math:`K`-fold product of :math:`\mathbb{S}^p_{++}`. We denote an element of this space :math:`\Theta =  (\Theta^{(1)}, \dots , \Theta^{(K)})`. As input, we have the empirical covariance matrices :math:`S =  (S^{(1)}, \dots , S^{(K)})` given.
+In the above, the feasible set is the :math:`K`-fold product of :math:`\mathbb{S}^p_{++}`, see an illustration below. We denote an element of this space :math:`\Theta =  (\Theta^{(1)}, \dots , \Theta^{(K)})`. As input, we have the empirical covariance matrices :math:`S =  (S^{(1)}, \dots , S^{(K)})` given.
+
+.. image:: pictures/multiple.png
+  :width: 600
+  :alt: Illustration of the precision matrix
 
 Group Graphical Lasso (GGL)
 """"""""""""""""""""""""""""""""""""""""""""""""""  
@@ -79,7 +90,7 @@ Analogous to SGL, we can extend MGL problems with latent variables.  The problem
 .. math::
    \min_{\Theta, L}\quad \sum_{k=1}^{K} \left(-\log\det(\Theta^{(k)}- L^{(k)}) + \langle S^{(k)},  \Theta^{(k)} - L^{(k)} \rangle \right)+ \mathcal{P}(\Theta) +\sum_{k=1}^{K} \mu_{1,k} \|L^{(k)}\|_{\star}.
 
-An ADMM algorithm and software is already available for FGL [ref3]_, however in [ref3]_ also the deviation of the low rank matrices is included in the penalty.
+Software is already available for FGL (with and without latent variables) in [ref3]_, however also the deviation of the low rank matrices is included in the penalty.
 
 GGL - the nonconforming case
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -121,7 +132,7 @@ References
 .. [ref8] Boyd, S., Parikh, N., Chu, E., Peleato, B., and Eckstein, J. (2011). Distributed Optimization and Statistical Learning via the Alternating Direction Method of Multipliers. Found. Trends Mach. Learn., 3(1):1–122.
 .. [ref9] Witten, D. M., Friedman, J. H., and Simon, N. (2011). New Insights and Faster Computations for the Graphical Lasso. J. Comput. Graph. Statist., 20(4):892–900.
 .. [ref10] Foygel, R. and Drton, M. (2010). Extended Bayesian Information Criteria for Gaussian Graphical Models. In Lafferty, J., Williams, C., Shawe-Taylor, J.,Zemel, R., and Culotta, A., editors, Advances in Neural Information Processing Systems, volume 23. Curran Associates, Inc.
-
+.. [ref11] Condat, L. (2013). A Direct Algorithm for 1-D Total Variation Denoising, IEEE Signal Processing Letters, vol. 20, no. 11, pp. 1054-1057.
 
 
 

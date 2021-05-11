@@ -6,14 +6,19 @@ Getting started
 Installation
 ^^^^^^^^^^^^^^^^
 
-``GGLasso`` is available on `Github`_. Clone the repository and make sure you have all requirements installed. 
-Then move to the directory and run
+``GGLasso`` is available over Pypi or `Github`_. For installation with pip, simply run 
+
+.. code-block::
+
+     pip install gglasso
+
+To install from source, clone the repository and make sure you have all requirements installed. Then move to the directory and run
 
 .. code-block::
 
      python setup.py
 
-The above code installs a package called ``gglasso`` in your Python environment. In case you want to edit the source code and use the ``gglasso`` package without re-installing, you can run instead
+This installs a package called ``gglasso`` in your Python environment. In case you want to edit the source code and use the ``gglasso`` package without re-installing, you can run instead
 
 .. code-block::
 

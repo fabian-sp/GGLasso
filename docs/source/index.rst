@@ -6,7 +6,7 @@
 Welcome to GGLasso's documentation!
 ===================================
 
-``GGLasso`` is a Python package that enables sparse inverse covariance estimation (Graphical Lasso). Moreover, it contains solvers and model selection procedures for Multiple Graphical Lasso problems such as Group and Fused Graphical Lasso.
+``GGLasso`` (stands for **G**\ eneral **G**\ raphical **Lasso**\ ) is a Python package for the estimating of sparse (or sparse plus low rank) inverse covariance matrices. Moreover, it contains solvers and model selection procedures for Multiple Graphical Lasso problems such as Group and Fused Graphical Lasso.
 
 The package is available on `Github`_ .
 
