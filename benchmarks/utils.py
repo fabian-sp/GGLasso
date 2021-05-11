@@ -242,13 +242,13 @@ def sparsity_benchmark(df=pd.DataFrame()):
 
 
 def save_dict(D=dict, name=str):
-    name = str(name) + '.pickle'
+    name = '/Users/oleg.vlasovetc/Public/GGLasso/data/synthetic/' + str(name) + '.pickle'
     with open(name, 'wb') as handle:
         pickle.dump(D, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
 
 def load_dict(dict_name=str):
-    name = str(dict_name) + '.pickle'
+    name = '/Users/oleg.vlasovetc/Public/GGLasso/data/synthetic/' + str(dict_name) + '.pickle'
     with open(name, 'rb') as handle:
         D = pickle.load(handle)
     return D

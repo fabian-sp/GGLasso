@@ -31,13 +31,13 @@ def gglasso_time(S=np.array([]), Omega_0=np.array([]), Z=dict, lambda_list=list,
                 Omega_0 = Omega_0
                 Theta_0 = Omega_0.copy()
                 X_0 = np.zeros((S.shape[0], S.shape[0]))
+                time_list = [0]
             else:
                 # to reduce the convergence time we use the results from previous iterations
                 Omega_0 = Z_i["Omega"]
                 Theta_0 = Z_i["Theta"]
                 X_0 = Z_i["X"]
 
-            time_list = []
             pars = "_tol_" + str(tol) + "_rtol_" + str(rtol) + "_p_" + str(S.shape[0]) + "_l1_" + str(l1)
             key = method + "-" + str(stop_list[0]) + pars
 
@@ -66,7 +66,7 @@ def gglasso_time(S=np.array([]), Omega_0=np.array([]), Z=dict, lambda_list=list,
                 key = str(Z_i["numC"]) + key
 
             # mean time in "n" iterations, the first iteration we skip because of numba init
-            time_dict[key] = np.mean(time_list[1:])
+            time_dict[key] = time_list[-n_iter-1:-n_iter] + np.mean(time_list[-n_iter:])
 
             cov_dict["cov_" + key] = Z_i["Omega"]
             precision_dict["precision_" + key] = Z_i["Theta"]
