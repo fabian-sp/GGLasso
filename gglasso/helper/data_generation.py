@@ -121,7 +121,7 @@ def generate_precision_matrix(p=100, M=10, style = 'powerlaw', gamma = 2.8, prob
          
     return Sigma, Theta
 
-def time_varying_power_network(p=100, K=10, M=10, scale = True, nxseed = None):
+def time_varying_power_network(p=100, K=10, M=10, scale = False, nxseed = None):
     """
     generates a power law network. The first block disappears at half-time, while the second block appears
     third block decays exponentially

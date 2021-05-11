@@ -6,7 +6,7 @@ import numpy as np
 from numpy.testing import assert_array_almost_equal
 from sklearn.covariance import GraphicalLasso
 
-from gglasso.helper.data_generation import group_power_network, time_varying_power_network,  sample_covariance_matrix
+from gglasso.helper.data_generation import group_power_network, time_varying_power_network, generate_precision_matrix, sample_covariance_matrix
 from gglasso.helper.utils import get_K_identity
 from gglasso.solver.single_admm_solver import ADMM_SGL, block_SGL, get_connected_components
 from gglasso.solver.admm_solver import ADMM_MGL
@@ -194,15 +194,10 @@ def test_SGL_scikit():
     p = 10
     N = 100
 
-    Sigma, Theta = group_power_network(p, K = 1, M = 2)
 
+    Sigma, Theta = generate_precision_matrix(p=p, M=2, style = 'erdos', gamma = 2.8, prob = 0.1, scale = False, nxseed = None)
     S, samples = sample_covariance_matrix(Sigma, N)  # sample from multivar_norm(Sigma)
     
-    # only have 1 instance, i.e. K = 1
-    S = S[0,:,:]  
-    Theta = Theta[0,:,:]
-    samples = samples[0,:,:]
-
     lambda1 = 0.01
 
     singleGL = GraphicalLasso(alpha=lambda1, tol=1e-6, max_iter=500, verbose=False)
