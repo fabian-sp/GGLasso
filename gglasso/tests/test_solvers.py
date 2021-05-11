@@ -6,7 +6,7 @@ import numpy as np
 from numpy.testing import assert_array_almost_equal
 from sklearn.covariance import GraphicalLasso
 
-from gglasso.helper.data_generation import group_power_network, time_varying_power_network,  sample_covariance_matrix
+from gglasso.helper.data_generation import group_power_network, time_varying_power_network, generate_precision_matrix, sample_covariance_matrix
 from gglasso.helper.utils import get_K_identity
 from gglasso.solver.single_admm_solver import ADMM_SGL, block_SGL, get_connected_components
 from gglasso.solver.admm_solver import ADMM_MGL
@@ -93,11 +93,11 @@ def template_extADMM_consistent(latent = False):
     # constructs the "trivial" groups, i.e. all variables present in all instances  
     G = construct_trivial_G(p, K)
     
-    solext, _ = ext_ADMM_MGL(Sdict, lambda1, lambda2/np.sqrt(K), 'GGL', Omega_0, G, tol = 1e-8, rtol = 1e-8, verbose = True, latent = latent, mu1 = 0.01)
+    solext, _ = ext_ADMM_MGL(Sdict, lambda1, lambda2/np.sqrt(K), 'GGL', Omega_0, G, tol = 1e-9, rtol = 1e-9, verbose = True, latent = latent, mu1 = 0.01)
     solext2, _ = ext_ADMM_MGL(Sdict, lambda1, lambda2/np.sqrt(K), 'GGL', Omega_0, G, stopping_criterion = 'kkt', tol = 1e-8, verbose = True, latent = latent, mu1 = 0.01)
     
     Omega_0_arr = get_K_identity(K,p)
-    solADMM, info = ADMM_MGL(S, lambda1, lambda2, 'GGL', Omega_0_arr, tol = 1e-8, rtol = 1e-8, verbose = False, latent = latent, mu1 = 0.01)
+    solADMM, info = ADMM_MGL(S, lambda1, lambda2, 'GGL', Omega_0_arr, tol = 1e-9, rtol = 1e-9, verbose = False, latent = latent, mu1 = 0.01)
     
     
     for k in np.arange(K):
@@ -194,15 +194,10 @@ def test_SGL_scikit():
     p = 10
     N = 100
 
-    Sigma, Theta = group_power_network(p, K = 1, M = 2)
 
+    Sigma, Theta = generate_precision_matrix(p=p, M=2, style = 'erdos', gamma = 2.8, prob = 0.1, scale = False, nxseed = None)
     S, samples = sample_covariance_matrix(Sigma, N)  # sample from multivar_norm(Sigma)
     
-    # only have 1 instance, i.e. K = 1
-    S = S[0,:,:]  
-    Theta = Theta[0,:,:]
-    samples = samples[0,:,:]
-
     lambda1 = 0.01
 
     singleGL = GraphicalLasso(alpha=lambda1, tol=1e-6, max_iter=500, verbose=False)

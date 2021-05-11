@@ -12,10 +12,7 @@ from .ext_admm_helper import get_K_identity as id_dict
 from ..solver.single_admm_solver import ADMM_SGL, block_SGL
 
 
-# tolerances for solving on grids (pick this smaller if there is a no-convergence-warning)
-TOL = 1e-7
-RTOL = 1e-6
-        
+      
 def lambda_parametrizer(l1 = 0.05, w2 = 0.5):
     """transforms given l1 and w2 into the respective l2"""
     a = 1/np.sqrt(2)
@@ -48,7 +45,7 @@ def lambda_grid(l1, l2 = None, w2 = None):
     return L1.squeeze(), L2.squeeze(), w2
 
 def grid_search(solver, S, N, p, reg, l1, l2 = None, w2 = None, method= 'eBIC', gamma = 0.3, \
-                G = None, latent = False, mu_range = None, ix_mu = None, verbose = False):
+                G = None, latent = False, mu_range = None, ix_mu = None, tol = 1e-7, rtol = 1e-7, verbose = False):
     """
     method for doing model selection for MGL problems using grid search and AIC/eBIC
     parameters to select: lambda1 (sparsity), lambda2 (group sparsity or total variation)
@@ -89,6 +86,10 @@ def grid_search(solver, S, N, p, reg, l1, l2 = None, w2 = None, method= 'eBIC', 
     ix_mu : array, optional
         shape (K,len(l1)). Indices for each element of l1 and each instance k which mu to choose from mu_range.
         Only needed when latent=True. Is computed by K_single_grid-method.
+    tol : float, positive, optional
+            Tolerance for the primal residual used for the solver at each grid point. The default is 1e-7.
+    rtol : float, positive, optional
+            Tolerance for the dual residual used for the solver at each grid point. The default is 1e-7.
     verbose : boolean, optional
         verbosity. The default is False.
 
@@ -134,7 +135,7 @@ def grid_search(solver, S, N, p, reg, l1, l2 = None, w2 = None, method= 'eBIC', 
     SKIP = np.zeros((grid1, grid2), dtype = bool)
     
     
-    kwargs = {'reg': reg, 'S': S, 'tol': TOL, 'rtol': RTOL, 'verbose': False, 'measure': False}
+    kwargs = {'reg': reg, 'S': S, 'tol': tol, 'rtol': rtol, 'verbose': False, 'measure': False}
     if type(S) == dict:
         K = len(S.keys())
         Omega_0 = id_dict(p)
@@ -227,7 +228,7 @@ def grid_search(solver, S, N, p, reg, l1, l2 = None, w2 = None, method= 'eBIC', 
     
     return stats, ix, curr_best
 
-def K_single_grid(S, lambda_range, N, method = 'eBIC', gamma = 0.3, latent = False, mu_range = None, use_block = True):
+def K_single_grid(S, lambda_range, N, method = 'eBIC', gamma = 0.3, latent = False, mu_range = None, use_block = True, tol = 1e-7, rtol = 1e-7):
     """
     method for doing model selection for K single Graphical Lasso problems, using grid search and AIC/eBIC
     parameters to select: lambda1 (sparsity), mu1 (lowrank, if latent=True)
@@ -255,6 +256,10 @@ def K_single_grid(S, lambda_range, N, method = 'eBIC', gamma = 0.3, latent = Fal
         grid values for mu1. Only needed when latent=True.
     use_block : boolean, optional
         whether to use ADMM on each connected component. Typically, for large and sparse graphs, this is a speedup. Only possible for latent=False.
+    tol : float, positive, optional
+            Tolerance for the primal residual used for the solver at each grid point. The default is 1e-7.
+    rtol : float, positive, optional
+            Tolerance for the dual residual used for the solver at each grid point. The default is 1e-7.
     
 
     Returns
@@ -318,7 +323,7 @@ def K_single_grid(S, lambda_range, N, method = 'eBIC', gamma = 0.3, latent = Fal
             S_k = S[k,:,:].copy()
         
         best, est_k, lr_k, stats_k = single_grid_search(S = S_k, lambda_range = lambda_range, N = N[k], method = method, gamma = gamma, \
-                                                             latent = latent, mu_range = mu_range, use_block = use_block)
+                                                             latent = latent, mu_range = mu_range, use_block = use_block, tol = tol, rtol = rtol)
         estimates[k] = est_k.copy()
         lowrank[k] = lr_k.copy()
         
@@ -401,7 +406,7 @@ def K_single_grid(S, lambda_range, N, method = 'eBIC', gamma = 0.3, latent = Fal
     return est_uniform, est_indv, statistics
 
 
-def single_grid_search(S, lambda_range, N, method = 'eBIC', gamma = 0.3, latent = False, mu_range = None, use_block = True):
+def single_grid_search(S, lambda_range, N, method = 'eBIC', gamma = 0.3, latent = False, mu_range = None, use_block = True, tol = 1e-7, rtol = 1e-7):
     """
     method for model selection for SGL problem, doing grid search and selection via eBIC or AIC
 
@@ -423,6 +428,11 @@ def single_grid_search(S, lambda_range, N, method = 'eBIC', gamma = 0.3, latent 
         range of mu1 values (low rank regularization parameter). Only needed when latent = True.
     use_block : boolean, optional
         whether to use ADMM on each connected component. Typically, for large and sparse graphs, this is a speedup. Only possible for latent=False.
+    tol : float, positive, optional
+            Tolerance for the primal residual used for the solver at each grid point. The default is 1e-7.
+    rtol : float, positive, optional
+            Tolerance for the dual residual used for the solver at each grid point. The default is 1e-7.
+    
     
     Returns
     -------
@@ -467,7 +477,7 @@ def single_grid_search(S, lambda_range, N, method = 'eBIC', gamma = 0.3, latent 
     
     RANK = np.zeros((L,M))
     
-    kwargs = {'S': S, 'Omega_0': np.eye(p), 'X_0': np.eye(p), 'tol': TOL, 'rtol': RTOL,\
+    kwargs = {'S': S, 'Omega_0': np.eye(p), 'X_0': np.eye(p), 'tol': tol, 'rtol': rtol,\
               'verbose': False, 'measure': False}
     
     estimates = np.zeros((L,M,p,p))

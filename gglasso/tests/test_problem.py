@@ -26,7 +26,7 @@ def template_problem_MGL(S, N, reg = 'GGL', latent = False, G = None):
     
     modelselectparams = dict()
     modelselectparams['lambda1_range'] = np.logspace(-3,0,4)
-    modelselectparams['w2_range'] = np.logspace(-1,-3,3)
+    modelselectparams['lambda2_range'] = np.logspace(-1,-3,3)
               
     if latent:
         modelselectparams['mu1_range'] = np.logspace(-2,0,4)
@@ -151,3 +151,29 @@ def test_SGL_latent():
     template_problem_SGL(S, N, latent = True)
     return
         
+
+def test_scaling_SGL():
+    
+    Sigma, Theta = group_power_network(p, K = 1, M = 2)
+    S, samples = sample_covariance_matrix(Sigma, N); S = S[0,:,:]  
+    
+    S2 = 10*S
+    reg_params = {'lambda1': 0.01}
+    reg_params2 = {'lambda1': 0.1}
+    
+    P = glasso_problem(S = S2, N = N, reg = None, latent = False)
+    P.set_reg_params(reg_params)
+    P.solve(tol = 1e-10, rtol = 1e-15)
+    
+    solver_params = {'rho': 10}
+        
+    P2 = glasso_problem(S = S2, N = N, reg = None, latent = False, do_scaling = False)
+    P2.set_reg_params(reg_params2)
+    P2.solve(tol = 1e-10, rtol = 1e-15, solver_params = solver_params)    
+    
+    
+    Theta = P.solution.precision_
+    Theta2 = P2.solution.precision_
+    
+    assert np.linalg.norm(Theta - Theta2)/np.linalg.norm(Theta) <= 0.02
+    

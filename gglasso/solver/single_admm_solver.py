@@ -14,26 +14,32 @@ def ADMM_SGL(S, lambda1, Omega_0, Theta_0=np.array([]), X_0=np.array([]),
              rho=1., max_iter=1000, tol=1e-7, rtol=1e-4, stopping_criterion='boyd',\
              verbose=False, measure=False, latent=False, mu1=None):
     """
-    This is an ADMM solver for the (Latent) Single Graphical Lasso problem (SGL).
-    SGL problem formulation (latent=False):
-        min_{Omega,Theta} -log det(Omega) + Tr(S*Omega) + lambda1*|Theta||_{1,od} 
-        subject to Omega = Theta
-    
-    Latent Variable SGL problem formulation (latent=True):
-        min_{Omega,Theta,L} -log det(Omega) + Tr(S*Omega) + lambda1*||Theta||_{1,od} + mu1*||L||_\star
-        subject to Omega = Theta - L
-    
+    This is an ADMM solver for the (Latent variable) Single Graphical Lasso problem (SGL).
+    If ``latent=False``, this function solves
+
+    .. math::
+       \min_{\Omega, \Theta \in \mathbb{S}^p_{++}} - \log \det \Omega + \mathrm{Tr}(S\Omega) + \lambda \|\Theta\|_{1,od}
+
+       s.t. \quad \Omega = \Theta
+
+    If ``latent=True``, this function solves
+
+    .. math::
+       \min_{\Omega, \Theta, L \in \mathbb{S}^p_{++}} - \log \det (\Omega) + \mathrm{Tr}(S \Omega) + \lambda_1 \|\Theta\|_{1,od} + \mu_1 \|L\|_{\star}
+
+       s.t. \quad \Omega = \Theta - L
+
     Note:
-        - typically, Omega_t sequence is positive definite, Theta_t sequence is sparse.
-        - in the code, X_t are the SCALED (with 1/rho) dual variables for the equality constraint. 
+        * Typically, ``sol['Omega']`` is positive definite and ``sol['Theta']`` is sparse.
+        * We use scaled ADMM, i.e. X are the scaled (with 1/rho) dual variables for the equality constraint.
     Parameters
     ----------
     S : array (p,p)
-        empirical covariance matrix. Needs to be symmetric and semipositive definite.
+        empirical covariance matrix. Needs to be symmetric and positive semidefinite.
     lambda1 : float, positive
         sparsity regularization parameter.
     Omega_0 : array (p,p)
-        starting point for the Omega variable. Choose np.eye(p) if no better starting point is known.
+        starting point for the Omega variable. Choose ``np.eye(p)`` if no better starting point is known.
     Theta_0 : array (p,p), optional
         starting point for the Theta variable. If not specified, it is set to the same as Omega_0.
     X_0 : array (p,p), optional
@@ -48,8 +54,10 @@ def ADMM_SGL(S, lambda1, Omega_0, Theta_0=np.array([]), X_0=np.array([]),
     rtol : float, positive, optional
         tolerance for the dual residual. The default is 1e-4.
     stopping_criterion : str, optional
-        'boyd': Stopping criterion after Boyd et al.
-        'kkt': KKT residual is chosen as stopping criterion. This is computationally expensive to compute.
+
+        * 'boyd': Stopping criterion after Boyd et al.
+        * 'kkt': KKT residual is chosen as stopping criterion. This is computationally expensive to compute.
+
         The default is 'boyd'.
     verbose : boolean, optional
         verbosity of the solver. The default is False.
@@ -63,14 +71,14 @@ def ADMM_SGL(S, lambda1, Omega_0, Theta_0=np.array([]), X_0=np.array([]),
     Returns
     -------
     sol : dict
-        contains the solution, i.e. Omega, Theta, X (and L if latent=True) after termination. All elements are (p,p) arrays.
+        contains the solution, i.e. Omega, Theta, X (and L if ``latent=True``) after termination. All elements are (p,p) arrays.
     info : dict
         status and measurement information from the solver.
     """
     assert Omega_0.shape == S.shape
     assert S.shape[0] == S.shape[1]
     assert lambda1 > 0
-    
+
     assert stopping_criterion in ["boyd", "kkt"]
 
     if latent:
@@ -83,7 +91,7 @@ def ADMM_SGL(S, lambda1, Omega_0, Theta_0=np.array([]), X_0=np.array([]),
 
     # initialize
     Omega_t = Omega_0.copy()
-    
+
     if len(Theta_0) == 0:
         Theta_0 = Omega_0.copy()
     if len(X_0) == 0:
@@ -96,7 +104,7 @@ def ADMM_SGL(S, lambda1, Omega_0, Theta_0=np.array([]), X_0=np.array([]),
     runtime = np.zeros(max_iter)
     residual = np.zeros(max_iter)
     status = ''
-    
+
 
     if verbose:
         print("------------ADMM Algorithm for Single Graphical Lasso----------------")
@@ -109,7 +117,7 @@ def ADMM_SGL(S, lambda1, Omega_0, Theta_0=np.array([]), X_0=np.array([]),
             hdr_fmt = "%4s\t%10s"
             out_fmt = "%4d\t%10.4g"
             print(hdr_fmt % ("iter", "kkt residual"))
-            
+
     ##################################################################
     ### MAIN LOOP STARTS
     ##################################################################
@@ -140,13 +148,13 @@ def ADMM_SGL(S, lambda1, Omega_0, Theta_0=np.array([]), X_0=np.array([]),
         if measure:
             end = time.time()
             runtime[iter_t] = end - start
-        
+
         # Stopping criterion
         if stopping_criterion == 'boyd':
             r_t,s_t,e_pri,e_dual = ADMM_stopping_criterion(Omega_t, Omega_t_1, Theta_t, L_t, X_t,\
                                                            S, rho, tol, rtol, latent)
             residual[iter_t] = max(r_t,s_t)
-            
+
             if verbose:
                 print(out_fmt % (iter_t,r_t,s_t,e_pri,e_dual))
             if (r_t <= e_pri) and  (s_t <= e_dual):
@@ -156,18 +164,18 @@ def ADMM_SGL(S, lambda1, Omega_0, Theta_0=np.array([]), X_0=np.array([]),
         elif stopping_criterion == 'kkt':
             eta_A = kkt_stopping_criterion(Omega_t, Theta_t, L_t, rho * X_t, S, lambda1, latent, mu1)
             residual[iter_t] = eta_A
-            
+
             if verbose:
                 print(out_fmt % (iter_t,eta_A))
             if eta_A <= tol:
                 status = 'optimal'
                 break
-                   
-                
+
+
     ##################################################################
     ### MAIN LOOP FINISHED
     ##################################################################
-    
+
     # retrieve status (partially optimal or max iter)
     if status != 'optimal':
         if stopping_criterion == 'boyd':
@@ -179,7 +187,7 @@ def ADMM_SGL(S, lambda1, Omega_0, Theta_0=np.array([]), X_0=np.array([]),
                 status = 'max iterations reached'
         else:
             status = 'max iterations reached'
-            
+
     print(f"ADMM terminated after {iter_t+1} iterations with status: {status}.")
 
     assert abs((Omega_t).T - Omega_t).max() <= 1e-5, "Solution is not symmetric"
@@ -249,7 +257,7 @@ def kkt_stopping_criterion(Omega, Theta, L, X, S, lambda1, latent=False, mu1=Non
         term4 = np.linalg.norm(L - proxL) / (1 + np.linalg.norm(L))
 
     residual = max(term1, term2, term3, term4)
-    
+
     return residual
 
 
@@ -263,24 +271,28 @@ def block_SGL(S, lambda1, Omega_0, Theta_0=None, X_0=None, rho=1.,
               measure=False):
     """
     This is a wrapper for solving SGL problems on connected components of the solution and solving each block separately.
-    See Witten, Friedman, Simon "NEW INSIGHTS FOR THE GRAPHICAL LASSO" for details.
-    
-    SGL problem formulation:
-        min_{Omega,Theta} -log det(Omega) + Tr(S*Omega) + lambda1*||Theta||_{1,od} 
-        subject to Omega = Theta
-        
-    NOTE:
-        -in the original paper the l1-norm is applied as well on the diagonal (here: off-diagonal) which results in a small modification.
-        -the returned solution for X is not guaranteed to be identical to the dual variable of the full solution, but can be used as starting point (e.g. in grid search)
-    
+    See Witten, Friedman, Simon "New Insights for the Graphical Lasso" for details.
+
+    It solves
+
+    .. math::
+       \min_{\Omega, \Theta \in \mathbb{S}^p_{++}} - \log \det \Omega + \mathrm{Tr}(S\Omega) + \lambda \|\Theta\|_{1,od}
+
+       s.t. \quad \Omega = \Theta
+
+
+    Note:
+        * In the original paper the l1-norm is applied as well on the diagonal (here: off-diagonal) which results in a small modification.
+        * The returned solution for X is not guaranteed to be identical to the dual variable of the full solution, but can be used as starting point (e.g. in grid search).
+
     Parameters
     ----------
     S : array (p,p)
-        empirical covariance matrix. Needs to be symmetric and semipositive definite.
+        empirical covariance matrix. Needs to be symmetric and positive semidefinite.
     lambda1 : float, positive
         sparsity regularization parameter.
     Omega_0 : array (p,p)
-        starting point for the Omega variable. Choose np.eye(p) if no better starting point is known.
+        starting point for the Omega variable. Choose ``np.eye(p)`` if no better starting point is known.
     Theta_0 : array (p,p), optional
         starting point for the Theta variable. If not specified, it is set to the same as Omega_0.
     X_0 : array (p,p), optional
@@ -295,14 +307,16 @@ def block_SGL(S, lambda1, Omega_0, Theta_0=None, X_0=None, rho=1.,
     rtol : float, positive, optional
         tolerance for the dual residual. The default is 1e-4.
     stopping_criterion : str, optional
-        'boyd': Stopping criterion after Boyd et al.
-        'kkt': KKT residual is chosen as stopping criterion. This is computationally expensive to compute.
+
+        * 'boyd': Stopping criterion after Boyd et al.
+        * 'kkt': KKT residual is chosen as stopping criterion. This is computationally expensive to compute.
+
         The default is 'boyd'.
     verbose : boolean, optional
         verbosity of the solver. The default is False.
     measure : boolean, optional
         turn on/off measurements of runtime per iteration. The default is False.
-    
+
     Returns
     -------
     sol : dict
@@ -362,7 +376,6 @@ def block_SGL(S, lambda1, Omega_0, Theta_0=None, X_0=None, rho=1.,
     sol['Omega'] = block_diag(*allOmega)[np.ix_(per1, per1)]
     sol['Theta'] = block_diag(*allTheta)[np.ix_(per1, per1)]
     sol['X'] = block_diag(*allX)[np.ix_(per1, per1)]
-    sol["numC"] = numC
 
     return sol
 

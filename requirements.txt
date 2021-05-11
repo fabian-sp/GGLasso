@@ -6,5 +6,4 @@ matplotlib
 seaborn
 networkx
 regain
-warnings
-tqdm
+decorator==4.4.2

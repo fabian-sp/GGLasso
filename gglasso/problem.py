@@ -16,75 +16,66 @@ from .helper.model_selection import grid_search, single_grid_search, K_single_gr
 assert_tol = 1e-5
 
 class glasso_problem:
+    """
+    Class for Graphical Lasso problems. After solving, you can access the estimators with ``self.solution``. See documentation of ``GGLassoEstimator`` for details.
+    
+    Important attributes which determine the problem type:
+        * ``self.multiple``: specifies if SGL or MGL.
+        * ``self.latent``: specifies if latent variables are modeled.
+        * ``self.reg``: specifies if FGL or GGL (if MGL).
+        * ``self.conforming``: specifies if all variables are present in all instances (for GGL).
+        
+    An instance of this class can be printed in order to inspect the derived problem formulation.    
+    
+    Parameters
+    ----------
+    S : 2d/3d-array or list/dict
+        Empirical covariance matrices.
+        
+        * For SGL, use 2d array of shape (p,p). 
+        * For MGL use 3d array of shape (K,p,p). 
+        * For GGL with non-conforming dimensions, use a list/dict of length K. Will be transformed to a dict with keys 1,..K.
+        
+        For MGL, each ``S[k]`` has to be symmetric and positive semidefinite.
+        Note: by default ``S`` will be scaled to correlations and scaled back after solving, see option ``do_scaling``.
+        
+    N : int or integer array of length K
+        Number of samples for each instance k=1,..,K.
+        
+    reg : str, optional
+        Type of regularization for MGL problems.
+        
+        * 'FGL' = Fused Graphical Lasso
+        * 'GGL' = Group Graphical Lasso
+        
+        The default is 'GGL'.
+        
+    reg_params : dict, optional
+        Dictionary of regularization parameters. Possible keys are:
+            
+        * ``'lambda1'``: float, positive
+        * ``'lambda2'``: float, positive
+        * ``'mu1'``: float or array of length K, positive. Only needed if ``latent = True``.
+               
+    latent : boolean, optional
+        Specify whether latent variables should be modeled.
+        
+        * ``latent = True``: inverse covariance is assumed to have form :math:`\Theta-L` (sparse - low rank).
+        * ``latent = False``: inverse covariance is assumed to have form :math:`\Theta` (sparse).
+        
+        The default is False.
+        
+    G : 3d-array of shape(2,L,K), optional
+        Only needed when dimensions are non-conforming, i.e. if number of variables is different in each instance.
+        See :ref:`Nonconforming GGL` on how to create G.
+        
+    do_scaling : boolean, optional
+        Whether to scale input S to correlations. The default is True.
+        If True, the output is re-scaled to covariances after solving. 
+
+    """
     
     def __init__(self, S, N, reg = "GGL", reg_params = None, latent = False, G = None, do_scaling = True):
-        """
-        Class for Graphical Lasso problems. After solving, you can access the estimators with self.solution. See documentation of GGLassoEstimator for details.
-        
-        - Single (SGL) and Multiple (MGL) Graphical Lasso problems can be solved via the method solve()
-        - Model selection (via grid searches) can be done via the method model_selection().
-        
-        Problem formulations:
-        SGL:
-            min_Theta -log det(Theta) + <S,Theta> + lambda1 ||Theta||_{1,od}
-            
-        latent SGL:
-            min_Theta -log det(Theta-L) + <S,Theta-L> + lambda1 ||Theta||_{1,od} + mu1 ||L||_star
-        
-        GGL:
-            min_Theta sum_{k=1}^K -log det(Theta^k) + <S^k,Theta^k> + sum_{k=1}^K lambda1 ||Theta^k||_{1,od} + sum_{i,j} lambda2 ||Theta[ij]||_2
-            where Theta[ij] is a K-dim array of all ij-entries.
-            
-        FGL:
-            min_Theta sum_{k=1}^K -log det(Theta^k) + <S^k,Theta^k> + sum_{k=1}^K lambda1 ||Theta^k||_{1,od} + sum_{k=2}^K lambda2 ||Theta^k - Theta^{k-1}||_{1,od}
-        
-        latent GGL/FGL:
-            as above but with Theta^k-L^k in neg. log-likelihood and additional term:  sum_{k=1}^K mu1^k ||L^k||_star
-        
-        Parameters
-        ----------
-        S : 2d/3d-array or list/dict
-            Empirical covariance matrices. 
-                - For SGL, use 2d array of shape (p,p). 
-                - For MGL use 3d array of shape (K,p,p). 
-                - For GGL with non-conforming dimensions, use a list/dict of length K. Will be transformed to a dict with keys 1,..K.
-            For each instance, S^k has to be symmetric and positive semidefinite.
-            Note: S will be saled to correlations and scaled back after solving.
-            
-        N : int or integer array of length K
-            Number of samples for each instance k=1,..,K.
-            
-        reg : str, optional
-            Type of regularization for MGL problems.
-            "FGL" = Fused Graphical Lasso
-            "GGL" = Group Graphical Lasso 
-            The default is "GGL".
-            
-        reg_params : dict, optional
-            dictionary of regularization parameters. Possible keys are:
-                -lambda1: float, positive
-                -lambda2, float, positive
-                -mu1: float or array of length K, positive. Only needed if latent = True.
-                   
-        latent : boolean, optional
-            Specify whether latent varaibles should be modeleld.
-            For True, inverse covariance is assumed to have form Theta-L (sparse - low rank).
-            For False, inverse covariance is assumed to have form Theta (sparse).
-            The default is False.
-            
-        G : 3d-array of shape(2,L,K), optional
-            Only needed when dimensions are non-conforming, i.e. if number of variables is different in each instance.          
-            Each row speficies the indices of one group of a variable pair. -1 stands for non-exisitng variables.
-            
-        do_scaling : boolean, optional
-            Scale input S to correlations. The default is True.
-            If True, the output is re-scaled to covariances. 
-
-        Returns
-        -------
-        None.
-
-        """
         
         self.S = S.copy()
         self.N = N
@@ -304,9 +295,19 @@ class glasso_problem:
         
     def set_reg_params(self, reg_params = None):
         """
-        reg_params : dict
-            Contains values for (a subset of) the regularization parameters lambda1, lambda2, mu1
+        Sets/updates the regularization parameters for the problem.
+        
+        Parameters
+        ----------
+        reg_params : dict, optional
+        
+            Possible keys:
+                * ``'lambda1'``: float, positive
+                * ``'lambda2'``: float, positive
+                * ``'mu1'``: float or array of length K, positive. Only needed if ``latent = True``.
+            
         """
+        
         if reg_params is None:
             reg_params = dict()
         else:
@@ -326,15 +327,12 @@ class glasso_problem:
     
     def set_start_point(self, Omega_0 = None):
         """
-
+        Set the starting point for solving the problem.
+        
         Parameters
         ----------
         Omega_0 : array or dict, optional
             Starting point for solver. Needs to be of same type as input data S. The default is None.
-
-        Returns
-        -------
-        None.
 
         """
         
@@ -350,21 +348,22 @@ class glasso_problem:
     #### SOLVING
     ##############################################
       
-    def solve(self, Omega_0 = None, solver_params = dict(), tol = 1e-5, rtol = 1e-4, solver = 'admm'):
+    def solve(self, Omega_0 = None, solver_params = dict(), tol = 1e-8, rtol = 1e-7, solver = 'admm'):
         """
         Method for solving the Graphical Lasso problem formulation.
-        After solving, an instance of GGLassoEstimator will be created and assigned to self.solution.
+        After solving, an instance of ``GGLassoEstimator`` will be created and assigned to ``self.solution``.
         
         Parameters
         ----------
         Omega_0 : 2d/3d-array or dict, optional
             Start point for solver. If not specified, identity matrix is used as a starting point.
-            For SGL, specifiy a symmetric 2d-array of shape (p,p).
-            For MGL, specifiy a symmetric (for each k) 3d-array of shape (K,p,p).
-            For non-conforming MGL, specifiy a dictionary with keys 1,...,K and symmetric 2d-arrays of shape (p^k,p^k) as values.
+            
+            * For SGL, specifiy a symmetric 2d-array of shape (p,p).
+            * For MGL, specifiy a symmetric (for each k) 3d-array of shape (K,p,p).
+            * For non-conforming MGL, specifiy a dictionary with keys 1,...,K and symmetric 2d-arrays of shape :math:`(p_k,p_k)` as values.
         
         solver_params : dict, optional
-            Parameters for the solvers. See _default_solver_params and doc of the solvers for more details.
+            Parameters for the solvers. Is given as kwargs for the solver. See doc of the solvers for more details.
             
         tol : float, optional
             Tolerance for solving. The smaller it is, the longer it will take to solve the problem. 
@@ -375,7 +374,7 @@ class glasso_problem:
             The default is 1e-4.
             
         solver : str, optional
-            Solver name. At this point, we use ADMM for all formulations. PPDNA solver might be added. 
+            Solver name. At this point, we use ADMM for all formulations.
             The default is 'admm'.
 
         Returns
@@ -444,8 +443,8 @@ class glasso_problem:
         params = dict()
         params['lambda1_range'] = np.logspace(0,-3,5)
         if self.multiple:
-            params['w2_range'] = np.logspace(-1,-3,5)
-            #params['lambda2_range'] = np.logspace(0,-3,10)
+            #params['w2_range'] = np.logspace(-1,-3,5)
+            params['lambda2_range'] = np.logspace(-1,-4,4)
             
         if self.latent:
             params['mu1_range'] = np.logspace(0,-2,5)
@@ -456,9 +455,21 @@ class glasso_problem:
     
     def set_modelselect_params(self, modelselect_params = None):
         """
+        Set the ranges of regularization parameters for the grid searches.
+        
+        Parameters
+        ----------
         modelselect_params : dict
-            Contains values for (a subset of) the grid parameters for lambda1, lambda2, mu1
+            Contains values for (a subset of) the grid parameters for :math:`\lambda_1`, :math:`\lambda_2`, :math:`\mu_1`.
+            Each dictionary value should be an array. For optimal performance sort :math:`\lambda_1` in a descending order.
+            
+            Possible dictionary keys:
+                * ``'lambda1_range'``: range for :math:`\lambda_1` parameter.
+                * ``'lambda2_range'``: range for :math:`\lambda_2` parameter.
+                * ``'mu1_range'``: range for :math:`\mu_1` parameter.
+                
         """
+        
         if modelselect_params is None:
             modelselect_params = dict()
             print("NOTE: No grid for model selection is specified and thus default values are used. A grid can be specified with the argument modelselect_params.")
@@ -472,36 +483,38 @@ class glasso_problem:
             
         return
 
-    def model_selection(self, modelselect_params = None, method = 'eBIC', gamma = 0.1):
+    def model_selection(self, modelselect_params = None, method = 'eBIC', gamma = 0.1, tol = 1e-7, rtol = 1e-7):
         """
         Method for doing model selection, i.e. trying to find the best regularization parameters.
-        An instance of GGLassoEstimator will be created and assigned to self.solution.
+        An instance of ``GGLassoEstimator`` will be created and assigned to ``self.solution``.
         
         Strategy for the different problem formulations:
-        - SGL: solve for a range of lambda1 values
-        - latent SGL: solve for a grid of lambda1, mu1 values
-        
-        - MGL: solve for a grid of lambda1, lambda2 values
-        - latent MGL: two stage approach
-            1) for each instance k=1,..,K do a grid search on lambda1/mu1 for the SGL problem
-            2) grid search for MGL problem on lambda1/lambda2. Here, for each k and each lambda1, the best mu1 value from stage 1 is used.
             
+        * SGL: solve on a path of :math:`\lambda_1` values or on a grid of :math:`(\lambda_1, \mu_1)` values if ``latent=True``. Choose the grid point where the eBIC is minimal.
+        * MGL and ``latent=False``: solve on a grid of :math:`(\lambda_1, \lambda_2)` values. Choose the grid point where the eBIC is minimal.
+        * MGL and ``latent=True``: in a first stage, solve SGL on a :math:`(\lambda_1, \mu_1)` for each instance :math:`k=1,\dots,K` independently. Then, do a grid search on :math:`(\lambda_1, \lambda_2)` values and for each :math:`\lambda_1` and each instance :math:`k=1,\dots,K` pick the :math:`\mu_1` value which had minimal eBIC in stage one. Then, pick again the grid point with minimal eBIC.
+        
         Parameters
         ----------
         modelselect_params : dict, optional
             Dictionary with (a subset of) parameters for the grid search. This allows you to specify the grid which is used.
-            See _default_modelselect_params for details.
+            Calls ``self.set_modelselect_params()``, see doc of this method for details.
         method : str, optional
             Method for choosing the best solution in the grid. 
-            Options are 'AIC' (Akaike Information criterion) and 'eBIC' (extended Bayesia information criterion after Drton et al.)
+            Options are 'AIC' (Akaike Information criterion) and 'eBIC' (extended Bayesia information criterion).
             The default is 'eBIC'.
         gamma : float, optional
-            Gamma value for eBIC. SHould be between 0 and 1. The larger gamma, the more eBIC tends to pick sparse solutions. 
+            Gamma value for eBIC. Should be between 0 and 1. The larger gamma, the more eBIC tends to pick sparse solutions. 
             The default is 0.1.
-
+        tol : float, positive, optional
+            Tolerance for the primal residual used for the solver at each grid point. The default is 1e-7.
+        rtol : float, positive, optional
+            Tolerance for the dual residual used for the solver at each grid point. The default is 1e-7.
+        
+        
         Returns
         -------
-        None.
+        Sets ``self.reg_params`` to the best regularization parameter. Diagnostics can be accessed in ``self.modelselect_stats``.
 
         """
         
@@ -517,9 +530,9 @@ class glasso_problem:
         # SINGLE GL --> GRID SEARCH lambda1/mu
         ###############################
         if not self.multiple:
-            sol, _, _, stats = single_grid_search(S = self.S, lambda_range = self.modelselect_params['lambda1_range'], N = self.N, \
+            sol, all_estimates, _, stats = single_grid_search(S = self.S, lambda_range = self.modelselect_params['lambda1_range'], N = self.N, \
                                method = method, gamma = gamma, latent = self.latent, mu_range = self.modelselect_params['mu1_range'],
-                               use_block = True)
+                               use_block = True, tol = tol, rtol = rtol)
             
             # update the regularization parameters to the best grid point
             self.set_reg_params(stats['BEST'])
@@ -537,7 +550,7 @@ class glasso_problem:
             if self.latent:
                 est_uniform, est_indv, stage1_statistics = K_single_grid(S = self.S, lambda_range = self.modelselect_params['lambda1_range'], N = self.N, method = method,\
                                                                   gamma = gamma, latent = self.latent, mu_range = self.modelselect_params['mu1_range'],
-                                                                  use_block = True)            
+                                                                  use_block = True, tol = tol, rtol= rtol)            
                 
                 ix_mu = stage1_statistics['ix_mu']
                 
@@ -554,8 +567,9 @@ class glasso_problem:
             ############################### 
     
             stats, best_ix, sol = grid_search(solver, S = self.S, N = self.N, p = self.p, reg = self.reg, l1 = self.modelselect_params['lambda1_range'], \
-                                        l2 = None, w2 = self.modelselect_params['w2_range'], method= method, gamma = gamma, \
-                                        G = self.G, latent = self.latent, mu_range = self.modelselect_params['mu1_range'], ix_mu = ix_mu, verbose = True)
+                                        l2 = self.modelselect_params['lambda2_range'], w2 = None, method= method, gamma = gamma, \
+                                        G = self.G, latent = self.latent, mu_range = self.modelselect_params['mu1_range'], ix_mu = ix_mu, \
+                                        tol = tol, rtol = rtol, verbose = False)
             
             # update the lambda1/lambda2 regularization parameters to the best grid point
             self.set_reg_params(stats['BEST'])
@@ -595,23 +609,22 @@ class glasso_problem:
 from sklearn.base import BaseEstimator
 
 class GGLassoEstimator(BaseEstimator):
-    
-    def __init__(self, S, N, p, K, multiple = True, latent = False, conforming = True):
-        """
+    """
         Estimator object for the solution to the Graphical Lasso problems. 
-        Reading as well the documentation of glasso_problem is highly recommended.
-        Attribute naming is inspired from scikit-learn.
+        Reading as well the documentation of ``glasso_problem`` is highly recommended.
+        Attribute naming is inspired by scikit-learn.
         
         Important attributes:
-            - self.precision_: The estimator for the sparse component of the precision matrix.
-            - self.lowrank_: Only relevant if latent=True. The estimator for the low-rank component of the precision matrix.
-            - self.adjacency_: Adjacency matrix of self.precision
+            
+            * ``self.precision_``: The estimator for the sparse component of the precision matrix.
+            * ``self.lowrank_``: Only relevant if ``latent=True``. The estimator for the low-rank component of the precision matrix.
+            * ``self.sample_covariance_``: Empirical covariance matrix used as input for Graphical Lasso.
             
                 
         Parameters
         ----------
         S : 2d/3d-array or dict
-            Empircial covariance matrices.
+            Empirical covariance matrices.
         N : int or integer array of length K.
             Number of samples for each instance k=1,..,K.
         p : int or array of integers
@@ -623,13 +636,11 @@ class GGLassoEstimator(BaseEstimator):
         latent : boolean, optional
             Indicates whether latent variables are modeled. 
         conforming : boolean, optional
-            Indicates whehther dimensions of MGL problem are conforming. If False, then all attributes are dictionaries with keys 1,..,K. 
-        
-        Returns
-        -------
-        None.
+            Indicates whether dimensions of MGL problem are conforming. If ``False``, then all attributes are dictionaries with keys 1,..,K. 
 
         """
+    def __init__(self, S, N, p, K, multiple = True, latent = False, conforming = True):
+        
         
         self.multiple = multiple
         self.latent = latent
@@ -663,7 +674,9 @@ class GGLassoEstimator(BaseEstimator):
         return
     
     def calc_ebic(self, gamma = 0.5):
-        
+        """
+        calculates the eBIC for a given value of :math:`\gamma`. Note that this can differ from eBIC values in model selection because of the scaling.
+        """
         if self.multiple:
             self.ebic_ = ebic(self.sample_covariance_, self.precision_, self.n_samples, gamma = gamma)          
         else:

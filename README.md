@@ -1,40 +1,55 @@
 # GGLasso
-This package contains implementations for the Multiple Graphical Lasso problem.<br>
+This package contains algorithms for solving Single and Multiple Graphical Lasso problems. Moreover, it contains the option of including latent variables.<br>
 
-## Functionalities
-1) Proximal Point methods for Group and Fused Graphical Lasso<br>
-This is the PPDNA Algorithm implemented like proposed [here](https://arxiv.org/abs/1906.04647). To use this, import `warmPPDNA` from `gglasso/solver/ppdna_solver`.<br>
+## Getting started
+Clone the repository, for example with
 
-2) ADMM methods for Group and Fused Graphical Lasso<br>
-Algorithm like proposed [here](https://arxiv.org/abs/1111.0324) with minor adaptions. To use this, import `ADMM_MGL` from `gglasso/solver/admm_solver`.<br>
+    git clone https://github.com/fabian-sp/GGLasso.git
+
+Set up the dependencies with
+
+    pip install -r requirements.txt
+
+In order to install `gglasso` in your Python environment, run
+
+    python setup.py
+
+Test your installation with 
+
+    pytest gglasso/ -v
+
+A detailled documentation and example gallery will soon be released on *Read The Docs*. See `examples/plot_basic_example` for a basic example of usage.
+
+### Advanced options
+
+If you want to install dependencies with `conda`, you can run
+
+	$ while read requirement; do conda install --yes $requirement || pip install $requirement; done < requirements.txt
+
+If you wish to install `gglasso` in developer mode, i.e. not having to reinstall `gglasso` everytime you change the source code in your local repository, run
+
+    python setup.py clean --all develop clean --all
+
+
+
+## Algorithms
+`GGLasso` contains several algorithms for Single and Multiple (i.e. Group and Fused) Graphical Lasso problems. Moreover, it allows to model latent variables (Latent variable Graphical Lasso) in order to estimate a precision matrix of for *sparse - low rank*.
+<br>
+1) ADMM for Group and Fused Graphical Lasso<br>
+The algorithm was proposed in [2] and [3]. To use this, import `ADMM_MGL` from `gglasso/solver/admm_solver`.<br>
+
+2) A Proximal Point method for Group and Fused Graphical Lasso<br>
+We implemented the PPDNA Algorithm implemented like proposed in [4]. To use this, import `warmPPDNA` from `gglasso/solver/ppdna_solver`.<br>
+
+3) ADMM for Single Graphical Lasso<br>
 
 4) ADMM method for Group Graphical Lasso where the features/variables are non-conforming<br>
 Method for problems where not all variables exist in all instances/datasets.  To use this, import `ext_ADMM_MGL` from `gglasso/solver/ext_admm_solver`.<br>
 
-5) ADMM methods for Multiple Graphical Lasso with Latent variables<br>
-Often it is beneficial to estimate precision matrices of the form "sparse - low rank". To use this, set the option `latent = True` (and provide a parameter `mu1` for the low rank penalty). This is available in both ADMM solvers.
-
-5) Model selection via grid search <br>
-Method for choosing the best regularization parameters `lambda1` and `lambda2` via choosing the minimal eBIC or AIC. To use this, import `grid_search` from `gglasso/helper/model_selection`<br>
-Furthermore, you can estimate all instances using Single Graphical Lasso problem formulation with `K_single_grid` in `gglasso/helper/model_selection`.
 
 
-
-## Setup and Experiments
-Make sure that all packages are installed or run
-
-    pip install -r requirements.txt
-
-alternatively.<br>
-If you want to install with `conda`, you can run
-
-	$ while read requirement; do conda install --yes $requirement || pip install $requirement; done < requirements.txt
-
-In order to install a local version which you want to edit, run
-
-    python setup.py clean --all develop clean --all
-
-For testing and in order to understand how to call the solvers, run `example.py`
-
-Experiments for Group and Fused GL recovery rates are in `experiments/exp_powerlaw_ggl` `experiments/exp_powerlaw_fgl`. Experiments for runtime comparison between ADMM and PPDNA are in `experiments/exp_runtime_ggl`. They use synthetic data and produce the figures shown in the thesis.<br>
-In order to run these and save the figures, set the working directory to the directory where the scripts are located.
+## References
+*  [1] Friedman, J., Hastie, T., and Tibshirani, R. (2007).  Sparse inverse covariance estimation with the Graphical Lasso. Biostatistics, 9(3):432–441.
+*  [2] Danaher, P., Wang, P., and Witten, D. M. (2013). The joint graphical lasso for inverse covariance estimation across multiple classes. Journal of the Royal Statistical Society: Series B (Statistical Methodology), 76(2):373–397.
+* [3] Tomasi, F., Tozzo, V., Salzo, S., and Verri, A. (2018). Latent Variable Time-varying Network Inference. InProceedings of the 24th ACM SIGKDD International Conference on Knowledge Discovery & Data Mining. ACM.
+* [4] Zhang, Y., Zhang, N., Sun, D., and Toh, K.-C. (2020). A proximal point dual Newton algorithm for solving group graphical Lasso problems. SIAM J. Optim., 30(3):2197–2220.

@@ -16,6 +16,7 @@ from microb_helper import load_and_transform
 from gglasso.helper.experiment_helper import surface_plot
 from gglasso.helper.utils import sparsity
 from gglasso.helper.ext_admm_helper import check_G, consensus
+from gglasso.helper.model_selection import lambda_parametrizer
 
 
 from gglasso.problem import glasso_problem
@@ -50,9 +51,12 @@ reg = 'GGL'
 # determine regularization parameter ranges
 l1 = np.logspace(0, -2, 5)
 mu1 = 2*np.logspace(1, -1, 3)
-w2 = np.logspace(-1, -4, 3)
+#w2 = np.logspace(-1, -4, 3)
+l2 = np.logspace(-2, -4, 3)
 
-modelselect_params = {'lambda1_range' : l1, 'mu1_range': mu1, 'w2_range': w2}
+
+
+modelselect_params = {'lambda1_range' : l1, 'mu1_range': mu1, 'lambda2_range': l2}
 
 # create instance of Graphical Lasso problem
 P = glasso_problem(S = S, N = num_samples, reg = "GGL", reg_params = None, latent = True, G = G, do_scaling = True)
@@ -60,7 +64,7 @@ print(P)
 
 # do model selection
 # WARNING: this will run several minutes
-P.model_selection(modelselect_params = modelselect_params, method = 'eBIC', gamma = 0.1)
+P.model_selection(modelselect_params = modelselect_params, method = 'eBIC', gamma = 0.1, tol = 1e-8, rtol = 1e-8)
 
 #%% evaluation
 

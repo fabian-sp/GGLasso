@@ -13,9 +13,9 @@ from gglasso.solver.admm_solver import ADMM_MGL
 from gglasso.solver.ppdna_solver import PPDNA, warmPPDNA
 from gglasso.helper.data_generation import group_power_network, sample_covariance_matrix
 from gglasso.helper.utils import get_K_identity
-from gglasso.helper.experiment_helper import draw_group_heatmap, plot_runtime
+from gglasso.helper.experiment_helper import draw_group_heatmap, plot_runtime, discovery_rate
 
-p = 100
+p = 500
 K = 5
 M = 10
 
@@ -28,7 +28,7 @@ draw_group_heatmap(Theta)
 #%%
 # runtime analysis ADMM vs. PPDNA on diff. sample sizes
 
-f = np.array([0.3, 0.7, 2, 20])
+f = np.array([0.3, 0.7, 2])
 vecN = (f * p).astype(int)
 
 l1 = 2e-2 * np.ones(len(f))
@@ -36,8 +36,7 @@ l2 = 2e-2 * np.ones(len(f))
 
 Omega_0 = get_K_identity(K,p)
 
-RT_ADMM = np.zeros(len(vecN))
-RT_PPA = np.zeros(len(vecN))
+
 TPR = np.zeros(len(vecN))
 FPR = np.zeros(len(vecN))
 
@@ -48,19 +47,14 @@ for j in np.arange(len(vecN)):
     
     S, sample = sample_covariance_matrix(Sigma, vecN[j])
     
-    #start = time()
     solA, infoA = ADMM_MGL(S, l1[j], l2[j], reg , Omega_0 , tol = 5e-5, stopping_criterion = 'kkt', verbose = False, measure = True)
-    #end = time()
-    #RT_ADMM[j] = end-start
     iA[j] = infoA
     
     TPR[j] = discovery_rate(solA['Theta'], Theta)['TPR']
     FPR[j] = discovery_rate(solA['Theta'], Theta)['FPR']
     
-    #start = time()
-    solP, infoP = warmPPDNA(S, l1[j], l2[j], reg, Omega_0, eps = 5e-5, eps_admm = 1e-2, verbose = False, measure = True)
-    #end = time()
-    #RT_PPA[j] = end-start
+    
+    solP, infoP = warmPPDNA(S, l1[j], l2[j], reg, Omega_0, eps = 5e-5, eps_admm = 1e-2, verbose = True, measure = True)
     iP[j] = infoP
 
 #%%
