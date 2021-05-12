@@ -21,7 +21,7 @@ from gglasso.helper.model_selection import aic, ebic
 
 p = 100
 K = 5
-N = 500
+N = 80
 M = 10
 
 reg = 'GGL'
@@ -40,7 +40,7 @@ S, sample = sample_covariance_matrix(Sigma, N)
 #
 #
 
-L1, L2, W2 = lambda_grid(num1 = 3, num2 = 9, reg = reg)
+L1, L2, W2 = lambda_grid(num1 = 3, num2 = 10, reg = reg)
 grid1 = L1.shape[0]; grid2 = L2.shape[1]
 
 ERR = np.zeros((grid1, grid2))
@@ -79,7 +79,7 @@ for g2 in np.arange(grid2):
         DFPR[g1,g2] = dr['FPR_DIFF']
         ERR[g1,g2] = error(Theta_sol, Theta)
         AIC[g1,g2] = aic(S, Theta_sol, N)
-        BIC[g1,g2] = ebic(S, Theta_sol, N, gamma = 0.3)
+        BIC[g1,g2] = ebic(S, Theta_sol, N, gamma = 0.1)
         
             
 
@@ -100,7 +100,7 @@ print("Optimal lambda values: (l1,l2) = ", (l1opt,l2opt))
 #
 #
 
-ALPHA = 2*np.logspace(start = -1, stop = -3, num = 20, base = 10)
+ALPHA = np.logspace(start = 0, stop = -2, num = 20, base = 10)
 
 FPR_GL = np.zeros(len(ALPHA))
 TPR_GL = np.zeros(len(ALPHA))
@@ -143,7 +143,7 @@ solA, infoA = ADMM_MGL(S, l1opt, l2opt, reg , Omega_0, tol = 1e-10, rtol = 1e-10
    
 fig,ax = plot_fpr_tpr(FPR, TPR, ix, ix2, FPR_GL, TPR_GL, W2)
 ax.set_xlim(-0.01, 0.1)
-ax.set_ylim(0.7,1)
+ax.set_ylim(0.3,1)
 
 fig,ax = plot_diff_fpr_tpr(DFPR, DTPR, ix, ix2, DFPR_GL, DTPR_GL, W2)
 
