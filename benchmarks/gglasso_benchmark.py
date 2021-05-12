@@ -5,7 +5,7 @@ import time
 from tqdm import trange
 
 from gglasso.solver.single_admm_solver import ADMM_SGL
-from gglasso.solver.single_admm_solver import block_SGL
+from gglasso.solver.single_admm_solver import block_SGL, get_connected_components
 
 from benchmarks.utils import benchmark_parameters, save_dict, load_dict
 
@@ -61,11 +61,13 @@ def gglasso_time(S=np.array([]), Omega_0=np.array([]), Z=dict, lambda_list=list,
                                     stopping_criterion=stop_list[0])
                     end = time.perf_counter()
                     time_list = np.append(time_list, end - start)
-                    print("{0}: {1} connected components.".format(key, Z_i["numC"]))
+                    numC, _ = get_connected_components(S, l1)
+                    print("{0}: {1} connected components.".format(key, numC))
 
             if method == "block":
                 # show number of connected components
-                key = str(Z_i["numC"]) + key
+                numC, _ = get_connected_components(S, l1)
+                key = str(numC) + key
 
             # mean time in "n" iterations, the first iteration we skip because of numba init
             time_dict[key] = float(time_list[-n_iter - 1: -n_iter] + np.mean(time_list[-n_iter:]))
