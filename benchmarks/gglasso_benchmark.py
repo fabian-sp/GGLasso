@@ -25,18 +25,20 @@ def gglasso_time(S=np.array([]), Omega_0=np.array([]), Z=dict, lambda_list=list,
     for method, tol, rtol in itertools.product(method_list, tol_list, rtol_list):
 
         i = 0
+        t = dict()  # dictionary for keeping the time from the previous iteration
         for l1 in lambda_list:
 
             if i == 0:
                 Omega_0 = Omega_0
                 Theta_0 = Omega_0.copy()
                 X_0 = np.zeros((S.shape[0], S.shape[0]))
-                time_list = [0]
+                time_list = np.array([0])
             else:
                 # to reduce the convergence time we use the results from previous iterations
                 Omega_0 = Z_i["Omega"]
                 Theta_0 = Z_i["Theta"]
                 X_0 = Z_i["X"]
+                time_list = t[i - 1]
 
             pars = "_tol_" + str(tol) + "_rtol_" + str(rtol) + "_p_" + str(S.shape[0]) + "_l1_" + str(l1)
             key = method + "-" + str(stop_list[0]) + pars
@@ -49,7 +51,7 @@ def gglasso_time(S=np.array([]), Omega_0=np.array([]), Z=dict, lambda_list=list,
                                          max_iter=max_iter, tol=tol, rtol=rtol,
                                          stopping_criterion=stop_list[0])
                     end = time.perf_counter()
-                    time_list.append(end - start)
+                    time_list = np.append(time_list, end - start)
 
                 elif method == "block":
                     start = time.perf_counter()
@@ -58,7 +60,7 @@ def gglasso_time(S=np.array([]), Omega_0=np.array([]), Z=dict, lambda_list=list,
                                     max_iter=max_iter, tol=tol, rtol=rtol,
                                     stopping_criterion=stop_list[0])
                     end = time.perf_counter()
-                    time_list.append(end - start)
+                    time_list = np.append(time_list, end - start)
                     print("{0}: {1} connected components.".format(key, Z_i["numC"]))
 
             if method == "block":
@@ -66,7 +68,8 @@ def gglasso_time(S=np.array([]), Omega_0=np.array([]), Z=dict, lambda_list=list,
                 key = str(Z_i["numC"]) + key
 
             # mean time in "n" iterations, the first iteration we skip because of numba init
-            time_dict[key] = time_list[-n_iter-1:-n_iter] + np.mean(time_list[-n_iter:])
+            time_dict[key] = float(time_list[-n_iter - 1: -n_iter] + np.mean(time_list[-n_iter:]))
+            t[i] = time_list[-n_iter - 1: -n_iter] + np.mean(time_list[-n_iter:])
 
             cov_dict["cov_" + key] = Z_i["Omega"]
             precision_dict["precision_" + key] = Z_i["Theta"]
@@ -114,4 +117,3 @@ if __name__ == "__main__":
     save_dict(D=time_dict, name="gglasso_time_dict")
     save_dict(D=accuracy_dict, name="gglasso_acc_dict")
     save_dict(D=trace_dict, name="gglasso_trace_dict")
-

@@ -6,6 +6,7 @@ import pandas as pd
 import numpy as np
 import pickle
 import time
+import os
 
 from gglasso.helper.utils import hamming_distance
 from gglasso.helper.data_generation import group_power_network, sample_covariance_matrix
@@ -242,13 +243,13 @@ def sparsity_benchmark(df=pd.DataFrame()):
 
 
 def save_dict(D=dict, name=str):
-    name = '/Users/oleg.vlasovetc/Public/GGLasso/data/synthetic/' + str(name) + '.pickle'
-    with open(name, 'wb') as handle:
+    name = os.getcwd() + '/data/synthetic/' + str(name) + '.pickle'
+    with open(os.path.expanduser(name), 'wb') as handle:
         pickle.dump(D, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
 
 def load_dict(dict_name=str):
-    name = '/Users/oleg.vlasovetc/Public/GGLasso/data/synthetic/' + str(dict_name) + '.pickle'
-    with open(name, 'rb') as handle:
+    name = os.getcwd() + '/data/synthetic/' + str(dict_name) + '.pickle'
+    with open(os.path.expanduser(name), 'rb') as handle:
         D = pickle.load(handle)
     return D

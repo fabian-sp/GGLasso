@@ -21,16 +21,18 @@ def regain_time(X=np.array([]), Z=dict, rg_params=dict, lambda_list=list, n_iter
     for tol, rtol in itertools.product(tol_list, rtol_list):
 
         i = 0
+        t = dict()
         for l1 in lambda_list:
 
             if i == 0:
                 model = rg_GL(alpha=l1, tol=tol, rtol=rtol, max_iter=max_iter,
                               assume_centered=False, init=np.eye(X.shape[1]), verbose=True)
-                time_list = [0]
+                time_list = np.array([0])
             else:
                 # to reduce the convergence time we use the results from previous iterations
                 model = rg_GL(alpha=l1, tol=tol, rtol=rtol, max_iter=max_iter,
                               assume_centered=False, init=Z_i.precision_, verbose=True)
+                time_list = t[i - 1]
 
             key = "regain" + "_tol_" + str(tol) + "_rtol_" + str(rtol) + "_p_" + str(X.shape[1]) + "_l1_" + str(l1)
 
@@ -39,9 +41,10 @@ def regain_time(X=np.array([]), Z=dict, rg_params=dict, lambda_list=list, n_iter
                 Z_i = model.fit(X)
                 end = time.perf_counter()
 
-                time_list.append(end - start)
+                time_list = np.append(time_list, end - start)
 
-            time_dict[key] = time_list[-n_iter-1:-n_iter] + np.mean(time_list[-n_iter:])
+            time_dict[key] = float(time_list[-n_iter - 1: -n_iter] + np.mean(time_list[-n_iter:]))
+            t[i] = time_list[-n_iter - 1: -n_iter] + np.mean(time_list[-n_iter:])
 
             cov_dict["cov_" + key] = Z_i.covariance_
             precision_dict["precision_" + key] = Z_i.precision_
