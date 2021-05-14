@@ -6,6 +6,8 @@ import pandas as pd
 from numpy.testing import assert_array_almost_equal
 
 from gglasso.helper.utils import hamming_distance, sparsity, mean_sparsity, deviation, get_K_identity
+from gglasso.helper.utils import zero_replacement, normalize, log_transform
+
 from gglasso.helper.basic_linalg import scale_array_by_diagonal
 from gglasso.helper.ext_admm_helper import get_K_identity as id_dict
 from gglasso.helper.ext_admm_helper import construct_indexer, create_group_array, check_G, consensus
@@ -110,9 +112,28 @@ def test_create_G():
 
     return
     
-        
-        
-        
+def test_clr_functions():
+    N = 100
+    p = 200
+    X = np.random.randint(0,100,(p,N))
+    
+    # create some zeros
+    X[X%4==1] = 0
+    
+    X = pd.DataFrame(X)
+    
+    # after clr trasnform, 
+    X = zero_replacement(X)
+    X = normalize(X)
+    
+    # after normalizing each sample is a point on the simplex
+    assert_array_almost_equal(X.sum(axis=0).values, np.ones(N, float))
+    
+    # after log transform, sum of components = 0 for each sample
+    X = log_transform(X)
+    assert_array_almost_equal(X.sum(axis=0).values, np.zeros(N, float))
+    
+    return
         
         
         
