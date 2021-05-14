@@ -7,3 +7,6 @@ seaborn
 networkx
 regain
 decorator==4.4.2
+sphinx
+sphinx-gallery
+sphinx_rtd_theme
