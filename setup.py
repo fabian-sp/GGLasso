@@ -17,7 +17,14 @@ REQUIRED = [
     "matplotlib", "seaborn", "networkx", "regain", "decorator==4.4.2"]
 
 # What packages are optional?
-EXTRAS = {}
+EXTRAS = {
+        "tests": ["pytest", "pytest-cov"],
+        "docs": [
+            "sphinx",
+            "sphinx-gallery",
+            "sphinx_rtd_theme",
+        ],
+    }
 
 here = os.path.abspath(os.path.dirname(__file__))
 
