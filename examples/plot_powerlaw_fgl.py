@@ -137,7 +137,7 @@ all_res = list()
 
 for j in range(len(ALPHA)):
     res = np.zeros((K,p,p))
-    singleGL = GraphicalLasso(alpha = ALPHA[j], tol = 1e-6, max_iter = 200, verbose = False)
+    singleGL = GraphicalLasso(alpha = ALPHA[j], tol = 1e-3, max_iter = 20, verbose = False)
     for k in np.arange(K):
         model = singleGL.fit(sample[k,:,:].T)
         res[k,:,:] = model.precision_
@@ -174,7 +174,7 @@ tmp = sample.transpose(1,0,2).reshape(p,-1).T
 
 start = time()
 ltgl = TimeGraphicalLasso(alpha = N*l1opt, beta = N*l2opt  , psi = 'l1', \
-                          rho = 1., tol = 1e-10, rtol = 1e-10,  max_iter = 500, verbose = False)
+                          rho = 1., tol = 1e-5, rtol = 1e-5,  max_iter = 500, verbose = False)
 ltgl = ltgl.fit(X = tmp, y = np.repeat(np.arange(K),N))
 end = time()
 
