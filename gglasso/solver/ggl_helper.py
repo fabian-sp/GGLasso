@@ -326,9 +326,10 @@ def phiminus(beta, D, Q):
 
 @njit() 
 def moreau_h(beta, D, Q):
-    # returns the Moreau_Yosida reg. value as well as the proximal map of beta*h
-    # D: array (p,p)
-    # Q: array (p,p)
+    """returns the Moreau_Yosida reg. value as well as the proximal map of beta*h
+    D: array (p,p)
+    Q: array (p,p)
+    """
     
     pp = phiplus(beta, D, Q)
     pm = phiminus(beta, D, Q)
@@ -336,7 +337,8 @@ def moreau_h(beta, D, Q):
     return psi, pp, pm
 
 
-@njit() 
+#@njit()
+# tile is not numba supported, could be replaced by repeat+reshape
 def construct_gamma(A, beta, D = np.array([]), Q = np.array([])):
     (K,p,p) = A.shape
     Gamma = np.zeros((K,p,p))
@@ -347,12 +349,20 @@ def construct_gamma(A, beta, D = np.array([]), Q = np.array([])):
     for k in np.arange(K):
         phip_d = phip(D[k,:] , beta) 
         
-        for i in np.arange(p):
-            for j in np.arange(p):    
+        # for i in np.arange(p):
+        #     for j in np.arange(p):    
                 
-                denom = np.sqrt(D[k,i]**2 + 4* beta) + np.sqrt(D[k,j]**2 + 4* beta)
-                Gamma[k,i,j] = (phip_d[i] + phip_d[j]) / denom
-                      
+        #         denom = np.sqrt(D[k,i]**2 + 4* beta) + np.sqrt(D[k,j]**2 + 4* beta)
+        #         Gamma[k,i,j] = (phip_d[i] + phip_d[j]) / denom
+            
+        h1 = np.tile(np.sqrt(D[k,:]**2 + 4* beta), (p,1))
+        h1 = h1 + h1.T 
+        
+        h2 = np.tile(phip_d, (p,1))
+        h2 = h2 + h2.T 
+        
+        Gamma[k,:,:] =  h2/h1
+        
     return Gamma
 
 # old version

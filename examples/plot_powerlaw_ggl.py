@@ -100,7 +100,7 @@ print("Optimal lambda values: (l1,l2) = ", (l1opt,l2opt))
 #
 #
 
-ALPHA = np.logspace(start = 0, stop = -2, num = 20, base = 10)
+ALPHA = np.logspace(start = 0, stop = -1.5, num = 15, base = 10)
 
 FPR_GL = np.zeros(len(ALPHA))
 TPR_GL = np.zeros(len(ALPHA))
@@ -108,7 +108,7 @@ DFPR_GL = np.zeros(len(ALPHA))
 DTPR_GL = np.zeros(len(ALPHA))
 
 for a in np.arange(len(ALPHA)):
-    singleGL = GraphicalLasso(alpha = ALPHA[a], tol = 1e-6, max_iter = 200, verbose = False)
+    singleGL = GraphicalLasso(alpha = ALPHA[a], tol = 1e-4, max_iter = 50, verbose = False)
     singleGL_sol = np.zeros((K,p,p))
     for k in np.arange(K):
         model = singleGL.fit(sample[k,:,:].T)

@@ -15,7 +15,7 @@ from gglasso.helper.data_generation import group_power_network, sample_covarianc
 from gglasso.helper.utils import get_K_identity
 from gglasso.helper.experiment_helper import draw_group_heatmap, plot_runtime, discovery_rate
 
-p = 500
+p = 100
 K = 5
 M = 10
 
@@ -28,7 +28,7 @@ draw_group_heatmap(Theta)
 #%%
 # runtime analysis ADMM vs. PPDNA on diff. sample sizes
 
-f = np.array([0.3, 0.7, 2])
+f = np.array([0.1, 0.3, 0.7, 1.5])
 vecN = (f * p).astype(int)
 
 l1 = 2e-2 * np.ones(len(f))
