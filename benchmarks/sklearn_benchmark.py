@@ -7,7 +7,7 @@ from tqdm import trange
 from sklearn.covariance import GraphicalLasso as sk_GL
 from sklearn import set_config
 
-from benchmarks.utils import benchmark_parameters, save_dict, load_dict
+from benchmarks.utilita import benchmark_parameters, save_dict, load_dict
 
 set_config(print_changed_only=False)
 

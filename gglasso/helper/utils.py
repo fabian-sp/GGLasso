@@ -61,3 +61,35 @@ def deviation(Theta):
         d[k] = l1norm_od(Theta[k+1,:,:] - Theta[k,:,:]) / l1norm_od(Theta[k,:,:])
         
     return d
+
+#%% utils for microbiome count data --> clr transform with zero replacement
+
+def geometric_mean(x):
+    """
+    calculates the geometric mean of a vector
+    """
+    a = np.log(x)
+    return np.exp(a.sum()/len(a))
+
+def zero_replacement(X, c = 0.5):
+    """
+    replaces zeros with a constant value c
+    """
+    Z = X.replace(to_replace = 0, value = c)
+    return Z
+
+def normalize(X):
+    """
+    transforms to the simplex
+    X should be of a pd.DataFrame of form (p,N)
+    """
+    return X / X.sum(axis=0)
+
+def log_transform(X):
+    """
+    log transform, scaled with geometric mean
+    X should be a pd.DataFrame of form (p,N)
+    """
+    g = X.apply(geometric_mean)
+    Z = np.log(X / g)
+    return Z

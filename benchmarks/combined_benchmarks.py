@@ -4,7 +4,7 @@ from benchmarks.regain_benchmark import regain_time
 from benchmarks.sklearn_benchmark import sklearn_time
 from benchmarks.gglasso_benchmark import gglasso_time
 
-from benchmarks.utils import model_solution
+from benchmarks.utilita import model_solution
 
 
 def time_benchmarks(X=list, S=list, lambda_list=list, max_iter=50000, Z_model=str,

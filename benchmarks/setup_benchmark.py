@@ -1,7 +1,7 @@
 import time
 import itertools
 
-from benchmarks.utils import network_generation, save_dict, model_solution
+from benchmarks.utilita import network_generation, save_dict, model_solution
 
 
 def build_datasets(p_list=list, N_list=list):

@@ -11,10 +11,14 @@ import os
 from gglasso.helper.utils import hamming_distance
 from gglasso.helper.data_generation import group_power_network, sample_covariance_matrix
 
+from gglasso.solver.single_admm_solver import ADMM_SGL
+from gglasso.solver.single_admm_solver import block_SGL, get_connected_components
+
 from regain.covariance import GraphicalLasso as rg_GL
 
 from sklearn.covariance import GraphicalLasso as sk_GL
 from sklearn import set_config
+
 set_config(print_changed_only=False)
 
 
@@ -48,7 +52,7 @@ def benchmark_parameters(sk_tol_list=[0.5], enet_list=[0.5],
                          rg_tol_list=[1e-4, 1e-5, 1e-6], rg_rtol_list=[1e-3, 1e-4, 1e-5],
                          gglasso_tol_list=[1e-6, 1e-7, 1e-8], gglasso_rtol_list=[1e-5, 1e-6, 1e-7],
                          gglasso_stop=['boyd'], gglasso_method=['single', 'block'],
-                         lambda_list = [0.5, 0.1, 0.05]):
+                         lambda_list=[0.5, 0.1, 0.05]):
     """
     Specify model hyperparameters.
     :param S_dict:
@@ -253,3 +257,14 @@ def load_dict(dict_name=str):
     with open(os.path.expanduser(name), 'rb') as handle:
         D = pickle.load(handle)
     return D
+
+
+def numba_warmup(S=np.array([]), Omega_0=np.array([]), l1=0.5, tol=1e-1, rtol=1e-1, stopping_criterion='boyd',
+                 n_iter=5, max_iter=100):
+    for i in range(0, n_iter):
+        Z_s, info = ADMM_SGL(S, lambda1=l1, Omega_0=Omega_0, Theta_0=Omega_0, X_0=Omega_0,
+                             max_iter=max_iter, tol=tol, rtol=rtol, stopping_criterion=stopping_criterion)
+        Z_b = block_SGL(S, lambda1=l1, Omega_0=Omega_0, Theta_0=Omega_0, X_0=Omega_0,
+                        max_iter=max_iter, tol=tol, rtol=rtol, stopping_criterion='boyd')
+    result = "Numba has been succesfully initiated"
+    return result
