@@ -41,8 +41,6 @@ def plot_accuracy(df=pd.DataFrame(), upper_bound=float, lower_bound=float):
 
     return fig
 
-    return fig
-
 
 def plot_scalability(df=pd.DataFrame()):
     """
