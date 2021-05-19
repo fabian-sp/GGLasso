@@ -16,8 +16,8 @@ import matplotlib.pyplot as plt
 import time
 
 
-p = 150
-N = 150
+p = 100
+N = 100
 
 lambda1 = 0.1
 lambda2 = 0.05

@@ -1,9 +1,13 @@
 numpy>=1.17.3
 numba>=0.46.0
 scipy>=0.11.0
+scikit-learn>=0.24.1
 pandas
 matplotlib
 seaborn
 networkx
 regain
 decorator==4.4.2
+sphinx==3.5.4
+sphinx-gallery==0.8.2
+sphinx_rtd_theme==0.5.2

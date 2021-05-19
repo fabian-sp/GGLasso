@@ -9,7 +9,7 @@ import time
 import os
 
 from gglasso.helper.utils import hamming_distance
-from gglasso.helper.data_generation import group_power_network, sample_covariance_matrix
+from gglasso.helper.data_generation import generate_precision_matrix, sample_covariance_matrix
 
 from gglasso.solver.single_admm_solver import ADMM_SGL
 from gglasso.solver.single_admm_solver import block_SGL, get_connected_components
@@ -22,15 +22,13 @@ from sklearn import set_config
 set_config(print_changed_only=False)
 
 
-def network_generation(p=int, N=int, K=1, M=int):
+def network_generation(p=int, N=int, M=10, style='powerlaw', gamma=2.8, prob=0.1, scale=False, nxseed=None):
     """
     Generates a law-power network with number of connected components bigger than 1.
     :param p: int
     Number of features.
     :param N: int
     Number of samples.
-    :param K: int, default: ‘1’
-    Number of instances with p features and N samples.
     :param M: int
     Number of subblock in each instance K.
     :return: S, X, Theta
@@ -38,12 +36,9 @@ def network_generation(p=int, N=int, K=1, M=int):
     X - dual variable.
     Theta - true precision matrix.
     """
-    Sigma, Theta = group_power_network(p, K=K, M=M)
+    Sigma, Theta = generate_precision_matrix(p=p, M=M, style=style, gamma=gamma, prob=prob, scale=scale, nxseed=nxseed)
     S, samples = sample_covariance_matrix(Sigma, N)
-
-    S = S[0, :, :]
-    Theta = Theta[0, :, :]
-    X = samples[0, :, :].T
+    X = samples.T
 
     return S, X, Theta
 
