@@ -75,7 +75,7 @@ class glasso_problem:
 
     """
     
-    def __init__(self, S, N, reg = "GGL", reg_params = None, latent = False, G = None, do_scaling = True):
+    def __init__(self, S, N, reg = "GGL", reg_params = None, latent = False, G = None, do_scaling = False):
         
         self.S = S.copy()
         self.N = N
@@ -420,8 +420,9 @@ class glasso_problem:
  
         # rescale
         if self.do_scaling:
-            #print("Diagonal of solution before rescaling:", np.diag(sol['Theta']))
             sol['Theta'] = self._rescale_to_covariances(sol['Theta'], self._scale)
+            if self.latent:
+                sol['L'] = self._rescale_to_covariances(sol['L'], self._scale)
         
             
         # set the computed solution
@@ -585,9 +586,9 @@ class glasso_problem:
             
         # rescale
         if self.do_scaling:
-            #print("Diagonal of solution before rescaling:", np.diag(sol['Theta']))
             sol['Theta'] = self._rescale_to_covariances(sol['Theta'], self._scale)
-        
+            if self.latent:
+                sol['L'] = self._rescale_to_covariances(sol['L'], self._scale)
             
         # set the computed solution
         if self.latent:
