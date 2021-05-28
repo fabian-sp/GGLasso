@@ -1,7 +1,7 @@
 # GGLasso
 This package contains algorithms for solving Single and Multiple Graphical Lasso problems. Moreover, it contains the option of including latent variables.<br>
 
-[Docs](https://gglasso.readthedocs.io/en/latest/) | [Examples] (https://gglasso.readthedocs.io/en/latest/auto_examples/index.html)
+[Docs](https://gglasso.readthedocs.io/en/latest/) | [Examples](https://gglasso.readthedocs.io/en/latest/auto_examples/index.html)
 
 ## Getting started
 Clone the repository, for example with
