@@ -134,8 +134,7 @@ def benchmarks_dataframe(times=dict, acc_dict=dict, spars_dict=dict):
     # The time measured during the grid search of best hyperparameters for the models
     df = pd.DataFrame(data={'name': list(times.keys()),
                             'time': list(times.values()),
-                            "accuracy": list(acc_dict.values()),
-                            "hamming": list(spars_dict.values())})
+                            "accuracy": list(acc_dict.values())})
 
     df['split'] = df['name'].str.split('_')
     columns_names = ["method", "tol_str", "tol", "rtol_str", "rtol", "p_str", "p", "l1_str", "l1"]
@@ -147,9 +146,17 @@ def benchmarks_dataframe(times=dict, acc_dict=dict, spars_dict=dict):
     convert_dict = {'tol': float, 'rtol': float, "p": int, "l1": float}
     df = df.astype(convert_dict)
     df['method_str'] = df['method'].str.replace('\d+', '')
-    df = df.sort_values(by=['time'])
 
-    return df
+    df_dist = pd.DataFrame(data={'name': list(spars_dict.keys()),
+                                 "hamming": list(spars_dict.values())})
+
+    df_dist['name'] = df_dist['name'].str.replace('precision_', '')
+
+    final = pd.merge(df, df_dist, how='inner', on='name')
+
+    final = final.sort_values(by=['time'])
+
+    return final
 
 
 def best_time_dataframe(best_time=dict):
@@ -172,7 +179,7 @@ def best_time_dataframe(best_time=dict):
 
     convert_dict = {"p": int, "N": int}
     time_df = time_df.astype(convert_dict)
-    time_df.sort_values(by=['time'])
+    time_df.sort_values(by=['time'], ignore_index=True)
 
     return time_df
 
@@ -224,7 +231,7 @@ def hamming_dict(Theta_dict=dict, Z_dict=dict, t_rounding=float):
 
 
 def sparsity_benchmark(df=pd.DataFrame()):
-    for i in ['method', 'accuracy', 'p', 'hamming']:
+    for i in ['method_str', 'accuracy', 'p', 'hamming']:
         assert i in df.columns
 
     spar_df = df[(df["accuracy"] < 0.01) & (df["accuracy"] > 0.0001)]
@@ -232,8 +239,8 @@ def sparsity_benchmark(df=pd.DataFrame()):
     names = dict()
     frames = dict()
     for p in spar_df["p"].unique():
-        for method in spar_df["method"].unique():
-            names[method] = spar_df[(spar_df["p"] == p) & (spar_df["method"] == method)]["hamming"].min()
+        for method in spar_df["method_str"].unique():
+            names[method] = spar_df[(spar_df["p"] == p) & (spar_df["method_str"] == method)]["hamming"].min()
         frame = pd.DataFrame(names.items(), columns=['method', 'min_hamming'])
         frame = frame.sort_values(by='min_hamming', ascending=True)
         frames[p] = frame.reset_index(drop=True)

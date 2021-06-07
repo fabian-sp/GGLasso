@@ -5,7 +5,7 @@ import plotly.express as px
 import pandas as pd
 
 
-def plot_accuracy(df=pd.DataFrame(), upper_bound=float, lower_bound=float):
+def plot_accuracy(df=pd.DataFrame(), upper_bound=float, lower_bound=float, lambda_filter=float):
     """
     Plot how accurate the solution of a model with particular hyperparameters
     comparing with the model solution Z.
@@ -19,7 +19,7 @@ def plot_accuracy(df=pd.DataFrame(), upper_bound=float, lower_bound=float):
     df = df.sort_values(by=['p', 'time'])
 
     # filter by lambda
-    df = df[df["l1"] == 0.1]
+    df = df[df["l1"] == lambda_filter]
 
     color_discrete_map = {'block-boyd': '#FF0000', 'regain': '#32CD32',
                           'single-boyd': '#FF8C00', 'sklearn': '#0000FF'}
@@ -33,7 +33,8 @@ def plot_accuracy(df=pd.DataFrame(), upper_bound=float, lower_bound=float):
                          "method": "method"
                      },
                      template="plotly_white",
-                     title="ADMM performance benchmark.<br>Accuracy is between 0.01 and 0.0001")
+                     title="ADMM performance benchmark at lambda={0}.<br>"
+                           "Accuracy is between {1} and {2}".format(upper_bound, lower_bound, lambda_filter))
 
     fig.update_traces(mode='markers+lines', marker_line_width=1, marker_size=10)
     fig.update_xaxes(matches=None)
@@ -68,7 +69,9 @@ def plot_scalability(df=pd.DataFrame()):
 
 def plot_lambdas(df=pd.DataFrame(), upper_bound=float, lower_bound=float):
     df = df[(df["accuracy"] < upper_bound) & (df["accuracy"] > lower_bound)]
-    df = df.groupby(['method_str', "p", "l1"], as_index=False)['time'].mean()
+
+    df = df.groupby(['method_str', "p", "l1"], as_index=False)['time'].min()
+
     color_discrete_map = {'block-boyd': '#FF0000', 'regain': '#32CD32',
                           'single-boyd': '#FF8C00', 'sklearn': '#0000FF'}
 
@@ -80,7 +83,8 @@ def plot_lambdas(df=pd.DataFrame(), upper_bound=float, lower_bound=float):
                          "method": "method"
                      },
                      template="plotly_white",
-                     title="Scalability of ADMM with different lambdas.<br>Accuracy is between 0.01 and 0.0001")
+                     title="Scalability of ADMM with different lambdas.<br>"
+                           "Accuracy is between {0} and {1}".format(upper_bound, lower_bound))
 
     fig.update_traces(mode='markers+lines', marker_line_width=1, marker_size=10)
     # fig.update_annotations(text="Accuracy is between 0.01 and 0.0001")

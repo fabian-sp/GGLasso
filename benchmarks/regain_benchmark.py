@@ -49,15 +49,15 @@ def regain_time(X=np.array([]), Z=dict, rg_params=dict, lambda_list=list, n_iter
                 time_list.append(end - start)
 
             if warm_start:
-                # mean time in "n" iterations, the first iteration we skip because of numba init
+                # min time in "n" iterations, the first iteration we skip because of numba init
                 if i == 0:
-                    time_dict[key] = np.mean(time_list)
-                    t[i] = np.mean(time_list)
+                    time_dict[key] = min(time_list)
+                    t[i] = min(time_list)
                 else:
-                    time_dict[key] = float(time_list[-n_iter - 1: -n_iter] + np.mean(time_list[-n_iter:]))
-                    t[i] = time_list[-n_iter - 1: -n_iter] + np.mean(time_list[-n_iter:])
+                    time_dict[key] = float(time_list[-n_iter - 1: -n_iter] + min(time_list[-n_iter:]))
+                    t[i] = time_list[-n_iter - 1: -n_iter] + min(time_list[-n_iter:])
             else:
-                time_dict[key] = np.mean(time_list)
+                time_dict[key] = min(time_list)
 
             cov_dict["cov_" + key] = Z_i.covariance_
             precision_dict["precision_" + key] = Z_i.precision_

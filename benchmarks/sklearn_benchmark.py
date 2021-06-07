@@ -35,7 +35,7 @@ def sklearn_time(X=np.array([]), Z=dict, sk_params=dict, lambda_list=list, n_ite
 
             time_list.append(end - start)
 
-        time_dict[key] = np.mean(time_list)
+        time_dict[key] = min(time_list)
 
         cov_dict["cov_" + key] = Z_i.covariance_
         precision_dict["precision_" + key] = Z_i.precision_
