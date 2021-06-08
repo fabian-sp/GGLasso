@@ -12,7 +12,7 @@ from benchmarks.utilita import benchmark_parameters, save_dict, load_dict
 set_config(print_changed_only=False)
 
 
-def sklearn_time(X=np.array([]), Z=dict, sk_params=dict, lambda_list=list, n_iter=int, max_iter=100):
+def sklearn_time(X=np.array([]), Z=dict, sk_params=dict, lambda_list=list, n_iter=int, max_iter=300):
     
     precision_dict = dict()
     time_dict = dict()

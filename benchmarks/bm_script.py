@@ -1,5 +1,6 @@
 import numpy as np
 import pandas as pd
+import matplotlib.pyplot as plt
 import time
 from itertools import product
 
@@ -10,7 +11,6 @@ from gglasso_benchmark import gglasso_time
 
 from utilita import network_generation, model_solution, benchmark_parameters 
 from utilita import sparsity_benchmark, dict_shape, calc_hamming_dict
-from utilita import benchmarks_dataframe,  drop_acc_duplicates
 
 from plots import plot_accuracy, plot_scalability, plot_lambdas
 
