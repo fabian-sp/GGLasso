@@ -20,7 +20,7 @@ def plot_accuracy(df=pd.DataFrame(), upper_bound=float, lower_bound=float, lambd
 
     # filter by lambda
     df = df[df["l1"] == lambda_filter]
-    df = df.sort_values(by=['p', 'time'])
+    df = df.sort_values(by=['p', 'accuracy'])
 
     color_discrete_map = {'block-boyd': '#FF0000', 'regain': '#32CD32',
                           'single-boyd': '#FF8C00', 'sklearn': '#0000FF'}

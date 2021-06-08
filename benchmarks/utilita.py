@@ -129,7 +129,8 @@ def calc_hamming_dict(Theta_dict=dict, Z_dict=dict, t_rounding=float):
 
         for key, Z in Z_dict.items():
             key_p = int(key.split('_p_')[1].split('_')[0])
-            if keyT[0] == key_p:
+            key_N = int(key.split('_N_')[1].split('_')[0])
+            if (keyT[0] == key_p) and (keyT[1] == key_N):
                 sparsity_dict[key] = hamming_distance(Theta, Z, t=t_rounding)
 
     return sparsity_dict
