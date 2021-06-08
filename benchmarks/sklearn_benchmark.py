@@ -12,8 +12,8 @@ from benchmarks.utilita import benchmark_parameters, save_dict, load_dict
 set_config(print_changed_only=False)
 
 
-def sklearn_time(X=np.array([]), Z=dict, sk_params=dict, lambda_list=list, n_iter=int, max_iter=50000):
-    cov_dict = dict()
+def sklearn_time(X=np.array([]), Z=dict, sk_params=dict, lambda_list=list, n_iter=int, max_iter=100):
+    
     precision_dict = dict()
     time_dict = dict()
     accuracy_dict = dict()
@@ -24,20 +24,19 @@ def sklearn_time(X=np.array([]), Z=dict, sk_params=dict, lambda_list=list, n_ite
     for tol, enet, l1 in itertools.product(tol_list, enet_list, lambda_list):
         key = "sklearn" + "_tol_" + str(tol) + "_enet_" + str(enet) + "_p_" + str(X.shape[1]) + "_l1_" + str(l1)
 
-        model = sk_GL(alpha=l1, tol=tol, enet_tol=enet, max_iter=max_iter, assume_centered=False, verbose=True)
-
+        
         time_list = []
 
         for _ in trange(n_iter, desc=key, leave=True):
             start = time.perf_counter()
+            model = sk_GL(alpha=l1, tol=tol, enet_tol=enet, max_iter=max_iter, assume_centered=False, verbose=False)
             Z_i = model.fit(X)
             end = time.perf_counter()
 
             time_list.append(end - start)
 
-        time_dict[key] = min(time_list)
+        time_dict[key] = np.mean(time_list)
 
-        cov_dict["cov_" + key] = Z_i.covariance_
         precision_dict["precision_" + key] = Z_i.precision_
 
         model_key = "p_" + str(X.shape[1]) + "_l1_" + str(l1)
