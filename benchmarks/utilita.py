@@ -43,7 +43,7 @@ def network_generation(p=int, N=int, M=10, style='powerlaw', gamma=2.8, prob=0.1
     return S, X, Theta
 
 
-def benchmark_parameters(sk_tol_list=[1e-2], enet_list=[1e-2],
+def benchmark_parameters(sk_tol_list=[1e-1,1e-2], enet_list=[1e-1,1e-2],
                          rg_tol_list=[1e-4, 1e-5, 1e-6], rg_rtol_list=[1e-4, 1e-5, 1e-6],
                          gglasso_tol_list=[1e-5, 1e-6, 1e-7], gglasso_rtol_list=[1e-5, 1e-6, 1e-7],
                          gglasso_stop='boyd', gglasso_method=['single', 'block'],

@@ -16,16 +16,17 @@ def plot_accuracy(df=pd.DataFrame(), upper_bound=float, lower_bound=float, lambd
     Specify the lower bound for the solution accuracy.
     :return: px.scatter()
     """
-    df = df.sort_values(by=['p', 'time'])
+    
 
     # filter by lambda
     df = df[df["l1"] == lambda_filter]
+    df = df.sort_values(by=['p', 'time'])
 
     color_discrete_map = {'block-boyd': '#FF0000', 'regain': '#32CD32',
                           'single-boyd': '#FF8C00', 'sklearn': '#0000FF'}
 
     fig = px.scatter(df[(df["accuracy"] < upper_bound) & (df["accuracy"] > lower_bound)],
-                     y="time", x="accuracy", text="l1", color="method_str",
+                     y="time", x="accuracy", text="l1", color="method",
                      log_y=True, log_x=True, facet_col='p', facet_col_wrap=3, color_discrete_map=color_discrete_map,
                      labels={
                          "time": "Time, s",
@@ -70,12 +71,12 @@ def plot_scalability(df=pd.DataFrame()):
 def plot_lambdas(df=pd.DataFrame(), upper_bound=float, lower_bound=float):
     df = df[(df["accuracy"] < upper_bound) & (df["accuracy"] > lower_bound)]
 
-    df = df.groupby(['method_str', "p", "l1"], as_index=False)['time'].min()
+    df = df.groupby(['method', "p", "l1"], as_index=False)['time'].min()
 
     color_discrete_map = {'block-boyd': '#FF0000', 'regain': '#32CD32',
                           'single-boyd': '#FF8C00', 'sklearn': '#0000FF'}
 
-    fig = px.scatter(df, x="p", y="time", text="p", color="method_str",
+    fig = px.scatter(df, x="p", y="time", text="p", color="method",
                      log_y=True, facet_col='l1', facet_col_wrap=3, color_discrete_map=color_discrete_map,
                      labels={
                          "time": "Time, s",
