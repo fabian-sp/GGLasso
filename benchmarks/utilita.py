@@ -43,10 +43,10 @@ def network_generation(p=int, N=int, M=10, style='powerlaw', gamma=2.8, prob=0.1
     return S, X, Theta
 
 
-def benchmark_parameters(sk_tol_list=[0.5], enet_list=[0.5],
+def benchmark_parameters(sk_tol_list=[0.1], enet_list=[0.1],
                          rg_tol_list=[1e-4, 1e-5, 1e-6], rg_rtol_list=[1e-3, 1e-4, 1e-5],
                          gglasso_tol_list=[1e-6, 1e-7, 1e-8], gglasso_rtol_list=[1e-5, 1e-6, 1e-7],
-                         gglasso_stop=['boyd'], gglasso_method=['single', 'block'],
+                         gglasso_stop='boyd', gglasso_method=['single', 'block'],
                          lambda_list=[0.5, 0.1, 0.05]):
     """
     Specify model hyperparameters.
@@ -63,20 +63,12 @@ def benchmark_parameters(sk_tol_list=[0.5], enet_list=[0.5],
     """
 
     # Sklearn params
-    sk_tol_list = sk_tol_list
-    enet_list = enet_list
     sk_params = {"tol": sk_tol_list, "enet": enet_list}
 
     # Regain params
-    rg_tol_list = rg_tol_list
-    rg_rtol_list = rg_rtol_list
     rg_params = {"tol": rg_tol_list, "rtol": rg_rtol_list}
 
     # ADMM params
-    gglasso_tol_list = gglasso_tol_list
-    gglasso_rtol_list = gglasso_rtol_list
-    gglasso_stop = gglasso_stop
-    gglasso_method = gglasso_method
     gglasso_params = {"tol": gglasso_tol_list, "rtol": gglasso_rtol_list, "stop": gglasso_stop,
                       "method": gglasso_method}
 
@@ -88,118 +80,30 @@ def benchmark_parameters(sk_tol_list=[0.5], enet_list=[0.5],
     return sk_params, rg_params, gglasso_params, lambda_list
 
 
-def model_solution(model="sklearn", X=np.array([]), lambda1=float, max_iter=50000, tol=1e-10, rtol=1e-4, enet=0.001):
+def model_solution(solver="sklearn", X=np.array([]), lambda1=float, max_iter=1000, tol=1e-10, rtol=1e-10, enet=0.001):
     time_list = []
-    if model == "sklearn":
+    if solver == "sklearn":
 
         start = time.perf_counter()
         Z = sk_GL(alpha=lambda1, max_iter=max_iter, tol=tol, enet_tol=enet, assume_centered=False).fit(X)
-        info = sk_GL(alpha=lambda1, max_iter=max_iter, tol=tol, enet_tol=enet, assume_centered=False, verbose=True)
+        Z.fit(X)
         end = time.perf_counter()
 
         time_list.append(end - start)
 
-    elif model == "regain":
+    elif solver == "regain":
 
         start = time.perf_counter()
-        Z = rg_GL(alpha=lambda1, init=np.eye(X.shape[1]), max_iter=max_iter, tol=tol, rtol=rtol,
-                  assume_centered=False).fit(X)
-        info = rg_GL(alpha=lambda1, init=np.eye(X.shape[1]), max_iter=max_iter, tol=tol, rtol=rtol,
-                     assume_centered=False, verbose=True)
+        Z = rg_GL(alpha=lambda1, max_iter=max_iter, tol=tol, rtol=rtol,
+                  assume_centered=False, verbose=True).fit(X)
+        Z.fit(X)       
         end = time.perf_counter()
-
         time_list.append(end - start)
 
-    print(model, info)
+    print(solver, Z)
 
-    return Z.precision_, time_list, info
+    return Z.precision_, time_list, Z
 
-
-def benchmarks_dataframe(times=dict, acc_dict=dict, spars_dict=dict):
-    """
-    Turn benchmark dictionaries into dataframes.
-    :param times: dict
-    Input dictionary where 'key' is the model and 'value' is its runtime.
-    :param acc_dict: dict
-    Input dictionary where 'key' is a model and 'value' is its corresponding accuracy given as:
-    np.linalg.norm(Z - np.array(Z_i)) / np.linalg.norm(Z)
-    where Z is our model solution and Z_i is the model.
-    :param spars_dict: dict
-    Input dictionary where 'key' is a model and 'value' is its corresponding sparsity measured by
-    Hamming distance.
-    :return: Pandas.DataFrame()
-    """
-    assert len(times) == len(acc_dict) == len(spars_dict)
-
-    # The time measured during the grid search of best hyperparameters for the models
-    df = pd.DataFrame(data={'name': list(times.keys()),
-                            'time': list(times.values()),
-                            "accuracy": list(acc_dict.values())})
-
-    df['split'] = df['name'].str.split('_')
-    columns_names = ["method", "tol_str", "tol", "rtol_str", "rtol", "p_str", "p", "l1_str", "l1"]
-    df[columns_names] = pd.DataFrame(df['split'].tolist(), index=df['split'].index)
-
-    redundant_cols = ['split', "tol_str", "rtol_str", "p_str", "l1_str"]
-    df = df.drop(redundant_cols, axis=1)
-
-    convert_dict = {'tol': float, 'rtol': float, "p": int, "l1": float}
-    df = df.astype(convert_dict)
-    df['method_str'] = df['method'].str.replace('\d+', '')
-
-    df_dist = pd.DataFrame(data={'name': list(spars_dict.keys()),
-                                 "hamming": list(spars_dict.values())})
-
-    df_dist['name'] = df_dist['name'].str.replace('precision_', '')
-
-    final = pd.merge(df, df_dist, how='inner', on='name')
-
-    final = final.sort_values(by=['time'])
-
-    return final
-
-
-def best_time_dataframe(best_time=dict):
-    """
-    Turn dictionaries of the model best running times into dataframes.
-    :param best_time: dict
-    Input dictionary where 'key' is the selected best model and 'value' is its runtime.
-    :return: Pandas.DataFrame()
-    """
-    # The time measured during the scalability benchmark
-    time_df = pd.DataFrame.from_dict(best_time, orient='index', columns=['time'])
-    time_df.reset_index(level=0, inplace=True)
-
-    time_df['split'] = time_df['index'].str.split('_')
-    columns_names = ["method", "p_str", "p", "N_str", "N"]
-    time_df[columns_names] = pd.DataFrame(time_df['split'].tolist(), index=time_df['split'].index)
-
-    redundant_cols = ["p_str", "N_str"]
-    time_df = time_df.drop(redundant_cols, axis=1)
-
-    convert_dict = {"p": int, "N": int}
-    time_df = time_df.astype(convert_dict)
-    time_df.sort_values(by=['time'], ignore_index=True)
-
-    return time_df
-
-
-def drop_acc_duplicates(df):
-    """
-    Drop duplicates of the models showing the same accuracy.
-    :param df: pd.DataFrame()
-    :return: pd.DataFrame()
-    """
-    assert 'method' in df.columns
-    assert 'accuracy' in df.columns
-
-    unique_acc_df = df[:1]
-    for method in df.method.unique():
-        filtered = df[df['method'] == method]
-        filtered = filtered.drop_duplicates(subset='accuracy', keep='first')
-        unique_acc_df = pd.concat([filtered, unique_acc_df])
-
-    return unique_acc_df[:-1]
 
 
 def dict_shape(dict_=dict):
@@ -210,7 +114,7 @@ def dict_shape(dict_=dict):
     return shape_list
 
 
-def hamming_dict(Theta_dict=dict, Z_dict=dict, t_rounding=float):
+def calc_hamming_dict(Theta_dict=dict, Z_dict=dict, t_rounding=float):
     """
     Calculate Hamming distance between model solution Z and given solution Theta
     with a specified rounding accuracy t_rounding.
@@ -221,10 +125,11 @@ def hamming_dict(Theta_dict=dict, Z_dict=dict, t_rounding=float):
     """
     sparsity_dict = dict()
 
-    for Theta in Theta_dict.values():
+    for keyT, Theta in Theta_dict.items():
 
         for key, Z in Z_dict.items():
-            if Theta.shape == Z.shape:
+            key_p = int(key.split('_p_')[1].split('_')[0])
+            if keyT[0] == key_p:
                 sparsity_dict[key] = hamming_distance(Theta, Z, t=t_rounding)
 
     return sparsity_dict
@@ -261,12 +166,13 @@ def load_dict(dict_name=str):
     return D
 
 
-def numba_warmup(S=np.array([]), Omega_0=np.array([]), l1=0.5, tol=1e-1, rtol=1e-1, stopping_criterion='boyd',
-                 n_iter=5, max_iter=100):
-    for i in range(0, n_iter):
-        Z_s, info = ADMM_SGL(S, lambda1=l1, Omega_0=Omega_0, Theta_0=Omega_0, X_0=Omega_0,
-                             max_iter=max_iter, tol=tol, rtol=rtol, stopping_criterion=stopping_criterion)
-        Z_b = block_SGL(S, lambda1=l1, Omega_0=Omega_0, Theta_0=Omega_0, X_0=Omega_0,
-                        max_iter=max_iter, tol=tol, rtol=rtol, stopping_criterion='boyd')
-    result = "Numba has been succesfully initiated"
-    return result
+def numba_warmup(S):
+    print("######## NUMBA WARMUP ###########")
+    Omega_0 = np.eye(len(S))
+    _, _ = ADMM_SGL(S, lambda1=0.1, Omega_0=Omega_0,
+                             max_iter=5, tol=1e-10, rtol=1e-10, stopping_criterion='boyd')
+    
+    _ = block_SGL(S, lambda1=0.1, Omega_0=Omega_0,
+                        max_iter=5, tol=1e-10, rtol=1e-10, stopping_criterion='boyd')
+    print("##################################")
+    return 

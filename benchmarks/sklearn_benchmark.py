@@ -37,11 +37,11 @@ def sklearn_time(X=np.array([]), Z=dict, sk_params=dict, lambda_list=list, n_ite
 
         time_dict[key] = np.mean(time_list)
 
-        precision_dict["precision_" + key] = Z_i.precision_
+        precision_dict[key] = Z_i.precision_
 
         model_key = "p_" + str(X.shape[1]) + "_l1_" + str(l1)
         accuracy = np.linalg.norm(Z[model_key] - np.array(Z_i.precision_)) / np.linalg.norm(Z[model_key])
-        accuracy_dict["accuracy_" + key] = accuracy
+        accuracy_dict[key] = accuracy
 
     return time_dict, accuracy_dict, precision_dict
 

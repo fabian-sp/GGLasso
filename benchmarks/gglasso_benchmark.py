@@ -60,9 +60,10 @@ def gglasso_time(S=np.array([]), Omega_0=np.array([]), Z=dict, lambda_list=list,
 
 
         addon_time = 0.
-        for l1 in lambda_list:
-            Theta_0 = Omega_0.copy(); X_0 = np.zeros((S.shape[0], S.shape[0]))
+        Theta_0 = Omega_0.copy(); X_0 = np.zeros((S.shape[0], S.shape[0]))
         
+        for l1 in lambda_list:
+            
             pars = "_tol_" + str(tol) + "_rtol_" + str(rtol) + "_p_" + str(S.shape[0]) + "_l1_" + str(l1)
             key = method + "-" + str(stop_crit) + pars
 
@@ -84,11 +85,11 @@ def gglasso_time(S=np.array([]), Omega_0=np.array([]), Z=dict, lambda_list=list,
                 addon_time += np.mean(all_times)
 
 
-            precision_dict["precision_" + key] = Z_i["Theta"]
+            precision_dict[key] = Z_i["Theta"]
 
             model_key = "p_" + str(S.shape[0]) + "_l1_" + str(l1)
             accuracy = np.linalg.norm(Z[model_key] - np.array(Z_i["Theta"])) / np.linalg.norm(Z[model_key])
-            accuracy_dict["accuracy_" + key] = accuracy
+            accuracy_dict[key] = accuracy
 
 
 

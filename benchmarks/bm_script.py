@@ -12,8 +12,8 @@ from sklearn_benchmark import sklearn_time
 from gglasso_benchmark import gglasso_time
 
 from utilita import network_generation, model_solution, benchmark_parameters 
-from utilita import sparsity_benchmark, dict_shape, hamming_dict
-from utilita import benchmarks_dataframe, best_time_dataframe, drop_acc_duplicates
+from utilita import sparsity_benchmark, dict_shape, calc_hamming_dict
+from utilita import benchmarks_dataframe,  drop_acc_duplicates
 
 from plots import plot_accuracy, plot_scalability, plot_lambdas
 
@@ -122,12 +122,12 @@ for X, S in tzip(list(X_dict.values()), list(S_dict.values())):
          
 #%%
 
-sparsity = hamming_dict(Theta_dict=Theta_dict, Z_dict=Z_dict, t_rounding=1e-4)
+hamming_dict = calc_hamming_dict(Theta_dict=Theta_dict, Z_dict=Z_dict, t_rounding=1e-8)
 
 
 #%%
 
-def benchmarks_dataframe(times=dict, acc_dict=dict, spars_dict=dict):
+def benchmarks_dataframe(times=dict, acc=dict, hamming=dict):
     """
     Turn benchmark dictionaries into dataframes.
     :param times: dict
@@ -141,39 +141,36 @@ def benchmarks_dataframe(times=dict, acc_dict=dict, spars_dict=dict):
     Hamming distance.
     :return: Pandas.DataFrame()
     """
-    assert len(times) == len(acc_dict) == len(spars_dict)
+    assert len(times) == len(acc) == len(hamming)
 
-    # The time measured during the grid search of best hyperparameters for the models
-    df = pd.DataFrame(data={'name': list(times.keys()),
-                            'time': list(times.values()),
-                            "accuracy": list(acc_dict.values())})
-
-    df['split'] = df['name'].str.split('_')
+    all_dict = dict()
+    for key in times.keys():
+        all_dict[key] = {'time': times[key], 'accuracy': acc[key], 'hamming': hamming[key]}
+    
+    df = pd.DataFrame.from_dict(all_dict, orient = 'index')
+    
+    # split key into columns
+    df['split'] = df.index.str.split('_')
     columns_names = ["method", "tol_str", "tol", "rtol_str", "rtol", "p_str", "p", "l1_str", "l1"]
     df[columns_names] = pd.DataFrame(df['split'].tolist(), index=df['split'].index)
-
+    
     redundant_cols = ['split', "tol_str", "rtol_str", "p_str", "l1_str"]
     df = df.drop(redundant_cols, axis=1)
-
+    
     convert_dict = {'tol': float, 'rtol': float, "p": int, "l1": float}
     df = df.astype(convert_dict)
-    df['method_str'] = df['method'].str.replace('\d+', '')
+    df = df.sort_values(['p', 'l1', 'method', 'time'])
+    
+    
+    return df
 
-    df_dist = pd.DataFrame(data={'name': list(spars_dict.keys()),
-                                 "hamming": list(spars_dict.values())})
 
-    df_dist['name'] = df_dist['name'].str.replace('precision_', '')
 
-    final = pd.merge(df, df_dist, how='inner', on='name')
-
-    final = final.sort_values(by=['time'])
-
-    return final
 
 
 #%% 
 
-df = benchmarks_dataframe(times=time_dict, acc_dict=accuracy_dict, spars_dict=sparsity)
+df = benchmarks_dataframe(times=time_dict, acc=accuracy_dict, hamming=hamming_dict)
 df = drop_acc_duplicates(df)
 df = df.reset_index(drop=True)
 df.head()

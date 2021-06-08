@@ -10,7 +10,7 @@ from benchmarks.utilita import benchmark_parameters, save_dict, load_dict
 
 
 def regain_time(X=np.array([]), Z=dict, rg_params=dict, lambda_list=list, n_iter=int, warm_start=False, max_iter=50000):
-    cov_dict = dict()
+    
     precision_dict = dict()
     time_dict = dict()
     accuracy_dict = dict()
@@ -20,53 +20,35 @@ def regain_time(X=np.array([]), Z=dict, rg_params=dict, lambda_list=list, n_iter
 
     for tol, rtol in itertools.product(tol_list, rtol_list):
 
-        i = 0
-        t = dict()
+        addon_time = 0.
+        Omega_0 = np.eye(X.shape[1])
         for l1 in lambda_list:
 
-            if warm_start:
-                if i == 0:
-                    model = rg_GL(alpha=l1, tol=tol, rtol=rtol, max_iter=max_iter,
-                                  assume_centered=False, init=np.eye(X.shape[1]), verbose=True)
-                    time_list = []
-                else:
-                    # to reduce the convergence time we use the results from previous iterations
-                    model = rg_GL(alpha=l1, tol=tol, rtol=rtol, max_iter=max_iter,
-                                  assume_centered=False, init=Z_i.precision_, verbose=True)
-                    time_list = t[i - 1]
-            else:
-                model = rg_GL(alpha=l1, tol=tol, rtol=rtol, max_iter=max_iter,
-                              assume_centered=False, init=np.eye(X.shape[1]), verbose=True)
-                time_list = []
-
             key = "regain" + "_tol_" + str(tol) + "_rtol_" + str(rtol) + "_p_" + str(X.shape[1]) + "_l1_" + str(l1)
-
+            
+            time_list = list()
             for _ in trange(n_iter, desc=key, leave=True):
                 start = time.perf_counter()
+                model = rg_GL(alpha=l1, tol=tol, rtol=rtol, max_iter=max_iter,
+                              assume_centered=False, init=Omega_0, verbose=False)
                 Z_i = model.fit(X)
                 end = time.perf_counter()
 
                 time_list.append(end - start)
 
+                
+            time_dict[key] = np.mean(time_list) + addon_time
+            
             if warm_start:
-                # min time in "n" iterations, the first iteration we skip because of numba init
-                if i == 0:
-                    time_dict[key] = min(time_list)
-                    t[i] = min(time_list)
-                else:
-                    time_dict[key] = float(time_list[-n_iter - 1: -n_iter] + min(time_list[-n_iter:]))
-                    t[i] = time_list[-n_iter - 1: -n_iter] + min(time_list[-n_iter:])
-            else:
-                time_dict[key] = min(time_list)
+                Omega_0 = Z_i.precision_
+                addon_time += np.mean(time_list)
 
-            cov_dict["cov_" + key] = Z_i.covariance_
-            precision_dict["precision_" + key] = Z_i.precision_
+            precision_dict[key] = Z_i.precision_
 
             model_key = "p_" + str(X.shape[1]) + "_l1_" + str(l1)
             accuracy = np.linalg.norm(Z[model_key] - np.array(Z_i.precision_)) / np.linalg.norm(Z[model_key])
-            accuracy_dict["accuracy_" + key] = accuracy
+            accuracy_dict[key] = accuracy
 
-            i += 1
 
     return time_dict, accuracy_dict, precision_dict
 
