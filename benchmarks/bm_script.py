@@ -1,9 +1,6 @@
-#import os
-
 import numpy as np
 import pandas as pd
 import time
-#import itertools
 from itertools import product
 
 
@@ -25,6 +22,34 @@ pd.set_option('display.max_columns', None)
 
 #from regain import datasets, utils
 
+# n_times = [20, 50, 100]
+# n_dims = np.sqrt(np.logspace(2, 5, 10)).astype(int)
+
+# n_samples = 200
+# n_dim_lat = 2
+
+# np.random.seed(42)
+# with utils.suppress_stdout():
+#     data = {
+#         (dim, T): datasets.make_dataset(
+#             mode='ma', n_samples=n_samples, 
+#             n_dim_lat=n_dim_lat, n_dim_obs=dim,
+#             T=T, epsilon=1e-2)
+#         for dim, T in (product(n_dims, n_times))
+#     }
+    
+    
+# X_lat = dict()
+
+# for key in data.keys():
+#     X_lat.update({key:data[key]['data']})
+    
+# X_lat = list(X_lat.values())
+# X_lat = [x for data in X_lat for x in data] #flatten data array
+
+# S_lat = list() # empirical covariance matrices
+# for i in X_lat:
+#     S_lat.append(np.cov(i))
 
 #%%
 S_dict=dict()
@@ -66,7 +91,7 @@ for X, l1 in product(list(X_dict.values()), lambda_list):
     
     Z, Z_time, info = model_solution(solver=reference_solver, X=X, lambda1=l1)
     
-    key = "p_" + str(X.shape[1]) + "_l1_" + str(l1)
+    key = "p_" + str(X.shape[1]) + "_N_" + str(X.shape[0]) + "_l1_" + str(l1)
     model_time_dict.update({key: Z_time})
     model_Z_dict.update({key: Z})
 
@@ -80,17 +105,17 @@ n_iter = 2
 
 #%%
 
-S = list(S_dict.values())[0]
-Omega_0 = np.eye(len(S))
-method = 'single'
-tol = 1e-5
-rtol = 1e-5
-l1 = 0.01
-Z=model_Z_dict
+# S = list(S_dict.values())[0]
+# Omega_0 = np.eye(len(S))
+# method = 'single'
+# tol = 1e-5
+# rtol = 1e-5
+# l1 = 0.01
+# Z=model_Z_dict
 
 for X, S in tzip(list(X_dict.values()), list(S_dict.values())):
     Omega_0 = np.eye(len(S))
-    gg_time, gg_accuracy, Z_gg = gglasso_time(S=S, Omega_0=Omega_0, Z=model_Z_dict, lambda_list=lambda_list,
+    gg_time, gg_accuracy, Z_gg = gglasso_time(S=S, X=X, Omega_0=Omega_0, Z=model_Z_dict, lambda_list=lambda_list,
                                               n_iter=n_iter, gglasso_params=gglasso_params, warm_start=False)
     
     time_dict.update(gg_time)
@@ -102,7 +127,8 @@ for X, S in tzip(list(X_dict.values()), list(S_dict.values())):
 #%%
 
 for X, S in tzip(list(X_dict.values()), list(S_dict.values())):
-    sk_time, sk_accuracy, Z_sk = sklearn_time(X=X, Z=model_Z_dict, sk_params=sk_params, lambda_list=lambda_list, n_iter=n_iter)
+    sk_time, sk_accuracy, Z_sk = sklearn_time(X=X, Z=model_Z_dict, sk_params=sk_params, lambda_list=lambda_list, \
+                                              n_iter=n_iter)
     
     time_dict.update(sk_time)
     accuracy_dict.update(sk_accuracy)
@@ -113,7 +139,8 @@ for X, S in tzip(list(X_dict.values()), list(S_dict.values())):
 #%%
 
 for X, S in tzip(list(X_dict.values()), list(S_dict.values())):
-    rg_time, rg_accuracy, Z_rg = regain_time(X=X, Z=model_Z_dict, rg_params=rg_params, lambda_list=lambda_list, n_iter=n_iter)
+    rg_time, rg_accuracy, Z_rg = regain_time(X=X, Z=model_Z_dict, rg_params=rg_params, lambda_list=lambda_list, \
+                                             n_iter=n_iter, warm_start=False)
     
     time_dict.update(rg_time)
     accuracy_dict.update(rg_accuracy)
@@ -151,13 +178,13 @@ def benchmarks_dataframe(times=dict, acc=dict, hamming=dict):
     
     # split key into columns
     df['split'] = df.index.str.split('_')
-    columns_names = ["method", "tol_str", "tol", "rtol_str", "rtol", "p_str", "p", "l1_str", "l1"]
+    columns_names = ["method", "tol_str", "tol", "rtol_str", "rtol", "p_str", "p", "N_str", "N", "l1_str", "l1"]
     df[columns_names] = pd.DataFrame(df['split'].tolist(), index=df['split'].index)
     
-    redundant_cols = ['split', "tol_str", "rtol_str", "p_str", "l1_str"]
+    redundant_cols = ['split', "tol_str", "rtol_str", "p_str", "N_str", "l1_str"]
     df = df.drop(redundant_cols, axis=1)
     
-    convert_dict = {'tol': float, 'rtol': float, "p": int, "l1": float}
+    convert_dict = {'tol': float, 'rtol': float, "p": int, "N": int, "l1": float}
     df = df.astype(convert_dict)
     df = df.sort_values(['p', 'l1', 'method', 'time'])
     
@@ -171,8 +198,35 @@ def benchmarks_dataframe(times=dict, acc=dict, hamming=dict):
 #%% 
 
 df = benchmarks_dataframe(times=time_dict, acc=accuracy_dict, hamming=hamming_dict)
-df = drop_acc_duplicates(df)
-df = df.reset_index(drop=True)
+
+#df = df.reset_index(drop=True)
 df.head()
 
+#%%
 
+def plot_bm(df, lambda_list, min_acc = 1e-3, log_scale = True):
+    
+    fig, axs = plt.subplots(len(lambda_list), 1, figsize = (5,8))
+    j = 0
+    for l1 in lambda_list:
+        ax = axs[j]
+        df_sub = df[df.l1 == l1]
+        tmp = df_sub.groupby(["p", "N", "method"])["time"].min()
+        
+        tmp.unstack().plot(ls = '-', marker = 'o', xlabel = "(p,N)", ylabel = "runtime [sec]", ax = ax)
+        ax.set_title(rf"$\lambda_1$ = {l1}")
+        ax.grid(linestyle = '--')
+        if log_scale:
+            ax.set_yscale('log')
+            ax.set_xscale('log')
+        
+        j+=1
+    
+    fig.tight_layout()
+    return
+
+plot_bm(df, lambda_list, min_acc = 1e-3)
+
+    
+    
+    

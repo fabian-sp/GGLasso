@@ -40,7 +40,7 @@ def call_gglasso(S=np.array([]), Omega_0=np.array([]), Theta_0=np.array([]), X_0
     return sol, all_times
 
 
-def gglasso_time(S=np.array([]), Omega_0=np.array([]), Z=dict, lambda_list=list, n_iter=int,
+def gglasso_time(S=np.array([]), X=np.array([]), Omega_0=np.array([]), Z=dict, lambda_list=list, n_iter=int,
                  gglasso_params=dict, warm_start=False):
     
     precision_dict = dict()
@@ -54,7 +54,8 @@ def gglasso_time(S=np.array([]), Omega_0=np.array([]), Z=dict, lambda_list=list,
     
     # Initialize numba
     numba_warmup(S=S)
-    
+    p = X.shape[1]
+    N = X.shape[0]
     
     for method, tol, rtol in itertools.product(method_list, tol_list, rtol_list):
 
@@ -64,7 +65,7 @@ def gglasso_time(S=np.array([]), Omega_0=np.array([]), Z=dict, lambda_list=list,
         
         for l1 in lambda_list:
             
-            pars = "_tol_" + str(tol) + "_rtol_" + str(rtol) + "_p_" + str(S.shape[0]) + "_l1_" + str(l1)
+            pars = "_tol_" + str(tol) + "_rtol_" + str(rtol) + "_p_" + str(p) + "_N_" + str(N) + "_l1_" + str(l1)
             key = method + "-" + str(stop_crit) + pars
 
             
@@ -87,7 +88,7 @@ def gglasso_time(S=np.array([]), Omega_0=np.array([]), Z=dict, lambda_list=list,
 
             precision_dict[key] = Z_i["Theta"]
 
-            model_key = "p_" + str(S.shape[0]) + "_l1_" + str(l1)
+            model_key = "p_" + str(p) + "_N_" + str(N) + "_l1_" + str(l1)
             accuracy = np.linalg.norm(Z[model_key] - np.array(Z_i["Theta"])) / np.linalg.norm(Z[model_key])
             accuracy_dict[key] = accuracy
 
@@ -103,7 +104,7 @@ def run_gglasso(X_dict=dict, S_dict=dict, model_Z_dict=dict, lambda_list=list, n
 
     for X, S in zip(list(X_dict.values()), list(S_dict.values())):
         Omega_0 = np.eye(len(S))
-        gg_time, gg_accuracy, Z_gg = gglasso_time(S=S, Omega_0=Omega_0, Z=model_Z_dict, lambda_list=lambda_list,
+        gg_time, gg_accuracy, Z_gg = gglasso_time(S=S, X=X, Omega_0=Omega_0, Z=model_Z_dict, lambda_list=lambda_list,
                                                   n_iter=n_iter, gglasso_params=gglasso_params)
         time_dict.update(gg_time)
         accuracy_dict.update(gg_accuracy)

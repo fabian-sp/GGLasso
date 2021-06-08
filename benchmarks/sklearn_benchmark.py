@@ -20,9 +20,12 @@ def sklearn_time(X=np.array([]), Z=dict, sk_params=dict, lambda_list=list, n_ite
 
     tol_list = sk_params["tol"]
     enet_list = sk_params["enet"]
+    
+    p = X.shape[1]
+    N = X.shape[0]
 
     for tol, enet, l1 in itertools.product(tol_list, enet_list, lambda_list):
-        key = "sklearn" + "_tol_" + str(tol) + "_enet_" + str(enet) + "_p_" + str(X.shape[1]) + "_l1_" + str(l1)
+        key = "sklearn" + "_tol_" + str(tol) + "_enet_" + str(enet) + "_p_" + str(p) + "_N_" + str(N) + "_l1_" + str(l1)
 
         
         time_list = []
@@ -39,7 +42,7 @@ def sklearn_time(X=np.array([]), Z=dict, sk_params=dict, lambda_list=list, n_ite
 
         precision_dict[key] = Z_i.precision_
 
-        model_key = "p_" + str(X.shape[1]) + "_l1_" + str(l1)
+        model_key = "p_" + str(p) + "_N_" + str(N) + "_l1_" + str(l1)
         accuracy = np.linalg.norm(Z[model_key] - np.array(Z_i.precision_)) / np.linalg.norm(Z[model_key])
         accuracy_dict[key] = accuracy
 

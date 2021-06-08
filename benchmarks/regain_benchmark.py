@@ -17,6 +17,9 @@ def regain_time(X=np.array([]), Z=dict, rg_params=dict, lambda_list=list, n_iter
 
     tol_list = rg_params["tol"]
     rtol_list = rg_params["rtol"]
+    
+    p = X.shape[1]
+    N = X.shape[0]
 
     for tol, rtol in itertools.product(tol_list, rtol_list):
 
@@ -24,7 +27,7 @@ def regain_time(X=np.array([]), Z=dict, rg_params=dict, lambda_list=list, n_iter
         Omega_0 = np.eye(X.shape[1])
         for l1 in lambda_list:
 
-            key = "regain" + "_tol_" + str(tol) + "_rtol_" + str(rtol) + "_p_" + str(X.shape[1]) + "_l1_" + str(l1)
+            key = "regain" + "_tol_" + str(tol) + "_rtol_" + str(rtol) + "_p_" + str(p) + "_N_" + str(N)  + "_l1_" + str(l1)
             
             time_list = list()
             for _ in trange(n_iter, desc=key, leave=True):
@@ -45,7 +48,7 @@ def regain_time(X=np.array([]), Z=dict, rg_params=dict, lambda_list=list, n_iter
 
             precision_dict[key] = Z_i.precision_
 
-            model_key = "p_" + str(X.shape[1]) + "_l1_" + str(l1)
+            model_key = "p_" + str(p) + "_N_" + str(N) + "_l1_" + str(l1)
             accuracy = np.linalg.norm(Z[model_key] - np.array(Z_i.precision_)) / np.linalg.norm(Z[model_key])
             accuracy_dict[key] = accuracy
 
