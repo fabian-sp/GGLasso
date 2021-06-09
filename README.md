@@ -1,6 +1,8 @@
 # GGLasso
 This package contains algorithms for solving Single and Multiple Graphical Lasso problems. Moreover, it contains the option of including latent variables.<br>
 
+[Docs](https://gglasso.readthedocs.io/en/latest/) | [Examples](https://gglasso.readthedocs.io/en/latest/auto_examples/index.html)
+
 ## Getting started
 Clone the repository, for example with
 
@@ -18,7 +20,6 @@ Test your installation with
 
     pytest gglasso/ -v
 
-A detailled documentation and example gallery will soon be released on *Read The Docs*. See `examples/plot_basic_example` for a basic example of usage.
 
 ### Advanced options
 
