@@ -161,7 +161,7 @@ def test_scaling_SGL():
     reg_params = {'lambda1': 0.01}
     reg_params2 = {'lambda1': 0.1}
     
-    P = glasso_problem(S = S2, N = N, reg = None, latent = False)
+    P = glasso_problem(S = S2, N = N, reg = None, latent = False, do_scaling = True)
     P.set_reg_params(reg_params)
     P.solve(tol = 1e-10, rtol = 1e-15)
     
@@ -176,4 +176,6 @@ def test_scaling_SGL():
     Theta2 = P2.solution.precision_
     
     assert np.linalg.norm(Theta - Theta2)/np.linalg.norm(Theta) <= 0.02
+    
+    return
     
