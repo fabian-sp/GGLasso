@@ -10,14 +10,13 @@ from benchmarks.utilita import benchmark_parameters, save_dict, load_dict
 
 
 def regain_time(X=np.array([]), Z=dict, rg_params=dict, lambda_list=list, n_iter=int, warm_start=False, max_iter=50000):
-    
     precision_dict = dict()
     time_dict = dict()
     accuracy_dict = dict()
 
     tol_list = rg_params["tol"]
     rtol_list = rg_params["rtol"]
-    
+
     p = X.shape[1]
     N = X.shape[0]
 
@@ -27,8 +26,9 @@ def regain_time(X=np.array([]), Z=dict, rg_params=dict, lambda_list=list, n_iter
         Omega_0 = np.eye(X.shape[1])
         for l1 in lambda_list:
 
-            key = "regain" + "_tol_" + str(tol) + "_rtol_" + str(rtol) + "_p_" + str(p) + "_N_" + str(N)  + "_l1_" + str(l1)
-            
+            key = "regain" + "_tol_" + str(tol) + "_rtol_" + str(rtol) + "_p_" + str(p) + "_N_" + str(N) + "_l1_" + str(
+                l1)
+
             time_list = list()
             for _ in trange(n_iter, desc=key, leave=True):
                 start = time.perf_counter()
@@ -39,9 +39,8 @@ def regain_time(X=np.array([]), Z=dict, rg_params=dict, lambda_list=list, n_iter
 
                 time_list.append(end - start)
 
-                
             time_dict[key] = np.mean(time_list) + addon_time
-            
+
             if warm_start:
                 Omega_0 = Z_i.precision_
                 addon_time += np.mean(time_list)
@@ -51,7 +50,6 @@ def regain_time(X=np.array([]), Z=dict, rg_params=dict, lambda_list=list, n_iter
             model_key = "p_" + str(p) + "_N_" + str(N) + "_l1_" + str(l1)
             accuracy = np.linalg.norm(Z[model_key] - np.array(Z_i.precision_)) / np.linalg.norm(Z[model_key])
             accuracy_dict[key] = accuracy
-
 
     return time_dict, accuracy_dict, precision_dict
 

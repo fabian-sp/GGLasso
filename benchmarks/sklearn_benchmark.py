@@ -13,21 +13,19 @@ set_config(print_changed_only=False)
 
 
 def sklearn_time(X=np.array([]), Z=dict, sk_params=dict, lambda_list=list, n_iter=int, max_iter=300):
-    
     precision_dict = dict()
     time_dict = dict()
     accuracy_dict = dict()
 
     tol_list = sk_params["tol"]
     enet_list = sk_params["enet"]
-    
+
     p = X.shape[1]
     N = X.shape[0]
 
     for tol, enet, l1 in itertools.product(tol_list, enet_list, lambda_list):
         key = "sklearn" + "_tol_" + str(tol) + "_enet_" + str(enet) + "_p_" + str(p) + "_N_" + str(N) + "_l1_" + str(l1)
 
-        
         time_list = []
 
         for _ in trange(n_iter, desc=key, leave=True):

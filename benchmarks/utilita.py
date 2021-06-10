@@ -96,7 +96,7 @@ def model_solution(solver="sklearn", X=np.array([]), lambda1=float, max_iter=100
         start = time.perf_counter()
         Z = rg_GL(alpha=lambda1, max_iter=max_iter, tol=tol, rtol=rtol,
                   assume_centered=False, verbose=True).fit(X)
-        Z.fit(X)       
+        Z.fit(X)
         end = time.perf_counter()
         time_list.append(end - start)
 
@@ -136,17 +136,19 @@ def calc_hamming_dict(Theta_dict=dict, Z_dict=dict, t_rounding=float):
     return sparsity_dict
 
 
-def sparsity_benchmark(df=pd.DataFrame()):
-    for i in ['method_str', 'accuracy', 'p', 'hamming']:
+def sparsity_benchmark(df=pd.DataFrame(), upper_bound=float, lower_bound=float, lambda_filter=float):
+    for i in ['method', 'accuracy', 'p', 'N', 'hamming']:
         assert i in df.columns
 
-    spar_df = df[(df["accuracy"] < 0.01) & (df["accuracy"] > 0.0001)]
+    df = df[df["l1"] == lambda_filter]
+
+    spar_df = df[(df["accuracy"] < upper_bound) & (df["accuracy"] > lower_bound)]
 
     names = dict()
     frames = dict()
     for p in spar_df["p"].unique():
-        for method in spar_df["method_str"].unique():
-            names[method] = spar_df[(spar_df["p"] == p) & (spar_df["method_str"] == method)]["hamming"].min()
+        for method in spar_df["method"].unique():
+            names[method] = spar_df[(spar_df["p"] == p) & (spar_df["method"] == method)]["hamming"].min()
         frame = pd.DataFrame(names.items(), columns=['method', 'min_hamming'])
         frame = frame.sort_values(by='min_hamming', ascending=True)
         frames[p] = frame.reset_index(drop=True)
@@ -172,8 +174,44 @@ def numba_warmup(S):
     Omega_0 = np.eye(len(S))
     _, _ = ADMM_SGL(S, lambda1=0.1, Omega_0=Omega_0,
                              max_iter=5, tol=1e-10, rtol=1e-10, stopping_criterion='boyd')
-    
+
     _ = block_SGL(S, lambda1=0.1, Omega_0=Omega_0,
                         max_iter=5, tol=1e-10, rtol=1e-10, stopping_criterion='boyd')
     print("##################################")
-    return 
+    return
+
+
+def benchmarks_dataframe(times=dict, acc=dict, hamming=dict):
+    """
+    Turn benchmark dictionaries into dataframes.
+    :param times: dict
+    Input dictionary where 'key' is the model and 'value' is its runtime.
+    :param acc_dict: dict
+    Input dictionary where 'key' is a model and 'value' is its corresponding accuracy given as:
+    np.linalg.norm(Z - np.array(Z_i)) / np.linalg.norm(Z)
+    where Z is our model solution and Z_i is the model.
+    :param spars_dict: dict
+    Input dictionary where 'key' is a model and 'value' is its corresponding Hamming distance to the oracle precision matrix.
+    :return: Pandas.DataFrame()
+    """
+    assert len(times) == len(acc) == len(hamming)
+
+    all_dict = dict()
+    for key in times.keys():
+        all_dict[key] = {'time': times[key], 'accuracy': acc[key], 'hamming': hamming[key]}
+
+    df = pd.DataFrame.from_dict(all_dict, orient='index')
+
+    # split key into columns
+    df['split'] = df.index.str.split('_')
+    columns_names = ["method", "tol_str", "tol", "rtol_str", "rtol", "p_str", "p", "N_str", "N", "l1_str", "l1"]
+    df[columns_names] = pd.DataFrame(df['split'].tolist(), index=df['split'].index)
+
+    redundant_cols = ['split', "tol_str", "rtol_str", "p_str", "N_str", "l1_str"]
+    df = df.drop(redundant_cols, axis=1)
+
+    convert_dict = {'tol': float, 'rtol': float, "p": int, "N": int, "l1": float}
+    df = df.astype(convert_dict)
+    df = df.sort_values(['p', 'l1', 'method', 'time'])
+
+    return df

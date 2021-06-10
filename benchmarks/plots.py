@@ -2,10 +2,11 @@
 This script generates the plots for benchmark analysis.
 """
 import plotly.express as px
+import matplotlib.pyplot as plt
 import pandas as pd
 
 
-def plot_accuracy(df=pd.DataFrame(), upper_bound=float, lower_bound=float, lambda_filter=float):
+def plot_accuracy(df=pd.DataFrame(), upper_bound=float, lower_bound=float, lambda_filter=float, sortby=list):
     """
     Plot how accurate the solution of a model with particular hyperparameters
     comparing with the model solution Z.
@@ -16,18 +17,26 @@ def plot_accuracy(df=pd.DataFrame(), upper_bound=float, lower_bound=float, lambd
     Specify the lower bound for the solution accuracy.
     :return: px.scatter()
     """
-    
+    df = df.sort_values(by=sortby)
 
     # filter by lambda
     df = df[df["l1"] == lambda_filter]
-    df = df.sort_values(by=['p', 'accuracy'])
+    df["dim"] = list(zip(df.p, df.N))
+
+    df_2 = df.copy()
+    for method in df.method.unique():
+        filtered = df[df['method'] == method]
+        filtered = filtered.drop_duplicates(subset='accuracy', keep='first')
+        df_2 = df_2.append(filtered, ignore_index=False)
+
+    df = df_2.iloc[df.shape[0] + 1:, :]
 
     color_discrete_map = {'block-boyd': '#FF0000', 'regain': '#32CD32',
                           'single-boyd': '#FF8C00', 'sklearn': '#0000FF'}
 
     fig = px.scatter(df[(df["accuracy"] < upper_bound) & (df["accuracy"] > lower_bound)],
                      y="time", x="accuracy", text="l1", color="method",
-                     log_y=True, log_x=True, facet_col='p', facet_col_wrap=3, color_discrete_map=color_discrete_map,
+                     log_y=True, log_x=True, facet_col='dim', facet_col_wrap=3, color_discrete_map=color_discrete_map,
                      labels={
                          "time": "Time, s",
                          "accuracy": "Accuracy",
@@ -71,16 +80,18 @@ def plot_scalability(df=pd.DataFrame()):
 def plot_lambdas(df=pd.DataFrame(), upper_bound=float, lower_bound=float):
     df = df[(df["accuracy"] < upper_bound) & (df["accuracy"] > lower_bound)]
 
-    df = df.groupby(['method', "p", "l1"], as_index=False)['time'].min()
+    df["dim"] = list(zip(df.p, df.N))
+
+    df = df.groupby(['method', "l1", "dim"], as_index=False)['time'].min()
 
     color_discrete_map = {'block-boyd': '#FF0000', 'regain': '#32CD32',
                           'single-boyd': '#FF8C00', 'sklearn': '#0000FF'}
 
-    fig = px.scatter(df, x="p", y="time", text="p", color="method",
+    fig = px.scatter(df, x="dim", y="time", text="dim", color="method",
                      log_y=True, facet_col='l1', facet_col_wrap=3, color_discrete_map=color_discrete_map,
                      labels={
                          "time": "Time, s",
-                         "p": "Number of features, p",
+                         "dim": "Graph dimension (N,p)",
                          "method": "method"
                      },
                      template="plotly_white",
@@ -88,6 +99,26 @@ def plot_lambdas(df=pd.DataFrame(), upper_bound=float, lower_bound=float):
                            "Accuracy is between {0} and {1}".format(upper_bound, lower_bound))
 
     fig.update_traces(mode='markers+lines', marker_line_width=1, marker_size=10)
-    # fig.update_annotations(text="Accuracy is between 0.01 and 0.0001")
 
     return fig
+
+
+def plot_bm(df, lambda_list, min_acc=1e-2, log_scale=True):
+    fig, axs = plt.subplots(len(lambda_list), 1, figsize=(5, 8))
+    j = 0
+    for l1 in lambda_list:
+        ax = axs[j]
+        df_sub = df[(df.l1 == l1) & (df.accuracy <= min_acc)]
+        tmp = df_sub.groupby(["p", "N", "method"])["time"].min()
+
+        tmp.unstack().plot(ls='-', marker='o', xlabel="(p,N)", ylabel="runtime [sec]", ax=ax)
+        ax.set_title(rf"$\lambda_1$ = {l1}")
+        ax.grid(linestyle='--')
+        if log_scale:
+            ax.set_yscale('log')
+            # ax.set_xscale('log')
+
+        j += 1
+
+    fig.tight_layout()
+    return
