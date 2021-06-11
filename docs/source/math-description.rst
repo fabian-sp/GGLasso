@@ -36,7 +36,7 @@ The problem can then be formulated as
 .. math::
    \min_{\Theta, L \in \mathbb{S}^p} - \log \det (\Theta -L) + \mathrm{Tr}(S(\Theta-L)) + \lambda_1 \|\Theta\|_{1,od} + \mu_1 \|L\|_{\star}
 
-where :math:`\|\cdot\|_{\star}` is the nuclear norm (sum of singular values). :math:`\Theta` represents the sparse part while :math:`L` encodes the low rank component.
+where :math:`\|\cdot\|_{\star}` is the nuclear norm (sum of singular values). :math:`\Theta` represents the sparse part while :math:`L` encodes the low rank component. In [ref12]_, latent variable Graphical Lasso has been studied in the context of microbial abundance analysis and microbiome interaction networks.
 
 Multiple Graphical Lasso problems (MGL)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -133,6 +133,7 @@ References
 .. [ref9] Witten, D. M., Friedman, J. H., and Simon, N. (2011). New Insights and Faster Computations for the Graphical Lasso. J. Comput. Graph. Statist., 20(4):892–900.
 .. [ref10] Foygel, R. and Drton, M. (2010). Extended Bayesian Information Criteria for Gaussian Graphical Models. In Lafferty, J., Williams, C., Shawe-Taylor, J.,Zemel, R., and Culotta, A., editors, Advances in Neural Information Processing Systems, volume 23. Curran Associates, Inc.
 .. [ref11] Condat, L. (2013). A Direct Algorithm for 1-D Total Variation Denoising, IEEE Signal Processing Letters, vol. 20, no. 11, pp. 1054-1057.
+.. [ref12] Kurtz,  Z.  D.,  Bonneau,  R.,  and  Mueller,  C.  L.  (2019).   Disentangling microbial associations from hidden environmental and technical factors via latent graphical models.
 
 
 

@@ -11,6 +11,7 @@
 # documentation root, use os.path.abspath to make it absolute, like shown here.
 #
 import sphinx_gallery
+from sphinx_gallery.sorting import FileNameSortKey, ExplicitOrder
 import os
 import sys
 sys.path.insert(0, os.path.abspath('../gglasso'))
@@ -78,4 +79,5 @@ sphinx_gallery_conf = {
      'examples_dirs': '../../examples',   # path to your example scripts
      'gallery_dirs': 'auto_examples',  # path to where to save gallery generated output
      'matplotlib_animations': True, # allow animations
+     'within_subsection_order': FileNameSortKey, # sorting of examples
 }
