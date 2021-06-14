@@ -16,11 +16,13 @@ def regain_time(X=np.array([]), Z=dict, rg_params=dict, lambda_list=list, n_iter
 
     tol_list = rg_params["tol"]
     rtol_list = rg_params["rtol"]
+    
+    tol_rtol_list = list(zip(tol_list, rtol_list))
 
     p = X.shape[1]
     N = X.shape[0]
 
-    for tol, rtol in itertools.product(tol_list, rtol_list):
+    for tol, rtol in tol_rtol_list:
 
         addon_time = 0.
         Omega_0 = np.eye(X.shape[1])

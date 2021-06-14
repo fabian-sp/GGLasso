@@ -54,8 +54,13 @@ def gglasso_time(S=np.array([]), X=np.array([]), Omega_0=np.array([]), Z=dict, l
     numba_warmup(S=S)
     p = X.shape[1]
     N = X.shape[0]
+    
+    tol_rtol_list = list(zip(tol_list, rtol_list))
 
-    for method, tol, rtol in itertools.product(method_list, tol_list, rtol_list):
+    for method, tol_rtol in itertools.product(method_list, tol_rtol_list):
+        
+        tol = tol_rtol[0]
+        rtol = tol_rtol[1]
 
         addon_time = 0.
         Theta_0 = Omega_0.copy();

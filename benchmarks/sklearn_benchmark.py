@@ -19,11 +19,16 @@ def sklearn_time(X=np.array([]), Z=dict, sk_params=dict, lambda_list=list, n_ite
 
     tol_list = sk_params["tol"]
     enet_list = sk_params["enet"]
+    
+    tol_enet_list = list(zip(tol_list, enet_list))
 
     p = X.shape[1]
     N = X.shape[0]
 
-    for tol, enet, l1 in itertools.product(tol_list, enet_list, lambda_list):
+    for tol_enet, l1 in itertools.product(tol_enet_list, lambda_list):
+        tol = tol_enet[0]
+        enet = tol_enet[1]
+        
         key = "sklearn" + "_tol_" + str(tol) + "_enet_" + str(enet) + "_p_" + str(p) + "_N_" + str(N) + "_l1_" + str(l1)
 
         time_list = []
