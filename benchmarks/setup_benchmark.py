@@ -34,9 +34,12 @@ def Z_solution(X_dict=dict, lambda_list=list, model="sklearn"):
     model_Z_dict = dict()
 
     for X, l1 in itertools.product(list(X_dict.values()), lambda_list):
-        Z, Z_time, info = model_solution(model=model, X=X, lambda1=l1)
+        Z, Z_time, info = model_solution(solver=model, X=X, lambda1=l1)
 
-        key = "p_" + str(X.shape[1]) + "_l1_" + str(l1)
+        N = X.shape[0]
+        p = X.shape[1]
+
+        key = "p_" + str(p) + "_N_" + str(N) + "_l1_" + str(l1)
         model_time_dict.update({key: Z_time})
         model_Z_dict.update({key: Z})
     print("Model solution({0}): {1}".format(model, info))
