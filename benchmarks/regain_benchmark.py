@@ -13,7 +13,8 @@ def regain_time(X=np.array([]), Z=dict, rg_params=dict, lambda_list=list, n_iter
     precision_dict = dict()
     time_dict = dict()
     accuracy_dict = dict()
-
+    iter_dict = dict()
+    
     tol_list = rg_params["tol"]
     rtol_list = rg_params["rtol"]
     
@@ -32,6 +33,7 @@ def regain_time(X=np.array([]), Z=dict, rg_params=dict, lambda_list=list, n_iter
                 l1)
 
             time_list = list()
+            iter_list = list()
             for _ in trange(n_iter, desc=key, leave=True):
                 start = time.perf_counter()
                 model = rg_GL(alpha=l1, tol=tol, rtol=rtol, max_iter=max_iter,
@@ -40,9 +42,11 @@ def regain_time(X=np.array([]), Z=dict, rg_params=dict, lambda_list=list, n_iter
                 end = time.perf_counter()
 
                 time_list.append(end - start)
-
+                iter_list.append(model.n_iter_)
+                
             time_dict[key] = np.mean(time_list) + addon_time
-
+            iter_dict[key] = int(np.mean(iter_list))
+            
             if warm_start:
                 Omega_0 = Z_i.precision_
                 addon_time += np.mean(time_list)
@@ -52,8 +56,10 @@ def regain_time(X=np.array([]), Z=dict, rg_params=dict, lambda_list=list, n_iter
             model_key = "p_" + str(p) + "_N_" + str(N) + "_l1_" + str(l1)
             accuracy = np.linalg.norm(Z[model_key] - np.array(Z_i.precision_)) / np.linalg.norm(Z[model_key])
             accuracy_dict[key] = accuracy
+            
+    result = {'time': time_dict, 'accuracy': accuracy_dict, 'sol': precision_dict, 'iter': iter_dict}
 
-    return time_dict, accuracy_dict, precision_dict
+    return result
 
 
 def run_regain(X_dict=dict, S_dict=dict, model_Z_dict=dict, lambda_list=list, n_iter=int, regain_params=dict):

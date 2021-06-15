@@ -181,7 +181,7 @@ def numba_warmup(S):
     return
 
 
-def benchmarks_dataframe(times=dict, acc=dict, hamming=dict):
+def benchmarks_dataframe(times=dict, acc=dict, hamming=dict, it = dict):
     """
     Turn benchmark dictionaries into dataframes.
     :param times: dict
@@ -198,7 +198,7 @@ def benchmarks_dataframe(times=dict, acc=dict, hamming=dict):
 
     all_dict = dict()
     for key in times.keys():
-        all_dict[key] = {'time': times[key], 'accuracy': acc[key], 'hamming': hamming[key]}
+        all_dict[key] = {'time': times[key], 'accuracy': acc[key], 'hamming': hamming[key], 'iter': it[key]}
 
     df = pd.DataFrame.from_dict(all_dict, orient='index')
 

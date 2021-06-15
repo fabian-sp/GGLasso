@@ -13,16 +13,22 @@ from benchmarks.utilita import benchmark_parameters, save_dict, load_dict, numba
 def call_gglasso(S=np.array([]), Omega_0=np.array([]), Theta_0=np.array([]), X_0=np.array([]),
                  method=str, n_iter=int, tol=float, rtol=float, l1=float, stop_crit=str,
                  key=str, max_iter=5000):
+    
     all_times = list()
+    all_iter = list()
+    
+    
     for _ in trange(n_iter, desc=key, leave=True):
         if method == "single":
             start = time.perf_counter()
             sol, info = ADMM_SGL(S, lambda1=l1,
                                  Omega_0=Omega_0, Theta_0=Theta_0, X_0=X_0,
                                  max_iter=max_iter, tol=tol, rtol=rtol,
-                                 stopping_criterion=stop_crit)
+                                 stopping_criterion=stop_crit, measure=True)
             end = time.perf_counter()
+            
             all_times.append(end - start)
+            all_iter.append(len(info['residual']))
 
         elif method == "block":
             start = time.perf_counter()
@@ -31,19 +37,23 @@ def call_gglasso(S=np.array([]), Omega_0=np.array([]), Theta_0=np.array([]), X_0
                             max_iter=max_iter, tol=tol, rtol=rtol,
                             stopping_criterion=stop_crit)
             end = time.perf_counter()
+            
             all_times.append(end - start)
+            all_iter.append(0)
+            
             numC, _ = get_connected_components(S, l1)
-
             print("{0}: {1} connected components.".format(key, numC))
 
-    return sol, all_times
+    return sol, all_times, all_iter
 
 
 def gglasso_time(S=np.array([]), X=np.array([]), Omega_0=np.array([]), Z=dict, lambda_list=list, n_iter=int,
                  gglasso_params=dict, warm_start=False):
+    
     precision_dict = dict()
     accuracy_dict = dict()
     time_dict = dict()
+    iter_dict = dict()
 
     tol_list = gglasso_params["tol"]
     rtol_list = gglasso_params["rtol"]
@@ -72,16 +82,17 @@ def gglasso_time(S=np.array([]), X=np.array([]), Omega_0=np.array([]), Z=dict, l
             key = method + "-" + str(stop_crit) + pars
 
             # Run GGLasso
-            Z_i, all_times = call_gglasso(S=S, Omega_0=Omega_0, Theta_0=Theta_0, X_0=X_0,
-                                          method=method, n_iter=n_iter, tol=tol, rtol=rtol, l1=l1,
-                                          stop_crit=stop_crit, key=key)
+            Z_i, all_times, all_iter = call_gglasso(S=S, Omega_0=Omega_0, Theta_0=Theta_0, X_0=X_0,
+                                                    method=method, n_iter=n_iter, tol=tol, rtol=rtol, l1=l1,
+                                                    stop_crit=stop_crit, key=key)
 
             # update starting points
             if warm_start:
                 Omega_0, Theta_0, X_0 = Z_i["Omega"], Z_i["Theta"], Z_i["X"]
 
             time_dict[key] = np.mean(all_times) + addon_time
-
+            iter_dict[key] = int(np.mean(all_iter))
+            
             # add needed time to addon
             if warm_start:
                 addon_time += np.mean(all_times)
@@ -91,8 +102,10 @@ def gglasso_time(S=np.array([]), X=np.array([]), Omega_0=np.array([]), Z=dict, l
             model_key = "p_" + str(p) + "_N_" + str(N) + "_l1_" + str(l1)
             accuracy = np.linalg.norm(Z[model_key] - np.array(Z_i["Theta"])) / np.linalg.norm(Z[model_key])
             accuracy_dict[key] = accuracy
+            
+    result = {'time': time_dict, 'accuracy': accuracy_dict, 'sol': precision_dict, 'iter': iter_dict}
 
-    return time_dict, accuracy_dict, precision_dict
+    return result
 
 
 def run_gglasso(X_dict=dict, S_dict=dict, model_Z_dict=dict, lambda_list=list, n_iter=int, gglasso_params=dict):

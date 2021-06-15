@@ -16,6 +16,7 @@ def sklearn_time(X=np.array([]), Z=dict, sk_params=dict, lambda_list=list, n_ite
     precision_dict = dict()
     time_dict = dict()
     accuracy_dict = dict()
+    iter_dict = dict()
 
     tol_list = sk_params["tol"]
     enet_list = sk_params["enet"]
@@ -31,7 +32,8 @@ def sklearn_time(X=np.array([]), Z=dict, sk_params=dict, lambda_list=list, n_ite
         
         key = "sklearn" + "_tol_" + str(tol) + "_enet_" + str(enet) + "_p_" + str(p) + "_N_" + str(N) + "_l1_" + str(l1)
 
-        time_list = []
+        time_list = list()
+        iter_list = list()
 
         for _ in trange(n_iter, desc=key, leave=True):
             start = time.perf_counter()
@@ -40,8 +42,10 @@ def sklearn_time(X=np.array([]), Z=dict, sk_params=dict, lambda_list=list, n_ite
             end = time.perf_counter()
 
             time_list.append(end - start)
+            iter_list.append(model.n_iter_)
 
         time_dict[key] = np.mean(time_list)
+        iter_dict[key] = int(np.mean(iter_list))
 
         precision_dict[key] = Z_i.precision_
 
@@ -49,7 +53,9 @@ def sklearn_time(X=np.array([]), Z=dict, sk_params=dict, lambda_list=list, n_ite
         accuracy = np.linalg.norm(Z[model_key] - np.array(Z_i.precision_)) / np.linalg.norm(Z[model_key])
         accuracy_dict[key] = accuracy
 
-    return time_dict, accuracy_dict, precision_dict
+    result = {'time': time_dict, 'accuracy': accuracy_dict, 'sol': precision_dict, 'iter': iter_dict}
+
+    return result
 
 
 def run_sklearn(X_dict=dict, S_dict=dict, model_Z_dict=dict, lambda_list=list, n_iter=int, sklearn_params=dict):
