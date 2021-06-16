@@ -5,8 +5,9 @@ import plotly.express as px
 import matplotlib.pyplot as plt
 import pandas as pd
 
+from benchmarks.utilita import benchmarks_dataframe
 
-def plot_accuracy(df=pd.DataFrame(), upper_bound=float, lower_bound=float, lambda_filter=float, sortby=list):
+def plot_accuracy(times=dict(), acc=dict(), hamming=dict(), it=dict(), upper_bound=float, lower_bound=float, lambda_filter=float, sortby=list):
     """
     Plot how accurate the solution of a model with particular hyperparameters
     comparing with the model solution Z.
@@ -17,6 +18,8 @@ def plot_accuracy(df=pd.DataFrame(), upper_bound=float, lower_bound=float, lambd
     Specify the lower bound for the solution accuracy.
     :return: px.scatter()
     """
+    df = benchmarks_dataframe(times=times, acc=acc, hamming=hamming, it=it)
+
     df = df.sort_values(by=sortby)
 
     # filter by lambda
@@ -53,12 +56,14 @@ def plot_accuracy(df=pd.DataFrame(), upper_bound=float, lower_bound=float, lambd
     return fig
 
 
-def plot_scalability(df=pd.DataFrame()):
+def plot_scalability(times=dict(), acc=dict(), hamming=dict(), it=dict()):
     """
     Plot how well the implementations of ADMM scale according to a different choice of lambda.
     :param df: pandas.DataFrame()
     :return: px.scatter()
     """
+    df = benchmarks_dataframe(times=times, acc=acc, hamming=hamming, it=it)
+
     color_discrete_map = {'block-boyd': '#FF0000', 'regain': '#32CD32',
                           'single-boyd': '#FF8C00', 'sklearn': '#0000FF'}
 
@@ -77,22 +82,23 @@ def plot_scalability(df=pd.DataFrame()):
     return fig
 
 
-def plot_lambdas(df=pd.DataFrame(), upper_bound=float, lower_bound=float):
+def plot_lambdas(times=dict(), acc=dict(), hamming=dict(), it=dict(), upper_bound=float, lower_bound=float):
+
+    df = benchmarks_dataframe(times=times, acc=acc, hamming=hamming, it=it)
+
     df = df[(df["accuracy"] < upper_bound) & (df["accuracy"] > lower_bound)]
 
-    df["dim"] = list(zip(df.p, df.N))
-
-    df = df.groupby(['method', "l1", "dim"], as_index=False)['time'].min()
+    df = df.groupby(['method', "l1", "p", 'N'], as_index=False)['time'].min()
 
     color_discrete_map = {'block-boyd': '#FF0000', 'regain': '#32CD32',
                           'single-boyd': '#FF8C00', 'sklearn': '#0000FF'}
 
-    fig = px.scatter(df, x="dim", y="time", text="dim", color="method",
+    fig = px.scatter(df, x="p", y="time", text="N", color="method",
                      log_y=True, facet_col='l1', facet_col_wrap=3, color_discrete_map=color_discrete_map,
                      labels={
                          "time": "Time, s",
-                         "dim": "Graph dimension (N,p)",
-                         "method": "method"
+                         "p": "Number of features, p",
+                         "N": "Number of samples, N"
                      },
                      template="plotly_white",
                      title="Scalability of ADMM with different lambdas.<br>"
@@ -103,7 +109,10 @@ def plot_lambdas(df=pd.DataFrame(), upper_bound=float, lower_bound=float):
     return fig
 
 
-def plot_bm(df, lambda_list, min_acc=1e-2, log_scale=True):
+def plot_bm(times=dict(), acc=dict(), hamming=dict(), it=dict(), lambda_list=list, min_acc=1e-2, log_scale=True):
+
+    df = benchmarks_dataframe(times=times, acc=acc, hamming=hamming, it=it)
+
     fig, axs = plt.subplots(len(lambda_list), 1, figsize=(5, 8))
     j = 0
     for l1 in lambda_list:
