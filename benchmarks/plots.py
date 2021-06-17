@@ -4,6 +4,8 @@ This script generates the plots for benchmark analysis.
 import plotly.express as px
 import matplotlib.pyplot as plt
 import pandas as pd
+import numpy as np
+import time
 
 from benchmarks.utilita import benchmarks_dataframe
 
@@ -125,3 +127,15 @@ def plot_bm(df=pd.DataFrame(), lambda_list=list, min_acc=1e-2, log_scale=True):
 
     fig.tight_layout()
     return
+
+
+# Main entry point
+if __name__ == "__main__":
+    df = pd.read_csv("data/synthetic/bm5000.csv", sep="\t")
+
+    lambda_list = np.unique(df["l1"].values)
+    plot_bm(df, lambda_list=lambda_list)
+
+    plt.savefig('examples/plots/ggl_runtime/bm_{0}.png'.format(time.strftime("%Y%m%d")))
+    plt.show()
+
