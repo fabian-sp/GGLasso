@@ -7,7 +7,8 @@ import pandas as pd
 
 from benchmarks.utilita import benchmarks_dataframe
 
-def plot_accuracy(times=dict(), acc=dict(), hamming=dict(), it=dict(), upper_bound=float, lower_bound=float, lambda_filter=float, sortby=list):
+
+def plot_accuracy(df=pd.DataFrame(), upper_bound=float, lower_bound=float, lambda_filter=float, sortby=list):
     """
     Plot how accurate the solution of a model with particular hyperparameters
     comparing with the model solution Z.
@@ -18,7 +19,6 @@ def plot_accuracy(times=dict(), acc=dict(), hamming=dict(), it=dict(), upper_bou
     Specify the lower bound for the solution accuracy.
     :return: px.scatter()
     """
-    df = benchmarks_dataframe(times=times, acc=acc, hamming=hamming, it=it)
 
     df = df.sort_values(by=sortby)
 
@@ -56,14 +56,12 @@ def plot_accuracy(times=dict(), acc=dict(), hamming=dict(), it=dict(), upper_bou
     return fig
 
 
-def plot_scalability(times=dict(), acc=dict(), hamming=dict(), it=dict()):
+def plot_scalability(df=pd.DataFrame()):
     """
     Plot how well the implementations of ADMM scale according to a different choice of lambda.
     :param df: pandas.DataFrame()
     :return: px.scatter()
     """
-    df = benchmarks_dataframe(times=times, acc=acc, hamming=hamming, it=it)
-
     color_discrete_map = {'block-boyd': '#FF0000', 'regain': '#32CD32',
                           'single-boyd': '#FF8C00', 'sklearn': '#0000FF'}
 
@@ -82,9 +80,7 @@ def plot_scalability(times=dict(), acc=dict(), hamming=dict(), it=dict()):
     return fig
 
 
-def plot_lambdas(times=dict(), acc=dict(), hamming=dict(), it=dict(), upper_bound=float, lower_bound=float):
-
-    df = benchmarks_dataframe(times=times, acc=acc, hamming=hamming, it=it)
+def plot_lambdas(df=pd.DataFrame(), upper_bound=float, lower_bound=float):
 
     df = df[(df["accuracy"] < upper_bound) & (df["accuracy"] > lower_bound)]
 
@@ -109,9 +105,7 @@ def plot_lambdas(times=dict(), acc=dict(), hamming=dict(), it=dict(), upper_boun
     return fig
 
 
-def plot_bm(times=dict(), acc=dict(), hamming=dict(), it=dict(), lambda_list=list, min_acc=1e-2, log_scale=True):
-
-    df = benchmarks_dataframe(times=times, acc=acc, hamming=hamming, it=it)
+def plot_bm(df=pd.DataFrame(), lambda_list=list, min_acc=1e-2, log_scale=True):
 
     fig, axs = plt.subplots(len(lambda_list), 1, figsize=(5, 8))
     j = 0

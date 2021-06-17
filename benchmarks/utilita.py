@@ -136,9 +136,7 @@ def calc_hamming_dict(Theta_dict=dict, Z_dict=dict, t_rounding=float):
     return sparsity_dict
 
 
-def sparsity_benchmark(times=dict(), acc=dict(), hamming=dict(), it=dict(), upper_bound=float, lower_bound=float, lambda_filter=float):
-
-    df = benchmarks_dataframe(times=times, acc=acc, hamming=hamming, it=it)
+def sparsity_benchmark(df=pd.DataFrame(), upper_bound=float, lower_bound=float, lambda_filter=float):
 
     for i in ['method', 'accuracy', 'p', 'N', 'hamming']:
         assert i in df.columns
