@@ -43,23 +43,45 @@ def network_generation(p=int, N=int, M=10, style='powerlaw', gamma=2.8, prob=0.1
     return S, X, Theta
 
 
-def benchmark_parameters(sk_tol_list=[1e-1,1e-2], enet_list=[1e-1,1e-2],
+def benchmark_parameters(sk_tol_list=[1e-1, 1e-2], enet_list=[1e-3, 1e-4],
                          rg_tol_list=[1e-4, 1e-5, 5e-6, 1e-6], rg_rtol_list=[1e-4, 1e-5, 5e-6, 1e-6],
                          gglasso_tol_list=[1e-6, 1e-7, 5e-8, 1e-8], gglasso_rtol_list=[1e-6, 1e-7, 5e-8, 1e-8],
                          gglasso_stop='boyd', gglasso_method=['single', 'block'],
                          lambda_list=[0.5, 0.1, 0.05]):
     """
     Specify model hyperparameters.
-    :param S_dict:
-    :param sk_tol_list:
-    :param enet_list:
-    :param rg_tol_list:
-    :param rg_rtol_list:
-    :param admm_tol_list:
-    :param admm_rtol_list:
-    :param admm_stop:
-    :param admm_method:
-    :return:
+
+    Parameters
+    ----------
+    :param S_dict: dict
+        Dictionary of (p,p) empirical covariance matrices which need to be symmetric and positive semidefinite.
+    :param sk_tol_list: list
+        List of absolute tolerance rates for sklearn algorithm termination.
+    :param enet_list: list
+        List of relative tolerance rates for sklearn algorithm termination.
+    :param rg_tol_list: list
+        List of absolute tolerance rates for regain algorithm termination.
+    :param rg_rtol_list: list
+        List of relative tolerance rates for regain algorithm termination.
+    :param gglasso_tol_list: list
+        List of absolute tolerance rates for gglasso algorithm termination.
+    :param gglasso_rtol_list: list
+        List of relative tolerance rates for gglasso algorithm termination.
+    :param gglasso_stop: str or list of strings
+        Specify the termination criterion for ADMM method.
+    :param gglasso_method:
+        Specify the method of solving Graphical lasso problem.
+
+    Returns
+    -------
+    sk_params: dict
+        contains sklearn model hyperparameters;
+    rg_params: dict
+        contains regain model hyperparameters;
+    gglasso_params: dict
+        contains gglasso model hyperparameters;
+    lambda_list: list
+        contains regularization parameters lambda;
     """
 
     # Sklearn params
