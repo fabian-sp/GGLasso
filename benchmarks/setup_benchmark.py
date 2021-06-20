@@ -14,7 +14,7 @@ def build_datasets(p_list=list, N_list=list):
     for p, N in zip(p_list, N_list):
         try:
             start = time.perf_counter()
-            S, X, Theta = network_generation(p, N, K=1, M=2)
+            S, X, Theta = network_generation(p, N, M=2)
             end = time.perf_counter()
             print("p: %5d, N : %5d, Time : %5.4f" % (p, N, end-start))
         except:

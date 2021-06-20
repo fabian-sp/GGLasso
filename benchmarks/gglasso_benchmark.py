@@ -17,8 +17,8 @@ def call_gglasso(S=np.array([]), Omega_0=np.array([]), Theta_0=np.array([]), X_0
     all_times = list()
     all_iter = list()
     
-    
     for _ in trange(n_iter, desc=key, leave=True):
+
         if method == "single":
             start = time.perf_counter()
             sol, info = ADMM_SGL(S, lambda1=l1,
@@ -112,20 +112,18 @@ def run_gglasso(X_dict=dict, S_dict=dict, model_Z_dict=dict, lambda_list=list, n
     time_dict = dict()
     accuracy_dict = dict()
     Z_dict = dict()
-    trace_dict = dict()
+    iter_dict = dict()
 
     for X, S in zip(list(X_dict.values()), list(S_dict.values())):
         Omega_0 = np.eye(len(S))
-        gg_time, gg_accuracy, Z_gg = gglasso_time(S=S, X=X, Omega_0=Omega_0, Z=model_Z_dict, lambda_list=lambda_list,
+        gg_result = gglasso_time(S=S, X=X, Omega_0=Omega_0, Z=model_Z_dict, lambda_list=lambda_list,
                                                   n_iter=n_iter, gglasso_params=gglasso_params)
-        time_dict.update(gg_time)
-        accuracy_dict.update(gg_accuracy)
-        Z_dict.update(Z_gg)
+        time_dict.update(gg_result['time'])
+        accuracy_dict.update(gg_result['accuracy'])
+        Z_dict.update(gg_result['sol'])
+        iter_dict.update(gg_result['iter'])
 
-        for key, item in Z_dict.items():
-            trace_dict.update({key: {"Z": item, "X": X, "S": S}})  # add time for each lambda
-
-    return time_dict, accuracy_dict, trace_dict
+    return time_dict, accuracy_dict, Z_dict, iter_dict
 
 
 # Main entry point
@@ -135,10 +133,11 @@ if __name__ == "__main__":
     X_dict = load_dict(dict_name="X_dict")
     Z_dict = load_dict(dict_name="Z_dict")
 
-    time_dict, accuracy_dict, trace_dict = run_gglasso(X_dict=X_dict, S_dict=S_dict, model_Z_dict=Z_dict,
+    time_dict, accuracy_dict, Z_dict, iter_dict = run_gglasso(X_dict=X_dict, S_dict=S_dict, model_Z_dict=Z_dict,
                                                        lambda_list=lambda_list, n_iter=2,
                                                        gglasso_params=gglasso_params)
 
     save_dict(D=time_dict, name="gglasso_time_dict")
     save_dict(D=accuracy_dict, name="gglasso_acc_dict")
-    save_dict(D=trace_dict, name="gglasso_trace_dict")
+    save_dict(D=Z_dict, name="gglasso_sol_dict")
+    save_dict(D=iter_dict, name="gglasso_iter_dict")
