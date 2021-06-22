@@ -12,7 +12,7 @@ from .ggl_helper import prox_od_1norm, phiplus, prox_rank_norm
 
 def ADMM_SGL(S, lambda1, Omega_0, Theta_0=np.array([]), X_0=np.array([]),
              rho=1., max_iter=1000, tol=1e-7, rtol=1e-4, stopping_criterion='boyd',\
-             verbose=False, measure=False, latent=False, mu1=None):
+             update_rho=True, verbose=False, measure=False, latent=False, mu1=None):
     """
     This is an ADMM solver for the (Latent variable) Single Graphical Lasso problem (SGL).
     If ``latent=False``, this function solves
@@ -59,6 +59,8 @@ def ADMM_SGL(S, lambda1, Omega_0, Theta_0=np.array([]), X_0=np.array([]),
         * 'kkt': KKT residual is chosen as stopping criterion. This is computationally expensive to compute.
 
         The default is 'boyd'.
+    update_rho : boolean, optional
+        Whether the penalty parameter ``rho`` is updated, see Boyd et al. page 20-21 for details. The default is True.
     verbose : boolean, optional
         verbosity of the solver. The default is False.
     measure : boolean, optional
@@ -145,6 +147,8 @@ def ADMM_SGL(S, lambda1, Omega_0, Theta_0=np.array([]), X_0=np.array([]),
         # X Update
         X_t = X_t + Omega_t - Theta_t + L_t
 
+        
+        
         if measure:
             end = time.time()
             runtime[iter_t] = end - start
@@ -153,6 +157,21 @@ def ADMM_SGL(S, lambda1, Omega_0, Theta_0=np.array([]), X_0=np.array([]),
         if stopping_criterion == 'boyd':
             r_t,s_t,e_pri,e_dual = ADMM_stopping_criterion(Omega_t, Omega_t_1, Theta_t, L_t, X_t,\
                                                            S, rho, tol, rtol, latent)
+            
+            # update rho
+            if update_rho:
+                if r_t >= 10*s_t:
+                    rho_new = 2*rho
+                elif s_t >= 10*r_t:
+                    rho_new = 0.5*rho
+                else:
+                    rho_new = 1.*rho
+                
+                # rescale dual variables
+                X_t = (rho/rho_new)*X_t
+                rho = rho_new
+                
+                
             residual[iter_t] = max(r_t,s_t)
 
             if verbose:
@@ -265,10 +284,9 @@ def kkt_stopping_criterion(Omega, Theta, L, X, S, lambda1, latent=False, mu1=Non
 ## BLOCK-WISE GRAPHICAL LASSO AFTER WITTEN ET AL.
 #######################################################
 
-def block_SGL(S, lambda1, Omega_0, Theta_0=None, X_0=None, rho=1.,
+def block_SGL(S, lambda1, Omega_0, Theta_0=None, X_0=None, rho=1., max_iter=1000, 
               tol=1e-7, rtol=1e-3, stopping_criterion="boyd",
-              max_iter=1000, verbose=False,
-              measure=False):
+              update_rho=True, verbose=False, measure=False):
     """
     This is a wrapper for solving SGL problems on connected components of the solution and solving each block separately.
     See Witten, Friedman, Simon "New Insights for the Graphical Lasso" for details.
@@ -312,6 +330,8 @@ def block_SGL(S, lambda1, Omega_0, Theta_0=None, X_0=None, rho=1.,
         * 'kkt': KKT residual is chosen as stopping criterion. This is computationally expensive to compute.
 
         The default is 'boyd'.
+    update_rho : boolean, optional
+        Whether the penalty parameter ``rho`` is updated, see Boyd et al. page 20-21 for details. The default is True.
     verbose : boolean, optional
         verbosity of the solver. The default is False.
     measure : boolean, optional
@@ -360,7 +380,7 @@ def block_SGL(S, lambda1, Omega_0, Theta_0=None, X_0=None, rho=1.,
             block_S = S[np.ix_(C, C)]
             block_sol, block_info = ADMM_SGL(S=block_S, lambda1=lambda1, Omega_0=Omega_0[np.ix_(C, C)],
                                              Theta_0=Theta_0[np.ix_(C, C)], X_0=X_0[np.ix_(C, C)], tol=tol, rtol=rtol,
-                                             stopping_criterion=stopping_criterion,
+                                             stopping_criterion=stopping_criterion, update_rho=update_rho,
                                              rho=rho, max_iter=max_iter, verbose=verbose, measure=measure)
 
             allOmega.append(block_sol['Omega'])

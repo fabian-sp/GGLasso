@@ -11,7 +11,7 @@ from .ggl_helper import prox_p, phiplus, prox_rank_norm, f, P_val
 
 def ADMM_MGL(S, lambda1, lambda2, reg , Omega_0 , \
              Theta_0 = np.array([]), X_0 = np.array([]), n_samples = None, \
-             tol = 1e-5 , rtol = 1e-4, stopping_criterion = 'boyd', \
+             tol = 1e-5 , rtol = 1e-4, stopping_criterion = 'boyd', update_rho = True,\
              rho= 1., max_iter = 1000, verbose = False, measure = False, latent = False, mu1 = None):
     """
     This is an ADMM solver for the (Latent variable) Multiple Graphical Lasso problem (MGL). It jointly estimates K precision matrices of shape (p,p).
@@ -74,6 +74,8 @@ def ADMM_MGL(S, lambda1, lambda2, reg , Omega_0 , \
         * 'kkt': KKT residual is chosen as stopping criterion. This is computationally expensive to compute.
         
         The default is 'boyd'.
+    update_rho : boolean, optional
+        Whether the penalty parameter ``rho`` is updated, see Boyd et al. page 20-21 for details. The default is True.
     verbose : boolean, optional
         verbosity of the solver. The default is False.
     measure : boolean, optional
@@ -188,6 +190,20 @@ def ADMM_MGL(S, lambda1, lambda2, reg , Omega_0 , \
         if stopping_criterion == 'boyd':
             r_t,s_t,e_pri,e_dual = ADMM_stopping_criterion(Omega_t, Omega_t_1, Theta_t, L_t, X_t,\
                                                            S, rho, tol, rtol, latent)
+        
+            # update rho
+            if update_rho:
+                if r_t >= 10*s_t:
+                    rho_new = 2*rho
+                elif s_t >= 10*r_t:
+                    rho_new = 0.5*rho
+                else:
+                    rho_new = 1.*rho
+                
+                # rescale dual variables
+                X_t = (rho/rho_new)*X_t
+                rho = rho_new
+                
             residual[iter_t] = max(r_t,s_t)
             
             if verbose:
