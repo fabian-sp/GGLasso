@@ -291,6 +291,9 @@ class glasso_problem:
         solver_params['rho'] = 1.
         solver_params['max_iter'] = 1000
         
+        if self.conforming or not self.multiple:
+            solver_params['update_rho'] = True
+        
         return solver_params
         
     def set_reg_params(self, reg_params = None):
