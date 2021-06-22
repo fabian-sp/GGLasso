@@ -16,14 +16,14 @@ import matplotlib.pyplot as plt
 import time
 
 
-p = 100
-N = 100
+p = 50
+N = 50
 
 lambda1 = 0.1
 lambda2 = 0.05
 
 
-allK = [2, 5, 10, 15, 25, 40]
+allK = [2, 5, 10, 15, 25]
 allS = list()
 
 J = len(allK)
@@ -46,7 +46,7 @@ for j in range(J):
 _,_ = ADMM_MGL(allS[0], lambda1, lambda2, "GGL", allS[0], max_iter = 10, measure = False, latent = False)
 _,_ = ADMM_MGL(allS[0], lambda1, lambda2, "FGL", allS[0], max_iter = 10, measure = False, latent = False)
 
-_ = block_SGL(allS[0][0], lambda1, allS[0][0], max_iter=10, verbose=False, measure=False)
+_ = ADMM_SGL(allS[0][0], lambda1, allS[0][0], max_iter=10, verbose=False, measure=False)
 
 #%%
 # Solve a Group Graphical Lasso problem.

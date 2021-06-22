@@ -69,12 +69,12 @@ print(P.reg_params)
 #%%
 # Plotting the recovered graph and matrix
 # ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-# access the solution and draw the corresponding graph
+# The solution (i.e. estimated precision matrix) is stored in the ``P.solution`` object. We calculate an adjacency matrix thresholding all entries smaller than ``1e-4`` in absolute value (optional) and draw the corresponding graph.
 #
 
 #tmp = P.modelselect_stats
 sol = P.solution.precision_
-P.solution.calc_adjacency()
+P.solution.calc_adjacency(t = 1e-4)
 
 
 fig, axs = plt.subplots(2,2, figsize=(10,8))

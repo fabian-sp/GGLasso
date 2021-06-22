@@ -685,15 +685,15 @@ class GGLassoEstimator(BaseEstimator):
         
         return self.ebic_
     
-    def calc_adjacency(self):
+    def calc_adjacency(self, t = 1e-8):
         
         if self.conforming:
-            self.adjacency_ = adjacency_matrix(S = self.precision_, t = 1e-5)
+            self.adjacency_ = adjacency_matrix(S = self.precision_, t = t)
         
         else:
             self.adjacency_ = dict()
             for k in range(self.K):
-                self.adjacency_[k] = adjacency_matrix(S = self.precision_[k], t = 1e-5)
+                self.adjacency_[k] = adjacency_matrix(S = self.precision_[k], t = t)
             
         return 
         
