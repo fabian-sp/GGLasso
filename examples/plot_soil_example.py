@@ -27,7 +27,7 @@ from gglasso.helper.basic_linalg import scale_array_by_diagonal
 # For this, we first load the dataset and compute relative abundances (this is done by ``normalize``). Hence, we obtain compositional data where each sample is on the unit simplex.
 # Typically, Graphical Lasso is not applied to compositional data directly. We apply the centered log-ratio transform (using ``log_transform``). For this, we need to get rid of zero counts which is done by adding a pseudocount of 1 to all entries.
 
-soil = pd.read_csv('../../data/soil/soil_116.csv', sep=',', index_col = 0).T
+soil = pd.read_csv('../data/soil/soil_116.csv', sep=',', index_col = 0).T
 print(soil.head())
 
 X = normalize(soil)
@@ -35,13 +35,13 @@ X = normalize(soil)
 X = log_transform(X)
 (p,N) = X.shape
 
-print("Shape of the transformed data: (p,N)="(p,N))
+print("Shape of the transformed data: (p,N)=", (p,N))
 
 #%%
 # The dataset also contains the pH value for each sample. We do not make use of this for estimating the network.
 # We also calucalte the sampling depth, i.e. the number of total counts per sample
 
-metadata = pd.read_table('../../data/soil/88soils_modified_metadata.txt', index_col=0)
+metadata = pd.read_table('../data/soil/88soils_modified_metadata.txt', index_col=0)
 
 ph = metadata["ph"].reindex(soil.columns)
 print(ph.head())
@@ -50,7 +50,7 @@ depth = soil.sum(axis=0)
 
 #%%
 # We compute the empirical covariance matrix and scale it to correlations. Then, we create an instance of ``lasso_problem`` and do model selection using a grid search.
-# Note that we set ``latent=True```because we want to account for unobserved latent factors.
+# Note that we set ``latent=True`` because we want to account for unobserved latent factors.
 
 S0 = np.cov(X.values, bias = True)
 S = scale_array_by_diagonal(S0)
@@ -76,9 +76,11 @@ print(P.reg_params)
 #   L = V \Sigma V^T
 # where the columns of :math:`V` are the orthonormal eigenvecors and :math:`\Sigma` is diagonal containing the eigenvalues.
 # Denote the columns of :math:`V` corresponding only to positive eigenvalues with :math:`\tilde{V} \in \mathbb{R}^{p\times r}` and :math:`\tilde{\Sigma} \in \mathbb{R}^{r\times r}` accordingly, where :math:`r=\mathrm{rank}(L)`. Then we have 
+#
 # .. math::
 #   L = \tilde{V} \tilde{\Sigma} \tilde{V}^T.
 # Now we project the data matrix :math:`X\in \mathbb{R}^{p\times N}` onto the eigenspaces of :math:`L^{-1}` - which are the same as of :math:`L` - by computing
+#
 # .. math::
 #   U := X^T \tilde{V}\tilde{\Sigma}.
 # We plot the columns of :math:`U` vs. the vector of pH values.
@@ -101,16 +103,21 @@ L = P.solution.lowrank_
 proj, loadings = robust_PCA(X, L, inverse=True)
 r = np.linalg.matrix_rank(L)
 
+#%%
+# After computing the projections from the PCA implied by Graphical Lasso, we plot the projection of each sample on each of the low-rank components vs. the original pH value.
+
 for i in range(r):
-    plt.scatter(proj[:,i], ph, c = depth, cmap = plt.cm.Blues, vmin = 0)
-    cbar = plt.colorbar()
+    fig, ax = plt.subplots(1,1)
+    im = ax.scatter(proj[:,i], ph, c = depth, cmap = plt.cm.Blues, vmin = 0)
+    cbar = fig.colorbar(im)
     cbar.set_label("Sampling depth")
-    plt.xlabel(f"PCA component {i+1}")
-    plt.ylabel("pH")
-    plt.show()
+    ax.set_xlabel(f"PCA component {i+1}")
+    ax.set_ylabel("pH")
+    
     
 for i in range(r):
     print("Spearman correlation between pH and {0}th component: {1}, p-value: {2}".format(i+1, stats.spearmanr(ph, proj[:,i])[0], 
                                                                               stats.spearmanr(ph, proj[:,i])[1]))
     
+#%%
 # We see that the projection of the sample data onto the most dominant low-rank component of Graphical Lasso is highly correlated to the original pH value.
