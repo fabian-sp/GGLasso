@@ -180,13 +180,13 @@ def sparsity_benchmark(df=pd.DataFrame(), upper_bound=float, lower_bound=float, 
 
 
 def save_dict(D=dict, name=str):
-    name = os.getcwd() + '/data/synthetic/' + str(name) + '.pickle'
+    name = '../data/synthetic/' + str(name) + '.pickle'
     with open(os.path.expanduser(name), 'wb') as handle:
         pickle.dump(D, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
 
 def load_dict(dict_name=str):
-    name = os.getcwd() + '/data/synthetic/' + str(dict_name) + '.pickle'
+    name = '../data/synthetic/' + str(dict_name) + '.pickle'
     with open(os.path.expanduser(name), 'rb') as handle:
         D = pickle.load(handle)
     return D
