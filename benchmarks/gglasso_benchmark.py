@@ -30,7 +30,7 @@ def call_gglasso(S=np.array([]), Omega_0=np.array([]), Theta_0=np.array([]), X_0
             all_times.append(end - start)
             all_iter.append(len(info['residual']))
 
-        elif method == "gglasso_block":
+        elif method == "gglasso-block":
             start = time.perf_counter()
             sol = block_SGL(S, lambda1=l1,
                             Omega_0=Omega_0, Theta_0=Theta_0, X_0=X_0,
