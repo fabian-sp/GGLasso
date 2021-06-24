@@ -27,7 +27,7 @@ from gglasso.helper.basic_linalg import scale_array_by_diagonal
 # For this, we first load the dataset and compute relative abundances (this is done by ``normalize``). Hence, we obtain compositional data where each sample is on the unit simplex.
 # Typically, Graphical Lasso is not applied to compositional data directly. We apply the centered log-ratio transform (using ``log_transform``). For this, we need to get rid of zero counts which is done by adding a pseudocount of 1 to all entries.
 
-soil = pd.read_csv('../data/soil/soil_116.csv', sep=',', index_col = 0).T
+soil = pd.read_csv('../data/soil/processed/soil_116.csv', sep=',', index_col = 0).T
 print(soil.head())
 
 X = normalize(soil)
@@ -41,9 +41,8 @@ print("Shape of the transformed data: (p,N)=", (p,N))
 # The dataset also contains the pH value for each sample. We do not make use of this for estimating the network.
 # We also calucalte the sampling depth, i.e. the number of total counts per sample
 
-metadata = pd.read_table('../data/soil/88soils_modified_metadata.txt', index_col=0)
-
-ph = metadata["ph"].reindex(soil.columns)
+ph = pd.read_csv('../data/soil/processed/ph.csv', sep=',', index_col = 0)
+ph = ph.reindex(soil.columns)
 print(ph.head())
 
 depth = soil.sum(axis=0)
