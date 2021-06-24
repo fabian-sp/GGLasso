@@ -2,8 +2,8 @@
 Nonconforming Group Graphical Lasso experiment
 ===================================================
 
-Example script for Group Graphical Lasso with non-conforming dimension, i.e. some variables exist in some instances but not in all
-We use 5 datasets of microbiome gut OTU counts. Not all OTUs are present in all datasets hence we are in the situation above.
+Example script for Group Graphical Lasso with non-conforming dimension, i.e. some variables exist in some instances but not in all.
+We use 5 datasets of microbiome gut OTU counts. Not all OTUs are present in all datasets, hence we are in the situation above.
 
 We estimate a network of all appearing OTUs with a group sparsity penalty on OTU pairs that appear in multiple datasets.
 """
@@ -26,11 +26,11 @@ def load_and_transform(K = 5, min_inst = 2, compute_G = False):
     Parameters
     ----------
     K : int, optional
-        DESCRIPTION. The default is 5.
+        Number of datasets/instances to be considered. The default is 5.
     min_inst : TYPE, optional
-        DESCRIPTION. The default is 2.
+        Minimum number of instances where a pair of variables needs to be present to be considered as group . The default is 2.
     compute_G : TYPE, optional
-        DESCRIPTION. The default is False.
+        Whether to compute the array G. The default is False.
 
     Returns
     -------
@@ -42,9 +42,9 @@ def load_and_transform(K = 5, min_inst = 2, compute_G = False):
     G : array
         bookeeping array needed for the solver.
     ix_location : DataFrame
-        DESCRIPTION.
+        Contains index of each variable in each instance.
     ix_exist : DataFrame
-        DESCRIPTION.
+        Contains whether a variable exists for an instance.
     p : array
         dimensions.
     num_samples : array

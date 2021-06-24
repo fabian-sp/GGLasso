@@ -3,7 +3,7 @@ Fused Graphical Lasso experiment
 =================================
 
 We investigate the performance of Fused Graphical Lasso on powerlaw networks, compared to estimating the precision matrices independently with SGL.
-In particular, we demonstrate that FGL - in contrast to - is capable of estimating time-consistent precision matrices.
+In particular, we demonstrate that FGL - in contrast to SGL - is capable of estimating time-consistent precision matrices.
 
 We generate a precision matrix with block-wise powerlaw networks. 
 At time K=5, one of the blocks disappears and another block appears. A third block decays exponentially over time (indexed by K).
@@ -142,7 +142,7 @@ results['SGL'] = {'Theta' : all_res[ix_SGL]}
 Omega_0 = get_K_identity(K,p)
 
 start = time()
-sol, info = ADMM_MGL(S, l1opt, l2opt, reg, Omega_0, rho = 1, max_iter = 1000, \
+sol, info = ADMM_MGL(S, l1opt, l2opt, reg, Omega_0, rho = 1, max_iter = 300, \
                                                         tol = 1e-10, rtol = 1e-10, verbose = False, measure = True)
 end = time()
 
@@ -154,14 +154,14 @@ results['ADMM'] = {'Theta' : sol['Theta']}
 #  Solve with regain
 # ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-# regain needs data in format (N*K,p)
-# regain has TV penalty also on the diagonal, hence results may be slightly different than ADMM_MGL
+# ``regain`` needs data in format (N*K,p).
+# ``regain`` includes the TV penalty also on the diagonal, hence results may be slightly different than ``ADMM_MGL``.
 
 tmp = sample.transpose(1,0,2).reshape(p,-1).T
 
 start = time()
 ltgl = TimeGraphicalLasso(alpha = N*l1opt, beta = N*l2opt  , psi = 'l1', \
-                          rho = 1., tol = 1e-5, rtol = 1e-5,  max_iter = 500, verbose = False)
+                          rho = 1., tol = 1e-10, rtol = 1e-10,  max_iter = 300, verbose = False)
 ltgl = ltgl.fit(X = tmp, y = np.repeat(np.arange(K),N))
 end = time()
 
