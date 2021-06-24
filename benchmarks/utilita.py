@@ -43,10 +43,10 @@ def network_generation(p=int, N=int, M=10, style='powerlaw', gamma=2.8, prob=0.1
     return S, X, Theta
 
 
-def benchmark_parameters(sk_tol_list=[1e-1, 1e-2], enet_list=[1e-3, 1e-4],
+def benchmark_parameters(sk_tol_list=[1e-1, 1e-2], enet_list=[1e-4, 1e-4],
                          rg_tol_list=[1e-4, 1e-5, 5e-6, 1e-6], rg_rtol_list=[1e-4, 1e-5, 5e-6, 1e-6],
                          gglasso_tol_list=[1e-6, 1e-7, 5e-8, 1e-8], gglasso_rtol_list=[1e-6, 1e-7, 5e-8, 1e-8],
-                         gglasso_stop='boyd', gglasso_method=['single', 'block'],
+                         gglasso_stop='boyd', gglasso_method=['gglasso', 'gglasso_block'],
                          lambda_list=[0.5, 0.1, 0.05]):
     """
     Specify model hyperparameters.

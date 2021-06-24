@@ -19,7 +19,7 @@ def call_gglasso(S=np.array([]), Omega_0=np.array([]), Theta_0=np.array([]), X_0
     
     for _ in trange(n_iter, desc=key, leave=True):
 
-        if method == "single":
+        if method == "gglasso":
             start = time.perf_counter()
             sol, info = ADMM_SGL(S, lambda1=l1,
                                  Omega_0=Omega_0, Theta_0=Theta_0, X_0=X_0,
@@ -30,7 +30,7 @@ def call_gglasso(S=np.array([]), Omega_0=np.array([]), Theta_0=np.array([]), X_0
             all_times.append(end - start)
             all_iter.append(len(info['residual']))
 
-        elif method == "block":
+        elif method == "gglasso_block":
             start = time.perf_counter()
             sol = block_SGL(S, lambda1=l1,
                             Omega_0=Omega_0, Theta_0=Theta_0, X_0=X_0,
@@ -79,7 +79,7 @@ def gglasso_time(S=np.array([]), X=np.array([]), Omega_0=np.array([]), Z=dict, l
         for l1 in lambda_list:
 
             pars = "_tol_" + str(tol) + "_rtol_" + str(rtol) + "_p_" + str(p) + "_N_" + str(N) + "_l1_" + str(l1)
-            key = method + "-" + str(stop_crit) + pars
+            key = method + pars
 
             # Run GGLasso
             Z_i, all_times, all_iter = call_gglasso(S=S, Omega_0=Omega_0, Theta_0=Theta_0, X_0=X_0,
