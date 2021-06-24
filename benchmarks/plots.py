@@ -109,7 +109,7 @@ def plot_lambdas(df=pd.DataFrame(), upper_bound=float, lower_bound=float):
 
 def plot_bm(df=pd.DataFrame(), lambda_list=list, min_acc=1e-2, log_scale=True):
 
-    fig, axs = plt.subplots(len(lambda_list), 1, figsize=(5, 8))
+    fig, axs = plt.subplots(len(lambda_list), 1, figsize=(6,10))
     j = 0
     for l1 in lambda_list:
         ax = axs[j]
@@ -117,8 +117,11 @@ def plot_bm(df=pd.DataFrame(), lambda_list=list, min_acc=1e-2, log_scale=True):
         tmp = df_sub.groupby(["p", "N", "method"])["time"].min()
 
         tmp.unstack().plot(ls='-', marker='o', xlabel="(p,N)", ylabel="runtime [sec]", ax=ax)
+        
         ax.set_title(rf"$\lambda_1$ = {l1}")
         ax.grid(linestyle='--')
+        ax.legend(loc='upper left')
+        
         if log_scale:
             ax.set_yscale('log')
             # ax.set_xscale('log')

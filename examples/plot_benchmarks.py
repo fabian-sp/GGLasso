@@ -1,58 +1,74 @@
 """
 Benchmarking
 =================================
-We compare performance of Graphical lasso solvers implemented in ``GGLasso``,
-`regain <https://github.com/fdtomasi/regain>`_ and
-`sklearn <https://scikit-learn.org/stable/modules/generated/sklearn.covariance.GraphicalLasso.html#sklearn.covariance.GraphicalLasso>`_.
+
+We compare the performance of the Graphical Lasso solvers implemented in ``GGLasso`` to two commonly used packages, i.e.
+
+* `regain <https://github.com/fdtomasi/regain>`_ 
+    
+``regain`` contains an ADMM solver which is doing almost the same operations as ``ADMM_SGL``. For details, see the original paper. [ref3]_
+
+* `sklearn <https://scikit-learn.org/stable/modules/generated/sklearn.covariance.GraphicalLasso.html#sklearn.covariance.GraphicalLasso>`_.
+
+``sklearn`` by default uses the coordinate descent algorithm which was originally proposed by Friedman et al. [ref1]_ 
+
+The results can be generated using the notebook in ``benchmarks/benchmarks.ipynb`` in the Github repository.
 
 """
 
 import pandas as pd
 import numpy as np
 
-from benchmarks.utilita import benchmark_parameters, load_dict, dict_shape
+from benchmarks.utilita import benchmark_parameters
 from benchmarks.plots import plot_bm
 
 
 #%%
 #  Synthetic power-law networks
-# ^^^^^^^^^^^^
-# We compare the solvers for a SGL problem using sparse powerlaw networks described in :ref:`Basic example`.
-# To validate the performnace of solvers, we generate such big networks of maximum 5000 nodes :math:`(p_{max}=5000)`.
-# We solve a SGL problem by each of the solvers independently, but using the same CPUs with 64GB of RAM in total.
+# ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+# We compare the solvers for a SGL problem using synthetic sparse powerlaw networks, which are generated as described in [ref2]_.
+# The solvers are tested for different values of :mat:`\lambda_1` and different dimensionalities. These values are printed below.
+# We solve a SGL problem using each of the solvers independently, but using the same CPUs with 64GB of RAM in total.
 #
-# `CPU: AMD Opteron(tm) 6378 @ 1.40GHz (max 2.40 GHz) (8 Cores per socket, hyper-threading)`.
+# The results were generated on a machine equipped with `AMD Opteron(tm) 6378 @ 1.40GHz (max 2.40 GHz) (8 Cores per socket, hyper-threading)`.
+#
 
+df = pd.read_csv("../data/synthetic/bm2000.csv", index_col = 0)
+print(df.tail())
 
-print("\n Shapes of empirical covariance matrix:", dict_shape(load_dict('S_dict')))
-print("\n Shapes of the sample matrix:", dict_shape(load_dict('X_dict')))
-print("\n Shapes of true precisin matrix:", dict_shape(load_dict('5K_Theta_dict')))
+all_p_N= list(pd.unique(list(zip(df.p, df.N))))
+print("Dimensionality and sample size: (p,N) =", all_p_N )
+
+all_l1 = pd.unique(df.l1)
+print(r"Values of $\lambda_1$:  =", all_l1 )
 
 #%%
-#  Hyperparameters
-# ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-# We select default values of relative (rtol) and absolute (tol) tolerance rates for solver stopping crtireion.
-# Using a greed search, we find the best tolerance rates which lead to minimum run time of the solver.
-# Also, we compare the solvers in differnt setups of penalization hyperparameter :math:`\lambda_1` which is responsible the sparsity level in a final solution.
+#  Setup
+# ^^^^^^^^^^^^^
+# Each solver terminates after a given number of maximum iterations or when some optimality condition is met. Hence, the performance is difficult to compare as these optimality criteria may differ.
+# Thus, we select a range of values for relative (rtol) and absolute (tol) tolerance (used in ADMM) and similarly tolerance values for ``sklearn``.
 
 sk_params, rg_params, gglasso_params, lambda_list = benchmark_parameters()
 
 #%%
-#  Calculate the accuracy of the solver
-# ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-# It is not feasible to obtain the identical solutions by all three solvers due to the differences in optimization strategies.
-# So, one can compare the solvers, we select hyperparameters which allow us to have approximatelly similar solutions.
+#  Calculating the accuracy 
+# ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+# 
+# After solving each of the problems which each solver for different tolerance values, we compare the obtained solutions to a reference solution, denoted by :math:`Z^\ast`. 
 #
-# Firstly, we solve a SGL problem at a high level of precision by one of the solvers and call the solution a `model solution` (:math:`Z^{*}`).
-# Then, we solve the same problem by each of the solver at the lower level of precision (:math:`Z_{i}`).
-# Finally, we calculate the normalized Eucledean distance (`accuracy`) between :math:`Z^{*}` and solution :math:`Z_{i}`:
+# :math:`Z^\ast` is obtained by solving a SGL problem by one of the solvers for very small tolerance values (we used ``regain`` and set ``tol=rtol=1e-10``).
+# Finally, for a solution :math:`Z`, we calculate its accuracy using the normalized Euclidean distance:
 #
-# :math:`\begin{align} \text{accuracy} = \frac{\lVert Z^{*} - Z_{i} \rVert}{\lVert Z^{*} \rVert} \end{align}`
-df = pd.read_csv("../data/synthetic/bm2000.csv", sep=",")
-df.iloc[:, 1:].tail()
+# .. math::
+#   \text{accuracy}(Z) =  \frac{\|Z^\ast - Z \|}{ \| Z^\ast\| }.
 
 # %%
-# Time and accuracy with respect to :math:`\lambda_1`.
-# ^^^^^^^^^^^^
+# Runtime and accuracy with respect to :math:`\lambda_1`.
+# ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 #
-plot_bm(df, lambda_list=np.unique(df["l1"].values))
+# Now, determine a maximal accuracy :math:`\epsilon`. For each solver, we now select the run with minimal runtime where :math:`accuracy(Z) \leq \epsilon` is fulfilled. 
+# We plot the results for two values of :math:`\epsilon`:
+# 
+plot_bm(df, min_acc= 5e-3, lambda_list=all_l1)
+
+plot_bm(df, min_acc = 1e-3, lambda_list=all_l1)
