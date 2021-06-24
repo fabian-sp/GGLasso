@@ -27,7 +27,7 @@ from benchmarks.plots import plot_bm
 #  Synthetic power-law networks
 # ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 # We compare the solvers for a SGL problem using synthetic sparse powerlaw networks, which are generated as described in [ref2]_.
-# The solvers are tested for different values of :mat:`\lambda_1` and different dimensionalities. These values are printed below.
+# The solvers are tested for different values of :math:`\lambda_1` and different dimensionalities. These values are printed below.
 # We solve a SGL problem using each of the solvers independently, but using the same CPUs with 64GB of RAM in total.
 #
 # The results were generated on a machine equipped with `AMD Opteron(tm) 6378 @ 1.40GHz (max 2.40 GHz) (8 Cores per socket, hyper-threading)`.
@@ -40,7 +40,7 @@ all_p_N= list(pd.unique(list(zip(df.p, df.N))))
 print("Dimensionality and sample size: (p,N) =", all_p_N )
 
 all_l1 = pd.unique(df.l1)
-print(r"Values of $\lambda_1$:  =", all_l1 )
+print("Values of lambda_1:  =", all_l1 )
 
 #%%
 #  Setup
@@ -66,9 +66,21 @@ sk_params, rg_params, gglasso_params, lambda_list = benchmark_parameters()
 # Runtime and accuracy with respect to :math:`\lambda_1`.
 # ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 #
-# Now, determine a maximal accuracy :math:`\epsilon`. For each solver, we now select the run with minimal runtime where :math:`accuracy(Z) \leq \epsilon` is fulfilled. 
+# Now, determine a maximal accuracy :math:`\epsilon`. For each solver, we now select the run with minimal runtime where :math:`\text{accuracy}(Z) \leq \epsilon` is fulfilled. 
 # We plot the results for two values of :math:`\epsilon`:
 # 
+
+#%% 
+# Accuracy of :math:`\epsilon=5\cdot10^{-3}`
+# ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+#
+
+
 plot_bm(df, min_acc= 5e-3, lambda_list=all_l1)
+
+#%% 
+# Accuracy of :math:`\epsilon=1\cdot10^{-3}`
+# ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+#
 
 plot_bm(df, min_acc = 1e-3, lambda_list=all_l1)
