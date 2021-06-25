@@ -14,7 +14,7 @@ def build_datasets(p_list=list, N_list=list):
     for p, N in zip(p_list, N_list):
         try:
             start = time.perf_counter()
-            S, X, Theta = network_generation(p, N, M=2)
+            S, X, Theta = network_generation(p, N, M=10)
             end = time.perf_counter()
             print("p: %5d, N : %5d, Time : %5.4f" % (p, N, end-start))
         except:
@@ -58,7 +58,7 @@ if __name__ == "__main__":
     save_dict(D=X_dict, name="X_dict")
     save_dict(D=Theta_dict, name="Theta_dict")
 
-    model_time_dict, model_Z_dict = Z_solution(X_dict=X_dict, lambda_list=lambda_list, model="sklearn")
+    model_time_dict, model_Z_dict = Z_solution(X_dict=X_dict, lambda_list=lambda_list, model="regain")
 
     save_dict(D=model_time_dict, name="Z_time_dict")
     save_dict(D=model_Z_dict, name="Z_dict")
