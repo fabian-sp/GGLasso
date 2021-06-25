@@ -35,7 +35,7 @@ bibliography: paper.bib
 
 # Summary
 
-We introduce `GGLasso`, a Python package that enables sparse and robust linear regression and classification with linear equality constraints. 
+We introduce `GGLasso`, a Python package that solves General Graphical Lasso problems.
 The underlying statistical forward model is assumed to be of the following form:
 
 $$
