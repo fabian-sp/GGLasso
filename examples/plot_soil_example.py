@@ -96,10 +96,10 @@ def robust_PCA(X, L, inverse=True):
     # compute the projection
     zu = X.values.T @ loadings
     
-    return zu, loadings
+    return zu, loadings, np.round(sig[ind].squeeze(),3)
 
 L = P.solution.lowrank_
-proj, loadings = robust_PCA(X, L, inverse=True)
+proj, loadings, eigv = robust_PCA(X, L, inverse=True)
 r = np.linalg.matrix_rank(L)
 
 #%%
@@ -110,7 +110,7 @@ for i in range(r):
     im = ax.scatter(proj[:,i], ph, c = depth, cmap = plt.cm.Blues, vmin = 0)
     cbar = fig.colorbar(im)
     cbar.set_label("Sampling depth")
-    ax.set_xlabel(f"PCA component {i+1}")
+    ax.set_xlabel(f"PCA component {i+1} with eigenvalue {eigv[i]}")
     ax.set_ylabel("pH")
     
     
