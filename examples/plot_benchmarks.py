@@ -33,7 +33,7 @@ from benchmarks.plots import plot_bm
 # The results were generated on a machine equipped with `AMD Opteron(tm) 6378 @ 1.40GHz (max 2.40 GHz) (8 Cores per socket, hyper-threading)`.
 #
 
-df = pd.read_csv("../data/synthetic/bm2000.csv", index_col = 0)
+df = pd.read_csv("../data/synthetic/bm5000.csv", index_col = 0)
 print(df.tail())
 
 all_p_N= list(pd.unique(list(zip(df.p, df.N))))
@@ -79,8 +79,8 @@ sk_params, rg_params, gglasso_params, lambda_list = benchmark_parameters()
 plot_bm(df, min_acc= 5e-3, lambda_list=all_l1)
 
 #%% 
-# Accuracy of :math:`\epsilon=1\cdot10^{-3}`
+# Accuracy of :math:`\epsilon=3\cdot10^{-3}`
 # ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 #
 
-plot_bm(df, min_acc = 1e-3, lambda_list=all_l1)
+plot_bm(df, min_acc = 3e-3, lambda_list=all_l1)
