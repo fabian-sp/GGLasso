@@ -4,8 +4,12 @@ Soil microbiome networks
 
 Microbial abundance networks are a typical application of Graphical Lasso. [ref12]_
 
-We have a look at a `dataset of soil samples <https://pubmed.ncbi.nlm.nih.gov/19502440/>`_ from North and South America. It contains 88 samples of counts from 116 OTUs.
-The above linked paper also shows that bacterial composition is correlated with differences in pH values. In this experiment, we want to demonstrate that the confounding factor pH can be reconstructed using Graphical Lasso with latent variables.
+We have a look at a `dataset of 88 soil samples <https://pubmed.ncbi.nlm.nih.gov/19502440/>`_ from North and South America. We do two steps of preprocessing:
+
+* We filter on OTUs with a minimum frequeny of 100, obtaining :math:`N=88` samples of counts from :math:`p=116` OTUs.
+* We replace zero counts by adding a pseudocount of 1 to all entries.
+
+The above linked paper shows that bacterial composition is correlated with differences in pH values. In this experiment, we want to demonstrate that the confounding factor pH can be reconstructed using Graphical Lasso with latent variables.
 
  
 """
@@ -25,7 +29,7 @@ from gglasso.helper.basic_linalg import scale_array_by_diagonal
 
 #%%
 # For this, we first load the dataset and compute relative abundances (this is done by ``normalize``). Hence, we obtain compositional data where each sample is on the unit simplex.
-# Typically, Graphical Lasso is not applied to compositional data directly. We apply the centered log-ratio transform (using ``log_transform``). For this, we need to get rid of zero counts which is done by adding a pseudocount of 1 to all entries.
+# Typically, Graphical Lasso is not applied to compositional data directly. We apply the centered log-ratio transform (using ``log_transform``). 
 
 soil = pd.read_csv('../data/soil/processed/soil_116.csv', sep=',', index_col = 0).T
 print(soil.head())
@@ -39,7 +43,7 @@ print("Shape of the transformed data: (p,N)=", (p,N))
 
 #%%
 # The dataset also contains the pH value for each sample. We do not make use of this for estimating the network.
-# We also calucalte the sampling depth, i.e. the number of total counts per sample
+# We also calculate the sampling depth, i.e. the number of total counts per sample.
 
 ph = pd.read_csv('../data/soil/processed/ph.csv', sep=',', index_col = 0)
 ph = ph.reindex(soil.columns)
@@ -48,7 +52,7 @@ print(ph.head())
 depth = soil.sum(axis=0)
 
 #%%
-# We compute the empirical covariance matrix and scale it to correlations. Then, we create an instance of ``lasso_problem`` and do model selection using a grid search.
+# We compute the empirical covariance matrix and scale it to correlations. Then, we create an instance of ``glasso_problem`` and do model selection using a grid search.
 # Note that we set ``latent=True`` because we want to account for unobserved latent factors.
 
 S0 = np.cov(X.values, bias = True)
@@ -68,7 +72,7 @@ P.model_selection(modelselect_params = modelselect_params, method = 'eBIC', gamm
 print(P.reg_params)
 
 #%%
-# The Graphical Lasso solution is of the form :math:`\Theta -L` where :math:`\Theta` is sparse and :math:`L` has low rank.
+# The Graphical Lasso solution is of the form :math:`\Theta - L` where :math:`\Theta` is sparse and :math:`L` has low rank.
 # We use the low rank component of the Graphical Lasso solution in order to do a robust PCA. For this, we use the eigendecomposition
 #
 # .. math::
@@ -119,4 +123,4 @@ for i in range(r):
                                                                               stats.spearmanr(ph, proj[:,i])[1]))
     
 #%%
-# We see that the projection of the sample data onto the most dominant low-rank component of Graphical Lasso is highly correlated to the original pH value.
+# We see that the projection of the sample data onto the most dominant low-rank component (i.e. the one with largest eigenvalue) of Graphical Lasso is highly correlated to the original pH value.
