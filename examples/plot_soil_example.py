@@ -9,7 +9,8 @@ We have a look at a `dataset of 88 soil samples <https://pubmed.ncbi.nlm.nih.gov
 * We filter on OTUs with a minimum frequeny of 100, obtaining :math:`N=88` samples of counts from :math:`p=116` OTUs.
 * We replace zero counts by adding a pseudocount of 1 to all entries.
 
-The above linked paper shows that bacterial composition is correlated with differences in pH values. In this experiment, we want to demonstrate that the confounding factor pH can be reconstructed using Graphical Lasso with latent variables.
+Bacterial composition is correlated with environmental variables, such as temperature, moisture or pH.
+In this experiment, we want to demonstrate that these confounding factors can be reconstructed using Graphical Lasso with latent variables.
 
  
 """
@@ -51,6 +52,10 @@ print(ph.head())
 
 depth = soil.sum(axis=0)
 
+metadata = pd.read_table('../data/soil/original/88soils_modified_metadata.txt', index_col=0)
+
+temperature = metadata["annual_season_temp"].reindex(ph.index)
+
 #%%
 # We compute the empirical covariance matrix and scale it to correlations. Then, we create an instance of ``glasso_problem`` and do model selection using a grid search.
 # Note that we set ``latent=True`` because we want to account for unobserved latent factors.
@@ -90,8 +95,13 @@ print(P.reg_params)
 
 def robust_PCA(X, L, inverse=True):
     sig, V = np.linalg.eigh(L)
+       
+    # sort eigenvalues in descending order
+    sig = sig[::-1]
+    V = V[:,::-1]    
+    
     ind = np.argwhere(sig > 1e-9)
-
+    
     if inverse:
         loadings = V[:,ind] @ np.diag(np.sqrt(1/sig[ind]))
     else:
@@ -107,20 +117,38 @@ proj, loadings, eigv = robust_PCA(X, L, inverse=True)
 r = np.linalg.matrix_rank(L)
 
 #%%
-# After computing the projections from the PCA implied by Graphical Lasso, we plot the projection of each sample on each of the low-rank components vs. the original pH value.
+# We scanned the correlation between metadata variables and the two low-rank components. The largest correlations were found for a) pH and b) temeperature.
+# We compute the projections from the PCA implied by Graphical Lasso and plot 
+# 
+# * the projection of each sample onto the first low-rank component vs. the original pH value.
+# * the projection of each sample onto the second low-rank component vs. the original temperature value.
 
-for i in range(r):
-    fig, ax = plt.subplots(1,1)
-    im = ax.scatter(proj[:,i], ph, c = depth, cmap = plt.cm.Blues, vmin = 0)
-    cbar = fig.colorbar(im)
-    cbar.set_label("Sampling depth")
-    ax.set_xlabel(f"PCA component {i+1} with eigenvalue {eigv[i]}")
-    ax.set_ylabel("pH")
+#%%
+#  pH vs. PCA1
+# ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+fig, ax = plt.subplots(1,1)
+im = ax.scatter(proj[:,0], ph, c = depth, cmap = plt.cm.Blues, vmin = 0)
+cbar = fig.colorbar(im)
+cbar.set_label("Sampling depth")
+ax.set_xlabel(f"PCA component 1 with eigenvalue {eigv[0]}")
+ax.set_ylabel("pH")
+
+print("Spearman correlation between pH and 1st component: {0}, p-value: {1}".format(stats.spearmanr(ph, proj[:,0])[0], 
+                                                                              stats.spearmanr(ph, proj[:,0])[1]))
+
+#%%
+#  Temperature vs. PCA2
+# ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+fig, ax = plt.subplots(1,1)
+im = ax.scatter(proj[:,1], temperature, c = depth, cmap = plt.cm.Blues, vmin = 0)
+cbar = fig.colorbar(im)
+cbar.set_label("Sampling depth")
+ax.set_xlabel(f"PCA component 2 with eigenvalue {eigv[1]}")
+ax.set_ylabel("Temperature")
+
     
-    
-for i in range(r):
-    print("Spearman correlation between pH and {0}th component: {1}, p-value: {2}".format(i+1, stats.spearmanr(ph, proj[:,i])[0], 
-                                                                              stats.spearmanr(ph, proj[:,i])[1]))
+print("Spearman correlation between temperature and 2nd component: {0}, p-value: {1}".format(stats.spearmanr(temperature, proj[:,1])[0], 
+                                                                              stats.spearmanr(temperature, proj[:,1])[1]))
     
 #%%
-# We see that the projection of the sample data onto the most dominant low-rank component (i.e. the one with largest eigenvalue) of Graphical Lasso is highly correlated to the original pH value.
+# We see that the projection of the sample data onto the low-rank components of Graphical Lasso is highly correlated to environmental confounders.

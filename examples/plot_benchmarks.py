@@ -79,8 +79,8 @@ sk_params, rg_params, gglasso_params, lambda_list = benchmark_parameters()
 plot_bm(df, min_acc= 5e-3, lambda_list=all_l1)
 
 #%% 
-# Accuracy of :math:`\epsilon=3\cdot10^{-3}`
+# Accuracy of :math:`\epsilon=5\cdot10^{-2}`
 # ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 #
 
-plot_bm(df, min_acc = 3e-3, lambda_list=all_l1)
+plot_bm(df, min_acc = 5e-2, lambda_list=all_l1)
