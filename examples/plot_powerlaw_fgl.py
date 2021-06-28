@@ -11,7 +11,6 @@ At time K=5, one of the blocks disappears and another block appears. A third blo
 
 # sphinx_gallery_thumbnail_number = 2
 
-from time import time
 import numpy as np
 from sklearn.covariance import GraphicalLasso
 from regain.covariance import TimeGraphicalLasso
@@ -141,31 +140,27 @@ results['SGL'] = {'Theta' : all_res[ix_SGL]}
 
 Omega_0 = get_K_identity(K,p)
 
-start = time()
-sol, info = ADMM_MGL(S, l1opt, l2opt, reg, Omega_0, rho = 1, max_iter = 300, \
+sol, info = ADMM_MGL(S, l1opt, l2opt, reg, Omega_0, rho = 1, max_iter = 500, \
                                                         tol = 1e-10, rtol = 1e-10, verbose = False, measure = True)
-end = time()
 
-print(f"Running time for ADMM was {end-start} seconds.")
 
 results['ADMM'] = {'Theta' : sol['Theta']}
 
 # %%
 #  Solve with regain
 # ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
+#
 # ``regain`` needs data in format (N*K,p).
 # ``regain`` includes the TV penalty also on the diagonal, hence results may be slightly different than ``ADMM_MGL``.
 
 tmp = sample.transpose(1,0,2).reshape(p,-1).T
 
-start = time()
-ltgl = TimeGraphicalLasso(alpha = N*l1opt, beta = N*l2opt  , psi = 'l1', \
-                          rho = 1., tol = 1e-10, rtol = 1e-10,  max_iter = 300, verbose = False)
-ltgl = ltgl.fit(X = tmp, y = np.repeat(np.arange(K),N))
-end = time()
 
-print(f"Running time for LTGL was {end-start} seconds.")
+ltgl = TimeGraphicalLasso(alpha = N*l1opt, beta = N*l2opt  , psi = 'l1', \
+                          rho = 1., tol = 1e-10, rtol = 1e-10,  max_iter = 500, verbose = False)
+ltgl = ltgl.fit(X = tmp, y = np.repeat(np.arange(K),N))
+
+
 
 results['LTGL'] = {'Theta' : ltgl.precision_}
 
