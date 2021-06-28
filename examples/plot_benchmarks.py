@@ -4,15 +4,12 @@ Benchmarking
 
 We compare the performance of the Graphical Lasso solvers implemented in ``GGLasso`` to two commonly used packages, i.e.
 
-* `regain <https://github.com/fdtomasi/regain>`_ 
-    
-``regain`` contains an ADMM solver which is doing almost the same operations as ``ADMM_SGL``. For details, see the original paper. [ref3]_
+* `regain <https://github.com/fdtomasi/regain>`_ : contains an ADMM solver which is doing almost the same operations as ``ADMM_SGL``. For details, see the original paper. [ref3]_
 
-* `sklearn <https://scikit-learn.org/stable/modules/generated/sklearn.covariance.GraphicalLasso.html#sklearn.covariance.GraphicalLasso>`_.
-
-``sklearn`` by default uses the coordinate descent algorithm which was originally proposed by Friedman et al. [ref1]_ 
+* `sklearn <https://scikit-learn.org/stable/modules/generated/sklearn.covariance.GraphicalLasso.html#sklearn.covariance.GraphicalLasso>`_: by default uses the coordinate descent algorithm which was originally proposed by Friedman et al. [ref1]_ 
 
 The results can be generated using the notebook in ``benchmarks/benchmarks.ipynb`` in the Github repository.
+From ``GGLasso`` we use the standard solver ``ADMM_SGL`` labeled by **gglasso** and the block-wise solver labeled by **gglasso-block**. For details, we refer to :ref:`SGL solver`.
 
 """
 
@@ -34,7 +31,9 @@ from benchmarks.plots import plot_bm
 #
 
 df = pd.read_csv("../data/synthetic/bm5000.csv", index_col = 0)
-print(df.tail())
+df.reset_index(drop=True)
+
+#%%
 
 all_p_N= list(pd.unique(list(zip(df.p, df.N))))
 print("Dimensionality and sample size: (p,N) =", all_p_N )
