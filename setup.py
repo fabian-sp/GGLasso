@@ -9,7 +9,7 @@ URL = 'https://github.com/fabian-sp/GGLasso'
 EMAIL = 'fabian.schaipp@tum.de'
 AUTHOR = 'Fabian Schaipp'
 REQUIRES_PYTHON = '>=3.7.0'
-VERSION = "0.1.2"
+VERSION = "0.1.3"
 
 # What packages are required for this module to be executed?
 REQUIRED = [
@@ -60,7 +60,7 @@ setup(
     author_email=EMAIL,
     python_requires=REQUIRES_PYTHON,
     url=URL,
-    packages=find_packages(exclude=("benchmarks")),
+    packages=find_packages(exclude=["benchmarks.*", "benchmarks"]),
     install_requires=REQUIRED,
     extras_require=EXTRAS,
     include_package_data=True,

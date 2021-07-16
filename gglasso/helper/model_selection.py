@@ -187,11 +187,11 @@ def grid_search(solver, S, N, p, reg, l1, l2 = None, w2 = None, method= 'eBIC', 
             
             # warm start
             kwargs['Omega_0'] = Omega_sol.copy()
-            if 'X0' in sol.keys():
-                kwargs['X0'] = sol['X0'].copy()
-                kwargs['X1'] = sol['X1'].copy()
-            elif 'X' in sol.keys():
-                kwargs['X_0'] = sol['X'].copy()
+            # if 'X0' in sol.keys():
+            #     kwargs['X0'] = sol['X0'].copy()
+            #     kwargs['X1'] = sol['X1'].copy()
+            # elif 'X' in sol.keys():
+            #     kwargs['X_0'] = sol['X'].copy()
                 
             # store diagnostics
             AIC[g1,g2] = aic(S, Theta_sol, N)
@@ -506,7 +506,8 @@ def single_grid_search(S, lambda_range, N, method = 'eBIC', gamma = 0.3, latent 
             
             # warm start
             kwargs['Omega_0'] = sol['Omega'].copy()
-            kwargs['X_0'] = sol['X'].copy()
+            # as X is scaled with rho, this can go wrong when rho is adapted --> do not use dual for warm start
+            #kwargs['X_0'] = sol['X'].copy()
             
             AIC[j,m] = aic_single(S, Theta_sol, N)
             for g in gammas:
