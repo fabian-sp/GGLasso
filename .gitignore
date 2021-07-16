@@ -5,8 +5,13 @@ build/
 dist/
 .DS_Store
 gglasso.egg-info/
+
+
 *.ipynb_checkpoints/
+*.pickle
+
 
 # Sphinx build
 docs/build/
 docs/source/auto_examples
+benchmarks/draft/

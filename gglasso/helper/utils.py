@@ -70,7 +70,7 @@ def geometric_mean(x):
     """
     a = np.log(x)
     return np.exp(a.sum()/len(a))
-    
+
 def zero_replacement(X, c = 0.5):
     """
     replaces zeros with a constant value c
