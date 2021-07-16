@@ -132,7 +132,7 @@ def grid_search(solver, S, N, p, reg, l1, l2 = None, w2 = None, method= 'eBIC', 
         
     SP = np.zeros((grid1, grid2))
     SP[:] = np.nan
-    SKIP = np.zeros((grid1, grid2), dtype = bool)
+    #SKIP = np.zeros((grid1, grid2), dtype = bool)
     
     
     kwargs = {'reg': reg, 'S': S, 'tol': tol, 'rtol': rtol, 'verbose': False, 'measure': False}
@@ -158,9 +158,6 @@ def grid_search(solver, S, N, p, reg, l1, l2 = None, w2 = None, method= 'eBIC', 
             if verbose:
                 print("Current grid point: ", (L1[g1,g2],L2[g1,g2]) )
             
-            # if SKIP[g1,g2]:
-            #     print("SKIP")
-            #     continue
             
             # set lambda1 and lambda2
             kwargs['lambda1'] = L1[g1,g2]  
@@ -182,16 +179,11 @@ def grid_search(solver, S, N, p, reg, l1, l2 = None, w2 = None, method= 'eBIC', 
             if latent:
                 RANK[:,g1,g2] = [np.linalg.matrix_rank(sol['L'][k]) for k in np.arange(K)]
                 
-            #if mean_sparsity(Theta_sol) >= 0.18:
-            #    SKIP[g1:, g2:] = True
+
             
             # warm start
             kwargs['Omega_0'] = Omega_sol.copy()
-            # if 'X0' in sol.keys():
-            #     kwargs['X0'] = sol['X0'].copy()
-            #     kwargs['X1'] = sol['X1'].copy()
-            # elif 'X' in sol.keys():
-            #     kwargs['X_0'] = sol['X'].copy()
+            
                 
             # store diagnostics
             AIC[g1,g2] = aic(S, Theta_sol, N)
@@ -506,8 +498,8 @@ def single_grid_search(S, lambda_range, N, method = 'eBIC', gamma = 0.3, latent 
             
             # warm start
             kwargs['Omega_0'] = sol['Omega'].copy()
-            # as X is scaled with rho, this can go wrong when rho is adapted --> do not use dual for warm start
-            #kwargs['X_0'] = sol['X'].copy()
+            # as X is scaled with rho, warm starting the dual variables can go wrong when rho is adapted
+            
             
             AIC[j,m] = aic_single(S, Theta_sol, N)
             for g in gammas:

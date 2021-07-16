@@ -88,7 +88,7 @@ def gglasso_time(S=np.array([]), X=np.array([]), Omega_0=np.array([]), Z=dict, l
 
             # update starting points
             if warm_start:
-                Omega_0, Theta_0, X_0 = Z_i["Omega"], Z_i["Theta"], Z_i["X"]
+                Omega_0, Theta_0 = Z_i["Omega"], Z_i["Theta"]
 
             time_dict[key] = np.mean(all_times) + addon_time
             iter_dict[key] = int(np.mean(all_iter))
