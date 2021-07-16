@@ -21,7 +21,7 @@ def prox_od_1norm(A, l):
     """
     
     (d1,d2) = A.shape
-    res = np.sign(A) * np.maximum(np.abs(A) - l, 0)
+    res = np.sign(A) * np.maximum(np.abs(A) - l, 0.)
     
     for i in np.arange(np.minimum(d1,d2)):
         res[i,i] = A[i,i]
@@ -35,7 +35,7 @@ def prox_rank_norm(A, beta, D = np.array([]), Q = np.array([])):
         D, Q = np.linalg.eigh(A)
         print("Single eigendecomposition is executed in prox_rank_norm")
     
-    B = (Q * np.maximum(D-beta, 0))@Q.T
+    B = (Q * np.maximum(D-beta, 0.))@Q.T
     return B
 
 @njit()          
