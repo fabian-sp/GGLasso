@@ -15,7 +15,9 @@ From ``GGLasso`` we use the standard solver ``ADMM_SGL`` labeled by **gglasso** 
 
 import pandas as pd
 import numpy as np
+import os 
 
+os.chdir("..")
 from benchmarks.utilita import benchmark_parameters
 from benchmarks.plots import plot_bm
 
