@@ -15,11 +15,8 @@ From ``GGLasso`` we use the standard solver ``ADMM_SGL`` labeled by **gglasso** 
 
 import pandas as pd
 import numpy as np
-import os 
 
-os.chdir("..")
-from benchmarks.utilita import benchmark_parameters
-from benchmarks.plots import plot_bm
+from gallery_helper import plot_bm
 
 
 #%%
@@ -49,7 +46,6 @@ print("Values of lambda_1:  =", all_l1 )
 # Each solver terminates after a given number of maximum iterations or when some optimality condition is met. Hence, the performance is difficult to compare as these optimality criteria may differ.
 # Thus, we select a range of values for relative (rtol) and absolute (tol) tolerance (used in ADMM) and similarly tolerance values for ``sklearn``.
 
-sk_params, rg_params, gglasso_params, lambda_list = benchmark_parameters()
 
 #%%
 #  Calculating the accuracy 

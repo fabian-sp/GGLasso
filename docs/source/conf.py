@@ -80,4 +80,5 @@ sphinx_gallery_conf = {
      'gallery_dirs': 'auto_examples',  # path to where to save gallery generated output
      'matplotlib_animations': True, # allow animations
      'within_subsection_order': FileNameSortKey, # sorting of examples
+     'ignore_pattern': r'gallery_helper\.py',
 }
