@@ -35,7 +35,7 @@ bibliography: paper.bib
 
 # Summary
 
-We introduce `GGLasso`, a Python package that solves General Graphical Lasso problems. Given a multivariate Gaussian $\mathcal{X} \sim \mathcal{N}(\mu, \Sigma) \in \mathbb{R}^p$, statisticians are naturally interested in estimating conditional independencies of $\mathcal{X}$. A fundamental result of graphical models \cite{Lauritzen1996} states that for a multivariate Gaussian two variables $\mathcal{X}_{i}$ and $\mathcal{X}_j$ are independent -- conditional on all other variables -- if and only if $\Sigma^{-1}_{ij}=0$.
+We introduce `GGLasso`, a Python package that solves General Graphical Lasso problems. Given a multivariate Gaussian $\mathcal{X} \sim \mathcal{N}(\mu, \Sigma) \in \mathbb{R}^p$, statisticians are naturally interested in estimating conditional independencies of $\mathcal{X}$. A fundamental result of graphical models [@Lauritzen1996] states that for a multivariate Gaussian two variables $\mathcal{X}_{i}$ and $\mathcal{X}_j$ are independent -- conditional on all other variables -- if and only if $\Sigma^{-1}_{ij}=0$.
 Hence, estimating the inverse covariance matrix -- also called \textit{precision matrix} -- is sufficient in order to infer the conditional dependence structure of $\mathcal{X}$. Initially proposed by [@Friedman2007] and [@Yuan2007], *Graphical Lasso* translates this into a nonsmooth, convex optimization problem given by
 
 $$
@@ -54,7 +54,14 @@ $$
 
 # Statement of need 
 
-Currently, there is no Python package for solving Group Graphical Lasso problems. The Single Graphical Lasso problem is implemented in `scikit-learn` [@Pedregosa2011], however with no extension for latent variables. The package `regain` [@Tomasi2018] contains solvers for Single and Fused Graphical Lasso problem, with and without latent variables. We propose a uniform framework for solving Graphical Lasso problems and provide solvers for Group Graphical Lasso problems (with and without latent variables). Moreover, we implement a block-wise ADMM solver for SGL problems following [@Witten2011] which is severly faster than current solvers for large, sparse problems. In the table below we give an overview of existing functionalities and the `GGLasso` package.
+Currently, there is no Python package for solving Group Graphical Lasso problems. The Single Graphical Lasso problem is implemented in `scikit-learn` [@Pedregosa2011], however with no extension for latent variables. The package `regain` [@Tomasi2018] contains solvers for Single and Fused Graphical Lasso problems, with and without latent variables. With `GGLasso`, we make the following contributions:
+
+* Proposing a uniform framework for solving Graphical Lasso problems. 
+* Providing solvers for Group Graphical Lasso problems (with and without latent variables).
+* Providing a solver for -- what we call -- *nonconforming GGL* problems where not all variables are contained in every instance. We demonstrate a usecase of such a formulation in the context of microbial consensus networks. 
+* Implementing a block-wise ADMM solver for SGL problems following [@Witten2011] as well as proximal point solvers FGL and GGL problems.
+
+In the table below we give an overview of existing functionalities and the `GGLasso` package.
 
 |       | scikit-learn |  regain |  GGLasso | comment |
 | ----------- | ----------- | ----------- | ----------- | ----------- |
@@ -62,7 +69,7 @@ Currently, there is no Python package for solving Group Graphical Lasso problems
 | SGL + latent     | :no_entry_sign:       | :heavy_check_mark:       | :heavy_check_mark:       |             |
 | GGL              | :no_entry_sign:       | :no_entry_sign:          | :heavy_check_mark:       |             |
 | GGL + latent     | :no_entry_sign:       | :no_entry_sign:          | :heavy_check_mark:       |             |
-| FGL              | :no_entry_sign:       | :heavy_check_mark:       | :heavy_check_mark:       | new: Proximal point solver            |
+| FGL              | :no_entry_sign:       | :heavy_check_mark:       | :heavy_check_mark:       | new: proximal point solver            |
 | FGL + latent     | :no_entry_sign:       | :heavy_check_mark:       | :heavy_check_mark:       |             |
 | GGL nonconforming  (+latent)    | :no_entry_sign:       | :no_entry_sign:       | :heavy_check_mark:       |             |
 
