@@ -44,14 +44,13 @@ $$
 
 In the above, $\lambda >0$ is a regularization parameter and $\|\Theta\|_{1,od} := \sum_{i\neq j} |\Theta_{ij}|$ denotes the off-diagonal $\ell_1$-norm of a matrix.
 
-Multiple Graphical Lasso is given by the problem
+Multiple Graphical Lasso (MGL) problems are given by
 
 $$
-\label{prob:mgl}
 \min_{\Theta \in \mathbb{S}_{++}^K }\quad \sum_{k=1}^{K} \left(-\log\det(\Theta^{(k)}) + \langle S^{(k)},  \Theta^{(k)} \rangle \right)+ \mathcal{P}(\Theta).
 $$
 
-where $\mathcal{P}$ is a regularization function depending whether we do GGL or FGL. 
+where $\mathcal{P}$ is a regularization function depending whether we do GGL or FGL. We state the explicit form of $\mathcal{P}$ below.
 
 
 
@@ -68,13 +67,13 @@ In the table below we give an overview of existing functionalities and the `GGLa
 
 |       | scikit-learn |  regain |  GGLasso | comment |
 | ----------- | ----------- | ----------- | ----------- | ----------- |
-| SGL              | **YES**    | **YES**       | **YES**       | new: block-wise solver           |
-| SGL + latent     | **NO**       | **YES**       | **YES**       |             |
-| GGL              | **NO**       | **NO**          | **YES**       |             |
-| GGL + latent     | **NO**       | **NO**          | **YES**       |             |
-| FGL              | **NO**       | **YES**       | **YES**       | new: proximal point solver            |
-| FGL + latent     | **NO**       | **YES**       | **YES**       |             |
-| GGL nonconforming  (+latent)    | **NO**       | **NO**       | **YES**       |             |
+| SGL              | **yes**    | **yes**       | **yes**       | new: block-wise solver           |
+| SGL + latent     | **no**       | **yes**       | **yes**       |             |
+| GGL              | **no**       | **no**          | **yes**       |             |
+| GGL + latent     | **no**       | **no**          | **yes**       |             |
+| FGL              | **no**       | **yes**       | **yes**       | new: proximal point solver            |
+| FGL + latent     | **no**       | **yes**       | **yes**       |             |
+| GGL nonconforming  (+latent)    | **no**       | **no**       | **yes**       |             |
 
 
 
@@ -88,24 +87,36 @@ In the table below we give an overview of existing functionalities and the `GGLa
 pip install gglasso
 ```
 
-The central object of `GGLasso` is the class `glasso_problem`, which then calls the correct solvers depending on the problem formulation. This class streamlines the solving or model selection procedure for SGL, GGL, FGL problems with or without latent variables.
+The central object of `GGLasso` is the class `glasso_problem`, which streamlines the solving or model selection procedure for SGL, GGL, FGL problems with or without latent variables.
 
-We instantiate a Graphical Lasso problem: for this, we need the emirical covariance matrix/matrices `S` and the number of samples `N`. We can choose to model latent variables and set the regularization parameters via the other input arguments. 
+As an example, we instantiate a Single Graphical Lasso problem: for this, we need the emirical covariance matrix/matrices `S` and the number of samples `N`. We can choose to model latent variables and set the regularization parameters via the other input arguments. 
 
 ```python
 # Import the main class of the package
 from gglasso.problem import glasso_problem
 
-# Define a Graphical Lasso problem instance with default setting, 
-# given data X, y, and constraints C.
-problem  = glasso_problem(S, N, reg = "GGL", reg_params = None, latent = False)
+# Define a SGL problem instance with given data S 
+problem  = glasso_problem(S, N, reg = None, reg_params = {'lambda1': 0.01}, latent = False)
 ```
-The problem formulation is automatically derived from the input arguments of `glasso_problem`: the shape of the input `S` which determines whether we face a Single or Multiple Graphical Lasso problem. The problem has a representation method which prints the derived problem formulation:
+
+As a second example, we instantiate a Group Graphical Lasso problem with latent variables. Typically, the optimal choice of the regularization parameters are not known and are determined via model selection.
 
 ```python
-print(problem)
+# Define a GGL problem instance with given data S 
+problem  = glasso_problem(S, N, reg = "GGL", reg_params = None, latent = True)
 ```
-We refer to the [detailled documentation](https://gglasso.readthedocs.io/en/latest/problem-object.html) for further instructions.
+
+According to the input arguments, `glasso_problem` has two main methods:
+
+* if the regularization parameters are already specified, call the correct solver 
+* else find the best regularization parameters and the respective solution via model selection (typically done with grid search and the eBIC criterion [@Drton2010]).
+
+```python
+problem.solve()
+problem.model_selection()
+```
+
+For further information on the input arguments and methods, we refer to the [detailled documentation](https://gglasso.readthedocs.io/en/latest/problem-object.html).
 
 ## Problem formulation
 
@@ -115,13 +126,14 @@ We refer to the [detailled documentation](https://gglasso.readthedocs.io/en/late
 
 
 ### *GGL* Group Graphical Lasso: {#GGL}
-We solve (\ref{prob:mgl}) with 
+Solve the MGL problem with 
 
 $$
 \mathcal{P}(\Theta) = \lambda_1 \sum_{k=1}^{K} \sum_{i \neq j} |\Theta_{ij}^{(k)}| + \lambda_2  \sum_{i \neq j} \left(\sum_{k=1}^{K} |\Theta_{ij}^{(k)}|^2 \right)^{\frac{1}{2}}
 $$
 
 ### *FGL* Fused Graphical Lasso: {#FGL}
+Solve the MGL problem with 
 
 $$
 \mathcal{P}(\Theta) = \lambda_1 \sum_{k=1}^{K} \sum_{i \neq j} |\Theta_{ij}^{(k)}| + \lambda_2  \sum_{k=2}^{K}   \sum_{i \neq j} |\Theta_{ij}^{(k)} - \Theta_{ij}^{(k-1)}|
@@ -134,10 +146,11 @@ For a detailled mathematical description of all problem formulations see [the do
 
 The `GGLasso` package implements several methods with provable convergence guarantees for solving the optimization problems formulated above. 
 
-* **ADMM**: for all problem formulations we implemented the ADMM algorithm [@Boyd2011]. ADMM is a flexible and efficient optimization scheme which is specifically suited for Graphical Lasso problems as it only relies on efficient computation of the proximal operators of the involved functions [@Danaher2013; @Tomasi2018; @Ma2013].  
-* **PPDNA**: for GGL and FGL problems without latent variables, we implemented the proximal point solver proposed in [@Zhang2019; @Zhang2020]. According to the numerical experiments in [@Zhang2020], PPDNA can be an efficient alternative to ADMM especiall for fast local convergence.
+* *ADMM*: for all problem formulations we implemented the ADMM algorithm [@Boyd2011]. ADMM is a flexible and efficient optimization scheme which is specifically suited for Graphical Lasso problems as it only relies on efficient computation of the proximal operators of the involved functions [@Danaher2013; @Tomasi2018; @Ma2013].  
 
-* **BLOCK-ADMM**: for SGL problems without latent variables, we implement a method which solves the problem blockwise, following the proposal in [@Witten2011]. This wrapper simply applies the ADMM solver to all connected components of the empirical covariance matrix after thresholding.
+* *PPDNA*: for GGL and FGL problems without latent variables, we implemented the proximal point solver proposed in [@Zhang2019; @Zhang2020]. According to the numerical experiments in [@Zhang2020], PPDNA can be an efficient alternative to ADMM especially for fast local convergence.
+
+* *block-ADMM*: for SGL problems without latent variables, we implement a method which solves the problem blockwise, following the proposal in [@Witten2011]. This wrapper simply applies the ADMM solver to all connected components of the empirical covariance matrix after thresholding.
 
 # Acknowledgements
  
