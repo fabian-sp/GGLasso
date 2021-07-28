@@ -58,10 +58,10 @@ where $\mathcal{P}$ is a regularization function depending whether we do GGL or 
 
 Currently, there is no Python package for solving Group Graphical Lasso problems. The Single Graphical Lasso problem is implemented in `scikit-learn` [@Pedregosa2011], however with no extension for latent variables. The package `regain` [@Tomasi2018] contains solvers for Single and Fused Graphical Lasso problems, with and without latent variables. With `GGLasso`, we make the following contributions:
 
-* Proposing a uniform framework for solving Graphical Lasso problems. 
-* Providing solvers for Group Graphical Lasso problems (with and without latent variables).
-* Providing a solver for -- what we call -- *nonconforming GGL* problems where not all variables are contained in every instance. We demonstrate a usecase of such a formulation in the context of microbial consensus networks. 
-* Implementing a block-wise ADMM solver for SGL problems following [@Witten2011] as well as proximal point solvers FGL and GGL problems.
+- Proposing a uniform framework for solving Graphical Lasso problems. 
+- Providing solvers for Group Graphical Lasso problems (with and without latent variables).
+- Providing a solver for -- what we call -- *nonconforming GGL* problems where not all variables are contained in every instance. We demonstrate a usecase of such a formulation in the context of microbial consensus networks. 
+- Implementing a block-wise ADMM solver for SGL problems following [@Witten2011] as well as proximal point solvers FGL and GGL problems.
 
 In the table below we give an overview of existing functionalities and the `GGLasso` package.
 
@@ -96,7 +96,8 @@ As an example, we instantiate a Single Graphical Lasso problem: for this, we nee
 from gglasso.problem import glasso_problem
 
 # Define a SGL problem instance with given data S 
-problem  = glasso_problem(S, N, reg = None, reg_params = {'lambda1': 0.01}, latent = False)
+problem  = glasso_problem(S, N, reg = None, 
+                          reg_params = {'lambda1': 0.01}, latent = False)
 ```
 
 As a second example, we instantiate a Group Graphical Lasso problem with latent variables. Typically, the optimal choice of the regularization parameters are not known and are determined via model selection.
@@ -108,8 +109,8 @@ problem  = glasso_problem(S, N, reg = "GGL", reg_params = None, latent = True)
 
 According to the input arguments, `glasso_problem` has two main methods:
 
-* if the regularization parameters are already specified, call the correct solver 
-* else find the best regularization parameters and the respective solution via model selection (typically done with grid search and the eBIC criterion [@Drton2010]).
+- if the regularization parameters are already specified, call the correct solver 
+- else find the best regularization parameters and the respective solution via model selection (typically done with grid search and the eBIC criterion [@Foygel2010]).
 
 ```python
 problem.solve()
@@ -146,11 +147,11 @@ For a detailled mathematical description of all problem formulations see [the do
 
 The `GGLasso` package implements several methods with provable convergence guarantees for solving the optimization problems formulated above. 
 
-* *ADMM*: for all problem formulations we implemented the ADMM algorithm [@Boyd2011]. ADMM is a flexible and efficient optimization scheme which is specifically suited for Graphical Lasso problems as it only relies on efficient computation of the proximal operators of the involved functions [@Danaher2013; @Tomasi2018; @Ma2013].  
+- *ADMM*: for all problem formulations we implemented the ADMM algorithm [@Boyd2011]. ADMM is a flexible and efficient optimization scheme which is specifically suited for Graphical Lasso problems as it only relies on efficient computation of the proximal operators of the involved functions [@Danaher2013; @Tomasi2018; @Ma2013].  
 
-* *PPDNA*: for GGL and FGL problems without latent variables, we implemented the proximal point solver proposed in [@Zhang2019; @Zhang2020]. According to the numerical experiments in [@Zhang2020], PPDNA can be an efficient alternative to ADMM especially for fast local convergence.
+- *PPDNA*: for GGL and FGL problems without latent variables, we implemented the proximal point solver proposed in [@Zhang2019; @Zhang2020]. According to the numerical experiments in [@Zhang2020], PPDNA can be an efficient alternative to ADMM especially for fast local convergence.
 
-* *block-ADMM*: for SGL problems without latent variables, we implement a method which solves the problem blockwise, following the proposal in [@Witten2011]. This wrapper simply applies the ADMM solver to all connected components of the empirical covariance matrix after thresholding.
+- *block-ADMM*: for SGL problems without latent variables, we implement a method which solves the problem blockwise, following the proposal in [@Witten2011]. This wrapper simply applies the ADMM solver to all connected components of the empirical covariance matrix after thresholding.
 
 # Acknowledgements
  
