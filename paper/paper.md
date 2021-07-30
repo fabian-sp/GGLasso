@@ -89,7 +89,7 @@ pip install gglasso
 
 The central object of `GGLasso` is the class `glasso_problem`, which streamlines the solving or model selection procedure for SGL, GGL, FGL problems with or without latent variables.
 
-As an example, we instantiate a Single Graphical Lasso problem: for this, we need the emirical covariance matrix/matrices `S` and the number of samples `N`. We can choose to model latent variables and set the regularization parameters via the other input arguments. 
+As an example, we instantiate a Single Graphical Lasso problem: for this, we need the empirical covariance matrix/matrices `S` and the number of samples `N`. We can choose to model latent variables and set the regularization parameters via the other input arguments. 
 
 ```python
 # Import the main class of the package
@@ -133,12 +133,18 @@ $$
 \mathcal{P}(\Theta) = \lambda_1 \sum_{k=1}^{K} \sum_{i \neq j} |\Theta_{ij}^{(k)}| + \lambda_2  \sum_{i \neq j} \left(\sum_{k=1}^{K} |\Theta_{ij}^{(k)}|^2 \right)^{\frac{1}{2}}
 $$
 
+### Nonconforming GGL:
+
+link to docu
+
 ### *FGL* Fused Graphical Lasso: {#FGL}
 Solve the MGL problem with 
 
 $$
 \mathcal{P}(\Theta) = \lambda_1 \sum_{k=1}^{K} \sum_{i \neq j} |\Theta_{ij}^{(k)}| + \lambda_2  \sum_{k=2}^{K}   \sum_{i \neq j} |\Theta_{ij}^{(k)} - \Theta_{ij}^{(k-1)}|
 $$
+
+
 
 For a detailled mathematical description of all problem formulations see [the documentation](https://gglasso.readthedocs.io/en/latest/math-description.html).
 
@@ -152,6 +158,13 @@ The `GGLasso` package implements several methods with provable convergence guara
 - *PPDNA*: for GGL and FGL problems without latent variables, we implemented the proximal point solver proposed in [@Zhang2019; @Zhang2020]. According to the numerical experiments in [@Zhang2020], PPDNA can be an efficient alternative to ADMM especially for fast local convergence.
 
 - *block-ADMM*: for SGL problems without latent variables, we implement a method which solves the problem blockwise, following the proposal in [@Witten2011]. This wrapper simply applies the ADMM solver to all connected components of the empirical covariance matrix after thresholding.
+
+## Benchmarks and applications
+
+- benchmarks
+- soil
+- nonconforming 
+
 
 # Acknowledgements
  
