@@ -36,7 +36,7 @@ N = 100
 p_arr = (p-B)*np.ones(K, dtype = int)
 num_samples = N*np.ones(K, dtype = int)
 
-Sigma, Theta = generate_precision_matrix(p=p, M=M, style = 'powerlaw', gamma = 2.8, prob = 0.1, nxseed = 34567)
+Sigma, Theta = generate_precision_matrix(p=p, M=M, style = 'powerlaw', gamma = 2.8, prob = 0.1, nxseed = 3456)
 
 all_obs = dict()
 S = dict()
@@ -58,10 +58,11 @@ for k in np.arange(K):
 #
 # ``G`` is a bookeeping array which keeps count of the indices of each group of overlapping variables. It is needed in the solver later on.
 #
+# **Important:** We only consider pairs of variables which appear at least in 3 instances here!
 
 ix_exist, ix_location = construct_indexer(list(all_obs.values()))
 
-G = create_group_array(ix_exist, ix_location, min_inst=4)
+G = create_group_array(ix_exist, ix_location, min_inst = K-1)
 
 check_G(G, p)
 
@@ -88,7 +89,7 @@ for k in range(K):
     S_k = S_k.reindex(columns = ix_exist.index, index = ix_exist.index)
     
     ax = axs.ravel()[k]
-    sns.heatmap(S_k, ax = ax, cmap = plt.cm.coolwarm, linewidth = 0.01, linecolor = 'lightgrey',\
+    sns.heatmap(S_k, ax = ax, cmap = plt.cm.coolwarm, linewidth = 0.005, linecolor = 'lightgrey',\
                 cbar = False, vmin = -.5, vmax = .5, xticklabels = [], yticklabels = [])
     ax.set_title(f"Empirical covariance, instance {k}")
     
@@ -123,8 +124,8 @@ print(P.reg_params)
 # ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 #
 # We print the ratio of non-zero entries per instance.
-# We plot the distribution of non-zero entries per group. We can see that most groups either have no edges, or an edge in every instance.
-# This is exactly what we aim for with Group sparsity regularization.
+# We plot the distribution of non-zero entries per group. 
+# With group sparsity regularization we aim for many groups with either no non-zero or many non-zero entries per group.
 #
 
 print("Solution sparsity (ratio of nonzero entries): ")
