@@ -50,10 +50,7 @@ If your data samples are a list of ``pd.DataFrame`` objects where each Dataframe
 
 Here, ``list_of_samples`` stands for your list of data samples as described above.
 
-In our repository, you can also find a `Microbiome example`_ showcasing the usage of nonconforming GGL problems.
-
-.. _Microbiome example: https://github.com/fabian-sp/GGLasso/blob/master/examples/ggl_microbiome/exp_ggl_microbiome.py
-
+Also have a look at the :ref:`Nonconforming Group Graphical Lasso experiment` in our example gallery.
 
 
 Further Remarks - proximal operators
