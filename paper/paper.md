@@ -35,13 +35,13 @@ bibliography: paper.bib
 
 # Summary
 
-We introduce `GGLasso`, a Python package that solves General Graphical Lasso problems. Graphical Lasso was first introduced by [@Friedman2007] and [@Yuan2007] in order to estimate a sparse inverse covariance matrix of a multivariate Gaussian $\mathcal{X} \sim \mathcal{N}(\mu, \Sigma) \in \mathbb{R}^p$. It was extended by latent variables in [@Chandrasekaran2012]. More recently, more effort was spent on the joint estimation of multiple inverse covariance matrices, for example in [@Danaher2013; @Tomasi2018;]. The `GGLasso` package contains methods for solving the general problem formulation
+We introduce `GGLasso`, a Python package that solves General Graphical Lasso problems. Graphical Lasso was first introduced by [@Friedman2007] and [@Yuan2007] in order to estimate a sparse inverse covariance matrix of a multivariate Gaussian $\mathcal{X} \sim \mathcal{N}(\mu, \Sigma) \in \mathbb{R}^p$. It was extended by latent variables in [@Chandrasekaran2012]. More recently, more effort was spent on the joint estimation of multiple inverse covariance matrices, for example in [@Danaher2013; @Tomasi2018]. The `GGLasso` package contains methods for solving the general problem formulation
 
 $$
 \min_{\Theta, L \in \mathbb{S}_{++}^K }\quad \sum_{k=1}^{K} \left(-\log\det(\Theta^{(k)} - L^{(k)}) + \langle S^{(k)},  \Theta^{(k) - L^{(k)}} \rangle \right)+ \mathcal{P}(\Theta) +\sum_{k=1}^{K} \mu_{1,k} \|L^{(k)}\|_{\star}.
 $$
 
-We denote with $\mathbb{S}_{++}^K$ the $K$-product of the space of symmetric, positive definite matrices. Moreover, we write $\Theta = (\Theta^{(1)},\dots,\Theta^{(K)}$ for the sparse component and $L = (L^{(1)},\dots,L^{(K)}$ for the low rank components coming from latent variables. Typically, $\mathcal{P}$ is a regularization function inducing sparsity.
+We denote with $\mathbb{S}_{++}^K$ the $K$-product of the space of symmetric, positive definite matrices. Moreover, we write $\Theta = (\Theta^{(1)},\dots,\Theta^{(K)})$ for the sparse component and $L = (L^{(1)},\dots,L^{(K)})$ for the low rank components coming from latent variables. Typically, $\mathcal{P}$ is a regularization function inducing sparsity. The above problem formulation includes many important special cases such as single (latent variable) Graphical Lasso, Group or Fused Graphical Lasso.
 
 
 # Statement of need 
@@ -111,33 +111,29 @@ For further information on the input arguments and methods, we refer to the [det
 
 ## Problem formulation
 
-The general problem formulation ?? contains many important special cases which list below. A detailled mathematical description containing the problem formulation for each special case can be found in the [documentation](https://gglasso.readthedocs.io/en/latest/math-description.html).
+We list important special cases of problem formulation ?? . For a mathematical formulation for each special case we refer to the [documentation](https://gglasso.readthedocs.io/en/latest/math-description.html).
 
 
 ### *SGL* Single Graphical Lasso: {#SGL} 
-For $K=1$, the problem reduces to the (Latent variable) Single Graphical Lasso.
+For $K=1$, the problem reduces to the Single (latent variable) Graphical Lasso.
 
 ### *GGL* Group Graphical Lasso: {#GGL}
 For 
-
 $$
 \mathcal{P}(\Theta) = \lambda_1 \sum_{k=1}^{K} \sum_{i \neq j} |\Theta_{ij}^{(k)}| + \lambda_2  \sum_{i \neq j} \left(\sum_{k=1}^{K} |\Theta_{ij}^{(k)}|^2 \right)^{\frac{1}{2}}
 $$
-
 we obtain the Group Graphical Lasso as formulated in [@Danaher2013]
 
 ### *FGL* Fused Graphical Lasso: {#FGL}
 For
-
 $$
 \mathcal{P}(\Theta) = \lambda_1 \sum_{k=1}^{K} \sum_{i \neq j} |\Theta_{ij}^{(k)}| + \lambda_2  \sum_{k=2}^{K}   \sum_{i \neq j} |\Theta_{ij}^{(k)} - \Theta_{ij}^{(k-1)}|
 $$
-
-we obtain Fused (also called Time-Varying) Graphical Lasso [@Danaher2013, @Tomasi2018, @Hallac2017].
+we obtain Fused (also called Time-Varying) Graphical Lasso [@Danaher2013; @Tomasi2018; @Hallac2017].
 
 ### Nonconforming GGL:
 
-Consider the GGL case in a situation where not each variable is observed in each of the instances $k=1,\dots,K$. `GGLasso` is able to solve these problems and even include latent variables. We provide the mathematical details in the [documentation] (https://gglasso.readthedocs.io/en/latest/math-description.html#ggl-the-nonconforming-case) and give an [example](https://gglasso.readthedocs.io/en/latest/auto_examples/plot_nonconforming_ggl.html#sphx-glr-auto-examples-plot-nonconforming-ggl-py).
+Consider the GGL case in a situation where not each variable is observed in each of the instances $k=1,\dots,K$. `GGLasso` is able to solve these problems and include latent variables. We provide the mathematical details in the [documentation](https://gglasso.readthedocs.io/en/latest/math-description.html#ggl-the-nonconforming-case) and give an [example](https://gglasso.readthedocs.io/en/latest/auto_examples/plot_nonconforming_ggl.html#sphx-glr-auto-examples-plot-nonconforming-ggl-py).
 
 
 
@@ -155,7 +151,7 @@ The `GGLasso` package implements several methods with provable convergence guara
 
 In our example gallery, we include benchmarks comparing the solvers in `GGLasso` to state-of-the-art software as well as illustrative examples explaining the usage and functionalities of the package. We want to emphasize the following examples:
 
-- [Benchmarks](https://gglasso.readthedocs.io/en/latest/auto_examples/plot_benchmarks.html#sphx-glr-auto-examples-plot-benchmarks-py) for SGL problems: our solver is competitive with `scikit-learn` and `regain` and our newly implmented block-wise solver is highly efficient for large, sparse networks.
+- [Benchmarks](https://gglasso.readthedocs.io/en/latest/auto_examples/plot_benchmarks.html#sphx-glr-auto-examples-plot-benchmarks-py) for SGL problems: our solver is competitive with `scikit-learn` and `regain`. The newly implemented block-wise solver is highly efficient for large, sparse networks.
 
 - [Soil microbiome application](https://gglasso.readthedocs.io/en/latest/auto_examples/plot_soil_example.html#sphx-glr-auto-examples-plot-soil-example-py): we demonstrate how latent variables can be used in order to reconstruct unobserved confounders of the independence network.
 
