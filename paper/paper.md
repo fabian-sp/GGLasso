@@ -35,23 +35,13 @@ bibliography: paper.bib
 
 # Summary
 
-We introduce `GGLasso`, a Python package that solves General Graphical Lasso problems. Given a multivariate Gaussian $\mathcal{X} \sim \mathcal{N}(\mu, \Sigma) \in \mathbb{R}^p$, statisticians are naturally interested in estimating conditional independencies of $\mathcal{X}$. A fundamental result of graphical models [@Lauritzen1996] states that for a multivariate Gaussian two variables $\mathcal{X}_{i}$ and $\mathcal{X}_j$ are independent -- conditional on all other variables -- if and only if $\Sigma^{-1}_{ij}=0$.
-Hence, estimating the inverse covariance matrix -- also called \textit{precision matrix} -- is sufficient in order to infer the conditional dependence structure of $\mathcal{X}$. Initially proposed by [@Friedman2007] and [@Yuan2007], *Graphical Lasso* translates this into a nonsmooth, convex optimization problem given by
+We introduce `GGLasso`, a Python package that solves General Graphical Lasso problems. Graphical Lasso was first introduced by [@Friedman2007] and [@Yuan2007] in order to estimate a sparse inverse covariance matrix of a multivariate Gaussian $\mathcal{X} \sim \mathcal{N}(\mu, \Sigma) \in \mathbb{R}^p$. It was extended by latent variables in [@Chandrasekaran2012]. More recently, more effort was spent on the joint estimation of multiple inverse covariance matrices, for example in [@Danaher2013; @Tomasi2018;]. The `GGLasso` package contains methods for solving the general problem formulation
 
 $$
-\min_{\Theta \in \mathbb{S}^p_{++}} \quad - \log \det \Theta + \langle S,  \Theta \rangle+ \lambda \|\Theta\|_{1,od}.
+\min_{\Theta, L \in \mathbb{S}_{++}^K }\quad \sum_{k=1}^{K} \left(-\log\det(\Theta^{(k)} - L^{(k)}) + \langle S^{(k)},  \Theta^{(k) - L^{(k)}} \rangle \right)+ \mathcal{P}(\Theta) +\sum_{k=1}^{K} \mu_{1,k} \|L^{(k)}\|_{\star}.
 $$
 
-In the above, $\lambda >0$ is a regularization parameter and $\|\Theta\|_{1,od} := \sum_{i\neq j} |\Theta_{ij}|$ denotes the off-diagonal $\ell_1$-norm of a matrix.
-
-Multiple Graphical Lasso (MGL) problems are given by
-
-$$
-\min_{\Theta \in \mathbb{S}_{++}^K }\quad \sum_{k=1}^{K} \left(-\log\det(\Theta^{(k)}) + \langle S^{(k)},  \Theta^{(k)} \rangle \right)+ \mathcal{P}(\Theta).
-$$
-
-where $\mathcal{P}$ is a regularization function depending whether we do GGL or FGL. We state the explicit form of $\mathcal{P}$ below.
-
+We denote with $\mathbb{S}_{++}^K$ the $K$-product of the space of symmetric, positive definite matrices. Moreover, we write $\Theta = (\Theta^{(1)},\dots,\Theta^{(K)}$ for the sparse component and $L = (L^{(1)},\dots,L^{(K)}$ for the low rank components coming from latent variables. Typically, $\mathcal{P}$ is a regularization function inducing sparsity.
 
 
 # Statement of need 
@@ -121,32 +111,34 @@ For further information on the input arguments and methods, we refer to the [det
 
 ## Problem formulation
 
+The general problem formulation ?? contains many important special cases which list below. A detailled mathematical description containing the problem formulation for each special case can be found in the [documentation](https://gglasso.readthedocs.io/en/latest/math-description.html).
 
 
 ### *SGL* Single Graphical Lasso: {#SGL} 
-
+For $K=1$, the problem reduces to the (Latent variable) Single Graphical Lasso.
 
 ### *GGL* Group Graphical Lasso: {#GGL}
-Solve the MGL problem with 
+For 
 
 $$
 \mathcal{P}(\Theta) = \lambda_1 \sum_{k=1}^{K} \sum_{i \neq j} |\Theta_{ij}^{(k)}| + \lambda_2  \sum_{i \neq j} \left(\sum_{k=1}^{K} |\Theta_{ij}^{(k)}|^2 \right)^{\frac{1}{2}}
 $$
 
-### Nonconforming GGL:
-
-link to docu
+we obtain the Group Graphical Lasso as formulated in [@Danaher2013]
 
 ### *FGL* Fused Graphical Lasso: {#FGL}
-Solve the MGL problem with 
+For
 
 $$
 \mathcal{P}(\Theta) = \lambda_1 \sum_{k=1}^{K} \sum_{i \neq j} |\Theta_{ij}^{(k)}| + \lambda_2  \sum_{k=2}^{K}   \sum_{i \neq j} |\Theta_{ij}^{(k)} - \Theta_{ij}^{(k-1)}|
 $$
 
+we obtain Fused (also called Time-Varying) Graphical Lasso [@Danaher2013, @Tomasi2018, @Hallac2017].
 
+### Nonconforming GGL:
 
-For a detailled mathematical description of all problem formulations see [the documentation](https://gglasso.readthedocs.io/en/latest/math-description.html).
+Consider the GGL case in a situation where not each variable is observed in each of the instances $k=1,\dots,K$. `GGLasso` is able to solve these problems and even include latent variables. We provide the mathematical details in the [documentation] (https://gglasso.readthedocs.io/en/latest/math-description.html#ggl-the-nonconforming-case) and give an [example](https://gglasso.readthedocs.io/en/latest/auto_examples/plot_nonconforming_ggl.html#sphx-glr-auto-examples-plot-nonconforming-ggl-py).
+
 
 
 ## Optimization algorithms
@@ -161,9 +153,13 @@ The `GGLasso` package implements several methods with provable convergence guara
 
 ## Benchmarks and applications
 
-- benchmarks
-- soil
-- nonconforming 
+In our example gallery, we include benchmarks comparing the solvers in `GGLasso` to state-of-the-art software as well as illustrative examples explaining the usage and functionalities of the package. We want to emphasize the following examples:
+
+- [Benchmarks](https://gglasso.readthedocs.io/en/latest/auto_examples/plot_benchmarks.html#sphx-glr-auto-examples-plot-benchmarks-py) for SGL problems: our solver is competitive with `scikit-learn` and `regain` and our newly implmented block-wise solver is highly efficient for large, sparse networks.
+
+- [Soil microbiome application](https://gglasso.readthedocs.io/en/latest/auto_examples/plot_soil_example.html#sphx-glr-auto-examples-plot-soil-example-py): we demonstrate how latent variables can be used in order to reconstruct unobserved confounders of the independence network.
+
+- [Nonconforming GGL](https://gglasso.readthedocs.io/en/latest/auto_examples/plot_nonconforming_ggl.html#sphx-glr-auto-examples-plot-nonconforming-ggl-py): we illustrate how to use `GGLasso` for GGL problems with missing variables. 
 
 
 # Acknowledgements
