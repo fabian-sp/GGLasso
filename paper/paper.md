@@ -44,6 +44,9 @@ $$
 We denote with $\mathbb{S}_{++}^K$ the $K$-product of the space of symmetric, positive definite matrices. Moreover, we write $\Theta = (\Theta^{(1)},\dots,\Theta^{(K)})$ for the sparse component and $L = (L^{(1)},\dots,L^{(K)})$ for the low rank components coming from latent variables. Typically, $\mathcal{P}$ is a regularization function inducing sparsity. The above problem formulation includes many important special cases such as single (latent variable) Graphical Lasso, Group or Fused Graphical Lasso.
 
 
+![test](../docs/source/pictures/combined.png)
+
+
 # Statement of need 
 
 Currently, there is no Python package for solving Group Graphical Lasso problems. The Single Graphical Lasso problem is implemented in `scikit-learn` [@Pedregosa2011], however with no extension for latent variables. The package `regain` [@Tomasi2018] contains solvers for Single and Fused Graphical Lasso problems, with and without latent variables. With `GGLasso`, we make the following contributions:
@@ -54,6 +57,7 @@ Currently, there is no Python package for solving Group Graphical Lasso problems
 - Implementing a block-wise ADMM solver for SGL problems following [@Witten2011] as well as proximal point solvers FGL and GGL problems.
 
 In the table below we give an overview of existing functionalities and the `GGLasso` package.
+
 
 |       | scikit-learn |  regain |  GGLasso | comment |
 | ----------- | ----------- | ----------- | ----------- | ----------- |
