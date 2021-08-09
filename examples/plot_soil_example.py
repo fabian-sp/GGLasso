@@ -91,7 +91,7 @@ print(P.reg_params)
 #
 # .. math::
 #   U := X^T \tilde{V}\tilde{\Sigma}.
-# We plot the columns of :math:`U` vs. the vector of pH values.
+# 
 
 def robust_PCA(X, L, inverse=True):
     sig, V = np.linalg.eigh(L)
@@ -117,7 +117,7 @@ proj, loadings, eigv = robust_PCA(X, L, inverse=True)
 r = np.linalg.matrix_rank(L)
 
 #%%
-# We scanned the correlation between metadata variables and the two low-rank components. The largest correlations were found for a) pH and b) temeperature.
+# We scanned the correlation between metadata variables and the two low-rank components. The largest correlations were found for a) pH and b) temperature.
 # We compute the projections from the PCA implied by Graphical Lasso and plot 
 # 
 # * the projection of each sample onto the first low-rank component vs. the original pH value.
