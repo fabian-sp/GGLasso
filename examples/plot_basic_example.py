@@ -36,7 +36,6 @@ print("Shape of the sample array: ", sample.shape)
 # ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 A = adjacency_matrix(Theta)
-np.fill_diagonal(A,1)
 
 G = nx.from_numpy_array(A)
 pos = nx.drawing.layout.spring_layout(G, seed = 1234)

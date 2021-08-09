@@ -37,7 +37,7 @@ class glasso_problem:
         * For GGL with non-conforming dimensions, use a list/dict of length K. Will be transformed to a dict with keys 1,..K.
         
         For MGL, each ``S[k]`` has to be symmetric and positive semidefinite.
-        Note: by default ``S`` will be scaled to correlations and scaled back after solving, see option ``do_scaling``.
+        Note: scaling ``S`` to correlations might be helpful, see option ``do_scaling``.
         
     N : int or integer array of length K
         Number of samples for each instance k=1,..,K.
@@ -70,8 +70,8 @@ class glasso_problem:
         See :ref:`Nonconforming GGL` on how to create G.
         
     do_scaling : boolean, optional
-        Whether to scale input S to correlations. The default is True.
-        If True, the output is re-scaled to covariances after solving. 
+        Whether to scale input S to correlations. The default is ``False``.
+        If ``True``, the output is re-scaled to covariances after solving. 
 
     """
     

@@ -112,7 +112,7 @@ Now, the associated GGL regularizer becomes
 where 
 :math:`\Theta_{[l]}` is the vector with entries :math:`\{\Theta_{i_l^k j_l^k}^{(k)} \vert~ k \in K_l\} \in \mathbb{R}^{|K_l|}`. The scaling factor :math:`\beta_l > 0` is set to :math:`\beta_l = \sqrt{|K_l|}` in order to account for distinct group sizes.
 
-In ``GGLasso`` we implemented an ADMM algorithm for the above described problem formulation, possibly extended with latent variables. 
+In ``GGLasso`` we implemented an ADMM algorithm for the above described problem formulation, possibly extended with latent variables. Have a look at the :ref:`Nonconforming Group Graphical Lasso experiment` in our example gallery.
 
 Optimization algorithms
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
