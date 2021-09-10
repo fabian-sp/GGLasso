@@ -5,6 +5,7 @@ author: Fabian Schaipp
 import numpy as np
 import time
 import copy
+import warnings
 
 from numba import njit
 from numba.typed import List
@@ -261,10 +262,18 @@ def ext_ADMM_MGL(S, lambda1, lambda2, reg , Omega_0, G,\
     print(f"ADMM terminated after {iter_t+1} iterations with status: {status}.")
     
     for k in np.arange(K):
-        assert abs(Omega_t[k].T - Omega_t[k]).max() <= 1e-5, "Solution is not symmetric"
-        assert abs(Theta_t[k].T - Theta_t[k]).max() <= 1e-5, "Solution is not symmetric"
-        assert abs(L_t[k].T - L_t[k]).max() <= 1e-5, "Solution is not symmetric"
         
+        ### CHECK FOR SYMMETRY
+        if abs((Omega_t[k]).T - Omega_t[k]).max() > 1e-5:
+            warnings.warn(f"Omega variable is not symmetric, largest deviation is {abs((Omega_t[k]).T - Omega_t[k]).max()}.")
+        
+        if abs((Theta_t[k]).T - Theta_t[k]).max() > 1e-5:
+            warnings.warn(f"Theta variable is not symmetric, largest deviation is {abs((Theta_t[k]).T - Theta_t[k]).max()}.")
+        
+        if abs((L_t[k]).T - L_t[k]).max() > 1e-5:
+            warnings.warn(f"L variable is not symmetric, largest deviation is {abs((L_t[k]).T - L_t[k]).max()}.")
+
+        ### CHECK FOR POSDEF
         D = np.linalg.eigvalsh(Theta_t[k]-L_t[k])
         if D.min() <= 1e-5:
             print("WARNING: Theta (Theta-L resp.) may be not positive definite -- increase accuracy!")
