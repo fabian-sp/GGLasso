@@ -337,7 +337,6 @@ def moreau_h(beta, D, Q):
     return psi, pp, pm
 
 
-#@njit()
 # tile is not numba supported, could be replaced by repeat+reshape
 def construct_gamma(A, beta, D = np.array([]), Q = np.array([])):
     (K,p,p) = A.shape
@@ -348,12 +347,6 @@ def construct_gamma(A, beta, D = np.array([]), Q = np.array([])):
     
     for k in np.arange(K):
         phip_d = phip(D[k,:] , beta) 
-        
-        # for i in np.arange(p):
-        #     for j in np.arange(p):    
-                
-        #         denom = np.sqrt(D[k,i]**2 + 4* beta) + np.sqrt(D[k,j]**2 + 4* beta)
-        #         Gamma[k,i,j] = (phip_d[i] + phip_d[j]) / denom
             
         h1 = np.tile(np.sqrt(D[k,:]**2 + 4* beta), (p,1))
         h1 = h1 + h1.T 
@@ -443,7 +436,6 @@ def cg_ppdna(Gamma, eigQ, W, sigma_t, b, eps = 1e-6, max_iter = 20):
         
     return x
 
-@njit()
 def Y_t( X, Omega_t, Theta_t, S, lambda1, lambda2, sigma_t, reg):
     assert np.min(np.array([lambda1, lambda2, sigma_t])) > 0 , "at least one parameter is not positive"
     assert X.shape[1] == X.shape[2], "dimensions are not as expected"
