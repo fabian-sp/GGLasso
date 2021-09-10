@@ -6,6 +6,7 @@ import numpy as np
 import time
 from scipy.sparse.csgraph import connected_components
 from scipy.linalg import block_diag
+import warnings
 
 from .ggl_helper import prox_od_1norm, phiplus, prox_rank_norm
 
@@ -209,10 +210,17 @@ def ADMM_SGL(S, lambda1, Omega_0, Theta_0=np.array([]), X_0=np.array([]),
 
     print(f"ADMM terminated after {iter_t+1} iterations with status: {status}.")
 
-    assert abs((Omega_t).T - Omega_t).max() <= 1e-5, "Solution is not symmetric"
-    assert abs((Theta_t).T - Theta_t).max() <= 1e-5, "Solution is not symmetric"
-    assert abs((L_t).T - L_t).max() <= 1e-5, "Solution is not symmetric"
+    ### CHECK FOR SYMMETRY
+    if abs((Omega_t).T - Omega_t).max() > 1e-5:
+        warnings.warn(f"Omega variable is not symmetric, largest deviation is {abs((Omega_t).T - Omega_t).max()}.")
+    
+    if abs((Theta_t).T - Theta_t).max() > 1e-5:
+        warnings.warn(f"Theta variable is not symmetric, largest deviation is {abs((Theta_t).T - Theta_t).max()}.")
+    
+    if abs((L_t).T - L_t).max() > 1e-5:
+        warnings.warn(f"L variable is not symmetric, largest deviation is {abs((L_t).T - L_t).max()}.")
 
+    ### CHECK FOR POSDEF
     D = np.linalg.eigvalsh(Theta_t - L_t)
     if D.min() <= 0:
         print(

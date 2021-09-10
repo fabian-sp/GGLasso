@@ -7,6 +7,7 @@ matplotlib
 seaborn
 networkx
 regain
+warnings
 decorator==4.4.2
 sphinx==3.5.4
 sphinx-gallery==0.8.2

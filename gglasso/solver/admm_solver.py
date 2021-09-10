@@ -4,6 +4,7 @@ author: Fabian Schaipp
 
 import numpy as np
 import time
+import warnings
 
 from ..helper.basic_linalg import trp, Gdot
 from .ggl_helper import prox_p, phiplus, prox_rank_norm, f, P_val
@@ -242,10 +243,17 @@ def ADMM_MGL(S, lambda1, lambda2, reg , Omega_0 , \
     
     print(f"ADMM terminated after {iter_t+1} iterations with status: {status}.")
     
-    assert abs(trp(Omega_t)- Omega_t).max() <= 1e-5, "Solution is not symmetric"
-    assert abs(trp(Theta_t)- Theta_t).max() <= 1e-5, "Solution is not symmetric"
-    assert abs(trp(L_t)- L_t).max() <= 1e-5, "Solution is not symmetric"
+    ### CHECK FOR SYMMETRY
+    if abs(trp(Omega_t)- Omega_t).max() > 1e-5:
+        warnings.warn(f"Omega variable is not symmetric, largest deviation is {abs(trp(Omega_t)- Omega_t).max()}.")
     
+    if abs(trp(Theta_t)- Theta_t).max() > 1e-5:
+        warnings.warn(f"Theta variable is not symmetric, largest deviation is {abs(trp(Theta_t)- Theta_t).max()}.")
+    
+    if abs(trp(L_t)- L_t).max() > 1e-5:
+        warnings.warn(f"L variable is not symmetric, largest deviation is {abs(trp(L_t)- L_t).max()}.")
+
+    ### CHECK FOR POSDEF
     D = np.linalg.eigvalsh(Theta_t - L_t)
     if D.min() <= 0:
         print("WARNING: Theta (Theta - L resp.) is not positive definite. Solve to higher accuracy!")
