@@ -35,13 +35,13 @@ bibliography: paper.bib
 
 # Summary
 
-We introduce `GGLasso`, a Python package that solves General Graphical Lasso problems. Graphical Lasso was first introduced by [@Friedman2007] and [@Yuan2007] in order to estimate a sparse inverse covariance matrix of a multivariate Gaussian $\mathcal{X} \sim \mathcal{N}(\mu, \Sigma) \in \mathbb{R}^p$. It was extended by latent variables in [@Chandrasekaran2012]. More recently, more effort was spent on the joint estimation of multiple inverse covariance matrices, for example in [@Danaher2013; @Tomasi2018]. The `GGLasso` package contains methods for solving the general problem formulation
+We introduce `GGLasso`, a Python package that solves General Graphical Lasso problems. Graphical Lasso was first introduced by [@Friedman2007] and [@Yuan2007] in order to estimate a sparse inverse covariance matrix of a multivariate Gaussian $\mathcal{X} \sim \mathcal{N}(\mu, \Sigma) \in \mathbb{R}^p$. It was extended by latent variables in [@Chandrasekaran2012]. More recently, significant effort was spent on the joint estimation of multiple inverse covariance matrices, for example in [@Danaher2013; @Tomasi2018]. The `GGLasso` package contains methods for solving the general problem formulation
 
 $$
-\min_{\Theta, L \in \mathbb{S}_{++}^K }\quad \sum_{k=1}^{K} \left(-\log\det(\Theta^{(k)} - L^{(k)}) + \langle S^{(k)},  \Theta^{(k) - L^{(k)}} \rangle \right)+ \mathcal{P}(\Theta) +\sum_{k=1}^{K} \mu_{1,k} \|L^{(k)}\|_{\star}.
+\min_{\Theta, L \in \mathbb{S}_{++}^K }\quad \sum_{k=1}^{K} \left(-\log\det(\Theta^{(k)} - L^{(k)}) + \langle S^{(k)},  \Theta^{(k)} - L^{(k)} \rangle \right)+ \mathcal{P}(\Theta) +\sum_{k=1}^{K} \mu_{1,k} \|L^{(k)}\|_{\star}.
 $$
 
-We denote with $\mathbb{S}_{++}^K$ the $K$-product of the space of symmetric, positive definite matrices. Moreover, we write $\Theta = (\Theta^{(1)},\dots,\Theta^{(K)})$ for the sparse component and $L = (L^{(1)},\dots,L^{(K)})$ for the low rank components coming from latent variables. Typically, $\mathcal{P}$ is a regularization function inducing sparsity. The above problem formulation includes many important special cases such as single (latent variable) Graphical Lasso, Group or Fused Graphical Lasso.
+We denote with $\mathbb{S}_{++}^K$ the $K$-product of the space of symmetric, positive definite matrices. Moreover, we write $\Theta = (\Theta^{(1)},\dots,\Theta^{(K)})$ for the sparse component and $L = (L^{(1)},\dots,L^{(K)})$ for the low rank components coming from latent variables. Typically, $\mathcal{P}$ is a regularization function inducing a desired sparsity structure. The above problem formulation includes many important special cases such as single (latent variable) Graphical Lasso, Group or Fused Graphical Lasso.
 
 
 ![test](../docs/source/pictures/combined.png)
@@ -54,7 +54,7 @@ Currently, there is no Python package for solving Group Graphical Lasso problems
 - Proposing a uniform framework for solving Graphical Lasso problems. 
 - Providing solvers for Group Graphical Lasso problems (with and without latent variables).
 - Providing a solver for -- what we call -- *nonconforming GGL* problems where not all variables are contained in every instance. We demonstrate a usecase of such a formulation in the context of microbial consensus networks. 
-- Implementing a block-wise ADMM solver for SGL problems following [@Witten2011] as well as proximal point solvers FGL and GGL problems.
+- Implementing a block-wise ADMM solver for SGL problems following [@Witten2011] as well as proximal point solvers for FGL and GGL problems [@Zhang2019; @Zhang2020].
 
 In the table below we give an overview of existing functionalities and the `GGLasso` package.
 
@@ -83,7 +83,7 @@ pip install gglasso
 
 The central object of `GGLasso` is the class `glasso_problem`, which streamlines the solving or model selection procedure for SGL, GGL, FGL problems with or without latent variables.
 
-As an example, we instantiate a Single Graphical Lasso problem: for this, we need the empirical covariance matrix/matrices `S` and the number of samples `N`. We can choose to model latent variables and set the regularization parameters via the other input arguments. 
+As an example, we instantiate a Single Graphical Lasso problem (see the problem formulation below). We input the empirical covariance matrix `S` and the number of samples `N`. We can choose to model latent variables and set the regularization parameters via the other input arguments.
 
 ```python
 # Import the main class of the package
@@ -103,8 +103,8 @@ problem  = glasso_problem(S, N, reg = "GGL", reg_params = None, latent = True)
 
 According to the input arguments, `glasso_problem` has two main methods:
 
-- if the regularization parameters are already specified, call the correct solver 
-- else find the best regularization parameters and the respective solution via model selection (typically done with grid search and the eBIC criterion [@Foygel2010]).
+- if the regularization parameters are already specified, call the correct solver,
+- else, find the best regularization parameters and the respective solution via model selection (typically done with grid search and the eBIC criterion [@Foygel2010]).
 
 ```python
 problem.solve()
@@ -115,18 +115,21 @@ For further information on the input arguments and methods, we refer to the [det
 
 ## Problem formulation
 
-We list important special cases of problem formulation ?? . For a mathematical formulation for each special case we refer to the [documentation](https://gglasso.readthedocs.io/en/latest/math-description.html).
+We list important special cases of problem formulation ?? . For a mathematical formulation for each special case, we refer to the [documentation](https://gglasso.readthedocs.io/en/latest/math-description.html).
 
 
 ### *SGL* Single Graphical Lasso: {#SGL} 
-For $K=1$, the problem reduces to the Single (latent variable) Graphical Lasso.
+For $K=1$, the problem reduces to the Single (latent variable) Graphical Lasso where 
+$$
+\mathcal{P}(\Theta) = \lambda_1 \sum_{i \neq j} |\Theta_{ij}|.
+$$
 
 ### *GGL* Group Graphical Lasso: {#GGL}
 For 
 $$
 \mathcal{P}(\Theta) = \lambda_1 \sum_{k=1}^{K} \sum_{i \neq j} |\Theta_{ij}^{(k)}| + \lambda_2  \sum_{i \neq j} \left(\sum_{k=1}^{K} |\Theta_{ij}^{(k)}|^2 \right)^{\frac{1}{2}}
 $$
-we obtain the Group Graphical Lasso as formulated in [@Danaher2013]
+we obtain the Group Graphical Lasso as formulated in [@Danaher2013].
 
 ### *FGL* Fused Graphical Lasso: {#FGL}
 For
@@ -147,13 +150,13 @@ The `GGLasso` package implements several methods with provable convergence guara
 
 - *ADMM*: for all problem formulations we implemented the ADMM algorithm [@Boyd2011]. ADMM is a flexible and efficient optimization scheme which is specifically suited for Graphical Lasso problems as it only relies on efficient computation of the proximal operators of the involved functions [@Danaher2013; @Tomasi2018; @Ma2013].  
 
-- *PPDNA*: for GGL and FGL problems without latent variables, we implemented the proximal point solver proposed in [@Zhang2019; @Zhang2020]. According to the numerical experiments in [@Zhang2020], PPDNA can be an efficient alternative to ADMM especially for fast local convergence.
+- *PPDNA*: for GGL and FGL problems without latent variables, we included the proximal point solver proposed in [@Zhang2019; @Zhang2020]. According to the numerical experiments in [@Zhang2020], PPDNA can be an efficient alternative to ADMM especially for fast local convergence.
 
-- *block-ADMM*: for SGL problems without latent variables, we implement a method which solves the problem blockwise, following the proposal in [@Witten2011]. This wrapper simply applies the ADMM solver to all connected components of the empirical covariance matrix after thresholding.
+- *block-ADMM*: for SGL problems without latent variables, we implemented a method which solves the problem blockwise, following the proposal in [@Witten2011]. This wrapper simply applies the ADMM solver to all connected components of the empirical covariance matrix after thresholding.
 
 ## Benchmarks and applications
 
-In our example gallery, we include benchmarks comparing the solvers in `GGLasso` to state-of-the-art software as well as illustrative examples explaining the usage and functionalities of the package. We want to emphasize the following examples:
+In our example gallery, we included benchmarks comparing the solvers in `GGLasso` to state-of-the-art software as well as illustrative examples explaining the usage and functionalities of the package. We want to emphasize the following examples:
 
 - [Benchmarks](https://gglasso.readthedocs.io/en/latest/auto_examples/plot_benchmarks.html#sphx-glr-auto-examples-plot-benchmarks-py) for SGL problems: our solver is competitive with `scikit-learn` and `regain`. The newly implemented block-wise solver is highly efficient for large, sparse networks.
 
