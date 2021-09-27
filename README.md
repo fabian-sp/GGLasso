@@ -6,21 +6,24 @@
 [![Documentation Status](https://readthedocs.org/projects/gglasso/badge/?version=latest)](http://gglasso.readthedocs.io/?badge=latest)
 
 
-This package contains algorithms for solving Single and Multiple Graphical Lasso problems. Moreover, it contains the option of including latent variables.<br>
+This package contains algorithms for solving Single and Multiple Graphical Lasso problems. <br>
 
 [Docs](https://gglasso.readthedocs.io/en/latest/) | [Examples](https://gglasso.readthedocs.io/en/latest/auto_examples/index.html)
 
 ## Getting started
-Clone the repository, for example with
+
+### Install via pip
+
+The package is available on pip and can be installed with
+
+    pip install gglasso
+
+### Install from source
+
+Alternatively, you can install the package from source using the following commands:
 
     git clone https://github.com/fabian-sp/GGLasso.git
-
-Set up the dependencies with
-
     pip install -r requirements.txt
-
-In order to install `gglasso` in your Python environment, run
-
     python setup.py
 
 Test your installation with 
@@ -30,30 +33,43 @@ Test your installation with
 
 ### Advanced options
 
-If you want to install dependencies with `conda`, you can run
+When installing from source, you can also install dependencies with `conda` via the command
 
 	$ while read requirement; do conda install --yes $requirement || pip install $requirement; done < requirements.txt
 
-If you wish to install `gglasso` in developer mode, i.e. not having to reinstall `gglasso` everytime you change the source code in your local repository, run
+If you wish to install `gglasso` in developer mode, i.e. not having to reinstall `gglasso` everytime the source code changes (either by remote or local changes), run
 
     python setup.py clean --all develop clean --all
 
+## The `glasso_problem` class
+
+`GGLasso` can solve multiple problem forumulations, e.g. single and multiple Graphical Lasso problems as well as with and without latent factors. Therefore, the main entry point for the user is the `glasso_problem` class which chooses automatically the correct solver and model selection functionality. See [our documentation](https://gglasso.readthedocs.io/en/latest/problem-object.html) for all the details.
 
 
 ## Algorithms
-`GGLasso` contains several algorithms for Single and Multiple (i.e. Group and Fused) Graphical Lasso problems. Moreover, it allows to model latent variables (Latent variable Graphical Lasso) in order to estimate a precision matrix of for *sparse - low rank*.
+
+`GGLasso` contains algorithms for Single and Multiple Graphical Lasso problems. Moreover, it allows to model latent variables (Latent variable Graphical Lasso) in order to estimate a precision matrix of type **sparse - low rank**. The following algorithms are contained in the package.
 <br>
-1) ADMM for Group and Fused Graphical Lasso<br>
+1) ADMM for Single Graphical Lasso<br>
+
+2) ADMM for Group and Fused Graphical Lasso<br>
 The algorithm was proposed in [2] and [3]. To use this, import `ADMM_MGL` from `gglasso/solver/admm_solver`.<br>
 
-2) A Proximal Point method for Group and Fused Graphical Lasso<br>
-We implemented the PPDNA Algorithm implemented like proposed in [4]. To use this, import `warmPPDNA` from `gglasso/solver/ppdna_solver`.<br>
-
-3) ADMM for Single Graphical Lasso<br>
+3) A Proximal Point method for Group and Fused Graphical Lasso<br>
+We implement the PPDNA Algorithm like proposed in [4]. To use this, import `warmPPDNA` from `gglasso/solver/ppdna_solver`.<br>
 
 4) ADMM method for Group Graphical Lasso where the features/variables are non-conforming<br>
 Method for problems where not all variables exist in all instances/datasets.  To use this, import `ext_ADMM_MGL` from `gglasso/solver/ext_admm_solver`.<br>
 
+## Community Guidelines
+
+1)  Contributions and suggestions to the software are always welcome.
+    Please, consult our [contribution guidelines](CONTRIBUTING.md) prior
+    to submitting a pull request.
+2)  Report issues or problems with the software using github’s [issue
+    tracker](https://github.com/fabian-sp/GGLasso/issues).
+3)  Contributors must adhere to the [Code of
+    Conduct](CODE_OF_CONDUCT.md).
 
 
 ## References

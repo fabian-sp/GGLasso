@@ -58,7 +58,7 @@ More generally, the problem formulation of Multiple Graphical Lasso is given by
 
 In the above, the feasible set is the :math:`K`-fold product of :math:`\mathbb{S}^p_{++}`, see an illustration below. We denote an element of this space :math:`\Theta =  (\Theta^{(1)}, \dots , \Theta^{(K)})`. As input, we have the empirical covariance matrices :math:`S =  (S^{(1)}, \dots , S^{(K)})` given.
 
-.. image:: pictures/multiple.png
+.. image:: pictures/sparse_K.png
   :width: 600
   :alt: Illustration of the precision matrix
 
