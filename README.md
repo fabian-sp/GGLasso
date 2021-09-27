@@ -61,6 +61,21 @@ We implement the PPDNA Algorithm like proposed in [4]. To use this, import `warm
 4) ADMM method for Group Graphical Lasso where the features/variables are non-conforming<br>
 Method for problems where not all variables exist in all instances/datasets.  To use this, import `ext_ADMM_MGL` from `gglasso/solver/ext_admm_solver`.<br>
 
+## Benchmarking
+
+After solving each of the problems which each solver for different tolerance values, we compared the obtained solutions to a reference solution, denoted by <img src="https://render.githubusercontent.com/render/math?math=Z%5E%5Cast%0A">.
+
+<img src="https://render.githubusercontent.com/render/math?math=Z%5E%5Cast%0A"> is obtained by solving a SGL problem by one of the solvers for very small tolerance values (we used regain and set tol=rtol=1e-10). Finally, for a solution <img src="https://render.githubusercontent.com/render/math?math=Z%0A">, we calculate its accuracy using the normalized Euclidean distance:
+
+<img src="https://render.githubusercontent.com/render/math?math=%5Ctext%7Baccuracy%7D(Z)%20%3D%20%20%5Cfrac%7B%5C%7CZ%5E%5Cast%20-%20Z%20%5C%7C%7D%7B%20%5C%7C%20Z%5E%5Cast%5C%7C%20%7D">
+
+Now, determine a maximal accuracy epsilon. For each solver, we now select the run with minimal runtime where accuracy of Z is less or equal epsilon - fulfilled. We plot the results for two values of epsilon:
+
+
+![Accuracy of 0.005](https://github.com/fabian-sp/GGLasso/blob/f-joss-paper/benchmarks/bm_accuracy_0.005.png)
+
+![Accuracy of 0.05](https://github.com/fabian-sp/GGLasso/blob/f-joss-paper/benchmarks/bm_accuracy_0.05.png)
+
 ## Community Guidelines
 
 1)  Contributions and suggestions to the software are always welcome.
