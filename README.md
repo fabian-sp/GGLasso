@@ -61,6 +61,15 @@ We implement the PPDNA Algorithm like proposed in [4]. To use this, import `warm
 4) ADMM method for Group Graphical Lasso where the features/variables are non-conforming<br>
 Method for problems where not all variables exist in all instances/datasets.  To use this, import `ext_ADMM_MGL` from `gglasso/solver/ext_admm_solver`.<br>
 
+## Community Guidelines
+
+1)  Contributions and suggestions to the software are always welcome.
+    Please, consult our [contribution guidelines](CONTRIBUTING.md) prior
+    to submitting a pull request.
+2)  Report issues or problems with the software using github’s [issue
+    tracker](https://github.com/fabian-sp/GGLasso/issues).
+3)  Contributors must adhere to the [Code of
+    Conduct](CODE_OF_CONDUCT.md).
 
 
 ## References
