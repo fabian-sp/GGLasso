@@ -69,12 +69,9 @@ After solving each of the problems which each solver for different tolerance val
 
 <img src="https://render.githubusercontent.com/render/math?math=%5Ctext%7Baccuracy%7D(Z)%20%3D%20%20%5Cfrac%7B%5C%7CZ%5E%5Cast%20-%20Z%20%5C%7C%7D%7B%20%5C%7C%20Z%5E%5Cast%5C%7C%20%7D">
 
-Now, determine a maximal accuracy epsilon. For each solver, we now select the run with minimal runtime where accuracy of Z is less or equal epsilon - fulfilled. We plot the results for two values of epsilon:
-
+Now, determine a maximal accuracy epsilon. For each solver, we now select the run with minimal runtime where accuracy of Z is less or equal epsilon - fulfilled.
 
 ![Accuracy of 0.005](https://github.com/fabian-sp/GGLasso/blob/f-joss-paper/benchmarks/bm_accuracy_0.005.png)
-
-![Accuracy of 0.05](https://github.com/fabian-sp/GGLasso/blob/f-joss-paper/benchmarks/bm_accuracy_0.05.png)
 
 ## Community Guidelines
 
