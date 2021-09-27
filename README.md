@@ -70,7 +70,8 @@ In the figure below it is obtained by solving a SGL problem by one of the solver
   <img src="https://render.githubusercontent.com/render/math?math=%5Ctext%7Baccuracy%7D(Z)%20%3D%20%20%5Cfrac%7B%5C%7CZ%5E%5Cast%20-%20Z%20%5C%7C%7D%7B%20%5C%7C%20Z%5E%5Cast%5C%7C%20%7D">
 </p>
 
-For each solver, we now select the run with minimal runtime where accuracy of Z is less or equal to a maximal accuracy of our choice (e.g., 0.005).
+Now, we select for each solver the run with minimal runtime where accuracy of Z is less (or equal) to a maximal accuracy of our choice (e.g., 0.005).
+
 ![Accuracy of 0.005](https://github.com/fabian-sp/GGLasso/blob/f-joss-paper/benchmarks/bm_accuracy_0.005.png)
 
 
