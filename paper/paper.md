@@ -43,10 +43,6 @@ $$
 
 Here, we denote with $\mathbb{S}_{++}^K$ the $K$-product of the space of symmetric, positive definite matrices. Moreover, we write $\Theta = (\Theta^{(1)},\dots,\Theta^{(K)})$ for the sparse component of the inverse covariances and $L = (L^{(1)},\dots,L^{(K)})$ for the low rank components, formed by potential latent variables. Typically, $\mathcal{P}$ is a regularization function, inducing a desired sparsity structure. The above problem formulation includes many important special cases, such as, the single (latent) Graphical Lasso, the Group, and the Fused Graphical Lasso.
 
-
-![Illustration of an estimated inverse covariance matrix into a single sparse component $\Theta$ (left) and a low-rank component $L$](../docs/source/pictures/combined.png)
-
-
 # Statement of need 
 
 Currently, there is no Python package for solving Group Graphical Lasso problems. The Single Graphical Lasso problem is implemented in `scikit-learn` [@Pedregosa2011], however with no extension for latent variables. The package `regain` [@Tomasi2018] contains solvers for Single and Fused Graphical Lasso problems, with and without latent variables. With `GGLasso`, we make the following contributions:
@@ -141,6 +137,9 @@ we obtain Fused (also called Time-Varying) Graphical Lasso [@Danaher2013; @Tomas
 ### Nonconforming GGL:
 
 Consider the GGL case in a situation where not each variable is observed in each of the instances $k=1,\dots,K$. `GGLasso` is able to solve these problems and include latent variables. We provide the mathematical details in the [documentation](https://gglasso.readthedocs.io/en/latest/math-description.html#ggl-the-nonconforming-case) and give an [example](https://gglasso.readthedocs.io/en/latest/auto_examples/plot_nonconforming_ggl.html#sphx-glr-auto-examples-plot-nonconforming-ggl-py).
+
+
+![Illustration of the latent SGL. The estimated inverse covariance matrix comprises a sparse component $\Theta$ (left) and a low-rank component $L$ (right).](../docs/source/pictures/combined.png)
 
 
 
