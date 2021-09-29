@@ -77,6 +77,7 @@ Now, we select for each solver the run with minimal runtime where accuracy of Z 
 ![Accuracy of 0.005](https://github.com/fabian-sp/GGLasso/blob/f-joss-paper/benchmarks/bm_accuracy_0.005.png)
 ---!>
 
+
 ## Community Guidelines
 
 1)  Contributions and suggestions to the software are always welcome.
