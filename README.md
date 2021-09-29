@@ -75,7 +75,7 @@ In the figure below it is obtained by solving a SGL problem by one of the solver
 Now, we select for each solver the run with minimal runtime where accuracy of Z is less (or equal) to a maximal accuracy of our choice (e.g., 0.005).
 
 ![Accuracy of 0.005](https://github.com/fabian-sp/GGLasso/blob/f-joss-paper/benchmarks/bm_accuracy_0.005.png)
----!>
+--->
 
 
 ## Community Guidelines
