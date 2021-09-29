@@ -35,7 +35,7 @@ bibliography: paper.bib
 
 # Summary
 
-We introduce `GGLasso`, a Python package that solves General Graphical Lasso problems. Graphical Lasso was first introduced by [@Friedman2007] and [@Yuan2007] in order to estimate a sparse inverse covariance matrix of a multivariate Gaussian $\mathcal{X} \sim \mathcal{N}(\mu, \Sigma) \in \mathbb{R}^p$. It was extended by latent variables in [@Chandrasekaran2012]. More recently, significant effort was spent on the joint estimation of multiple inverse covariance matrices, for example in [@Danaher2013; @Tomasi2018]. The `GGLasso` package contains methods for solving the general problem formulation
+We introduce `GGLasso`, a Python package that solves General Graphical Lasso problems. Estimating a sparse inverse covariance matrix from multivariate Gaussian data $\mathcal{X} \sim \mathcal{N}(\mu, \Sigma) \in \mathbb{R}^p$ has become popular with the advent of the Graphical Lasso algorithm, introduced by [@Friedman2007;@Yuan2007;@Banerjee2008]. Originally put forward by [@Dempster:1972] under the name Covariance Selection, the framework was extended to latent variables in [@Chandrasekaran2012]. More recently, significant effort has been spent on the joint estimation of multiple inverse covariance matrices, see, e.g., in [@Danaher2013; @Tomasi2018]. The `GGLasso` package contains methods for solving the general problem formulation
 
 $$
 \min_{\Theta, L \in \mathbb{S}_{++}^K }\quad \sum_{k=1}^{K} \left(-\log\det(\Theta^{(k)} - L^{(k)}) + \langle S^{(k)},  \Theta^{(k)} - L^{(k)} \rangle \right)+ \mathcal{P}(\Theta) +\sum_{k=1}^{K} \mu_{1,k} \|L^{(k)}\|_{\star}.
