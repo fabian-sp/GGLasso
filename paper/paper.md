@@ -35,16 +35,16 @@ bibliography: paper.bib
 
 # Summary
 
-We introduce `GGLasso`, a Python package that solves General Graphical Lasso problems. Estimating a sparse inverse covariance matrix from multivariate Gaussian data $\mathcal{X} \sim \mathcal{N}(\mu, \Sigma) \in \mathbb{R}^p$ has become popular with the advent of the Graphical Lasso algorithm, introduced by [@Friedman2007;@Yuan2007;@Banerjee2008]. Originally put forward by [@Dempster:1972] under the name Covariance Selection, the framework was extended to latent variables in [@Chandrasekaran2012]. More recently, significant effort has been spent on the joint estimation of multiple inverse covariance matrices, see, e.g., in [@Danaher2013; @Tomasi2018]. The `GGLasso` package contains methods for solving the general problem formulation
+We introduce `GGLasso`, a Python package that solves General Graphical Lasso problems. The Graphical Lasso scheme, introduced by [@Friedman2007],[@Yuan2007], and [@Banerjee2008], estimates a sparse inverse covariance matrix $\Theta$ from multivariate Gaussian data $\mathcal{X} \sim \mathcal{N}(\mu, \Sigma) \in \mathbb{R}^p$. Originally proposed by [@Dempster:1972] under the name Covariance Selection, this estimation framework has been extended to include latent variables in [@Chandrasekaran2012]. Recent extensions also include the joint estimation of multiple inverse covariance matrices, see, e.g., in [@Danaher2013; @Tomasi2018]. The `GGLasso` package contains methods for solving the general problem formulation:
 
 $$
 \min_{\Theta, L \in \mathbb{S}_{++}^K }\quad \sum_{k=1}^{K} \left(-\log\det(\Theta^{(k)} - L^{(k)}) + \langle S^{(k)},  \Theta^{(k)} - L^{(k)} \rangle \right)+ \mathcal{P}(\Theta) +\sum_{k=1}^{K} \mu_{1,k} \|L^{(k)}\|_{\star}.
 $$
 
-We denote with $\mathbb{S}_{++}^K$ the $K$-product of the space of symmetric, positive definite matrices. Moreover, we write $\Theta = (\Theta^{(1)},\dots,\Theta^{(K)})$ for the sparse component and $L = (L^{(1)},\dots,L^{(K)})$ for the low rank components coming from latent variables. Typically, $\mathcal{P}$ is a regularization function inducing a desired sparsity structure. The above problem formulation includes many important special cases such as single (latent variable) Graphical Lasso, Group or Fused Graphical Lasso.
+Here, we denote with $\mathbb{S}_{++}^K$ the $K$-product of the space of symmetric, positive definite matrices. Moreover, we write $\Theta = (\Theta^{(1)},\dots,\Theta^{(K)})$ for the sparse component of the inverse covariances and $L = (L^{(1)},\dots,L^{(K)})$ for the low rank components, formed by potential latent variables. Typically, $\mathcal{P}$ is a regularization function, inducing a desired sparsity structure. The above problem formulation includes many important special cases, such as, the single (latent) Graphical Lasso, the Group, and the Fused Graphical Lasso.
 
 
-![test](../docs/source/pictures/combined.png)
+![Illustration of an estimated inverse covariance matrix into a single sparse component $\Theta$ (left) and a low-rank component $L$](../docs/source/pictures/combined.png)
 
 
 # Statement of need 
