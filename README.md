@@ -6,7 +6,8 @@
 [![Documentation Status](https://readthedocs.org/projects/gglasso/badge/?version=latest)](http://gglasso.readthedocs.io/?badge=latest)
 
 
-This package contains algorithms for solving Single and Multiple Graphical Lasso problems. <br>
+This package contains algorithms for solving General Graphical Lasso (GGLasso) problems, including single, multiple, as well as latent 
+Graphical Lasso problems. <br>
 
 [Docs](https://gglasso.readthedocs.io/en/latest/) | [Examples](https://gglasso.readthedocs.io/en/latest/auto_examples/index.html)
 
@@ -61,6 +62,7 @@ We implement the PPDNA Algorithm like proposed in [4]. To use this, import `warm
 4) ADMM method for Group Graphical Lasso where the features/variables are non-conforming<br>
 Method for problems where not all variables exist in all instances/datasets.  To use this, import `ext_ADMM_MGL` from `gglasso/solver/ext_admm_solver`.<br>
 
+<!---
 ## Benchmarking
 
 We solve each of the problems with each solver for different tolerance values, and we compare the obtained solutions to a reference solution, denoted by <img src="https://render.githubusercontent.com/render/math?math=Z%5E%5Cast%0A">.
@@ -73,7 +75,7 @@ In the figure below it is obtained by solving a SGL problem by one of the solver
 Now, we select for each solver the run with minimal runtime where accuracy of Z is less (or equal) to a maximal accuracy of our choice (e.g., 0.005).
 
 ![Accuracy of 0.005](https://github.com/fabian-sp/GGLasso/blob/f-joss-paper/benchmarks/bm_accuracy_0.005.png)
-
+---!>
 
 ## Community Guidelines
 
