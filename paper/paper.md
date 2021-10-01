@@ -112,7 +112,7 @@ For further information on the input arguments and methods, we refer to the [det
 
 ## Problem formulation
 
-We list important special cases of problem formulation \*autoref{eq:problem}. For a mathematical formulation for each special case, we refer to the [documentation](https://gglasso.readthedocs.io/en/latest/math-description.html).
+We list important special cases of problem formulation \ref{eq:problem}. For a mathematical formulation for each special case, we refer to the [documentation](https://gglasso.readthedocs.io/en/latest/math-description.html).
 
 
 ### *SGL* Single Graphical Lasso: {#SGL} 
