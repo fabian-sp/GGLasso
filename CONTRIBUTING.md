@@ -20,9 +20,7 @@ make sure to create multiple branches. If you have multiple changes that depend
 on each other, start with the first one and do not submit any others until the
 first one has been processed.
 
-3. __Use `gglasso` coding style__. We tried to adhere as closely as possible to the [PEP8](https://www.python.org/dev/peps/pep-0008/) guidelines, please, do so as well. Maintaining a consistent style across the whole code base makes it much easier to jump into the code. If you are modifying existing `gglasso` code that does not follow the style guide, a separate pull request to fix the style would be greatly appreciated.
-
-4. If you add new parameters or a new function, you will also need to document them.
+3. If you add new parameters or a new function, you will also need to document them.
 
 ## Contributing code
 
