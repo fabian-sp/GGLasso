@@ -37,9 +37,12 @@ bibliography: paper.bib
 
 We introduce `GGLasso`, a Python package that solves General Graphical Lasso problems. The Graphical Lasso scheme, introduced by [@Friedman2007],[@Yuan2007], and [@Banerjee2008], estimates a sparse inverse covariance matrix $\Theta$ from multivariate Gaussian data $\mathcal{X} \sim \mathcal{N}(\mu, \Sigma) \in \mathbb{R}^p$. Originally proposed by [@Dempster:1972] under the name Covariance Selection, this estimation framework has been extended to include latent variables in [@Chandrasekaran2012]. Recent extensions also include the joint estimation of multiple inverse covariance matrices, see, e.g., in [@Danaher2013; @Tomasi2018]. The `GGLasso` package contains methods for solving the general problem formulation:
 
-$$
+<div class="math">
+\begin{align}
+\label{eq:problem}
 \min_{\Theta, L \in \mathbb{S}_{++}^K }\quad \sum_{k=1}^{K} \left(-\log\det(\Theta^{(k)} - L^{(k)}) + \langle S^{(k)},  \Theta^{(k)} - L^{(k)} \rangle \right)+ \mathcal{P}(\Theta) +\sum_{k=1}^{K} \mu_{1,k} \|L^{(k)}\|_{\star}.
-$$
+\end{align}
+</div>
 
 Here, we denote with $\mathbb{S}_{++}^K$ the $K$-product of the space of symmetric, positive definite matrices. Moreover, we write $\Theta = (\Theta^{(1)},\dots,\Theta^{(K)})$ for the sparse component of the inverse covariances and $L = (L^{(1)},\dots,L^{(K)})$ for the low rank components, formed by potential latent variables. Typically, $\mathcal{P}$ is a regularization function, inducing a desired sparsity structure. The above problem formulation includes many important special cases, such as, the single (latent) Graphical Lasso, the Group, and the Fused Graphical Lasso.
 
@@ -111,7 +114,7 @@ For further information on the input arguments and methods, we refer to the [det
 
 ## Problem formulation
 
-We list important special cases of problem formulation ?? . For a mathematical formulation for each special case, we refer to the [documentation](https://gglasso.readthedocs.io/en/latest/math-description.html).
+We list important special cases of the general problem formulation \autoref{eq:problem}. For a mathematical formulation for each special case, we refer to the [documentation](https://gglasso.readthedocs.io/en/latest/math-description.html).
 
 
 ### *SGL* Single Graphical Lasso: {#SGL} 
@@ -158,6 +161,9 @@ The `GGLasso` package implements several methods with provable convergence guara
 In our example gallery, we included benchmarks comparing the solvers in `GGLasso` to state-of-the-art software as well as illustrative examples explaining the usage and functionalities of the package. We want to emphasize the following examples:
 
 - [Benchmarks](https://gglasso.readthedocs.io/en/latest/auto_examples/plot_benchmarks.html#sphx-glr-auto-examples-plot-benchmarks-py) for SGL problems: our solver is competitive with `scikit-learn` and `regain`. The newly implemented block-wise solver is highly efficient for large, sparse networks.
+
+![Runtime comparison for SGL problems of varying dimension and sample size.](../docs/source/pictures/runtime_accuracy_005.png)
+
 
 - [Soil microbiome application](https://gglasso.readthedocs.io/en/latest/auto_examples/plot_soil_example.html#sphx-glr-auto-examples-plot-soil-example-py): we demonstrate how latent variables can be used in order to reconstruct unobserved confounders of the independence network.
 
