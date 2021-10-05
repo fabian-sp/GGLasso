@@ -14,4 +14,3 @@ gglasso.egg-info/
 # Sphinx build
 docs/build/
 docs/source/auto_examples
-benchmarks/draft/
