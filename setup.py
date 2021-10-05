@@ -9,7 +9,7 @@ URL = 'https://github.com/fabian-sp/GGLasso'
 EMAIL = 'fabian.schaipp@tum.de'
 AUTHOR = 'Fabian Schaipp'
 REQUIRES_PYTHON = '>=3.7.0'
-VERSION = "0.1.3"
+VERSION = "0.1.4"
 
 # What packages are required for this module to be executed?
 REQUIRED = [
