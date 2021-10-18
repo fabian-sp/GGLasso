@@ -165,7 +165,7 @@ In our example gallery, we included benchmarks comparing the solvers in `GGLasso
 
 - [Nonconforming GGL](https://gglasso.readthedocs.io/en/latest/auto_examples/plot_nonconforming_ggl.html#sphx-glr-auto-examples-plot-nonconforming-ggl-py): we illustrate how to use `GGLasso` for GGL problems with missing variables. 
 
-![Runtime comparison for SGL problems of varying dimension and sample size at three different $\lambda$ values.](../docs/source/pictures/runtime_accuracy_005.png){width=50%}
+![Runtime comparison for SGL problems of varying dimension and sample size at three different $\lambda_1$ values.](../docs/source/pictures/runtime_accuracy_005.png){width=50%}
 
 # Acknowledgements
  
