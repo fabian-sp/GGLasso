@@ -141,8 +141,7 @@ we obtain Fused (also called Time-Varying) Graphical Lasso [@Danaher2013; @Tomas
 Consider the GGL case in a situation where not each variable is observed in each of the instances $k=1,\dots,K$. `GGLasso` is able to solve these problems and include latent variables. We provide the mathematical details in the [documentation](https://gglasso.readthedocs.io/en/latest/math-description.html#ggl-the-nonconforming-case) and give an [example](https://gglasso.readthedocs.io/en/latest/auto_examples/plot_nonconforming_ggl.html#sphx-glr-auto-examples-plot-nonconforming-ggl-py).
 
 
-![Illustration of the latent SGL. The estimated inverse covariance matrix $\hat \Omega$ decomposes into a sparse component $\hat \Theta$ (central) and a low-rank component $\hat L$ (right).](../docs/source/pictures/SLRdecomp.png)
-
+![Illustration of the latent SGL. The estimated inverse covariance matrix $\hat \Omega$ decomposes into a sparse component $\hat \Theta$ (central) and a low-rank component $\hat L$ (right).](../docs/source/pictures/SLRDecomp.png)
 
 
 ## Optimization algorithms
@@ -162,7 +161,6 @@ In our example gallery, we included benchmarks comparing the solvers in `GGLasso
 - [Benchmarks](https://gglasso.readthedocs.io/en/latest/auto_examples/plot_benchmarks.html#sphx-glr-auto-examples-plot-benchmarks-py) for SGL problems: our solver is competitive with `scikit-learn` and `regain`. The newly implemented block-wise solver is highly efficient for large, sparse networks.
 
 ![Runtime comparison for SGL problems of varying dimension and sample size.](../docs/source/pictures/runtime_accuracy_005.png)
-
 
 - [Soil microbiome application](https://gglasso.readthedocs.io/en/latest/auto_examples/plot_soil_example.html#sphx-glr-auto-examples-plot-soil-example-py): we demonstrate how latent variables can be used in order to reconstruct unobserved confounders of the independence network.
 
