@@ -34,7 +34,7 @@ bibliography: paper.bib
 
 # Summary
 
-We introduce `GGLasso`, a Python package that solves General Graphical Lasso problems. The Graphical Lasso scheme, introduced by [@Friedman2007],[@Yuan2007], and [@Banerjee2008], estimates a sparse inverse covariance matrix $\Theta$ from multivariate Gaussian data $\mathcal{X} \sim \mathcal{N}(\mu, \Sigma) \in \mathbb{R}^p$. Originally proposed by [@Dempster:1972] under the name Covariance Selection, this estimation framework has been extended to include latent variables in [@Chandrasekaran2012]. Recent extensions also include the joint estimation of multiple inverse covariance matrices, see, e.g., in [@Danaher2013; @Tomasi2018]. The `GGLasso` package contains methods for solving the general problem formulation:
+We introduce `GGLasso`, a Python package for solving General Graphical Lasso problems. The Graphical Lasso scheme, introduced by [@Friedman2007] (see also [@Yuan2007;@Banerjee2008]), estimates a sparse inverse covariance matrix $\Theta$ from multivariate Gaussian data $\mathcal{X} \sim \mathcal{N}(\mu, \Sigma) \in \mathbb{R}^p$. Originally proposed by [@Dempster:1972] under the name Covariance Selection, this estimation framework has been extended to include latent variables in [@Chandrasekaran2012]. Recent extensions also include the joint estimation of multiple inverse covariance matrices, see, e.g., in [@Danaher2013; @Tomasi2018]. The `GGLasso` package contains methods for solving the general problem formulation:
 
 <div class="math">
 \begin{align}
@@ -47,7 +47,7 @@ Here, we denote with $\mathbb{S}_{++}^K$ the $K$-product of the space of symmetr
 
 # Statement of need 
 
-Currently, there is no Python package for solving Group Graphical Lasso problems. The Single Graphical Lasso problem is implemented in `scikit-learn` [@Pedregosa2011], however with no extension for latent variables. The package `regain` [@Tomasi2018] contains solvers for Single and Fused Graphical Lasso problems, with and without latent variables. With `GGLasso`, we make the following contributions:
+Currently, there is no Python package available for solving general Graphical Lasso instances. The standard single Graphical Lasso problem can be solved in `scikit-learn` [@Pedregosa2011]. however with no extension for latent variables. The package `regain` [@Tomasi2018] contains solvers for Single and Fused Graphical Lasso problems, with and without latent variables. With `GGLasso`, we make the following contributions:
 
 - Proposing a uniform framework for solving Graphical Lasso problems. 
 - Providing solvers for Group Graphical Lasso problems (with and without latent variables).
