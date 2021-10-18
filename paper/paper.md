@@ -47,11 +47,11 @@ Here, we denote with $\mathbb{S}_{++}^K$ the $K$-product of the space of symmetr
 
 # Statement of need 
 
-Currently, there is no Python package available for solving general Graphical Lasso instances. The standard single Graphical Lasso problem can be solved in `scikit-learn` [@Pedregosa2011]. however with no extension for latent variables. The package `regain` [@Tomasi2018] contains solvers for Single and Fused Graphical Lasso problems, with and without latent variables. With `GGLasso`, we make the following contributions:
+Currently, there is no Python package available for solving general Graphical Lasso instances. The standard single Graphical Lasso problem can be solved in `scikit-learn` [@Pedregosa2011]. The `skggm` package provides several algorithmic and model selection extensions for the single Graphical Lasso problem [@Laska2017]. The package `regain` [@Tomasi2018] comprises solvers for Single and Fused Graphical Lasso problems, with and without latent variables. With `GGLasso`, we make the following contributions:
 
 - Proposing a uniform framework for solving Graphical Lasso problems. 
 - Providing solvers for Group Graphical Lasso problems (with and without latent variables).
-- Providing a solver for -- what we call -- *nonconforming GGL* problems where not all variables are contained in every instance. We demonstrate a usecase of such a formulation in the context of microbial consensus networks. 
+- Providing a solver for -- what we call -- *nonconforming GGL* problems where not all variables need to be present in every instance. We demonstrate the use case of such a formulation on synthetic data. 
 - Implementing a block-wise ADMM solver for SGL problems following [@Witten2011] as well as proximal point solvers for FGL and GGL problems [@Zhang2019; @Zhang2020].
 
 In the table below we give an overview of existing functionalities and the `GGLasso` package.
@@ -73,13 +73,13 @@ In the table below we give an overview of existing functionalities and the `GGLa
 
 ## Installation and problem initiation
 
-`GGLasso` can be easily installed via `pip`.
+`GGLasso` can be installed via `pip`.
 
 ```shell
 pip install gglasso
 ```
 
-The central object of `GGLasso` is the class `glasso_problem`, which streamlines the solving or model selection procedure for SGL, GGL, FGL problems with or without latent variables.
+The central object of `GGLasso` is the class `glasso_problem` which streamlines the solving or model selection procedure for SGL, GGL, and FGL problems with or without latent variables.
 
 As an example, we instantiate a Single Graphical Lasso problem (see the problem formulation below). We input the empirical covariance matrix `S` and the number of samples `N`. We can choose to model latent variables and set the regularization parameters via the other input arguments.
 
@@ -171,7 +171,7 @@ In our example gallery, we included benchmarks comparing the solvers in `GGLasso
 
 # Acknowledgements
  
- We thank Prof. Dr. Michael Ulbrich, TU Munich, for supervising the Master's thesis of FS that led to the development of the software. We also thank Dr. Zachary D. Kurtz for help with testing of the latent graphical model implementation.
+We thank Prof. Dr. Michael Ulbrich, TU Munich, for supervising the Master's thesis of FS that led to the development of the software. We also thank Dr. Zachary D. Kurtz for help with testing of the latent graphical model implementation.
 
 # References
 
