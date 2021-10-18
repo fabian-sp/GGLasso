@@ -141,7 +141,7 @@ we obtain Fused (also called Time-Varying) Graphical Lasso [@Danaher2013; @Tomas
 Consider the GGL case in a situation where not each variable is observed in each of the instances $k=1,\dots,K$. `GGLasso` is able to solve these problems and include latent variables. We provide the mathematical details in the [documentation](https://gglasso.readthedocs.io/en/latest/math-description.html#ggl-the-nonconforming-case) and give an [example](https://gglasso.readthedocs.io/en/latest/auto_examples/plot_nonconforming_ggl.html#sphx-glr-auto-examples-plot-nonconforming-ggl-py).
 
 
-![Illustration of the latent SGL. The estimated inverse covariance matrix comprises a sparse component $\Theta$ (left) and a low-rank component $L$ (right).](../docs/source/pictures/combined.png)
+![Illustration of the latent SGL. The estimated inverse covariance matrix $\hat \Omega$ decomposes into a sparse component $\hat \Theta$ (central) and a low-rank component $\hat L$ (right).](../docs/source/pictures/SLRdecomp.png)
 
 
 
