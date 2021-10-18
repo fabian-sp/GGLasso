@@ -44,7 +44,7 @@ We introduce `GGLasso`, a Python package for solving General Graphical Lasso pro
 \end{align}
 </div>
 
-Here, we denote with $\mathbb{S}_{++}^K$ the $K$-product of the space of symmetric, positive definite matrices. Moreover, we write $\Theta = (\Theta^{(1)},\dots,\Theta^{(K)})$ for the sparse component of the inverse covariances and $L = (L^{(1)},\dots,L^{(K)})$ for the low rank components, formed by potential latent variables. Typically, $\mathcal{P}$ is a regularization function, inducing a desired sparsity structure. The above problem formulation includes many important special cases, such as, the single (latent) Graphical Lasso, the Group, and the Fused Graphical Lasso.
+Here, we denote with $\mathbb{S}_{++}^K$ the $K$-product of the space of symmetric, positive definite matrices. Moreover, we write $\Theta = (\Theta^{(1)},\dots,\Theta^{(K)})$ for the sparse component of the inverse covariances and $L = (L^{(1)},\dots,L^{(K)})$ for the low rank components, formed by potential latent variables. Typically, $\mathcal{P}$ is a regularization function, inducing a desired sparsity structure. The above problem formulation includes important special cases, such as, the single (latent variable) Graphical Lasso, the Group, and the Fused Graphical Lasso.
 
 # Statement of need 
 
@@ -112,7 +112,7 @@ problem.model_selection()
 
 For further information on the input arguments and methods, we refer to the [detailled documentation](https://gglasso.readthedocs.io/en/latest/problem-object.html).
 
-![Illustration of the latent SGL: The estimated inverse covariance matrix $\hat \Omega$ decomposes into a sparse component $\hat \Theta$ (central) and a low-rank component $\hat L$ (right).](../docs/source/pictures/SLRDecomp.png)
+![Illustration of the latent SGL: The estimated inverse covariance matrix $\hat \Omega$ decomposes into a sparse component $\hat \Theta$ (central) and a low-rank component $\hat L$ (right). \label{fig1}](../docs/source/pictures/SLRDecomp.png)
 
 ## Problem formulation
 
@@ -124,7 +124,7 @@ For $K=1$, the problem reduces to the single (latent variable) Graphical Lasso w
 $$
 \mathcal{P}(\Theta) = \lambda_1 \sum_{i \neq j} |\Theta_{ij}|.
 $$
-An illustration of the single latent variable Graphical Lasso model is shown in Figure 1.
+An illustration of the single latent variable Graphical Lasso model is shown in \autoref{fig1}.
 
 ### *GGL* Group Graphical Lasso: {#GGL}
 For 
@@ -159,13 +159,13 @@ The `GGLasso` package implements several methods with provable convergence guara
 
 In our example gallery, we included benchmarks comparing the solvers in `GGLasso` to state-of-the-art software as well as illustrative examples explaining the usage and functionalities of the package. We want to emphasize the following examples:
 
-- [Benchmarks](https://gglasso.readthedocs.io/en/latest/auto_examples/plot_benchmarks.html#sphx-glr-auto-examples-plot-benchmarks-py) for SGL problems: our solver is competitive with `scikit-learn` and `regain`. The newly implemented block-wise solver is highly efficient for large sparse networks (see Figure 2 for runtime comparison at low and high accuracy, respectively).
+- [Benchmarks](https://gglasso.readthedocs.io/en/latest/auto_examples/plot_benchmarks.html#sphx-glr-auto-examples-plot-benchmarks-py) for SGL problems: our solver is competitive with `scikit-learn` and `regain`. The newly implemented block-wise solver is highly efficient for large sparse networks (see \autoref{fig2} for runtime comparison at low and high accuracy, respectively).
 
 - [Soil microbiome application](https://gglasso.readthedocs.io/en/latest/auto_examples/plot_soil_example.html#sphx-glr-auto-examples-plot-soil-example-py): following [@Kurtz2019], we demonstrate how latent variables can be used in order to identify unobserved confounders of the independence networks.
 
 - [Nonconforming GGL](https://gglasso.readthedocs.io/en/latest/auto_examples/plot_nonconforming_ggl.html#sphx-glr-auto-examples-plot-nonconforming-ggl-py): we illustrate how to use `GGLasso` for GGL problems with missing variables. 
 
-![Runtime comparison for SGL problems of varying dimension and sample size at three different $\lambda_1$ values. The left column shows the runtime at low accuracy, the right column at high accuracy.](../docs/source/pictures/runtime_merged.png){width=90%}
+![Runtime comparison for SGL problems of varying dimension and sample size at three different $\lambda_1$ values. The left column shows the runtime at low accuracy, the right column at high accuracy. \label{fig2}](../docs/source/pictures/runtime_merged.png){width=90%}
 
 # Acknowledgements
  
