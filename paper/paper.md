@@ -153,7 +153,7 @@ The `GGLasso` package implements several methods with provable convergence guara
 
 - *PPDNA*: for GGL and FGL problems without latent variables, we included the proximal point solver proposed in [@Zhang2019; @Zhang2020]. According to the numerical experiments in [@Zhang2020], PPDNA can be an efficient alternative to ADMM especially for fast local convergence.
 
-- *block-ADMM*: for SGL problems without latent variables, we implemented a method which solves the problem blockwise, following the proposal in [@Witten2011]. This wrapper simply applies the ADMM solver to all connected components of the empirical covariance matrix after thresholding.
+- *block-ADMM*: for SGL problems without latent variables, we implemented a method which solves the problem block-wise, following the proposal in [@Witten2011]. This wrapper simply applies the ADMM solver to all connected components of the empirical covariance matrix after thresholding.
 
 ## Benchmarks and applications
 
@@ -161,7 +161,7 @@ In our example gallery, we included benchmarks comparing the solvers in `GGLasso
 
 - [Benchmarks](https://gglasso.readthedocs.io/en/latest/auto_examples/plot_benchmarks.html#sphx-glr-auto-examples-plot-benchmarks-py) for SGL problems: our solver is competitive with `scikit-learn` and `regain`. The newly implemented block-wise solver is highly efficient for large sparse networks (see \autoref{fig2} for runtime comparison at low and high accuracy, respectively).
 
-- [Soil microbiome application](https://gglasso.readthedocs.io/en/latest/auto_examples/plot_soil_example.html#sphx-glr-auto-examples-plot-soil-example-py): following [@Kurtz2019], we demonstrate how latent variables can be used in order to identify unobserved confounders of the independence networks.
+- [Soil microbiome application](https://gglasso.readthedocs.io/en/latest/auto_examples/plot_soil_example.html#sphx-glr-auto-examples-plot-soil-example-py): following [@Kurtz2019], we demonstrate how latent variables can be used in order to identify unobserved confounders of the networks.
 
 - [Nonconforming GGL](https://gglasso.readthedocs.io/en/latest/auto_examples/plot_nonconforming_ggl.html#sphx-glr-auto-examples-plot-nonconforming-ggl-py): we illustrate how to use `GGLasso` for GGL problems with missing variables. 
 
@@ -169,7 +169,7 @@ In our example gallery, we included benchmarks comparing the solvers in `GGLasso
 
 # Acknowledgements
  
-We thank Prof. Dr. Michael Ulbrich, TU Munich, for supervising the Master's thesis of FS that led to the development of the software. We also thank Dr. Zachary D. Kurtz for help with testing of the latent graphical model implementation.
+We thank Prof. Dr. Michael Ulbrich, TU Munich, for supervising the Master's thesis of FS that led to the development of the software. We also thank Dr. Zachary D. Kurtz for helping with testing of the latent graphical model implementation.
 
 # References
 
