@@ -3,6 +3,7 @@ title: 'GGLasso - a Python package for General Graphical Lasso computation'
 tags:
   - Python
   - graphical lasso
+  - latent graphical model
   - structured sparsity
   - convex optimization
   - ADMM
@@ -11,8 +12,6 @@ authors:
     affiliation: 1
   - name: Oleg Vlasovets
     affiliation: 2,3
-  - name: Michael Ulbrich
-    affiliation: 1
   - name: Christian L. Müller
     orcid: 0000-0002-3821-7083
     affiliation: "2,3,4"
@@ -172,6 +171,7 @@ In our example gallery, we included benchmarks comparing the solvers in `GGLasso
 
 # Acknowledgements
  
+ We thank Prof. Dr. Michael Ulbrich, TU Munich, for supervising the Master's thesis of FS that led to the development of the software. We also thank Dr. Zachary D. Kurtz for help with testing of the latent graphical model implementation.
 
 # References
 
