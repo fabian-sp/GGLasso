@@ -14,9 +14,9 @@ The ``GGLasso`` package contains and ADMM solver for all problem formulations as
 SGL solver
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-For SGL problems, the standard ADMM is ``from gglasso.solver.single_admm_solver import ADMM_SGL``. However, it is shown in [ref9]_ that if the true precision matrix is block-sparse, it is sufficient to solve Graphical Lasso independently on each block. This gives a huge performance if the number of nodes :math:`p` is large because ADMM scales in :math:`\mathcal{O}(p^3)`. We refer to [ref9]_ for details. The resulting algorithm is implemented in ``from gglasso.solver.single_admm_solver import block_SGL``.
+For SGL problems, the standard ADMM is ``from gglasso.solver.single_admm_solver import ADMM_SGL``. However, it is shown in [ref9]_ that if the true precision matrix is block-sparse, it is sufficient to solve Graphical Lasso independently on each block. This gives a huge performance improvement if the number of nodes :math:`p` is large because ADMM scales in :math:`\mathcal{O}(p^3)`. We refer to [ref9]_ and our :ref:`Benchmarking` example for details. The resulting algorithm is implemented in ``from gglasso.solver.single_admm_solver import block_SGL``.
 
-``ADMM_SGL`` can also solve latent variable Graphcial Lasso problems via setting the option ``latent=True`` and specifying a positive value for the option ``mu1``, the penalty parameter for the nuclear norm.
+``ADMM_SGL`` can also solve latent variable Graphical Lasso problems via setting the option ``latent=True`` and specifying a positive value for the option ``mu1``, the penalty parameter for the nuclear norm.
 
 
 
@@ -50,7 +50,7 @@ If your data samples are a list of ``pd.DataFrame`` objects where each Dataframe
 
 Here, ``list_of_samples`` stands for your list of data samples as described above.
 
-Also have a look at the :ref:`Nonconforming Group Graphical Lasso experiment` in our example gallery.
+We recommend to have a look at the :ref:`Nonconforming Group Graphical Lasso experiment` in our example gallery.
 
 
 Further Remarks - proximal operators

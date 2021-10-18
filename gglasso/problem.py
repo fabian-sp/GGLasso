@@ -505,10 +505,10 @@ class glasso_problem:
             Calls ``self.set_modelselect_params()``, see doc of this method for details.
         method : str, optional
             Method for choosing the best solution in the grid. 
-            Options are 'AIC' (Akaike Information criterion) and 'eBIC' (extended Bayesia information criterion).
+            Options are 'AIC' (Akaike Information criterion) and 'eBIC' (extended Bayesian information criterion).
             The default is 'eBIC'.
         gamma : float, optional
-            Gamma value for eBIC. Should be between 0 and 1. The larger gamma, the more eBIC tends to pick sparse solutions. 
+            Gamma value for eBIC. Should be between 0 and 1. The larger ``gamma``, the more eBIC tends to pick sparse solutions. 
             The default is 0.1.
         tol : float, positive, optional
             Tolerance for the primal residual used for the solver at each grid point. The default is 1e-7.
