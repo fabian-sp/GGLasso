@@ -125,7 +125,7 @@ for a in np.arange(len(ALPHA)):
 # Solving
 # ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 #
-# To demonstrate again how to call the ADMM solver, we solve to high accuracy again for the best values of :math:`\lambda_1` and :math:`lambda_2`.
+# To demonstrate again how to call the ADMM solver, we solve to high accuracy again for the best values of :math:`\lambda_1` and :math:`\lambda_2`.
 #
 
 Omega_0 = get_K_identity(K,p)

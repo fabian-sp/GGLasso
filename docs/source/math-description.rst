@@ -27,7 +27,7 @@ SGL with latent variables
 
 In presence of latent variables, the precision matrix of the marginal of observable variables turns out to have the structure *sparse - low rank* [ref4]_. 
 
-.. image:: pictures/combined.png
+.. image:: pictures/SLRDecomp.png
   :width: 800
   :alt: Illustration of the precision matrix
 

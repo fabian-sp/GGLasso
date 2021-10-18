@@ -48,7 +48,7 @@ Here, we denote with $\mathbb{S}_{++}^K$ the $K$-product of the space of symmetr
 
 # Statement of need 
 
-Currently, there is no Python package available for solving general Graphical Lasso instances. The standard single Graphical Lasso problem can be solved in `scikit-learn` [@Pedregosa2011]. The `skggm` package provides several algorithmic and model selection extensions for the single Graphical Lasso problem [@Laska2017]. The package `regain` [@Tomasi2018] comprises solvers for Single and Fused Graphical Lasso problems, with and without latent variables. With `GGLasso`, we make the following contributions:
+Currently, there is no Python package available for solving general Graphical Lasso instances. The standard single Graphical Lasso problem (SGL) can be solved in `scikit-learn` [@Pedregosa2011]. The `skggm` package provides several algorithmic and model selection extensions for the single Graphical Lasso problem [@Laska2017]. The package `regain` [@Tomasi2018] comprises solvers for single and Fused Graphical Lasso problems, with and without latent variables. With `GGLasso`, we make the following contributions:
 
 - Proposing a uniform framework for solving Graphical Lasso problems. 
 - Providing solvers for Group Graphical Lasso problems (with and without latent variables).
@@ -82,7 +82,7 @@ pip install gglasso
 
 The central object of `GGLasso` is the class `glasso_problem` which streamlines the solving or model selection procedure for SGL, GGL, and FGL problems with or without latent variables.
 
-As an example, we instantiate a Single Graphical Lasso problem (see the problem formulation below). We input the empirical covariance matrix `S` and the number of samples `N`. We can choose to model latent variables and set the regularization parameters via the other input arguments.
+As an example, we instantiate a single Graphical Lasso problem (see the problem formulation below). We input the empirical covariance matrix `S` and the number of samples `N`. We can choose to model latent variables and set the regularization parameters via the other input arguments.
 
 ```python
 # Import the main class of the package
@@ -119,12 +119,12 @@ For further information on the input arguments and methods, we refer to the [det
 We list important special cases of the general problem formulation \autoref{eq:problem}. For a mathematical formulation for each special case, we refer to the [documentation](https://gglasso.readthedocs.io/en/latest/math-description.html).
 
 
-### *SGL* Single Graphical Lasso: {#SGL} 
-For $K=1$, the problem reduces to the Single (latent variable) Graphical Lasso where 
+### *SGL* single Graphical Lasso: {#SGL} 
+For $K=1$, the problem reduces to the single (latent variable) Graphical Lasso where 
 $$
 \mathcal{P}(\Theta) = \lambda_1 \sum_{i \neq j} |\Theta_{ij}|.
 $$
-An illustration of the latent Single Graphical Lasso model is shown in Figure 1.
+An illustration of the single latent variable Graphical Lasso model is shown in Figure 1.
 
 ### *GGL* Group Graphical Lasso: {#GGL}
 For 
