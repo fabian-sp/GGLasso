@@ -10,9 +10,9 @@ tags:
 authors:
   - name: Fabian Schaipp
     orcid: 0000-0002-0673-9944
-    affiliation: 1
+    affiliation: "1"
   - name: Oleg Vlasovets
-    affiliation: 2,3
+    affiliation: "2,3"
   - name: Christian L. Müller
     orcid: 0000-0002-3821-7083
     affiliation: "2,3,4"
