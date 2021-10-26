@@ -35,7 +35,7 @@ bibliography: paper.bib
 
 # Summary
 
-We introduce `GGLasso`, a Python package for solving General Graphical Lasso problems. The Graphical Lasso scheme, introduced by [@Friedman2007] (see also [@Yuan2007;@Banerjee2008]), estimates a sparse inverse covariance matrix $\Theta$ from multivariate Gaussian data $\mathcal{X} \sim \mathcal{N}(\mu, \Sigma) \in \mathbb{R}^p$. Originally proposed by [@Dempster:1972] under the name Covariance Selection, this estimation framework has been extended to include latent variables in [@Chandrasekaran2012]. Recent extensions also include the joint estimation of multiple inverse covariance matrices, see, e.g., in [@Danaher2013; @Tomasi2018]. The `GGLasso` package contains methods for solving the general problem formulation:
+We introduce `GGLasso`, a Python package for solving General Graphical Lasso problems. The Graphical Lasso scheme, introduced by [@Friedman2007] (see also [@Yuan2007;@Banerjee2008]), estimates a sparse inverse covariance matrix $\Theta$ from multivariate Gaussian data $\mathcal{X} \sim \mathcal{N}(\mu, \Sigma) \in \mathbb{R}^p$. Originally proposed by [@Dempster1972] under the name Covariance Selection, this estimation framework has been extended to include latent variables in [@Chandrasekaran2012]. Recent extensions also include the joint estimation of multiple inverse covariance matrices, see, e.g., in [@Danaher2013; @Tomasi2018]. The `GGLasso` package contains methods for solving the general problem formulation:
 
 <div class="math">
 \begin{align}
