@@ -53,7 +53,7 @@ Currently, there is no Python package available for solving general Graphical La
 - Proposing a uniform framework for solving Graphical Lasso problems. 
 - Providing solvers for Group Graphical Lasso problems (with and without latent variables).
 - Providing a solver for -- what we call -- *nonconforming GGL* problems where not all variables need to be present in every instance. We demonstrate the use case of such a formulation on synthetic data. 
-- Implementing a block-wise ADMM solver for SGL problems following [@Witten2011] as well as proximal point solvers for FGL and GGL problems [@Zhang2019; @Zhang2020].
+- Implementing a block-wise ADMM solver for SGL problems following [@Witten2011] as well as proximal point solvers for FGL and GGL problems [@Zhang2021; @Zhang2020].
 
 In the table below we give an overview of existing functionalities and the `GGLasso` package.
 
@@ -151,7 +151,7 @@ The `GGLasso` package implements several methods with provable convergence guara
 
 - *ADMM*: for all problem formulations we implemented the ADMM algorithm [@Boyd2011]. ADMM is a flexible and efficient optimization scheme which is specifically suited for Graphical Lasso problems as it only relies on efficient computation of the proximal operators of the involved functions [@Danaher2013; @Tomasi2018; @Ma2013].  
 
-- *PPDNA*: for GGL and FGL problems without latent variables, we included the proximal point solver proposed in [@Zhang2019; @Zhang2020]. According to the numerical experiments in [@Zhang2020], PPDNA can be an efficient alternative to ADMM especially for fast local convergence.
+- *PPDNA*: for GGL and FGL problems without latent variables, we included the proximal point solver proposed in [@Zhang2021; @Zhang2020]. According to the numerical experiments in [@Zhang2020], PPDNA can be an efficient alternative to ADMM especially for fast local convergence.
 
 - *block-ADMM*: for SGL problems without latent variables, we implemented a method which solves the problem block-wise, following the proposal in [@Witten2011]. This wrapper simply applies the ADMM solver to all connected components of the empirical covariance matrix after thresholding.
 
