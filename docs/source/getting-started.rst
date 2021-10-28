@@ -24,7 +24,7 @@ This installs a package called ``gglasso`` in your Python environment. In case y
 
      python setup.py clean --all develop clean --all
 
-To make sure that everything works properly you can run unit tests in ``glasso/tests``, for example
+To make sure that everything works properly you can run unit tests in ``gglasso/tests``, for example
 
 .. code-block::
 
