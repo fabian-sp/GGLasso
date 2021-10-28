@@ -34,6 +34,6 @@ To import from ``GGLasso`` in Python, type for example
 
 .. code-block:: python
 
-     from gglasso.problem import gglasso_problem 
+     from gglasso.problem import glasso_problem 
 
 
