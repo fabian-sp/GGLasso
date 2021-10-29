@@ -7,8 +7,8 @@ This file contains the proximal point algorithm proposed by Zhang et al., A prox
 import numpy as np
 import time
 
-from .ggl_helper import prox_p, phiplus, moreau_h, moreau_P, construct_gamma, construct_jacobian_prox_p
-from .ggl_helper import  Y_t, hessian_Y,  Phi_t, f, P_val, cg_ppdna
+from .ggl_helper import prox_p, phiplus, construct_gamma, construct_jacobian_prox_p
+from .ggl_helper import  Y_t, Phi_t, f, P_val, cg_ppdna
 from .admm_solver import ADMM_MGL
 from ..helper.basic_linalg import trp, Gdot
 
@@ -105,14 +105,10 @@ def PPA_subproblem(Omega_t, Theta_t, X_t, S, reg, ppa_sub_params = None, verbose
         
         # step 1: CG method
         cg_accur = min(eta, np.linalg.norm(gradY_Xt)**(1+tau))
-        if verbose:
-            print("Start CG method")
         
         D = cg_ppdna(Gamma, eigQ, W, sigma_t, -gradY_Xt, eps = cg_accur, max_iter = 12)
         
         # step 2: line search 
-        if verbose:
-            print("Start Line search")
         alpha = 1.
         Y_t_new, Omega_sol, Theta_sol, _ = Y_t( X_t + alpha * D, Omega_t, Theta_t, S, lambda1, lambda2, sigma_t, reg)
         while Y_t_new < funY_Xt + mu * alpha * Gdot(gradY_Xt , D):
@@ -121,8 +117,6 @@ def PPA_subproblem(Omega_t, Theta_t, X_t, S, reg, ppa_sub_params = None, verbose
                                                    sigma_t, reg)
             
         # step 3: update variables and check stopping condition
-        if verbose:
-            print("Update primal-dual variables")
         X_t += alpha * D 
         
         #### REDUNDANT
@@ -147,8 +141,9 @@ def PPA_subproblem(Omega_t, Theta_t, X_t, S, reg, ppa_sub_params = None, verbose
     if verbose and not(condA and condB):
         print("Subproblem could not be solve with the given accuracy! -- reached maximal iterations")
             
+    sub_info= {'niter' : sub_iter, 'armijo' : alpha}
     
-    return Omega_sol, Theta_sol, X_t
+    return Omega_sol, Theta_sol, X_t, sub_info
 
 
 def PPDNA(S, lambda1, lambda2, reg, Omega_0, Theta_0 = np.array([]), X_0 = np.array([]), ppdna_params = None, eps_ppdna = 1e-5 , verbose = False, measure = False):
@@ -161,7 +156,7 @@ def PPDNA(S, lambda1, lambda2, reg, Omega_0, Theta_0 = np.array([]), X_0 = np.ar
        
        s.t. \quad \Omega^{(k)} = \Theta^{(k)} \quad k=1,\dots,K
     
-    Here, :math:`\mathcal{P}` is a regularization function which depends on the application. Group Graphical Lasso (GGL) or Fused Graphical Lasso (FGL) is implemented.
+    Here, :math:`\mathcal{P}` is a regularization function which depends on the application. Group Graphical Lasso (GGL) or Fused Graphical Lasso (FGL) are implemented.
     
     Parameters
     ----------
@@ -188,10 +183,8 @@ def PPDNA(S, lambda1, lambda2, reg, Omega_0, Theta_0 = np.array([]), X_0 = np.ar
         dictionary with solver parameters. Possible keys:
         
         * max_iter: maximum number of iterations, default is 20.
-        * sigma_0: step size starting point. STep size is increased by 1.3 in every iteration. Default for sigma_0 is 100.
+        * sigma_0: step size starting point. Step size is increased by 1.3 in every iteration. Default for sigma_0 is 100.
         
-    max_iter : int, optional
-        maximum number of iterations. The default is 1000.
     eps_ppdna : float, positive, optional
         tolerance for the kkt residual. See 'A proximal point dual Newton algorithm for solving group graphical Lasso problems', Zhang et al. for details.
         The default is 1e-5.
@@ -241,6 +234,10 @@ def PPDNA(S, lambda1, lambda2, reg, Omega_0, Theta_0 = np.array([]), X_0 = np.ar
     residual = np.zeros(max_iter)
     objective = np.zeros(max_iter)
     
+    hdr_fmt = "%6s\t%10s\t%10s\t%16s\t%10s\t%10s\t%10s"
+    out_fmt = "%6d\t%10.4g\t%10.4g\t%16.4g\t%10.4g\t%10.4g\t%10.4g"
+    print(hdr_fmt % ("iter", "eta", "sigma_t", "niter subproblem", "armijo", "eps_t", "delta_t"))
+    
     for iter_t in np.arange(max_iter):
              
         # check stopping criterion
@@ -254,11 +251,8 @@ def PPDNA(S, lambda1, lambda2, reg, Omega_0, Theta_0 = np.array([]), X_0 = np.ar
             status = 'optimal'
             break
         
-        if verbose:
-            print(f"------------Iteration {iter_t} of the Proximal Point Algorithm----------------")
-        
-        Omega_t, Theta_t, X_t = PPA_subproblem(Omega_t, Theta_t, X_t, S, reg = reg, ppa_sub_params = ppa_sub_params,\
-                                               verbose = False)
+        Omega_t, Theta_t, X_t, sub_info = PPA_subproblem(Omega_t, Theta_t, X_t, S, reg = reg, ppa_sub_params = ppa_sub_params,\
+                                                         verbose = False)
         
         if measure:
             end = time.time()
@@ -272,8 +266,9 @@ def PPDNA(S, lambda1, lambda2, reg, Omega_0, Theta_0 = np.array([]), X_0 = np.ar
         ppa_sub_params['delta_t'] = 0.95 * ppa_sub_params['delta_t']
             
         if verbose:
-            print("sigma_t value: " , ppa_sub_params['sigma_t'])
-            print(f"Current accuracy: ", eta_P)
+            print(out_fmt % (iter_t, eta_P, ppa_sub_params['sigma_t'], sub_info["niter"], sub_info["armijo"], ppa_sub_params['eps_t'], ppa_sub_params['delta_t']))
+            #print("sigma_t value: " , ppa_sub_params['sigma_t'])
+            #print(f"Current accuracy: ", eta_P)
      
     if eta_P > eps_ppdna:
             status = 'max iterations reached'    
