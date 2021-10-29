@@ -119,18 +119,6 @@ def PPA_subproblem(Omega_t, Theta_t, X_t, S, reg, ppa_sub_params = None, verbose
         # step 3: update variables and check stopping condition
         X_t += alpha * D 
         
-        #### REDUNDANT
-        #X_sol = X_t.copy()
-        # Omega_sol = np.zeros((K,p,p))
-        # eigW, eigV = np.linalg.eigh(Omega_t - sigma_t * (S + X_sol))
-        # for k in np.arange(K):
-        #     _, phip_k, _ = moreau_h(sigma_t , eigW[k,:], eigV[k,:,:])
-        #     Omega_sol[k,:,:] = phip_k
-        
-        # _, Theta_sol = moreau_P(Theta_t + sigma_t * X_sol, sigma_t * lambda1, sigma_t * lambda2, reg)
-        # ########
-        
-        
         # step 4: evaluate stopping criterion
         opt_dist = Phi_t(Omega_sol, Theta_sol, S, Omega_t, Theta_t, sigma_t, lambda1, lambda2, reg) - Y_t_new
         condA = opt_dist <= eps_t**2/(2*sigma_t)
