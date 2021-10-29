@@ -324,7 +324,7 @@ def phiminus(beta, D, Q):
     B = (Q * phim(D,beta))@Q.T
     return B
 
-@njit() 
+#@njit() 
 def moreau_h(beta, D, Q):
     """returns the Moreau_Yosida reg. value as well as the proximal map of beta*h
     D: array (p,p)
@@ -445,23 +445,23 @@ def Y_t( X, Omega_t, Theta_t, S, lambda1, lambda2, sigma_t, reg):
     W_t = Omega_t - (sigma_t * (S + X))  
     V_t = Theta_t + (sigma_t * X)
 
-    #eigD, eigQ = np.linalg.eigh(W_t)
+    eigD, eigQ = np.linalg.eigh(W_t)
   
     grad1 = np.zeros((K,p,p))
     term1 = 0
     for k in np.arange(K):
-        eigD, eigQ = np.linalg.eigh(W_t[k,:,:])
-        Psi_h, proxh, _ = moreau_h(sigma_t, D = eigD, Q = eigQ)
+        #eigD, eigQ = np.linalg.eigh(W_t[k,:,:])
+        Psi_h, proxh, _ = moreau_h(sigma_t, D = eigD[k,:], Q = eigQ[k,:,:])
         term1 += (1/sigma_t) * Psi_h
         grad1[k,:,:] = proxh
     
     term2 = - 1/(2*sigma_t) * (Gdot(W_t, W_t) + Gdot(V_t, V_t))
     term3 = 1/(2*sigma_t) * (Gdot(Omega_t, Omega_t)  +  Gdot(Theta_t, Theta_t))  
   
-    Psi_P , U = moreau_P(V_t, sigma_t * lambda1, sigma_t*lambda2, reg)  
+    Psi_P , U = moreau_P(V_t, sigma_t * lambda1, sigma_t * lambda2, reg)  
     term4 = (1/sigma_t) * Psi_P
   
     fun = term1 + term2 + term3 + term4
-    grad = grad1 - U
+    #grad = grad1 - U
   
-    return fun, grad
+    return fun, grad1, U, (eigD, eigQ)

@@ -164,9 +164,13 @@ def template_admm_vs_ppdna(p = 50, K = 3, N = 1000, reg = "GGL"):
     
     sol, info = ADMM_MGL(S, lambda1, lambda2, reg, Omega_0, stopping_criterion = 'kkt', tol = 1e-6, rtol = 1e-5, verbose = True, latent = False)
     
-    sol2, info2 = warmPPDNA(S, lambda1, lambda2, reg, Omega_0, eps = 1e-6 , verbose = False, measure = True)
+    ppdna_params = {'max_iter' : 40, 'sigma_0' : 10}
     
-    sol3, info3 = PPDNA(S, lambda1, lambda2, reg, Omega_0, eps_ppdna = 1e-6 , verbose = True, measure = True)
+    sol2, info2 = warmPPDNA(S, lambda1, lambda2, reg, Omega_0, ppdna_params = ppdna_params,\
+                            eps = 1e-6 , verbose = False, measure = True)
+    
+    sol3, info3 = PPDNA(S, lambda1, lambda2, reg, Omega_0, ppdna_params = ppdna_params, \
+                        eps_ppdna = 1e-6 , verbose = True, measure = True)
     
     
     assert_array_almost_equal(sol['Theta'], sol2['Theta'], 2)
