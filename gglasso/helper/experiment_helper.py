@@ -92,7 +92,7 @@ def error(S_sol , S_true):
 
 path_ggl_powerlaw = '../plots/ggl_powerlaw/'
 path_fgl_powerlaw = '../plots/fgl_powerlaw/'
-path_ggl_runtime = '../plots/ggl_runtime/' 
+path_ggl_runtime = '../../plots/ggl_runtime/' 
 
 default_size_big = (10,7)
 default_size_small = (6,5)

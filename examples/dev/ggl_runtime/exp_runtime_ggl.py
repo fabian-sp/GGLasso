@@ -23,7 +23,7 @@ reg = 'GGL'
 
 Sigma, Theta = group_power_network(p, K, M)
 
-draw_group_heatmap(Theta)
+#draw_group_heatmap(Theta)
 
 #%%
 # runtime analysis ADMM vs. PPDNA on diff. sample sizes
@@ -47,7 +47,7 @@ for j in np.arange(len(vecN)):
     
     S, sample = sample_covariance_matrix(Sigma, vecN[j])
     
-    solA, infoA = ADMM_MGL(S, l1[j], l2[j], reg , Omega_0 , tol = 5e-5, stopping_criterion = 'kkt', verbose = False, measure = True)
+    solA, infoA = ADMM_MGL(S, l1[j], l2[j], reg , Omega_0 , max_iter = 2000, tol = 5e-5, stopping_criterion = 'kkt', verbose = False, measure = True)
     iA[j] = infoA
     
     TPR[j] = discovery_rate(solA['Theta'], Theta)['TPR']
