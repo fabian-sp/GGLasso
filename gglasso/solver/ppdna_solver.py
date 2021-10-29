@@ -255,8 +255,7 @@ def PPDNA(S, lambda1, lambda2, reg, Omega_0, Theta_0 = np.array([]), X_0 = np.ar
             
         if verbose:
             print(out_fmt % (iter_t, eta_P, ppa_sub_params['sigma_t'], sub_info["niter"], sub_info["armijo"], ppa_sub_params['eps_t'], ppa_sub_params['delta_t']))
-            #print("sigma_t value: " , ppa_sub_params['sigma_t'])
-            #print(f"Current accuracy: ", eta_P)
+           
      
     if eta_P > eps_ppdna:
             status = 'max iterations reached'    

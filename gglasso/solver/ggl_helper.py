@@ -264,20 +264,19 @@ def construct_jacobian_prox_p(X, l1 , l2, reg):
                 W[:,:,j,i] = ij_entry                 
     return W
 
-@njit() 
+
 def eval_jacobian_prox_p(Y , W):
     # W is the result of construct_jacobian_prox_p
     (K,p,p) = Y.shape
-  
     assert W.shape == (K,K,p,p)
-  
-    fun = np.zeros((K,p,p))
-    for i in np.arange(p):
-        for j in np.arange(p):
-            fun[:,i,j] = W[:,:,i,j] @ Y[:,i,j]
-  
+    fun = np.einsum('lkij,kij->lij', W, Y)
+    # fun = np.zeros((K,p,p))
+    # for i in np.arange(p):
+    #     for j in np.arange(p):
+    #         fun[:,i,j] = W[:,:,i,j] @ Y[:,i,j] 
     return fun
-  
+
+
 # functions related to the log determinant
 def h(A):
     return - np.log(np.linalg.det(A))
@@ -358,16 +357,6 @@ def construct_gamma(A, beta, D = np.array([]), Q = np.array([])):
         
     return Gamma
 
-# old version
-# def eval_jacobian_phiplus(B, Gamma, Q):
-#     # Gamma is constructed with construct_gamma
-#     # Q is the right-eigenvector matrix of the point A
-        
-#     res = Q @ (Gamma * (trp(Q) @ B @ Q)) @ trp(Q)
-    
-#     assert np.abs(res - trp(res)).max() <= 1e-4, f"symmetry failed by  {np.abs(res - trp(res)).max()}"
-#     return res
-
 @njit() 
 def eval_jacobian_phiplus(B, Gamma, Q):
     # numba version of function eval_jacobian_phiplus
@@ -387,7 +376,7 @@ def Phi_t(Omega, Theta, S, Omega_t, Theta_t, sigma_t, lambda1, lambda2, reg):
     res = f(Omega, S) + P_val(Theta, lambda1, lambda2, reg) + 1/(2*sigma_t) * (np.linalg.norm(Omega - Omega_t)**2 + np.linalg.norm(Theta - Theta_t)**2)
     return res
 
-@njit() 
+ 
 def hessian_Y(D , Gamma, eigQ, W, sigma_t):
     """
     this is the linear operator for the CG method
@@ -400,7 +389,7 @@ def hessian_Y(D , Gamma, eigQ, W, sigma_t):
     res = - sigma_t * (tmp1 + tmp2)
     return res
 
-@njit()
+
 def cg_ppdna(Gamma, eigQ, W, sigma_t, b, eps = 1e-6, max_iter = 20):
     """
     solves the linear system in the PPDNA subproblem
