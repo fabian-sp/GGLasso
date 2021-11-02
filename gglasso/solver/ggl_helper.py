@@ -384,20 +384,21 @@ def hessian_Y(D , Gamma, eigQ, W, sigma_t):
     Gamma and W are constructed beforehand in order to evaluate more efficiently
     """
     tmp1 = eval_jacobian_phiplus(D, Gamma, eigQ)
-    tmp2 = eval_jacobian_prox_p( D , W)
+    tmp2 = eval_jacobian_prox_p(D, W)
 
-    res = - sigma_t * (tmp1 + tmp2)
+    res = - sigma_t * (tmp1 + tmp2) 
     return res
 
 
-def cg_ppdna(Gamma, eigQ, W, sigma_t, b, eps = 1e-6, max_iter = 20):
+def cg_ppdna(Gamma, eigQ, W, sigma_t, b, tol = 1e-6, max_iter = 20, eps = 1e-4):
     """
     solves the linear system in the PPDNA subproblem
     
     Gamma, eigQ,W, sigma_t are constructed beforehand
     b: right-hand-side of linear system
     
-    eps: tolerance fo CG method
+    eps: Tikhonov regularization
+    tol: tolerance to CG method
     max_iter: max iterations of CG method
     """
     
@@ -417,7 +418,7 @@ def cg_ppdna(Gamma, eigQ, W, sigma_t, b, eps = 1e-6, max_iter = 20):
         denom = Gdot(r,r)
         r -= alpha * linp
         
-        if np.sqrt(Gdot(r,r)) <= eps:
+        if np.sqrt(Gdot(r,r)) <= tol:
             break
         
         beta = Gdot(r,r)/denom

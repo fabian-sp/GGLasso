@@ -102,11 +102,11 @@ def PPA_subproblem(Omega_t, Theta_t, X_t, S, reg, ppa_sub_params = None, verbose
     
         Gamma = construct_gamma(W_t, sigma_t, D = eigD, Q = eigQ)
         W = construct_jacobian_prox_p( (1/sigma_t) * V_t, lambda1 , lambda2, reg)
-        
+        eps_cg = 1e-3
         # step 1: CG method
         cg_accur = min(eta, np.linalg.norm(gradY_Xt)**(1+tau))
         
-        D = cg_ppdna(Gamma, eigQ, W, sigma_t, -gradY_Xt, eps = cg_accur, max_iter = 12)
+        D = cg_ppdna(Gamma, eigQ, W, sigma_t, -gradY_Xt, tol = cg_accur, max_iter = 12, eps = eps_cg)
         
         # step 2: line search 
         alpha = 1.
