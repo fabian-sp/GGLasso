@@ -404,7 +404,7 @@ def cg_ppdna(Gamma, eigQ, W, sigma_t, b, tol = 1e-6, max_iter = 20):
     dim = b.shape
     x = np.zeros(dim)
     r = b - hessian_Y(x, Gamma, eigQ, W, sigma_t)
-    r_norm = Gdot(r,r)
+    r_norm = np.linalg.norm(r)**2 #Gdot(r,r)
     p = r.copy()
     
     j = 0
@@ -418,7 +418,7 @@ def cg_ppdna(Gamma, eigQ, W, sigma_t, b, tol = 1e-6, max_iter = 20):
         x += alpha*p
         r_norm_old = r_norm
         r -= alpha*linp
-        r_norm = Gdot(r,r)
+        r_norm = np.linalg.norm(r)**2 #Gdot(r,r)
         
         if np.sqrt(r_norm) <= tol:
             status = f'converged in iter {j}'
@@ -443,13 +443,12 @@ def Y_t( X, Omega_t, Theta_t, S, lambda1, lambda2, sigma_t, reg):
     grad1 = np.zeros((K,p,p))
     term1 = 0
     for k in np.arange(K):
-        #eigD, eigQ = np.linalg.eigh(W_t[k,:,:])
         Psi_h, proxh, _ = moreau_h(sigma_t, D = eigD[k,:], Q = eigQ[k,:,:])
         term1 += (1/sigma_t) * Psi_h
         grad1[k,:,:] = proxh
     
-    term2 = - 1/(2*sigma_t) * (Gdot(W_t, W_t) + Gdot(V_t, V_t))
-    term3 = 1/(2*sigma_t) * (Gdot(Omega_t, Omega_t)  +  Gdot(Theta_t, Theta_t))  
+    term2 = - 1/(2*sigma_t) * (np.linalg.norm(W_t)**2 + np.linalg.norm(V_t)**2) # (Gdot(W_t, W_t) + Gdot(V_t, V_t))
+    term3 = 1/(2*sigma_t) * (np.linalg.norm(Omega_t)**2 + np.linalg.norm(Theta_t)**2) # (Gdot(Omega_t, Omega_t)  +  Gdot(Theta_t, Theta_t))  
   
     Psi_P , U = moreau_P(V_t, sigma_t * lambda1, sigma_t * lambda2, reg)  
     term4 = (1/sigma_t) * Psi_P
