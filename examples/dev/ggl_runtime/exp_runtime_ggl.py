@@ -53,7 +53,7 @@ for j in np.arange(len(vecN)):
     TPR[j] = discovery_rate(solA['Theta'], Theta)['TPR']
     FPR[j] = discovery_rate(solA['Theta'], Theta)['FPR']
     
-    #ppdna_params = {'sigma_fix': True, 'sigma_0' : 10}
+    #ppdna_params = {'sigma_fix': True, 'sigma_0' : 10.}
     ppdna_params = {}
     solP, infoP = warmPPDNA(S, l1[j], l2[j], reg, Omega_0, ppdna_params = ppdna_params,\
                             eps = 5e-5, eps_admm = 1e-2, verbose = True, measure = True)

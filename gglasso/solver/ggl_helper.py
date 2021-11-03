@@ -390,14 +390,13 @@ def hessian_Y(D , Gamma, eigQ, W, sigma_t):
     return res
 
 
-def cg_ppdna(Gamma, eigQ, W, sigma_t, b, tol = 1e-6, max_iter = 20, eps = 0.):
+def cg_ppdna(Gamma, eigQ, W, sigma_t, b, tol = 1e-6, max_iter = 20):
     """
     solves the linear system in the PPDNA subproblem
     
     Gamma, eigQ,W, sigma_t are constructed beforehand
     b: right-hand-side of linear system
     
-    eps: Tikhonov regularization
     tol: tolerance to CG method
     max_iter: max iterations of CG method
     """
