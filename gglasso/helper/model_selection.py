@@ -541,7 +541,10 @@ def aic(S, Theta, N):
     if type(S) == dict:
         aic = aic_dict(S, Theta, N)
     elif type(S) == np.ndarray:
-        aic = aic_array(S, Theta, N)
+        if len(S.shape) == 3:
+            aic = aic_array(S, Theta, N)
+        else:
+            aic = aic_single(S, Theta, N)          
     else:
         raise KeyError("Not a valid input type -- should be either dictionary or ndarray")
     
@@ -553,7 +556,10 @@ def aic_dict(S, Theta, N):
     N is array of sample sizes
     """
     K = len(S.keys())
-     
+    
+    if type(N) in [float,int]:
+        N = np.ones(K) * N
+        
     aic = 0
     for k in np.arange(K):
         aic += aic_single(S[k], Theta[k], N[k])
@@ -562,7 +568,7 @@ def aic_dict(S, Theta, N):
 def aic_array(S,Theta, N):
     (K,p,p) = S.shape
     
-    if type(N) == int:
+    if type(N) in [float,int]:
         N = np.ones(K) * N
     
     aic = 0
@@ -574,7 +580,7 @@ def aic_array(S,Theta, N):
 def aic_single(S, Theta, N):
     (p,p) = S.shape
         
-    A = adjacency_matrix(Theta , t = 1e-5)
+    A = adjacency_matrix(Theta, t=0.)
     aic = N*Sdot(S, Theta) - N*robust_logdet(Theta) + A.sum()
     
     return aic
@@ -588,16 +594,19 @@ def ebic(S, Theta, N, gamma = 0.5):
     if type(S) == dict:
         ebic = ebic_dict(S, Theta, N, gamma)
     elif type(S) == np.ndarray:
-        ebic = ebic_array(S, Theta, N, gamma)
+        if len(S.shape) == 3:
+            ebic = ebic_array(S, Theta, N, gamma)
+        else:
+            ebic = ebic_single(S, Theta, N, gamma)
     else:
         raise KeyError("Not a valid input type -- should be either dictionary or ndarray")
     
     return ebic
 
-def ebic_single(S,Theta, N, gamma):
+def ebic_single(S, Theta, N, gamma):
     (p,p) = S.shape
         
-    A = adjacency_matrix(Theta , t = 1e-5)
+    A = adjacency_matrix(Theta, t=0.)
     bic = N*Sdot(S, Theta) - N*robust_logdet(Theta) + A.sum()/2 * (np.log(N)+ 4*np.log(p)*gamma)
     
     return bic
@@ -605,7 +614,7 @@ def ebic_single(S,Theta, N, gamma):
 def ebic_array(S, Theta, N, gamma):
     (K,p,p) = S.shape
     
-    if type(N) == int:
+    if type(N) in [float,int]:
         N = np.ones(K) * N
         
     bic = 0
@@ -619,14 +628,17 @@ def ebic_dict(S, Theta, N, gamma):
     N is array of sample sizes
     """
     K = len(S.keys())
-   
+    
+    if type(N) in [float,int]:
+        N = np.ones(K) * N
+    
     bic = 0
     for k in np.arange(K):
         bic += ebic_single(S[k], Theta[k], N[k], gamma)
         
     return bic
         
-def robust_logdet(A, t = 1e-6):
+def robust_logdet(A, t=1e-6):
     """
     slogdet returns always a finite number if the lowest EV is not EXACTLY 0
     because of numerical inaccuracies we want to avoid that behaviour but also avoid overflows

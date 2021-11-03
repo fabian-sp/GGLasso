@@ -10,7 +10,7 @@ from .solver.admm_solver import ADMM_MGL
 from .solver.single_admm_solver import ADMM_SGL
 from .solver.ext_admm_solver import ext_ADMM_MGL
 
-from .helper.model_selection import grid_search, single_grid_search, K_single_grid, ebic, ebic_single
+from .helper.model_selection import grid_search, single_grid_search, K_single_grid, ebic
 
 
 assert_tol = 1e-5
@@ -136,17 +136,25 @@ class glasso_problem:
         self.conforming = False
         self.multiple = False
         
+        assert type(self.N) in [float,int,np.ndarray], "N must be either of type float, int or np.ndarray."
+         
         if type(self.S) == np.ndarray:
             
             if len(self.S.shape) == 3:
                 self.conforming = True
                 self.multiple = True
-                self._check_covariance_3d()
+                self._check_covariance_3d() # sets self.K, self.p
                 
+                if type(self.N) in [float,int]:
+                    self.N = self.N * np.ones(self.K)
+                     
             else:
                 assert len(self.S.shape) == 2, f"The specified covariance data has shape {self.S.shape}, GGLasso can only handle 2 or 3dim-input"
                 self.conforming = True
                 self._check_covariance_2d()
+                
+                if type(self.N) in [float,int]:
+                    self.N = self.N * np.ones(self.K)
                 
                 
         elif type(self.S) == list or type(self.S) == dict:
@@ -158,12 +166,17 @@ class glasso_problem:
             self.multiple = True
             self._check_covariance_list()
             
+            if type(self.N) in [float,int]:
+                    self.N = self.N * np.ones(self.K)
+                
             # G is also checked in the solver
             check_G(self.G, self.p)
             
         else:
             raise TypeError(f"Incorrect input type of S. You input {type(self.S)}, but np.ndarray or list/dict is expected.")
     
+        assert np.all(self.N > 0), "N must be positive."
+        
     ##############################################
     #### CHECK INPUT DATA 
     ##############################################
@@ -681,11 +694,7 @@ class GGLassoEstimator(BaseEstimator):
         """
         calculates the eBIC for a given value of :math:`\gamma`. Note that this can differ from eBIC values in model selection because of the scaling.
         """
-        if self.multiple:
-            self.ebic_ = ebic(self.sample_covariance_, self.precision_, self.n_samples, gamma = gamma)          
-        else:
-            self.ebic_ = ebic_single(self.sample_covariance_, self.precision_, self.n_samples, gamma = gamma)        
-        
+        self.ebic_ = ebic(self.sample_covariance_, self.precision_, self.n_samples, gamma = gamma)          
         return self.ebic_
     
     def calc_adjacency(self, t = 1e-8):
