@@ -567,13 +567,11 @@ class glasso_problem:
             if self.latent:
                 est_uniform, est_indv, stage1_statistics = K_single_grid(S = self.S, lambda_range = self.modelselect_params['lambda1_range'], N = self.N, method = method,\
                                                                   gamma = gamma, latent = self.latent, mu_range = self.modelselect_params['mu1_range'],
-                                                                  use_block = True, tol = tol, rtol= rtol)            
+                                                                  use_block = True, store_all = False, tol = tol, rtol= rtol)            
                 
                 ix_mu = stage1_statistics['ix_mu']
                 
                 # store results from stage 1 (may be needed to compare Single estimator vs. Joint estimator)
-                self.est1 = est_uniform
-                self.est2 = est_indv
                 self.stage1_stats = stage1_statistics          
             else:
                 ix_mu = None
