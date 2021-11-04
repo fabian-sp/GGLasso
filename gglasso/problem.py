@@ -549,7 +549,7 @@ class glasso_problem:
         if not self.multiple:
             sol, all_estimates, _, stats = single_grid_search(S = self.S, lambda_range = self.modelselect_params['lambda1_range'], N = self.N, \
                                method = method, gamma = gamma, latent = self.latent, mu_range = self.modelselect_params['mu1_range'],
-                               use_block = True, tol = tol, rtol = rtol)
+                               use_block = True, store_all = False, tol = tol, rtol = rtol)
             
             # update the regularization parameters to the best grid point
             self.set_reg_params(stats['BEST'])

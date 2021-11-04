@@ -256,7 +256,7 @@ def K_single_grid(S, lambda_range, N, method = 'eBIC', gamma = 0.3, latent = Fal
     use_block : boolean, optional
         whether to use ADMM on each connected component. Typically, for large and sparse graphs, this is a speedup. Only possible for latent=False.
     store_all : boolean, optional
-        whether the solution at any grid point is stored. This might be needed if a comparative estimator shall be computed. The default is False.
+        If you want to compute est_indv and est_uniform, set to True. When only best mu for each k=1,..,K and lambda1 is needed, can be set to False. The default is False.
     tol : float, positive, optional
         Tolerance for the primal residual used for the solver at each grid point. The default is 1e-7.
     rtol : float, positive, optional
@@ -509,7 +509,7 @@ def single_grid_search(S, lambda_range, N, method = 'eBIC', gamma = 0.3, latent 
             else:
                 sol, _ = ADMM_SGL(**kwargs)
             
-            Theta_sol = sol['Theta']
+            Theta_sol = sol['Theta'].copy()
             
             if store_all:
                 estimates[j,m,:,:] = Theta_sol.copy()
@@ -546,9 +546,9 @@ def single_grid_search(S, lambda_range, N, method = 'eBIC', gamma = 0.3, latent 
         BIC[g][BIC[g]==-np.inf] = np.nan
     
     if method == 'AIC':    
-        ix= np.unravel_index(np.nanargmin(AIC), AIC.shape)
+        ix = np.unravel_index(np.nanargmin(AIC), AIC.shape)
     elif method == 'eBIC':        
-        ix= np.unravel_index(np.nanargmin(BIC[gamma]), BIC[gamma].shape)
+        ix = np.unravel_index(np.nanargmin(BIC[gamma]), BIC[gamma].shape)
         
         
     # best_sol['Theta'] = estimates[ix]
