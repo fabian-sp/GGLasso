@@ -153,9 +153,7 @@ class glasso_problem:
                 self.conforming = True
                 self._check_covariance_2d()
                 
-                if type(self.N) in [float,int]:
-                    self.N = self.N * np.ones(self.K)
-                
+                assert type(self.N) in [float,int], "For SGL problems, N needs to be a single number, float or int."
                 
         elif type(self.S) == list or type(self.S) == dict:
             
