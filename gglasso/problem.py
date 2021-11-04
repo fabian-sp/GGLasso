@@ -136,7 +136,7 @@ class glasso_problem:
         self.conforming = False
         self.multiple = False
         
-        assert type(self.N) in [float,int,np.ndarray], "N must be either of type float, int or np.ndarray."
+        assert isinstance(self.N, (int,float, np.ndarray)), "N must be either of type float, int or np.ndarray."
          
         if type(self.S) == np.ndarray:
             
@@ -145,7 +145,7 @@ class glasso_problem:
                 self.multiple = True
                 self._check_covariance_3d() # sets self.K, self.p
                 
-                if type(self.N) in [float,int]:
+                if isinstance(self.N, (int,float)):
                     self.N = self.N * np.ones(self.K)
                      
             else:
@@ -153,7 +153,7 @@ class glasso_problem:
                 self.conforming = True
                 self._check_covariance_2d()
                 
-                assert type(self.N) in [float,int], "For SGL problems, N needs to be a single number, float or int."
+                assert isinstance(self.N, (int,float)), "For SGL problems, N needs to be a single number, float or int."
                 
         elif type(self.S) == list or type(self.S) == dict:
             
@@ -164,7 +164,7 @@ class glasso_problem:
             self.multiple = True
             self._check_covariance_list()
             
-            if type(self.N) in [float,int]:
+            if isinstance(self.N, (int,float)):
                     self.N = self.N * np.ones(self.K)
                 
             # G is also checked in the solver

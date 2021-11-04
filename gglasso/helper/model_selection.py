@@ -588,7 +588,7 @@ def aic_dict(S, Theta, N):
     """
     K = len(S.keys())
     
-    if type(N) in [float,int]:
+    if isinstance(N, (int,float)):
         N = np.ones(K) * N
         
     aic = 0
@@ -599,7 +599,7 @@ def aic_dict(S, Theta, N):
 def aic_array(S,Theta, N):
     (K,p,p) = S.shape
     
-    if type(N) in [float,int]:
+    if isinstance(N, (int,float)):
         N = np.ones(K) * N
     
     aic = 0
@@ -610,6 +610,7 @@ def aic_array(S,Theta, N):
 
 def aic_single(S, Theta, N):
     (p,p) = S.shape
+    assert isinstance(N, (int,float))
         
     A = adjacency_matrix(Theta, t=0.)
     aic = N*Sdot(S, Theta) - N*robust_logdet(Theta) + A.sum()
@@ -636,7 +637,8 @@ def ebic(S, Theta, N, gamma = 0.5):
 
 def ebic_single(S, Theta, N, gamma):
     (p,p) = S.shape
-        
+    assert isinstance(N, (int,float))
+    
     A = adjacency_matrix(Theta, t=0.)
     bic = N*Sdot(S, Theta) - N*robust_logdet(Theta) + A.sum()/2 * (np.log(N)+ 4*np.log(p)*gamma)
     
@@ -645,7 +647,7 @@ def ebic_single(S, Theta, N, gamma):
 def ebic_array(S, Theta, N, gamma):
     (K,p,p) = S.shape
     
-    if type(N) in [float,int]:
+    if isinstance(N, (int,float)):
         N = np.ones(K) * N
         
     bic = 0
@@ -660,7 +662,7 @@ def ebic_dict(S, Theta, N, gamma):
     """
     K = len(S.keys())
     
-    if type(N) in [float,int]:
+    if isinstance(N, (int,float)):
         N = np.ones(K) * N
     
     bic = 0
