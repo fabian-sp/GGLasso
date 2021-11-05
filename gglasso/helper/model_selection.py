@@ -612,7 +612,7 @@ def aic_single(S, Theta, N):
     (p,p) = S.shape
     assert isinstance(N, (int,float))
         
-    A = adjacency_matrix(Theta, t=0.)
+    A = adjacency_matrix(Theta, t=1e-5)
     aic = N*Sdot(S, Theta) - N*robust_logdet(Theta) + A.sum()
     
     return aic
@@ -639,7 +639,7 @@ def ebic_single(S, Theta, N, gamma):
     (p,p) = S.shape
     assert isinstance(N, (int,float))
     
-    A = adjacency_matrix(Theta, t=0.)
+    A = adjacency_matrix(Theta, t=1e-5)
     bic = N*Sdot(S, Theta) - N*robust_logdet(Theta) + A.sum()/2 * (np.log(N)+ 4*np.log(p)*gamma)
     
     return bic
