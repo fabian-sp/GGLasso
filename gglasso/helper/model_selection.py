@@ -87,9 +87,9 @@ def grid_search(solver, S, N, p, reg, l1, l2 = None, w2 = None, method= 'eBIC', 
         shape (K,len(l1)). Indices for each element of l1 and each instance k which mu to choose from mu_range.
         Only needed when latent=True. Is computed by K_single_grid-method.
     tol : float, positive, optional
-            Tolerance for the primal residual used for the solver at each grid point. The default is 1e-7.
+        Tolerance for the primal residual used for the solver at each grid point. The default is 1e-7.
     rtol : float, positive, optional
-            Tolerance for the dual residual used for the solver at each grid point. The default is 1e-7.
+        Tolerance for the dual residual used for the solver at each grid point. The default is 1e-7.
     verbose : boolean, optional
         verbosity. The default is False.
 
@@ -173,18 +173,15 @@ def grid_search(solver, S, N, p, reg, l1, l2 = None, w2 = None, method= 'eBIC', 
                 
             # solve
             sol, info = solver(**kwargs)
-            Omega_sol = sol['Omega']
-            Theta_sol = sol['Theta']
+            Omega_sol = sol['Omega'].copy()
+            Theta_sol = sol['Theta'].copy()
             
             if latent:
                 RANK[:,g1,g2] = [np.linalg.matrix_rank(sol['L'][k]) for k in np.arange(K)]
-                
-
-            
+                         
             # warm start
-            kwargs['Omega_0'] = Omega_sol.copy()
-            
-                
+            kwargs['Omega_0'] = Omega_sol
+                            
             # store diagnostics
             AIC[g1,g2] = aic(S, Theta_sol, N)
             for g in gammas:
@@ -560,6 +557,59 @@ def single_grid_search(S, lambda_range, N, method = 'eBIC', gamma = 0.3, latent 
             
     return best_sol, estimates, lowrank, stats
 
+#######################################
+## THRESHOLDING
+#######################################
+
+def thresholding(A, tau):
+    """
+    thresholdes array or dict A by tau
+    CAUTION: inplace manipulation!
+    """
+    if type(A) == np.ndarray:
+        A[np.abs(A) <= tau] = 0.
+    elif type(A) == dict:
+        K = len(A.keys())
+        for k in np.arange(K):
+            A[k][np.abs(A[k]) <= tau] = 0.
+            
+    return A
+
+#tau_range = np.logspace(-6,-1, 10)
+#gamma = 0.1; method = 'eBIC'
+
+def tune_threshold(Theta, S, N, tau_range, method = 'eBIC', gamma = 0.1):
+    """
+    CAUTION: inplace manipulation of Theta!
+    """
+    
+    tau_range.sort() # needs to be increasing!
+    assert np.all(tau_range > 0)
+    
+    tmpT = Theta.copy()
+    scores = np.zeros(len(tau_range))
+    
+    for j in range(len(tau_range)):
+        tau = tau_range[j]
+        tmpT = thresholding(tmpT, tau)
+        
+        #print("Nonzero", np.count_nonzero(tmpT))
+        if method == 'eBIC':
+            E = ebic(S, tmpT, N, gamma = gamma)
+        elif method == 'AIC':
+            E = aic(S, tmpT, N)
+        scores[j] = E
+        
+    scores[scores==np.inf] = np.nan
+    
+    opt_ix = np.nanargmin(scores)
+    opt_tau = tau_range[opt_ix]
+    opt_score = scores[opt_ix]
+
+    # changes Theta INPLACE!
+    Theta = thresholding(Theta, opt_tau)
+    return Theta, opt_tau, opt_score
+
 ################################################################
 ## CRITERIA AIC/EBIC
 ################################################################
@@ -612,8 +662,10 @@ def aic_single(S, Theta, N):
     (p,p) = S.shape
     assert isinstance(N, (int,float))
         
-    A = adjacency_matrix(Theta, t=1e-5)
-    aic = N*Sdot(S, Theta) - N*robust_logdet(Theta) + A.sum()
+    # A = adjacency_matrix(Theta, t=0.)
+    # count upper diagonal non-zero entries
+    E = (np.count_nonzero(Theta) - p)/2
+    aic = N*Sdot(S, Theta) - N*robust_logdet(Theta) + E
     
     return aic
 
@@ -639,8 +691,10 @@ def ebic_single(S, Theta, N, gamma):
     (p,p) = S.shape
     assert isinstance(N, (int,float))
     
-    A = adjacency_matrix(Theta, t=1e-5)
-    bic = N*Sdot(S, Theta) - N*robust_logdet(Theta) + A.sum()/2 * (np.log(N)+ 4*np.log(p)*gamma)
+    # A = adjacency_matrix(Theta, t=1e-16)
+    # count upper diagonal non-zero entries
+    E = (np.count_nonzero(Theta) - p)/2
+    bic = N*Sdot(S, Theta) - N*robust_logdet(Theta) + E*(np.log(N)+ 4*np.log(p)*gamma)
     
     return bic
 
