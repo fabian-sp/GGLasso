@@ -112,10 +112,10 @@ def ext_ADMM_MGL(S, lambda1, lambda2, reg , Omega_0, G,\
     for k in np.arange(K):
         p[k] = S[k].shape[0]
         
-    if type(lambda1) == np.float64 or type(lambda1) == float:
+    if isinstance(lambda1, float):
         lambda1 = lambda1*np.ones(K)
     if latent:
-        if type(mu1) == np.float64 or type(mu1) == float:
+        if isinstance(mu1, float):
              mu1 = mu1*np.ones(K)
             
         assert mu1 is not None

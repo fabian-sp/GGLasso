@@ -10,7 +10,7 @@ from .solver.admm_solver import ADMM_MGL
 from .solver.single_admm_solver import ADMM_SGL
 from .solver.ext_admm_solver import ext_ADMM_MGL
 
-from .helper.model_selection import grid_search, single_grid_search, K_single_grid, ebic, ebic_single
+from .helper.model_selection import grid_search, single_grid_search, K_single_grid, ebic
 
 
 assert_tol = 1e-5
@@ -136,18 +136,24 @@ class glasso_problem:
         self.conforming = False
         self.multiple = False
         
+        assert isinstance(self.N, (int,float, np.ndarray)), "N must be either of type float, int or np.ndarray."
+         
         if type(self.S) == np.ndarray:
             
             if len(self.S.shape) == 3:
                 self.conforming = True
                 self.multiple = True
-                self._check_covariance_3d()
+                self._check_covariance_3d() # sets self.K, self.p
                 
+                if isinstance(self.N, (int,float)):
+                    self.N = self.N * np.ones(self.K)
+                     
             else:
                 assert len(self.S.shape) == 2, f"The specified covariance data has shape {self.S.shape}, GGLasso can only handle 2 or 3dim-input"
                 self.conforming = True
                 self._check_covariance_2d()
                 
+                assert isinstance(self.N, (int,float)), "For SGL problems, N needs to be a single number, float or int."
                 
         elif type(self.S) == list or type(self.S) == dict:
             
@@ -158,12 +164,17 @@ class glasso_problem:
             self.multiple = True
             self._check_covariance_list()
             
+            if isinstance(self.N, (int,float)):
+                    self.N = self.N * np.ones(self.K)
+                
             # G is also checked in the solver
             check_G(self.G, self.p)
             
         else:
             raise TypeError(f"Incorrect input type of S. You input {type(self.S)}, but np.ndarray or list/dict is expected.")
     
+        assert np.all(self.N > 0), "N must be positive."
+        
     ##############################################
     #### CHECK INPUT DATA 
     ##############################################
@@ -536,7 +547,7 @@ class glasso_problem:
         if not self.multiple:
             sol, all_estimates, _, stats = single_grid_search(S = self.S, lambda_range = self.modelselect_params['lambda1_range'], N = self.N, \
                                method = method, gamma = gamma, latent = self.latent, mu_range = self.modelselect_params['mu1_range'],
-                               use_block = True, tol = tol, rtol = rtol)
+                               use_block = True, store_all = False, tol = tol, rtol = rtol)
             
             # update the regularization parameters to the best grid point
             self.set_reg_params(stats['BEST'])
@@ -554,13 +565,11 @@ class glasso_problem:
             if self.latent:
                 est_uniform, est_indv, stage1_statistics = K_single_grid(S = self.S, lambda_range = self.modelselect_params['lambda1_range'], N = self.N, method = method,\
                                                                   gamma = gamma, latent = self.latent, mu_range = self.modelselect_params['mu1_range'],
-                                                                  use_block = True, tol = tol, rtol= rtol)            
+                                                                  use_block = True, store_all = False, tol = tol, rtol= rtol)            
                 
                 ix_mu = stage1_statistics['ix_mu']
                 
                 # store results from stage 1 (may be needed to compare Single estimator vs. Joint estimator)
-                self.est1 = est_uniform
-                self.est2 = est_indv
                 self.stage1_stats = stage1_statistics          
             else:
                 ix_mu = None
@@ -681,11 +690,7 @@ class GGLassoEstimator(BaseEstimator):
         """
         calculates the eBIC for a given value of :math:`\gamma`. Note that this can differ from eBIC values in model selection because of the scaling.
         """
-        if self.multiple:
-            self.ebic_ = ebic(self.sample_covariance_, self.precision_, self.n_samples, gamma = gamma)          
-        else:
-            self.ebic_ = ebic_single(self.sample_covariance_, self.precision_, self.n_samples, gamma = gamma)        
-        
+        self.ebic_ = ebic(self.sample_covariance_, self.precision_, self.n_samples, gamma = gamma)          
         return self.ebic_
     
     def calc_adjacency(self, t = 1e-8):

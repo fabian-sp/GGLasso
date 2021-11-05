@@ -9,11 +9,11 @@ URL = 'https://github.com/fabian-sp/GGLasso'
 EMAIL = 'fabian.schaipp@tum.de'
 AUTHOR = 'Fabian Schaipp'
 REQUIRES_PYTHON = '>=3.7.0'
-VERSION = "0.1.4"
+VERSION = "0.1.5"
 
 # What packages are required for this module to be executed?
 REQUIRED = [
-    "numpy>=1.17.3", "scipy>=0.11.0", "numba>=0.46.0", "pandas",
+    "numpy>=1.17.3", "scipy>=0.11.0", "scikit-learn>=0.24.1", "numba>=0.46.0", "pandas",
     "matplotlib", "seaborn", "networkx", "regain", "decorator==4.4.2"]
 
 # What packages are optional?
