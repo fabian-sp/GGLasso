@@ -60,8 +60,8 @@ class glasso_problem:
     latent : boolean, optional
         Specify whether latent variables should be modeled.
         
-        * ``latent = True``: inverse covariance is assumed to have form :math:`\Theta-L` (sparse - low rank).
-        * ``latent = False``: inverse covariance is assumed to have form :math:`\Theta` (sparse).
+        * ``latent = True``: inverse covariance is assumed to have form :math:`\\Theta-L` (sparse - low rank).
+        * ``latent = False``: inverse covariance is assumed to have form :math:`\\Theta` (sparse).
         
         The default is False.
         
@@ -475,13 +475,13 @@ class glasso_problem:
         Parameters
         ----------
         modelselect_params : dict
-            Contains values for (a subset of) the grid parameters for :math:`\lambda_1`, :math:`\lambda_2`, :math:`\mu_1`.
-            Each dictionary value should be an array. For optimal performance sort :math:`\lambda_1` in a descending order.
+            Contains values for (a subset of) the grid parameters for :math:`\\lambda_1`, :math:`\\lambda_2`, :math:`\\mu_1`.
+            Each dictionary value should be an array. For optimal performance sort :math:`\\lambda_1` in a descending order.
             
             Possible dictionary keys:
-                * ``'lambda1_range'``: range for :math:`\lambda_1` parameter.
-                * ``'lambda2_range'``: range for :math:`\lambda_2` parameter.
-                * ``'mu1_range'``: range for :math:`\mu_1` parameter.
+                * ``'lambda1_range'``: range for :math:`\\lambda_1` parameter.
+                * ``'lambda2_range'``: range for :math:`\\lambda_2` parameter.
+                * ``'mu1_range'``: range for :math:`\\mu_1` parameter.
                 
         """
         
@@ -505,9 +505,9 @@ class glasso_problem:
         
         Strategy for the different problem formulations:
             
-        * SGL: solve on a path of :math:`\lambda_1` values or on a grid of :math:`(\lambda_1, \mu_1)` values if ``latent=True``. Choose the grid point where the eBIC is minimal.
-        * MGL and ``latent=False``: solve on a grid of :math:`(\lambda_1, \lambda_2)` values. Choose the grid point where the eBIC is minimal.
-        * MGL and ``latent=True``: in a first stage, solve SGL on a :math:`(\lambda_1, \mu_1)` for each instance :math:`k=1,\dots,K` independently. Then, do a grid search on :math:`(\lambda_1, \lambda_2)` values and for each :math:`\lambda_1` and each instance :math:`k=1,\dots,K` pick the :math:`\mu_1` value which had minimal eBIC in stage one. Then, pick again the grid point with minimal eBIC.
+        * SGL: solve on a path of :math:`\\lambda_1` values or on a grid of :math:`(\\lambda_1, \\mu_1)` values if ``latent=True``. Choose the grid point where the eBIC is minimal.
+        * MGL and ``latent=False``: solve on a grid of :math:`(\\lambda_1, \\lambda_2)` values. Choose the grid point where the eBIC is minimal.
+        * MGL and ``latent=True``: in a first stage, solve SGL on a :math:`(\\lambda_1, \\mu_1)` for each instance :math:`k=1,\\dots,K` independently. Then, do a grid search on :math:`(\\lambda_1, \\lambda_2)` values and for each :math:`\\lambda_1` and each instance :math:`k=1,\\dots,K` pick the :math:`\\mu_1` value which had minimal eBIC in stage one. Then, pick again the grid point with minimal eBIC.
         
         Parameters
         ----------
@@ -688,7 +688,7 @@ class GGLassoEstimator(BaseEstimator):
     
     def calc_ebic(self, gamma = 0.5):
         """
-        calculates the eBIC for a given value of :math:`\gamma`. Note that this can differ from eBIC values in model selection because of the scaling.
+        calculates the eBIC for a given value of :math:`\\gamma`. Note that this can differ from eBIC values in model selection because of the scaling.
         """
         self.ebic_ = ebic(self.sample_covariance_, self.precision_, self.n_samples, gamma = gamma)          
         return self.ebic_
