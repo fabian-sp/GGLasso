@@ -89,19 +89,24 @@ def PPA_subproblem(Omega_t, Theta_t, X_t, S, reg, ppa_sub_params = None, verbose
     condB = False
     
     sub_iter = 0
+    Y_t_new = None
     
     while not(condA and condB) and sub_iter < 10:
         # step 0: set variables
-        W_t = Omega_t - (sigma_t * (S + X_t))  
-        V_t = Theta_t + (sigma_t * X_t)
+        W_t = Omega_t - (sigma_t*(S + X_t))  
+        V_t = Theta_t + (sigma_t*X_t)
         
-        funY_Xt, Osol, Tsol, (eigD, eigQ) = Y_t( X_t, Omega_t, Theta_t, S, lambda1, lambda2, sigma_t, reg)
-        gradY_Xt = Osol - Tsol
-        
+        # fun evaluation and eig can be reused from Armijo in  laster iter
+        if sub_iter == 0:
+            funY_Xt, Omega_sol, Theta_sol, (eigD, eigQ) = Y_t( X_t, Omega_t, Theta_t, S, lambda1, lambda2, sigma_t, reg)
+        else:
+            funY_Xt = Y_t_new
+            
+        gradY_Xt = Omega_sol - Theta_sol
         #eigD, eigQ = np.linalg.eigh(W_t)
     
         Gamma = construct_gamma(W_t, sigma_t, D = eigD, Q = eigQ)
-        W = construct_jacobian_prox_p( (1/sigma_t) * V_t, lambda1 , lambda2, reg)
+        W = construct_jacobian_prox_p( (1/sigma_t)*V_t, lambda1, lambda2, reg)
         # step 1: CG method
         cg_accur = min(eta, np.linalg.norm(gradY_Xt)**(1+tau))
         
@@ -109,14 +114,19 @@ def PPA_subproblem(Omega_t, Theta_t, X_t, S, reg, ppa_sub_params = None, verbose
         
         # step 2: line search 
         alpha = 1.
-        Y_t_new, Omega_sol, Theta_sol, _ = Y_t( X_t + alpha * D, Omega_t, Theta_t, S, lambda1, lambda2, sigma_t, reg)
+        Y_t_new, Omega_sol, Theta_sol, (eigD, eigQ) = Y_t(X_t + alpha*D, Omega_t, Theta_t, S, lambda1, lambda2,\
+                                                          sigma_t, reg)
+            
         while Y_t_new < funY_Xt + mu * alpha * Gdot(gradY_Xt , D):
             alpha *= rho
-            Y_t_new, Omega_sol, Theta_sol, _ = Y_t( X_t + alpha * D, Omega_t, Theta_t, S, lambda1, lambda2,\
-                                                   sigma_t, reg)
+            # Y_t_new, Omega_sol, Theta_sol, _ = Y_t(X_t + alpha*D, Omega_t, Theta_t, S, lambda1, lambda2,\
+            #                                        sigma_t, reg)
+            Y_t_new, Omega_sol, Theta_sol, (eigD, eigQ) = Y_t(X_t + alpha*D, Omega_t, Theta_t, S, lambda1, lambda2,\
+                                                              sigma_t, reg)
             
+                
         # step 3: update variables and check stopping condition
-        X_t += alpha * D 
+        X_t += alpha*D 
         
         # step 4: evaluate stopping criterion
         opt_dist = Phi_t(Omega_sol, Theta_sol, S, Omega_t, Theta_t, sigma_t, lambda1, lambda2, reg) - Y_t_new

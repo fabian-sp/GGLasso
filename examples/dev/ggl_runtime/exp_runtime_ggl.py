@@ -21,7 +21,7 @@ M = 10
 
 reg = 'GGL'
 
-Sigma, Theta = group_power_network(p, K, M)
+Sigma, Theta = group_power_network(p, K, M, nxseed = 23456)
 
 #draw_group_heatmap(Theta)
 
