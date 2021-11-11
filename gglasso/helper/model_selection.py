@@ -406,7 +406,7 @@ def K_single_grid(S, lambda_range, N, method = 'eBIC', gamma = 0.3, latent = Fal
 
 
 def single_grid_search(S, lambda_range, N, method = 'eBIC', gamma = 0.3, latent = False, mu_range = None,\
-                       use_block = True, store_all = True, tol = 1e-7, rtol = 1e-7):
+                       use_block = True, thresholding = False, store_all = True, tol = 1e-7, rtol = 1e-7):
     """
     method for model selection for SGL problem, doing grid search and selection via eBIC or AIC
 
@@ -428,6 +428,8 @@ def single_grid_search(S, lambda_range, N, method = 'eBIC', gamma = 0.3, latent 
         range of mu1 values (low rank regularization parameter). Only needed when latent = True.
     use_block : boolean, optional
         whether to use ADMM on each connected component. Typically, for large and sparse graphs, this is a speedup. Only possible for latent=False.
+    thresholding : boolean, optional
+        whether to tune a thresholded estimator for each (lambda1,mu1) pair. See https://arxiv.org/pdf/2104.06389v1.pdf for details.
     store_all : boolean, optional
         whether the solution at any grid point is stored. This might be needed if a comparative estimator shall be computed. The default is False.
     tol : float, positive, optional
@@ -479,6 +481,11 @@ def single_grid_search(S, lambda_range, N, method = 'eBIC', gamma = 0.3, latent 
     
     RANK = np.zeros((L,M))
     
+    if thresholding:
+        TAU = np.zeros((L, M))
+    else:
+        TAU = None
+    
     kwargs = {'S': S, 'Omega_0': np.eye(p), 'X_0': np.eye(p), 'tol': tol, 'rtol': rtol,\
               'verbose': False, 'measure': False}
     
@@ -507,25 +514,28 @@ def single_grid_search(S, lambda_range, N, method = 'eBIC', gamma = 0.3, latent 
                 sol, _ = ADMM_SGL(**kwargs)
             
             Theta_sol = sol['Theta'].copy()
-            
-            if store_all:
-                estimates[j,m,:,:] = Theta_sol.copy()
+            kwargs['Omega_0'] = sol['Omega'].copy() # warm start
+            # as X is scaled with rho, warm starting the dual variables can go wrong when rho is adapted
             
             if latent:
                 if store_all:
                     lowrank[j,m,:,:] = sol['L'].copy()
                 RANK[j,m] = np.linalg.matrix_rank(sol['L'])
             
-            # warm start
-            kwargs['Omega_0'] = sol['Omega'].copy()
-            # as X is scaled with rho, warm starting the dual variables can go wrong when rho is adapted
-            
-            
+            # tune optimal threshold, changes Theta_sol!
+            if thresholding:
+                tau_range = np.linspace(1e-12, np.diag(Theta_sol).min()*0.95, 20) # diagonal is upper bound as this would make Theta indefinite.              
+                Theta_sol, opt_tau,_ = tune_threshold(Theta_sol, S, N, tau_range, method = method, gamma = gamma)
+                TAU[j,m] = opt_tau
+             
             AIC[j,m] = aic_single(S, Theta_sol, N)
             for g in gammas:
                 BIC[g][j, m] = ebic_single(S, Theta_sol, N, gamma = g)
             
             SP[j,m] = sparsity(Theta_sol)
+            
+            if store_all:
+                estimates[j,m,:,:] = Theta_sol.copy()
             
             # new best point found
             if method == 'eBIC':
@@ -552,7 +562,7 @@ def single_grid_search(S, lambda_range, N, method = 'eBIC', gamma = 0.3, latent 
     # if latent:
     #     best_sol['L'] = lowrank[ix]
     
-    stats = {'BIC': BIC, 'AIC': AIC, 'SP': SP, 'RANK': RANK, 'LAMBDA': LAMB, 'MU': MU, \
+    stats = {'BIC': BIC, 'AIC': AIC, 'SP': SP, 'RANK': RANK, 'LAMBDA': LAMB, 'MU': MU, 'TAU': TAU,\
              'BEST': {'lambda1': LAMB[ix], 'mu1': MU[ix]}, 'GAMMA': gammas}
             
     return best_sol, estimates, lowrank, stats
@@ -575,8 +585,6 @@ def thresholding(A, tau):
             
     return A
 
-#tau_range = np.logspace(-6,-1, 10)
-#gamma = 0.1; method = 'eBIC'
 
 def tune_threshold(Theta, S, N, tau_range, method = 'eBIC', gamma = 0.1):
     """
@@ -593,7 +601,6 @@ def tune_threshold(Theta, S, N, tau_range, method = 'eBIC', gamma = 0.1):
         tau = tau_range[j]
         tmpT = thresholding(tmpT, tau)
         
-        #print("Nonzero", np.count_nonzero(tmpT))
         if method == 'eBIC':
             E = ebic(S, tmpT, N, gamma = gamma)
         elif method == 'AIC':
@@ -604,11 +611,10 @@ def tune_threshold(Theta, S, N, tau_range, method = 'eBIC', gamma = 0.1):
     
     opt_ix = np.nanargmin(scores)
     opt_tau = tau_range[opt_ix]
-    opt_score = scores[opt_ix]
-
+    
     # changes Theta INPLACE!
     Theta = thresholding(Theta, opt_tau)
-    return Theta, opt_tau, opt_score
+    return Theta, opt_tau, scores
 
 ################################################################
 ## CRITERIA AIC/EBIC
@@ -732,7 +738,7 @@ def robust_logdet(A, t=1e-6):
     """
     D,Q = np.linalg.eigh(A)
     if D.min() <= t:
-        print("WARNING: solution may not be positive definite")
+        print("WARNING: EBIC evaluated at non-positive definite matrix")
         return -np.inf
     else:
         l = np.linalg.slogdet(A)
