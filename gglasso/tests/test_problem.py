@@ -86,7 +86,7 @@ def test_GGL_ext():
         Sdict[k] = S[k,:,:].copy()
         
     G = construct_trivial_G(p, K)
-    template_problem_MGL(S, N, reg = 'GGL', latent = False, G = G)
+    template_problem_MGL(Sdict, N, reg = 'GGL', latent = False, G = G)
     return
 
 def test_GGL_ext_latent():
@@ -98,7 +98,7 @@ def test_GGL_ext_latent():
         Sdict[k] = S[k,:,:].copy()
         
     G = construct_trivial_G(p, K)
-    template_problem_MGL(S, N, reg = 'GGL', latent = True, G = G)
+    template_problem_MGL(Sdict, N, reg = 'GGL', latent = True, G = G)
     return
 
 ###############################################################
@@ -157,15 +157,16 @@ def test_scaling_SGL():
     Sigma, Theta = group_power_network(p, K = 1, M = 2)
     S, samples = sample_covariance_matrix(Sigma, N); S = S[0,:,:]  
     
-    S2 = 10*S
+    sc = 10.
+    S2 = sc*S
     reg_params = {'lambda1': 0.01}
-    reg_params2 = {'lambda1': 0.1}
+    reg_params2 = {'lambda1': sc*0.01}
     
     P = glasso_problem(S = S2, N = N, reg = None, latent = False, do_scaling = True)
     P.set_reg_params(reg_params)
     P.solve(tol = 1e-10, rtol = 1e-15)
     
-    solver_params = {'rho': 10}
+    solver_params = {'rho': sc}
         
     P2 = glasso_problem(S = S2, N = N, reg = None, latent = False, do_scaling = False)
     P2.set_reg_params(reg_params2)
