@@ -119,8 +119,6 @@ def PPA_subproblem(Omega_t, Theta_t, X_t, S, reg, ppa_sub_params = None, verbose
             
         while Y_t_new < funY_Xt + mu * alpha * Gdot(gradY_Xt , D):
             alpha *= rho
-            # Y_t_new, Omega_sol, Theta_sol, _ = Y_t(X_t + alpha*D, Omega_t, Theta_t, S, lambda1, lambda2,\
-            #                                        sigma_t, reg)
             Y_t_new, Omega_sol, Theta_sol, (eigD, eigQ) = Y_t(X_t + alpha*D, Omega_t, Theta_t, S, lambda1, lambda2,\
                                                               sigma_t, reg)
             
