@@ -378,8 +378,8 @@ class glasso_problem:
             * For non-conforming MGL, specifiy a dictionary with keys 1,...,K and symmetric 2d-arrays of shape :math:`(p_k,p_k)` as values.
         
         solver_params : dict, optional
-            Parameters for the solvers. Is given as kwargs for the solver. See doc of the solvers for more details.
-            Note that the ``verbose``-option of the solver will always be overwritten by the value of the ``verbose``option of this function.
+            Parameters for the solvers. This is given as kwargs into the solver. See the docs of the solvers for more details.
+            The ``verbose`` option of the solver will always be overwritten by the value of the ``verbose`` option of this function.
             
         tol : float, optional
             Tolerance for solving. The smaller it is, the longer it will take to solve the problem. 
