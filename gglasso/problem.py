@@ -379,6 +379,7 @@ class glasso_problem:
         
         solver_params : dict, optional
             Parameters for the solvers. Is given as kwargs for the solver. See doc of the solvers for more details.
+            Note that the ``verbose``-option of the solver will always be overwritten by the value of the ``verbose``option of this function.
             
         tol : float, optional
             Tolerance for solving. The smaller it is, the longer it will take to solve the problem. 
@@ -393,7 +394,7 @@ class glasso_problem:
             The default is 'admm'.
         
         verbose : boolean, optional
-            Verbsity of the solver. The default is ``False``.
+            Verbosity of the solver. The default is ``False``.
 
         Returns
         -------
