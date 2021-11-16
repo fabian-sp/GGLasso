@@ -2,6 +2,7 @@
 author: Fabian Schaipp
 """
 import numpy as np
+import warnings
 
 from .helper.basic_linalg import trp, adjacency_matrix, scale_array_by_diagonal
 from .helper.ext_admm_helper import check_G
@@ -362,7 +363,7 @@ class glasso_problem:
     #### SOLVING
     ##############################################
       
-    def solve(self, Omega_0 = None, solver_params = dict(), tol = 1e-8, rtol = 1e-7, solver = 'admm'):
+    def solve(self, Omega_0 = None, solver_params = dict(), tol = 1e-8, rtol = 1e-7, solver = 'admm', verbose = False):
         """
         Method for solving the Graphical Lasso problem formulation.
         After solving, an instance of ``GGLassoEstimator`` will be created and assigned to ``self.solution``.
@@ -381,15 +382,18 @@ class glasso_problem:
             
         tol : float, optional
             Tolerance for solving. The smaller it is, the longer it will take to solve the problem. 
-            The default is 1e-5.
+            The default is ``1e-5``.
             
         rtol : float, optional
             Relative Tolerance for solving. The smaller it is, the longer it will take to solve the problem. 
-            The default is 1e-4.
+            The default is ``1e-4``.
             
         solver : str, optional
             Solver name. At this point, we use ADMM for all formulations.
             The default is 'admm'.
+        
+        verbose : boolean, optional
+            Verbsity of the solver. The default is ``False``.
 
         Returns
         -------
@@ -411,10 +415,11 @@ class glasso_problem:
          
         self.solver_params = self._default_solver_params()
         self.solver_params.update(solver_params)
+        self.solver_params["verbose"] = verbose
         
         #print(self.solver_params.keys())
+        #print(f"\n Solve problem with {solver.upper()} solver... \n ")
         
-        print(f"\n Solve problem with {solver.upper()} solver... \n ")
         if not self.multiple:
             sol, info = ADMM_SGL(S = self.S, lambda1 = self.reg_params['lambda1'], Omega_0= self.Omega_0, \
                                  tol = self.tol , rtol = self.rtol, latent = self.latent, mu1 = self.reg_params['mu1'], **self.solver_params)
@@ -487,7 +492,7 @@ class glasso_problem:
         
         if modelselect_params is None:
             modelselect_params = dict()
-            print("NOTE: No grid for model selection is specified and thus default values are used. A grid can be specified with the argument modelselect_params.")
+            warnings.warn("No grid for model selection is specified and thus default values are used. A grid can be specified with the argument modelselect_params.")
             
         else:
             assert type(modelselect_params) == dict
@@ -539,7 +544,7 @@ class glasso_problem:
         self.set_modelselect_params(modelselect_params)
         
         if not np.all(self.modelselect_params['lambda1_range'] == np.sort(self.modelselect_params['lambda1_range'])[::-1]):
-            print("NOTE: Ideally the lambda1 range is sorted in descending order, so the grid search is performed from sparse to dense.")
+            warnings.warn("Ideally the lambda1 range is sorted in descending order, so the grid search is performed from sparse to dense.")
         
         ###############################
         # SINGLE GL --> GRID SEARCH lambda1/mu
@@ -619,9 +624,9 @@ class glasso_problem:
 
     
 #%%
-from sklearn.base import BaseEstimator
+#from sklearn.base import BaseEstimator
 
-class GGLassoEstimator(BaseEstimator):
+class GGLassoEstimator():
     """
         Estimator object for the solution to the Graphical Lasso problems. 
         Reading as well the documentation of ``glasso_problem`` is highly recommended.

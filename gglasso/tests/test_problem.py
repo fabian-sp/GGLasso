@@ -41,7 +41,7 @@ def template_problem_MGL(S, N, reg = 'GGL', latent = False, G = None):
     
     # set reg params and solve again
     P.set_reg_params(reg_params)
-    P.solve()
+    P.solve(verbose = True)
     
     # test model selection
     P.model_selection(method = 'AIC')
