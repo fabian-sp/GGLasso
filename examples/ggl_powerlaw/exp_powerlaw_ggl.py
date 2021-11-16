@@ -30,7 +30,7 @@ reg = 'GGL'
 # whether to save the plots as pdf-files
 save = False
 
-Sigma, Theta = group_power_network(p, K, M, nxseed = 2340)
+Sigma, Theta = group_power_network(p, K, M, seed = 2340)
 
 draw_group_heatmap(Theta, save = save)
 

@@ -23,7 +23,7 @@ import seaborn as sns
 p = 20
 N = 1000
 
-Sigma, Theta = generate_precision_matrix(p=p, M=1, style='erdos', prob=0.1, nxseed=1234)
+Sigma, Theta = generate_precision_matrix(p=p, M=1, style='erdos', prob=0.1, seed=1234)
 
 S, sample = sample_covariance_matrix(Sigma, N)
 
