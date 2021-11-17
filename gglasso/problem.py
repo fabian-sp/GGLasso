@@ -625,7 +625,6 @@ class glasso_problem:
 
     
 #%%
-#from sklearn.base import BaseEstimator
 
 class GGLassoEstimator():
     """
@@ -672,9 +671,6 @@ class GGLassoEstimator():
         self.precision_ = None
         self.sample_covariance_ = S.copy()
         self.lowrank_ = None
-        
-        
-        super(GGLassoEstimator, self).__init__()
         
         self.adjacency_ = None
         self.ebic_ = None
