@@ -1,6 +1,8 @@
 import io
 import os
+import gglasso
 from setuptools import setup, find_packages
+
 
 # Package meta-data.
 NAME = 'gglasso'
@@ -9,7 +11,8 @@ URL = 'https://github.com/fabian-sp/GGLasso'
 EMAIL = 'fabian.schaipp@tum.de'
 AUTHOR = 'Fabian Schaipp'
 REQUIRES_PYTHON = '>=3.7.0'
-VERSION = "0.1.7"
+VERSION = gglasso.__version__
+
 
 # What packages are required for this module to be executed?
 REQUIRED = [
