@@ -31,7 +31,7 @@ def Gdot(X, Y):
 # general functions for the space S
 @njit()
 def Sdot(X,Y):
-    return np.trace(X.T @ Y)
+    return np.trace(X @ Y)
 
 def adjacency_matrix(S, t = 1e-10):
     A = (np.abs(S) >= t).astype(int)
