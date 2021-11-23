@@ -25,7 +25,7 @@ def get_ppdna_params(ppdna_params = None):
         assert ppdna_params['max_iter'] > 0
     
     if 'sigma_0' not in p0:
-        ppdna_params['sigma_0'] = 100
+        ppdna_params['sigma_0'] = 100.
     else:
         assert ppdna_params['sigma_0'] > 0
         
@@ -89,35 +89,42 @@ def PPA_subproblem(Omega_t, Theta_t, X_t, S, reg, ppa_sub_params = None, verbose
     condB = False
     
     sub_iter = 0
+    Y_t_new = None
     
     while not(condA and condB) and sub_iter < 10:
         # step 0: set variables
-        W_t = Omega_t - (sigma_t * (S + X_t))  
-        V_t = Theta_t + (sigma_t * X_t)
+        W_t = Omega_t - (sigma_t*(S + X_t))  
+        V_t = Theta_t + (sigma_t*X_t)
         
-        funY_Xt, Osol, Tsol, (eigD, eigQ) = Y_t( X_t, Omega_t, Theta_t, S, lambda1, lambda2, sigma_t, reg)
-        gradY_Xt = Osol - Tsol
-        
+        # fun evaluation and eig can be reused from Armijo in  laster iter
+        if sub_iter == 0:
+            funY_Xt, Omega_sol, Theta_sol, (eigD, eigQ) = Y_t( X_t, Omega_t, Theta_t, S, lambda1, lambda2, sigma_t, reg)
+        else:
+            funY_Xt = Y_t_new
+            
+        gradY_Xt = Omega_sol - Theta_sol
         #eigD, eigQ = np.linalg.eigh(W_t)
     
         Gamma = construct_gamma(W_t, sigma_t, D = eigD, Q = eigQ)
-        W = construct_jacobian_prox_p( (1/sigma_t) * V_t, lambda1 , lambda2, reg)
-        eps_cg = 1e-3
+        W = construct_jacobian_prox_p( (1/sigma_t)*V_t, lambda1, lambda2, reg)
         # step 1: CG method
         cg_accur = min(eta, np.linalg.norm(gradY_Xt)**(1+tau))
         
-        D = cg_ppdna(Gamma, eigQ, W, sigma_t, -gradY_Xt, tol = cg_accur, max_iter = 12, eps = eps_cg)
+        D, cg_status = cg_ppdna(Gamma, eigQ, W, sigma_t, -gradY_Xt, tol = cg_accur, max_iter = 10)
         
         # step 2: line search 
         alpha = 1.
-        Y_t_new, Omega_sol, Theta_sol, _ = Y_t( X_t + alpha * D, Omega_t, Theta_t, S, lambda1, lambda2, sigma_t, reg)
+        Y_t_new, Omega_sol, Theta_sol, (eigD, eigQ) = Y_t(X_t + alpha*D, Omega_t, Theta_t, S, lambda1, lambda2,\
+                                                          sigma_t, reg)
+            
         while Y_t_new < funY_Xt + mu * alpha * Gdot(gradY_Xt , D):
             alpha *= rho
-            Y_t_new, Omega_sol, Theta_sol, _ = Y_t( X_t + alpha * D, Omega_t, Theta_t, S, lambda1, lambda2,\
-                                                   sigma_t, reg)
+            Y_t_new, Omega_sol, Theta_sol, (eigD, eigQ) = Y_t(X_t + alpha*D, Omega_t, Theta_t, S, lambda1, lambda2,\
+                                                              sigma_t, reg)
             
+                
         # step 3: update variables and check stopping condition
-        X_t += alpha * D 
+        X_t += alpha*D 
         
         # step 4: evaluate stopping criterion
         opt_dist = Phi_t(Omega_sol, Theta_sol, S, Omega_t, Theta_t, sigma_t, lambda1, lambda2, reg) - Y_t_new
@@ -211,7 +218,7 @@ def PPDNA(S, lambda1, lambda2, reg, Omega_0, Theta_0 = np.array([]), X_0 = np.ar
     # adds all necessary paramters which are not given as input
     ppdna_params = get_ppdna_params(ppdna_params)
     max_iter = ppdna_params['max_iter']
-    sigma_0 = ppdna_params['sigma_0']
+    sigma_0 = float(ppdna_params['sigma_0'])
     
     ppa_sub_params = get_ppa_sub_params_default()
     ppa_sub_params['sigma_t'] = sigma_0
@@ -247,15 +254,14 @@ def PPDNA(S, lambda1, lambda2, reg, Omega_0, Theta_0 = np.array([]), X_0 = np.ar
             runtime[iter_t] = end-start
             objective[iter_t] = f(Omega_t, S) + P_val(Omega_t, lambda1, lambda2, reg)
             
-        
+        if verbose:
+            print(out_fmt % (iter_t, eta_P, ppa_sub_params['sigma_t'], sub_info["niter"], sub_info["armijo"], ppa_sub_params['eps_t'], ppa_sub_params['delta_t']))
+         
         if not ppdna_params['sigma_fix']:
             ppa_sub_params['sigma_t'] = 1.3 * ppa_sub_params['sigma_t']
         ppa_sub_params['eps_t'] = 0.95 * ppa_sub_params['eps_t']
         ppa_sub_params['delta_t'] = 0.95 * ppa_sub_params['delta_t']
-            
-        if verbose:
-            print(out_fmt % (iter_t, eta_P, ppa_sub_params['sigma_t'], sub_info["niter"], sub_info["armijo"], ppa_sub_params['eps_t'], ppa_sub_params['delta_t']))
-           
+                    
      
     if eta_P > eps_ppdna:
             status = 'max iterations reached'    

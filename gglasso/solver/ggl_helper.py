@@ -357,7 +357,7 @@ def construct_gamma(A, beta, D = np.array([]), Q = np.array([])):
         
     return Gamma
 
-@njit() 
+@njit()
 def eval_jacobian_phiplus(B, Gamma, Q):
     # numba version of function eval_jacobian_phiplus
     # numba only supports @ for 2D-arrays --> loop through K
@@ -390,14 +390,13 @@ def hessian_Y(D , Gamma, eigQ, W, sigma_t):
     return res
 
 
-def cg_ppdna(Gamma, eigQ, W, sigma_t, b, tol = 1e-6, max_iter = 20, eps = 1e-4):
+def cg_ppdna(Gamma, eigQ, W, sigma_t, b, tol = 1e-6, max_iter = 20):
     """
     solves the linear system in the PPDNA subproblem
     
     Gamma, eigQ,W, sigma_t are constructed beforehand
     b: right-hand-side of linear system
     
-    eps: Tikhonov regularization
     tol: tolerance to CG method
     max_iter: max iterations of CG method
     """
@@ -405,26 +404,30 @@ def cg_ppdna(Gamma, eigQ, W, sigma_t, b, tol = 1e-6, max_iter = 20, eps = 1e-4):
     dim = b.shape
     x = np.zeros(dim)
     r = b - hessian_Y(x, Gamma, eigQ, W, sigma_t)
+    r_norm = np.linalg.norm(r)**2 #Gdot(r,r)
     p = r.copy()
+    
     j = 0
+    status = 'max iter'
     
     for j in np.arange(max_iter):
         
-        linp = hessian_Y(p , Gamma, eigQ, W, sigma_t)
+        linp = hessian_Y(p, Gamma, eigQ, W, sigma_t)
+        alpha = r_norm/Gdot(p,linp)
+    
+        x += alpha*p
+        r_norm_old = r_norm
+        r -= alpha*linp
+        r_norm = np.linalg.norm(r)**2 #Gdot(r,r)
         
-        alpha = Gdot(r,r) / Gdot(p, linp)
-        
-        x += alpha * p
-        denom = Gdot(r,r)
-        r -= alpha * linp
-        
-        if np.sqrt(Gdot(r,r)) <= tol:
+        if np.sqrt(r_norm) <= tol:
+            status = f'converged in iter {j}'
             break
         
-        beta = Gdot(r,r)/denom
-        p = r + beta * p 
+        beta = r_norm/r_norm_old
+        p = r + beta*p 
         
-    return x
+    return x, status
 
 def Y_t( X, Omega_t, Theta_t, S, lambda1, lambda2, sigma_t, reg):
     assert np.min(np.array([lambda1, lambda2, sigma_t])) > 0 , "at least one parameter is not positive"
@@ -440,13 +443,12 @@ def Y_t( X, Omega_t, Theta_t, S, lambda1, lambda2, sigma_t, reg):
     grad1 = np.zeros((K,p,p))
     term1 = 0
     for k in np.arange(K):
-        #eigD, eigQ = np.linalg.eigh(W_t[k,:,:])
         Psi_h, proxh, _ = moreau_h(sigma_t, D = eigD[k,:], Q = eigQ[k,:,:])
         term1 += (1/sigma_t) * Psi_h
         grad1[k,:,:] = proxh
     
-    term2 = - 1/(2*sigma_t) * (Gdot(W_t, W_t) + Gdot(V_t, V_t))
-    term3 = 1/(2*sigma_t) * (Gdot(Omega_t, Omega_t)  +  Gdot(Theta_t, Theta_t))  
+    term2 = - 1/(2*sigma_t) * (np.linalg.norm(W_t)**2 + np.linalg.norm(V_t)**2) # (Gdot(W_t, W_t) + Gdot(V_t, V_t))
+    term3 = 1/(2*sigma_t) * (np.linalg.norm(Omega_t)**2 + np.linalg.norm(Theta_t)**2) # (Gdot(Omega_t, Omega_t)  +  Gdot(Theta_t, Theta_t))  
   
     Psi_P , U = moreau_P(V_t, sigma_t * lambda1, sigma_t * lambda2, reg)  
     term4 = (1/sigma_t) * Psi_P

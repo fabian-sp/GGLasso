@@ -34,7 +34,7 @@ N = 100
 #
 
 p_arr = (p-B)*np.ones(K, dtype = int)
-num_samples = N*np.ones(K, dtype = int)
+num_samples = N*np.ones(K)
 
 Sigma, Theta = generate_precision_matrix(p=p, M=M, style = 'powerlaw', gamma = 2.8, prob = 0.1, nxseed = 3456)
 

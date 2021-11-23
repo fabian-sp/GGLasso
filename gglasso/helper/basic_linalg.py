@@ -23,15 +23,14 @@ def Gdot(X, Y):
     (K,p,p) = X.shape
     res = 0
     for k in np.arange(K):
-        res += Sdot(X[k,:,:], Y[k,:,:])
-    
+        res += Sdot(X[k,:,:], Y[k,:,:])   
     return res 
 
 
 # general functions for the space S
 @njit()
 def Sdot(X,Y):
-    return np.trace(X @ Y)
+    return np.sum(X * Y)
 
 def adjacency_matrix(S, t = 1e-10):
     A = (np.abs(S) >= t).astype(int)

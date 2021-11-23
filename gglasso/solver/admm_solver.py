@@ -105,7 +105,7 @@ def ADMM_MGL(S, lambda1, lambda2, reg , Omega_0 , \
     assert rho > 0, "ADMM penalization parameter must be positive."
     
     if latent:
-        if type(mu1) == np.float64 or type(mu1) == float:
+        if isinstance(mu1, float):
              mu1 = mu1*np.ones(K)
             
         assert mu1 is not None
