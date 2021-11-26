@@ -18,15 +18,13 @@ def prox_1norm(v, l):
 def prox_od_1norm(A, l):
     """
     calculates the prox of the off-diagonal 1norm at a point A
-    """
-    
+    """    
     (d1,d2) = A.shape
     res = np.sign(A) * np.maximum(np.abs(A) - l, 0.)
     
     for i in np.arange(np.minimum(d1,d2)):
         res[i,i] = A[i,i]
     
-
     return res
 
 def prox_rank_norm(A, beta, D = np.array([]), Q = np.array([])):
@@ -40,8 +38,33 @@ def prox_rank_norm(A, beta, D = np.array([]), Q = np.array([])):
 
 @njit()          
 def prox_2norm(v,l):
-    a = np.maximum(np.linalg.norm(v,2) , l)
+    # prox of standard Euclidean norm
+    # if v is matrix, this is the Frobenius norm
+    a = np.maximum(np.linalg.norm(v) , l)
     return v * (a - l) / a
+
+@njit()
+def prox_sum_Frob(X, M, l):
+    """
+    computes prox of 
+    \lambda \sum_{j\neq l} \|X^M_{jl}\|_F 
+    """
+    (pM, pM) = X.shape
+    assert pM%M == 0
+    
+    p = int(pM/M)
+    Y = np.zeros((pM,pM))
+    
+    for i in np.arange(p):
+        for j in np.arange(start=i, stop=p):
+            if j == l:
+                Y[i*M:(i+1)*M,j*M:(j+1)*M] = X[i*M:(i+1)*M,j*M:(j+1)*M] 
+            else:
+                B = prox_2norm(X[i*M:(i+1)*M,j*M:(j+1)*M], l)
+                Y[i*M:(i+1)*M,j*M:(j+1)*M] = B
+                Y[j*M:(j+1)*M,i*M:(i+1)*M] = B.T
+                             
+    return Y
 
 @njit()
 def prox_phi_ggl(v, l1, l2):
@@ -135,43 +158,6 @@ def jacobian_prox_phi_fgl(v , l1 , l2):
     Theta = jacobian_1norm(x, l1)
     
     return Theta @ P
-
-# @njit() 
-# def prox_chi(A, l):
-#     """
-#     calculates the prox of the off-diagonal 2norm at point A
-#     """
-#     assert l > 0 
-        
-#     (d1,d2,d3) = A.shape
-#     res = np.zeros((d1,d2,d3))
-#     for i in np.arange(d2):
-#         for j in np.arange(d3):
-#             if i == j:
-#                 res[:,i,j] = A[:,i,j]
-#             else:
-#                 a = max(np.linalg.norm(A[:,i,j],2) , l)
-#                 res[:,i,j] = A[:,i,j] * (a - l) / a
-
-#     return res
-
-# def prox_PTV(X, l2):
-#     """
-#     prox of only the TV penalty, but on the space G
-#     """
-#     assert l2 > 0, "lambda2 havs to be positive"
-#     (K,p,p) = X.shape
-#     M = np.zeros((K,p,p))
-#     for i in np.arange(p):
-#         for j in np.arange(p):
-#             if i == j:
-#                 M[:,i,j] = X[:,i,j]
-#             else:
-#                 M[:,i,j] = condat_method(X[:,i,j], l2)
-    
-#     assert abs(M - trp(M)).max() <= 1e-5
-#     return M
-
 
 # general functions related to the regularizer P
 @njit()    
