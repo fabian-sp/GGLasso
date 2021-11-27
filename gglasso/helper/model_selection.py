@@ -383,12 +383,15 @@ def K_single_grid(S, lambda_range, N, method = 'eBIC', gamma = 0.3, latent = Fal
         ix_uniform = np.nanargmin(tmpBIC[gamma].sum(axis=0))
         ix_indv = np.nanargmin(tmpBIC[gamma], axis = 1)
     
-    # finalize est_indv
+    # stack in case of array
     if type(S) == np.ndarray:
-        est_indv['Theta'] = np.stack([e['Theta'] for e in est_indv.values()])
+        stackedTh = np.stack([e['Theta'] for e in est_indv.values()])
         if latent:
-            est_indv['L'] = np.stack([e['L'] for e in est_indv.values()])
+            stackedL = np.stack([e['L'] for e in est_indv.values()])
         
+        est_indv['Theta'] = stackedTh
+        if latent:
+            est_indv['L'] = stackedL
         # drop old keys in case of an array
         for k in np.arange(K):  
             est_indv.pop(k)
@@ -400,19 +403,21 @@ def K_single_grid(S, lambda_range, N, method = 'eBIC', gamma = 0.3, latent = Fal
             
         for k in np.arange(K):  
             est_uniform[k] = dict()
-            est_uniform[k]['Theta'] = estimates[k][ix_uniform, ix_mu[k,ix_uniform] , :,:]
-            
+            est_uniform[k]['Theta'] = estimates[k][ix_uniform, ix_mu[k,ix_uniform] , :,:]           
             if latent:
                 est_uniform[k]['L'] = lowrank[k][ix_uniform, ix_mu[k,ix_uniform] , :,:]
                    
         if type(S) == np.ndarray:
-            est_uniform['Theta'] = np.stack([e['Theta'] for e in est_uniform.values()])
+            stackedTh = np.stack([e['Theta'] for e in est_uniform.values()])
             if latent:
-                est_uniform['L'] = np.stack([e['L'] for e in est_uniform.values()])
+               stackedL  = np.stack([e['L'] for e in est_uniform.values()])
             
+            est_uniform['Theta'] = stackedTh
+            if latent:
+                est_uniform['L'] = stackedL
             # drop old keys in case of an array
             for k in np.arange(K):  
-                est_indv.pop(k)
+                est_uniform.pop(k)
     else:
         est_uniform = None
         
