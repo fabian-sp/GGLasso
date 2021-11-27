@@ -230,9 +230,10 @@ def K_single_grid(S, lambda_range, N, method = 'eBIC', gamma = 0.3, latent = Fal
     parameters to select: lambda1 (sparsity), mu1 (lowrank, if latent=True)
     
     A grid search on lambda1/mu1 is run on each instance independently.
-    It returns two estimates:
+    It returns 
         1) est_indv: choosing optimal lambda1/mu1 pair for each k=1,..,K independently
-        2) est_uniform: choosing optimal lambda1 for all k=1,..,K uniformly and the respective optimal mu1 for each k=1,..,K independently
+        2) est_uniform: Only if ``store_all = True``. Choosing optimal lambda1 for all k=1,..,K uniformly and the respective optimal mu1 for each k=1,..,K independently.
+                        Caution as you might run into memory issues.
 
     Parameters
     ----------
@@ -253,7 +254,7 @@ def K_single_grid(S, lambda_range, N, method = 'eBIC', gamma = 0.3, latent = Fal
     use_block : boolean, optional
         whether to use ADMM on each connected component. Typically, for large and sparse graphs, this is a speedup. Only possible for latent=False.
     store_all : boolean, optional
-        If you want to compute est_indv and est_uniform, set to True. When only best mu for each k=1,..,K and lambda1 is needed, can be set to False. The default is False.
+        If you want to compute est_uniform, set to True. When only best mu for each k=1,..,K and lambda1 is needed, can be set to False. The default is True.
     tol : float, positive, optional
         Tolerance for the primal residual used for the solver at each grid point. The default is 1e-7.
     rtol : float, positive, optional
@@ -262,7 +263,7 @@ def K_single_grid(S, lambda_range, N, method = 'eBIC', gamma = 0.3, latent = Fal
 
     Returns
     -------
-    est_uniform : dict
+    est_uniform : dict (or None)
         uniformly chosen best grid point (see above for details)
     est_indv : dict
         individually chosen best grid point
@@ -311,7 +312,11 @@ def K_single_grid(S, lambda_range, N, method = 'eBIC', gamma = 0.3, latent = Fal
     
     estimates = dict()
     lowrank = dict()
-     
+    est_indv = dict()
+    
+    ###########################################
+    # MAIN LOOP
+    ###########################################
     for k in np.arange(K):
         print(f"------------Range search for instance {k}------------")
         
@@ -323,6 +328,13 @@ def K_single_grid(S, lambda_range, N, method = 'eBIC', gamma = 0.3, latent = Fal
         best, est_k, lr_k, stats_k = single_grid_search(S = S_k, lambda_range = lambda_range, N = N[k], method = method, gamma = gamma, \
                                                              latent = latent, mu_range = mu_range,\
                                                              use_block = use_block, store_all = store_all, tol = tol, rtol = rtol)
+        
+        #store best individual estimator
+        est_indv[k] = dict()
+        est_indv[k]['Theta'] = best['Theta'].copy() 
+        if latent:
+            est_indv[k]['L'] = best['L'].copy()
+        
         if store_all:
             estimates[k] = est_k.copy()
             lowrank[k] = lr_k.copy()
@@ -332,7 +344,8 @@ def K_single_grid(S, lambda_range, N, method = 'eBIC', gamma = 0.3, latent = Fal
         AIC[k,:,:] = stats_k['AIC'].copy()
         SP[k,:,:] = stats_k['SP'].copy()
         RANK[k,:,:] = stats_k['RANK'].copy()
-        
+    
+    ###########################################
     # get optimal low rank for each lambda
     tmpBIC = dict()
     for g in gammas:
@@ -369,39 +382,45 @@ def K_single_grid(S, lambda_range, N, method = 'eBIC', gamma = 0.3, latent = Fal
             tmpBIC[g][tmpBIC[g]==-np.inf] = np.nan
         ix_uniform = np.nanargmin(tmpBIC[gamma].sum(axis=0))
         ix_indv = np.nanargmin(tmpBIC[gamma], axis = 1)
-
-    # create the two alternative estimators
+    
+    # finalize est_indv
+    if type(S) == np.ndarray:
+        est_indv['Theta'] = np.stack([e['Theta'] for e in est_indv.values()])
+        if latent:
+            est_indv['L'] = np.stack([e['L'] for e in est_indv.values()])
+        
+        # drop old keys in case of an array
+        for k in np.arange(K):  
+            est_indv.pop(k)
+    
+    ###########################################
+    # create est_uniform
     if store_all:          
         est_uniform = dict()
-        est_indv = dict()
-        est_uniform['Theta'] = dict()
-        est_indv['Theta'] = dict()
-        if latent:
-            est_uniform['L'] = dict()
-            est_indv['L'] = dict()
             
-        for k in np.arange(K):       
-            est_uniform['Theta'][k] = estimates[k][ix_uniform, ix_mu[k,ix_uniform] , :,:]
-            est_indv['Theta'][k] = estimates[k][ix_indv[k], ix_mu[k,ix_indv[k]], :, :]
+        for k in np.arange(K):  
+            est_uniform[k] = dict()
+            est_uniform[k]['Theta'] = estimates[k][ix_uniform, ix_mu[k,ix_uniform] , :,:]
             
             if latent:
-                est_uniform['L'][k] = lowrank[k][ix_uniform, ix_mu[k,ix_uniform] , :,:]
-                est_indv['L'][k] = lowrank[k][ix_indv[k], ix_mu[k,ix_indv[k]], :, :]
+                est_uniform[k]['L'] = lowrank[k][ix_uniform, ix_mu[k,ix_uniform] , :,:]
                    
         if type(S) == np.ndarray:
-            est_indv['Theta'] = np.stack([e for e in est_indv['Theta'].values()])
-            est_uniform['Theta'] = np.stack([e for e in est_uniform['Theta'].values()])
+            est_uniform['Theta'] = np.stack([e['Theta'] for e in est_uniform.values()])
             if latent:
-                est_indv['L'] = np.stack([e for e in est_indv['L'].values()])
-                est_uniform['L'] = np.stack([e for e in est_uniform['L'].values()])
+                est_uniform['L'] = np.stack([e['L'] for e in est_uniform.values()])
+            
+            # drop old keys in case of an array
+            for k in np.arange(K):  
+                est_indv.pop(k)
     else:
         est_uniform = None
-        est_indv = None
         
     statistics = {'BIC': BIC[gamma], 'AIC': AIC, 'SP': SP, 'RANK': RANK, \
                   'LAMB': LAMB, 'MU': MU,\
                   'ix_uniform': ix_uniform, 'ix_indv': ix_indv, 'ix_mu': ix_mu}
     
+            
     return est_uniform, est_indv, statistics
 
 
@@ -557,10 +576,6 @@ def single_grid_search(S, lambda_range, N, method = 'eBIC', gamma = 0.3, latent 
     elif method == 'eBIC':        
         ix = np.unravel_index(np.nanargmin(BIC[gamma]), BIC[gamma].shape)
         
-        
-    # best_sol['Theta'] = estimates[ix]
-    # if latent:
-    #     best_sol['L'] = lowrank[ix]
     
     stats = {'BIC': BIC, 'AIC': AIC, 'SP': SP, 'RANK': RANK, 'LAMBDA': LAMB, 'MU': MU, 'TAU': TAU,\
              'BEST': {'lambda1': LAMB[ix], 'mu1': MU[ix]}, 'GAMMA': gammas}
