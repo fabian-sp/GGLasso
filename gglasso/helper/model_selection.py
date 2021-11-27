@@ -313,6 +313,9 @@ def K_single_grid(S, lambda_range, N, method = 'eBIC', gamma = 0.3, latent = Fal
     estimates = dict()
     lowrank = dict()
     est_indv = dict()
+    est_indv['Theta'] = dict()
+    if latent: 
+        est_indv['L'] = dict()
     
     ###########################################
     # MAIN LOOP
@@ -330,10 +333,9 @@ def K_single_grid(S, lambda_range, N, method = 'eBIC', gamma = 0.3, latent = Fal
                                                              use_block = use_block, store_all = store_all, tol = tol, rtol = rtol)
         
         #store best individual estimator
-        est_indv[k] = dict()
-        est_indv[k]['Theta'] = best['Theta'].copy() 
+        est_indv['Theta'][k] = best['Theta'].copy() 
         if latent:
-            est_indv[k]['L'] = best['L'].copy()
+            est_indv['L'][k] = best['L'].copy()
         
         if store_all:
             estimates[k] = est_k.copy()
@@ -385,39 +387,27 @@ def K_single_grid(S, lambda_range, N, method = 'eBIC', gamma = 0.3, latent = Fal
     
     # stack in case of array
     if type(S) == np.ndarray:
-        stackedTh = np.stack([e['Theta'] for e in est_indv.values()])
+        est_indv['Theta'] = np.stack([e for e in est_indv['Theta'].values()])
         if latent:
-            stackedL = np.stack([e['L'] for e in est_indv.values()])
-        
-        est_indv['Theta'] = stackedTh
-        if latent:
-            est_indv['L'] = stackedL
-        # drop old keys in case of an array
-        for k in np.arange(K):  
-            est_indv.pop(k)
+            est_indv['L'] = np.stack([e for e in est_indv['L'].values()])
     
     ###########################################
     # create est_uniform
     if store_all:          
         est_uniform = dict()
-            
+        est_uniform['Theta'] = dict()
+        if latent: 
+            est_uniform['L'] = dict()
+        
         for k in np.arange(K):  
-            est_uniform[k] = dict()
-            est_uniform[k]['Theta'] = estimates[k][ix_uniform, ix_mu[k,ix_uniform] , :,:]           
+            est_uniform['Theta'][k] = estimates[k][ix_uniform, ix_mu[k,ix_uniform] , :,:]           
             if latent:
-                est_uniform[k]['L'] = lowrank[k][ix_uniform, ix_mu[k,ix_uniform] , :,:]
+                est_uniform['L'][k] = lowrank[k][ix_uniform, ix_mu[k,ix_uniform] , :,:]
                    
         if type(S) == np.ndarray:
-            stackedTh = np.stack([e['Theta'] for e in est_uniform.values()])
+            est_uniform['Theta'] = np.stack([e for e in est_uniform['Theta'].values()])
             if latent:
-               stackedL  = np.stack([e['L'] for e in est_uniform.values()])
-            
-            est_uniform['Theta'] = stackedTh
-            if latent:
-                est_uniform['L'] = stackedL
-            # drop old keys in case of an array
-            for k in np.arange(K):  
-                est_uniform.pop(k)
+                est_uniform['L'] = np.stack([e for e in est_uniform['L'].values()])
     else:
         est_uniform = None
         

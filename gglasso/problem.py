@@ -571,7 +571,7 @@ class glasso_problem:
             if self.latent:
                 _, self.est_indv, stage1_statistics = K_single_grid(S = self.S, lambda_range = self.modelselect_params['lambda1_range'], N = self.N, method = method,\
                                                                   gamma = gamma, latent = self.latent, mu_range = self.modelselect_params['mu1_range'],
-                                                                  use_block = True, store_all = False, tol = tol, rtol= rtol)            
+                                                                  use_block = True, store_all = True, tol = tol, rtol= rtol)            
                 
                 ix_mu = stage1_statistics['ix_mu']
                 
