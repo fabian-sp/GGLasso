@@ -2,6 +2,7 @@
 author: Fabian Schaipp
 """
 import numpy as np
+import warnings
 
 from .helper.basic_linalg import trp, adjacency_matrix, scale_array_by_diagonal
 from .helper.ext_admm_helper import check_G
@@ -60,8 +61,8 @@ class glasso_problem:
     latent : boolean, optional
         Specify whether latent variables should be modeled.
         
-        * ``latent = True``: inverse covariance is assumed to have form :math:`\Theta-L` (sparse - low rank).
-        * ``latent = False``: inverse covariance is assumed to have form :math:`\Theta` (sparse).
+        * ``latent = True``: inverse covariance is assumed to have form :math:`\\Theta-L` (sparse - low rank).
+        * ``latent = False``: inverse covariance is assumed to have form :math:`\\Theta` (sparse).
         
         The default is False.
         
@@ -362,7 +363,7 @@ class glasso_problem:
     #### SOLVING
     ##############################################
       
-    def solve(self, Omega_0 = None, solver_params = dict(), tol = 1e-8, rtol = 1e-7, solver = 'admm'):
+    def solve(self, Omega_0 = None, solver_params = dict(), tol = 1e-8, rtol = 1e-7, solver = 'admm', verbose = False):
         """
         Method for solving the Graphical Lasso problem formulation.
         After solving, an instance of ``GGLassoEstimator`` will be created and assigned to ``self.solution``.
@@ -377,19 +378,23 @@ class glasso_problem:
             * For non-conforming MGL, specifiy a dictionary with keys 1,...,K and symmetric 2d-arrays of shape :math:`(p_k,p_k)` as values.
         
         solver_params : dict, optional
-            Parameters for the solvers. Is given as kwargs for the solver. See doc of the solvers for more details.
+            Parameters for the solvers. This is given as kwargs into the solver. See the docs of the solvers for more details.
+            The ``verbose`` option of the solver will always be overwritten by the value of the ``verbose`` option of this function.
             
         tol : float, optional
             Tolerance for solving. The smaller it is, the longer it will take to solve the problem. 
-            The default is 1e-5.
+            The default is ``1e-5``.
             
         rtol : float, optional
             Relative Tolerance for solving. The smaller it is, the longer it will take to solve the problem. 
-            The default is 1e-4.
+            The default is ``1e-4``.
             
         solver : str, optional
             Solver name. At this point, we use ADMM for all formulations.
             The default is 'admm'.
+        
+        verbose : boolean, optional
+            Verbosity of the solver. The default is ``False``.
 
         Returns
         -------
@@ -411,10 +416,11 @@ class glasso_problem:
          
         self.solver_params = self._default_solver_params()
         self.solver_params.update(solver_params)
+        self.solver_params["verbose"] = verbose
         
         #print(self.solver_params.keys())
+        #print(f"\n Solve problem with {solver.upper()} solver... \n ")
         
-        print(f"\n Solve problem with {solver.upper()} solver... \n ")
         if not self.multiple:
             sol, info = ADMM_SGL(S = self.S, lambda1 = self.reg_params['lambda1'], Omega_0= self.Omega_0, \
                                  tol = self.tol , rtol = self.rtol, latent = self.latent, mu1 = self.reg_params['mu1'], **self.solver_params)
@@ -475,19 +481,19 @@ class glasso_problem:
         Parameters
         ----------
         modelselect_params : dict
-            Contains values for (a subset of) the grid parameters for :math:`\lambda_1`, :math:`\lambda_2`, :math:`\mu_1`.
-            Each dictionary value should be an array. For optimal performance sort :math:`\lambda_1` in a descending order.
+            Contains values for (a subset of) the grid parameters for :math:`\\lambda_1`, :math:`\\lambda_2`, :math:`\\mu_1`.
+            Each dictionary value should be an array. For optimal performance sort :math:`\\lambda_1` in a descending order.
             
             Possible dictionary keys:
-                * ``'lambda1_range'``: range for :math:`\lambda_1` parameter.
-                * ``'lambda2_range'``: range for :math:`\lambda_2` parameter.
-                * ``'mu1_range'``: range for :math:`\mu_1` parameter.
+                * ``'lambda1_range'``: range for :math:`\\lambda_1` parameter.
+                * ``'lambda2_range'``: range for :math:`\\lambda_2` parameter.
+                * ``'mu1_range'``: range for :math:`\\mu_1` parameter.
                 
         """
         
         if modelselect_params is None:
             modelselect_params = dict()
-            print("NOTE: No grid for model selection is specified and thus default values are used. A grid can be specified with the argument modelselect_params.")
+            warnings.warn("No grid for model selection is specified and thus default values are used. A grid can be specified with the argument modelselect_params.")
             
         else:
             assert type(modelselect_params) == dict
@@ -505,9 +511,9 @@ class glasso_problem:
         
         Strategy for the different problem formulations:
             
-        * SGL: solve on a path of :math:`\lambda_1` values or on a grid of :math:`(\lambda_1, \mu_1)` values if ``latent=True``. Choose the grid point where the eBIC is minimal.
-        * MGL and ``latent=False``: solve on a grid of :math:`(\lambda_1, \lambda_2)` values. Choose the grid point where the eBIC is minimal.
-        * MGL and ``latent=True``: in a first stage, solve SGL on a :math:`(\lambda_1, \mu_1)` for each instance :math:`k=1,\dots,K` independently. Then, do a grid search on :math:`(\lambda_1, \lambda_2)` values and for each :math:`\lambda_1` and each instance :math:`k=1,\dots,K` pick the :math:`\mu_1` value which had minimal eBIC in stage one. Then, pick again the grid point with minimal eBIC.
+        * SGL: solve on a path of :math:`\\lambda_1` values or on a grid of :math:`(\\lambda_1, \\mu_1)` values if ``latent=True``. Choose the grid point where the eBIC is minimal.
+        * MGL and ``latent=False``: solve on a grid of :math:`(\\lambda_1, \\lambda_2)` values. Choose the grid point where the eBIC is minimal.
+        * MGL and ``latent=True``: in a first stage, solve SGL on a :math:`(\\lambda_1, \\mu_1)` for each instance :math:`k=1,\\dots,K` independently. Then, do a grid search on :math:`(\\lambda_1, \\lambda_2)` values and for each :math:`\\lambda_1` and each instance :math:`k=1,\\dots,K` pick the :math:`\\mu_1` value which had minimal eBIC in stage one. Then, pick again the grid point with minimal eBIC.
         
         Parameters
         ----------
@@ -539,7 +545,7 @@ class glasso_problem:
         self.set_modelselect_params(modelselect_params)
         
         if not np.all(self.modelselect_params['lambda1_range'] == np.sort(self.modelselect_params['lambda1_range'])[::-1]):
-            print("NOTE: Ideally the lambda1 range is sorted in descending order, so the grid search is performed from sparse to dense.")
+            warnings.warn("Ideally the lambda1 range is sorted in descending order, so the grid search is performed from sparse to dense.")
         
         ###############################
         # SINGLE GL --> GRID SEARCH lambda1/mu
@@ -619,9 +625,8 @@ class glasso_problem:
 
     
 #%%
-from sklearn.base import BaseEstimator
 
-class GGLassoEstimator(BaseEstimator):
+class GGLassoEstimator():
     """
         Estimator object for the solution to the Graphical Lasso problems. 
         Reading as well the documentation of ``glasso_problem`` is highly recommended.
@@ -667,9 +672,6 @@ class GGLassoEstimator(BaseEstimator):
         self.sample_covariance_ = S.copy()
         self.lowrank_ = None
         
-        
-        super(GGLassoEstimator, self).__init__()
-        
         self.adjacency_ = None
         self.ebic_ = None
         
@@ -688,7 +690,7 @@ class GGLassoEstimator(BaseEstimator):
     
     def calc_ebic(self, gamma = 0.5):
         """
-        calculates the eBIC for a given value of :math:`\gamma`. Note that this can differ from eBIC values in model selection because of the scaling.
+        calculates the eBIC for a given value of :math:`\\gamma`. Note that this can differ from eBIC values in model selection because of the scaling.
         """
         self.ebic_ = ebic(self.sample_covariance_, self.precision_, self.n_samples, gamma = gamma)          
         return self.ebic_

@@ -22,7 +22,7 @@ from sklearn import set_config
 set_config(print_changed_only=False)
 
 
-def network_generation(p=int, N=int, M=10, style='powerlaw', gamma=2.8, prob=0.1, scale=False, nxseed=None):
+def network_generation(p=int, N=int, M=10, style='powerlaw', gamma=2.8, prob=0.1, scale=False, seed=None):
     """
     Generates a law-power network with number of connected components bigger than 1.
     :param p: int
@@ -36,8 +36,8 @@ def network_generation(p=int, N=int, M=10, style='powerlaw', gamma=2.8, prob=0.1
     X - dual variable.
     Theta - true precision matrix.
     """
-    Sigma, Theta = generate_precision_matrix(p=p, M=M, style=style, gamma=gamma, prob=prob, scale=scale, nxseed=nxseed)
-    S, samples = sample_covariance_matrix(Sigma, N)
+    Sigma, Theta = generate_precision_matrix(p=p, M=M, style=style, gamma=gamma, prob=prob, scale=scale, seed=seed)
+    S, samples = sample_covariance_matrix(Sigma, N, seed = seed)
     X = samples.T
 
     return S, X, Theta

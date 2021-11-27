@@ -195,7 +195,7 @@ def test_SGL_scikit():
     N = 100
 
 
-    Sigma, Theta = generate_precision_matrix(p=p, M=2, style = 'erdos', gamma = 2.8, prob = 0.1, scale = False, nxseed = None)
+    Sigma, Theta = generate_precision_matrix(p=p, M=2, style = 'erdos', gamma = 2.8, prob = 0.1, scale = False, seed = None)
     S, samples = sample_covariance_matrix(Sigma, N)  # sample from multivar_norm(Sigma)
     
     lambda1 = 0.01

@@ -12,7 +12,7 @@ import networkx as nx
 from .basic_linalg import trp
 
 
-def generate_precision_matrix(p=100, M=10, style = 'powerlaw', gamma = 2.8, prob = 0.1, scale = False, nxseed = None):
+def generate_precision_matrix(p=100, M=10, style = 'powerlaw', gamma = 2.8, prob = 0.1, scale = False, seed = None):
     """
     Generates a sparse precision matrix with associated covariance matrix from a random network.
     
@@ -36,8 +36,8 @@ def generate_precision_matrix(p=100, M=10, style = 'powerlaw', gamma = 2.8, prob
     scale : boolean, optional
         whether Sigma (cov. matrix) is scaled by diagonal entries (as described by Danaher et al.). If set to True, then the generated precision matrix is not
         the inverse of Sigma anymore.
-    nxseed : int, optional
-        Seed for network creation. The default is None.
+    seed : int, optional
+        Seed for network creation and matrix entries. The default is None.
 
     Returns
     -------
@@ -55,6 +55,11 @@ def generate_precision_matrix(p=100, M=10, style = 'powerlaw', gamma = 2.8, prob
     A = np.zeros((p,p))
     Sigma = np.zeros((p,p))
     
+    if seed is not None:
+        nxseed = seed
+    else:
+        nxseed = None
+    
     for m in np.arange(M):
         
         if nxseed is not None:
@@ -69,7 +74,9 @@ def generate_precision_matrix(p=100, M=10, style = 'powerlaw', gamma = 2.8, prob
         A_m = nx.to_numpy_array(G_m)
         
         # generate random numbers for the nonzero entries
-        np.random.seed(1234)
+        if seed is not None:
+            np.random.seed(seed)
+            
         B1 = np.random.uniform(low = .1, high = .4, size = (L,L))
         B2 = np.random.choice(a = [-1,1], p=[.5, .5], size = (L,L))
         
@@ -121,7 +128,7 @@ def generate_precision_matrix(p=100, M=10, style = 'powerlaw', gamma = 2.8, prob
          
     return Sigma, Theta
 
-def time_varying_power_network(p=100, K=10, M=10, scale = False, nxseed = None):
+def time_varying_power_network(p=100, K=10, M=10, scale = False, seed = None):
     """
     generates a power law network. The first block disappears at half-time, while the second block appears
     third block decays exponentially
@@ -135,7 +142,7 @@ def time_varying_power_network(p=100, K=10, M=10, scale = False, nxseed = None):
     assert M*L == p
     assert M >=3
     
-    Sigma_0,_ = generate_precision_matrix(p = p, M = M, style = 'powerlaw', scale = scale, nxseed = nxseed) 
+    Sigma_0,_ = generate_precision_matrix(p = p, M = M, style = 'powerlaw', scale = scale, seed = seed) 
     
     for k in np.arange(K):
         Sigma_k = Sigma_0.copy()
@@ -160,7 +167,7 @@ def time_varying_power_network(p=100, K=10, M=10, scale = False, nxseed = None):
     
     return Sigma, Theta
     
-def group_power_network(p=100, K=10, M=10, scale = False, nxseed = None):
+def group_power_network(p=100, K=10, M=10, scale = False, seed = None):
     """
     generates a power law network. In each single network one block disappears (randomly)
     p: dimension
@@ -172,8 +179,11 @@ def group_power_network(p=100, K=10, M=10, scale = False, nxseed = None):
     L = int(p/M)
     assert M*L == p
     
-    Sigma_0,_ = generate_precision_matrix(p = p, M = M, style = 'powerlaw', scale = scale, nxseed = nxseed)
+    Sigma_0,_ = generate_precision_matrix(p = p, M = M, style = 'powerlaw', scale = scale, seed = seed)
     # contains the number of the block disappearing for each k=1,..,K
+    if seed is not None:
+        np.random.seed(seed)
+        
     block = np.random.randint(M, size = K)
     
     for k in np.arange(K):    
@@ -200,11 +210,14 @@ def ensure_sparsity(Sigma, Theta):
     return Sigma, Theta
 
     
-def sample_covariance_matrix(Sigma, N):
+def sample_covariance_matrix(Sigma, N, seed = None):
     """
     samples data for a given covariance matrix Sigma (with K layers)
     return: sample covariance matrix S
     """
+    if seed is not None:
+        np.random.seed(seed)
+    
     if len(Sigma.shape) == 2:
         assert abs(Sigma - Sigma.T).max() <= 1e-10
         (p,p) = Sigma.shape

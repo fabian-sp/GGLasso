@@ -23,7 +23,7 @@ K = 4
 p = 50
 M = 10
 B = int(p/M)
-N = 100
+N = 200
 
 #%% 
 # Generating the data
@@ -36,13 +36,13 @@ N = 100
 p_arr = (p-B)*np.ones(K, dtype = int)
 num_samples = N*np.ones(K)
 
-Sigma, Theta = generate_precision_matrix(p=p, M=M, style = 'powerlaw', gamma = 2.8, prob = 0.1, nxseed = 3456)
+Sigma, Theta = generate_precision_matrix(p=p, M=M, style = 'powerlaw', gamma = 2.8, prob = 0.1, seed = 3456)
 
 all_obs = dict()
 S = dict()
 for k in np.arange(K):
     
-    _, obs = sample_covariance_matrix(Sigma, N)
+    _, obs = sample_covariance_matrix(Sigma, N, seed = 456)
     
     # drop the k-th block starting from the end
     all_obs[k] = pd.DataFrame(obs).drop(np.arange(p-(k+1)*B, p-k*B), axis = 0)
