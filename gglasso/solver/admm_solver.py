@@ -24,7 +24,7 @@ def ADMM_MGL(S, lambda1, lambda2, reg , Omega_0 , \
        
        s.t. \quad \Omega^{(k)} = \Theta^{(k)} \quad k=1,\dots,K
        
-    Here, :math:`\mathcal{P}` is a regularization function which depends on the application. Group Graphical Lasso (GGL) or Fused Graphical Lasso (FGL) is implemented.        
+    Here, :math:`\\mathcal{P}` is a regularization function which depends on the application. Group Graphical Lasso (GGL) or Fused Graphical Lasso (FGL) is implemented.        
     If ``latent=True``, this function solves
     
     .. math::

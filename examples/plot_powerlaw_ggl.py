@@ -26,7 +26,7 @@ M = 10
 
 reg = 'GGL'
 
-Sigma, Theta = group_power_network(p, K, M, scale = False, nxseed = 2340)
+Sigma, Theta = group_power_network(p, K, M, scale = False, seed = 2340)
 
 S, sample = sample_covariance_matrix(Sigma, N)
 

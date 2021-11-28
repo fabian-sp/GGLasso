@@ -31,7 +31,7 @@ L = int(p/M)
 
 reg = 'FGL'
 
-Sigma, Theta = time_varying_power_network(p, K, M, scale = False, nxseed = 2340)
+Sigma, Theta = time_varying_power_network(p, K, M, scale = False, seed = 2340)
 
 S, sample = sample_covariance_matrix(Sigma, N)
 

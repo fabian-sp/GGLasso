@@ -34,7 +34,7 @@ rt_sgl = np.zeros(J)
 
 for j in range(J):
     
-    Sigma, Theta = group_power_network(p, K = allK[j], M = 5, scale = False, nxseed = 1235)
+    Sigma, Theta = group_power_network(p, K = allK[j], M = 5, scale = False, seed = 1235)
     S, sample = sample_covariance_matrix(Sigma, N)
 
     print("Shape of empirical covariance matrix: ", S.shape)
