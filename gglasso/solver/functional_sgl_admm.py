@@ -6,7 +6,7 @@ import numpy as np
 import time
 import warnings
 
-from .ggl_helper import prox_od_1norm, phiplus, prox_rank_norm
+from .ggl_helper import prox_sum_Frob, phiplus, prox_rank_norm
 
 
 def ADMM_FSGL(S, lambda1, M, Omega_0, Theta_0=np.array([]), X_0=np.array([]),
@@ -14,36 +14,39 @@ def ADMM_FSGL(S, lambda1, M, Omega_0, Theta_0=np.array([]), X_0=np.array([]),
              update_rho=True, verbose=False, measure=False, latent=False, mu1=None):
     """
     This is an ADMM solver for the (Latent variable) Functional Single Graphical Lasso problem (FSGL).
+    It solves a SGL problem for the case when each of the ``p`` variables has an ``M``-dimensional functional representation (e.g. Fourier transform).
+    Therefore, the input data has the shape ``(p*M,p*M)``.  
+    
     If ``latent=False``, this function solves
 
     .. math::
-       \min_{\Omega, \Theta \in \mathbb{S}^p_{++}} - \log \det \Omega + \mathrm{Tr}(S\Omega) + \lambda \|\Theta\|_{1,od}
+       \min_{\Omega, \Theta \in \mathbb{S}^{p\cdot M}_{++}} - \log \det \Omega + \mathrm{Tr}(S\Omega) + \lambda_1 \sum_{j\neq l} \|\Theta_{jl}^M\|_{F}
 
        s.t. \quad \Omega = \Theta
 
     If ``latent=True``, this function solves
 
     .. math::
-       \min_{\Omega, \Theta, L \in \mathbb{S}^p_{++}} - \log \det (\Omega) + \mathrm{Tr}(S \Omega) + \lambda_1 \|\Theta\|_{1,od} + \mu_1 \|L\|_{\star}
+       \min_{\Omega, \Theta, L \in \mathbb{S}^{p\cdot M}_{++}} - \log \det (\Omega) + \mathrm{Tr}(S \Omega) + \lambda_1 \sum_{j\neq l} \|\Theta_{jl}^M\|_{F} + \mu_1 \|L\|_{\star}
 
        s.t. \quad \Omega = \Theta - L
 
     Note:
         * Typically, ``sol['Omega']`` is positive definite and ``sol['Theta']`` is sparse.
-        * We use scaled ADMM, i.e. X are the scaled (with 1/rho) dual variables for the equality constraint.
+        * We use scaled ADMM, i.e. X are the scaled (with ``1/rho``) dual variables for the equality constraint.
     Parameters
     ----------
-    S : array (p,p)
+    S : array (p*M,p*M)
         empirical covariance matrix. Needs to be symmetric and positive semidefinite.
     lambda1 : float, positive
-        sparsity regularization parameter.
+        regularization parameter for the Frobenius norm of the MxM subblocks.
     M : int
-        each variable is a M-dimensional representation.
-    Omega_0 : array (p,p)
-        starting point for the Omega variable. Choose ``np.eye(p)`` if no better starting point is known.
-    Theta_0 : array (p,p), optional
+        Dimension of the functional representation. See "Functional Graphical Models", Qiao et al. for details.
+    Omega_0 : array (p*M,p*M)
+        starting point for the Omega variable. Choose ``np.eye(p*M)`` if no better starting point is known.
+    Theta_0 : array (p*M,p*M), optional
         starting point for the Theta variable. If not specified, it is set to the same as Omega_0.
-    X_0 : array (p,p), optional
+    X_0 : array (p*M,p*M), optional
         starting point for the X variable. If not specified, it is set to zero array.
     rho : float, positive, optional
         step size paramater for the augmented Lagrangian in ADMM. The default is 1. Tune this parameter for optimal performance.
@@ -81,7 +84,13 @@ def ADMM_FSGL(S, lambda1, M, Omega_0, Theta_0=np.array([]), X_0=np.array([]),
         assert mu1 is not None
         assert mu1 > 0
 
-    (p,p) = S.shape
+    (pM,pM) = S.shape
+
+    assert pM%M == 0
+    p = int(pM/M)
+    
+    if verbose:
+        print(f"Derived a Functional SGL problem of dimensionality p={p}.")
 
     assert rho > 0, "ADMM penalization parameter must be positive."
 
@@ -91,10 +100,10 @@ def ADMM_FSGL(S, lambda1, M, Omega_0, Theta_0=np.array([]), X_0=np.array([]),
     if len(Theta_0) == 0:
         Theta_0 = Omega_0.copy()
     if len(X_0) == 0:
-        X_0 = np.zeros((p, p))
+        X_0 = np.zeros((pM, pM))
 
     Theta_t = Theta_0.copy()
-    L_t = np.zeros((p, p))
+    L_t = np.zeros((pM, pM))
     X_t = X_0.copy()
 
     runtime = np.zeros(max_iter)
@@ -105,9 +114,9 @@ def ADMM_FSGL(S, lambda1, M, Omega_0, Theta_0=np.array([]), X_0=np.array([]),
     if verbose:
         print("------------ADMM Algorithm for Functional Single Graphical Lasso----------------")
   
-        hdr_fmt = "%4s\t%10s\t%10s\t%10s\t%10s"
-        out_fmt = "%4d\t%10.4g\t%10.4g\t%10.4g\t%10.4g"
-        print(hdr_fmt % ("iter", "r_t", "s_t", "eps_pri", "eps_dual"))
+        hdr_fmt = "%4s\t%10s\t%10s\t%10s\t%10s\t%10s"
+        out_fmt = "%4d\t%10.4g\t%10.4g\t%10.4g\t%10.4g\t%10.4g"
+        print(hdr_fmt % ("iter", "r_t", "s_t", "eps_pri", "eps_dual", "rho"))
         
     ##################################################################
     ### MAIN LOOP STARTS
@@ -124,20 +133,18 @@ def ADMM_FSGL(S, lambda1, M, Omega_0, Theta_0=np.array([]), X_0=np.array([]),
         Omega_t = phiplus(beta=1 / rho, D=eigD, Q=eigQ)
 
         # Theta Update
-        Theta_t = prox_od_1norm(Omega_t + L_t + X_t, (1 / rho) * lambda1)
-
+        Theta_t = prox_sum_Frob(Omega_t + L_t + X_t, M, (1/rho)*lambda1)
+        
         # L Update
         if latent:
             C_t = Theta_t - X_t - Omega_t
-            # C_t = (C_t.T + C_t)/2
             eigD1, eigQ1 = np.linalg.eigh(C_t)
             L_t = prox_rank_norm(C_t, mu1/rho, D=eigD1, Q=eigQ1)
 
         # X Update
         X_t = X_t + Omega_t - Theta_t + L_t
 
-        
-        
+                
         if measure:
             end = time.time()
             runtime[iter_t] = end - start
@@ -163,7 +170,7 @@ def ADMM_FSGL(S, lambda1, M, Omega_0, Theta_0=np.array([]), X_0=np.array([]),
         residual[iter_t] = max(r_t,s_t)
 
         if verbose:
-            print(out_fmt % (iter_t,r_t,s_t,e_pri,e_dual))
+            print(out_fmt % (iter_t,r_t,s_t,e_pri,e_dual,rho))
         if (r_t <= e_pri) and  (s_t <= e_dual):
             status = 'optimal'
             break
@@ -224,11 +231,11 @@ def ADMM_stopping_criterion(Omega, Omega_t_1, Theta, L, X, S, rho, eps_abs, eps_
     if not latent:
         assert np.all(L == 0)
 
-    (p,p) = S.shape
+    (pM,pM) = S.shape
 
 
-    dim = ((p ** 2 + p) / 2)  # number of elements of off-diagonal matrix
-    e_pri = dim * eps_abs + eps_rel * np.maximum(np.linalg.norm(Omega), np.linalg.norm(Theta -L))
+    dim = ((pM ** 2 + pM) / 2)  # number of elements of off-diagonal matrix
+    e_pri = dim * eps_abs + eps_rel * np.maximum(np.linalg.norm(Omega), np.linalg.norm(Theta-L))
     e_dual = dim * eps_abs + eps_rel * rho * np.linalg.norm(X)
 
     r = np.linalg.norm(Omega - Theta + L)

@@ -57,7 +57,7 @@ def prox_sum_Frob(X, M, l):
     
     for i in np.arange(p):
         for j in np.arange(start=i, stop=p):
-            if j == l:
+            if j == i:
                 Y[i*M:(i+1)*M,j*M:(j+1)*M] = X[i*M:(i+1)*M,j*M:(j+1)*M] 
             else:
                 B = prox_2norm(X[i*M:(i+1)*M,j*M:(j+1)*M], l)
