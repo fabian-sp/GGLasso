@@ -354,42 +354,25 @@ def K_single_grid(S, lambda_range, N, method = 'eBIC', gamma = 0.3, latent = Fal
     
     ###########################################
     # get optimal low rank for each lambda
-    tmpBIC = dict()
-    for g in gammas:
-        tmpBIC[g] = np.zeros((K,L))
-        tmpBIC[g][:] = np.nan
-    
-    tmpAIC = np.zeros((K, L))
-    tmpAIC[:] = np.nan
-                
+    tmpSCORE = np.zeros((K,L))
+    tmpSCORE[:] = np.nan
+
     ix_mu = np.zeros((K,L), dtype = int)
     # for each lambda, get optimal mu
     for k in np.arange(K):
-        for j in np.arange(L):
-            
+        for j in np.arange(L):       
             if method == 'AIC':
-                ix_mu[k,j] = np.nanargmin(AIC[k,j,:])
-                
+                ix_mu[k,j] = np.nanargmin(AIC[k,j,:])     
+                tmpSCORE[k,j] = AIC[k,j,ix_mu[k,j]]
             elif method == 'eBIC':
                 ix_mu[k,j] = np.nanargmin(BIC[gamma][k,j,:])
-                
-            tmpAIC[k,j] = AIC[k,j,ix_mu[k,j]]
-            
-            for g in gammas:
-                tmpBIC[g][k,j] = BIC[g][k,j,ix_mu[k,j]]
+                tmpSCORE[k,j] = BIC[gamma][k,j,ix_mu[k,j]]
     
     # get optimal lambda (uniform over k=1,..,K and individual)
-    if method == 'AIC':
-        tmpAIC[tmpAIC==-np.inf] = np.nan
-        ix_uniform = np.nanargmin(tmpAIC.sum(axis=0))
-        ix_indv = np.nanargmin(tmpAIC, axis = 1)
-        
-    elif method == 'eBIC':    
-        for g in gammas:
-            tmpBIC[g][tmpBIC[g]==-np.inf] = np.nan
-        ix_uniform = np.nanargmin(tmpBIC[gamma].sum(axis=0))
-        ix_indv = np.nanargmin(tmpBIC[gamma], axis = 1)
-    
+    tmpSCORE[tmpSCORE==-np.inf] = np.nan
+    ix_uniform = np.nanargmin(tmpSCORE.sum(axis=0))
+    ix_indv = np.nanargmin(tmpSCORE, axis = 1)
+         
     # stack in case of array
     if type(S) == np.ndarray:
         est_indv['Theta'] = np.stack([e for e in est_indv['Theta'].values()])
