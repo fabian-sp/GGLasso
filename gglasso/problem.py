@@ -8,7 +8,7 @@ from .helper.basic_linalg import trp, adjacency_matrix, scale_array_by_diagonal
 from .helper.ext_admm_helper import check_G
 
 from .solver.admm_solver import ADMM_MGL
-from .solver.single_admm_solver import ADMM_SGL
+from .solver.single_admm_solver import ADMM_SGL, block_SGL
 from .solver.ext_admm_solver import ext_ADMM_MGL
 
 from .helper.model_selection import grid_search, single_grid_search, K_single_grid, ebic
@@ -422,9 +422,15 @@ class glasso_problem:
         #print(f"\n Solve problem with {solver.upper()} solver... \n ")
         
         if not self.multiple:
-            sol, info = ADMM_SGL(S = self.S, lambda1 = self.reg_params['lambda1'], Omega_0= self.Omega_0, \
-                                 tol = self.tol , rtol = self.rtol, latent = self.latent, mu1 = self.reg_params['mu1'], **self.solver_params)
-                
+            if self.latent:
+                sol, info = ADMM_SGL(S = self.S, lambda1 = self.reg_params['lambda1'], Omega_0 = self.Omega_0, \
+                                     tol = self.tol , rtol = self.rtol, latent = self.latent, mu1 = self.reg_params['mu1'], **self.solver_params)
+            
+            else:
+                sol = block_SGL(S = self.S, lambda1 = self.reg_params['lambda1'], Omega_0 = self.Omega_0,  \
+                                tol = self.tol, rtol = self.tol, **self.solver_params)
+                info = {}
+            
                 
         elif self.conforming:         
             sol, info = ADMM_MGL(S = self.S, lambda1 = self.reg_params['lambda1'], lambda2 = self.reg_params['lambda2'], reg = self.reg,\
