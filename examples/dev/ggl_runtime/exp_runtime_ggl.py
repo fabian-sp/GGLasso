@@ -21,7 +21,7 @@ M = 10
 
 reg = 'GGL'
 
-Sigma, Theta = group_power_network(p, K, M, nxseed = 23456)
+Sigma, Theta = group_power_network(p, K, M, seed = 23456)
 
 #draw_group_heatmap(Theta)
 
@@ -45,7 +45,7 @@ iP = {}
 
 for j in np.arange(len(vecN)):  
     
-    S, sample = sample_covariance_matrix(Sigma, vecN[j])
+    S, sample = sample_covariance_matrix(Sigma, vecN[j], seed = 23456)
     
     solA, infoA = ADMM_MGL(S, l1[j], l2[j], reg , Omega_0 , max_iter = 2000, tol = 5e-5, stopping_criterion = 'kkt', verbose = False, measure = True)
     iA[j] = infoA
