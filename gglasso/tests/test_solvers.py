@@ -151,22 +151,26 @@ def template_admm_vs_ppdna(p = 50, K = 3, N = 1000, reg = "GGL"):
     M = 5 # M should be divisor of p
 
     if reg == 'GGL':
-        Sigma, Theta = group_power_network(p, K, M)
+        Sigma, Theta = group_power_network(p, K, M, seed = 567)
     elif reg == 'FGL':
-        Sigma, Theta = time_varying_power_network(p, K, M)
+        Sigma, Theta = time_varying_power_network(p, K, M, seed = 567)
     
-    S, samples = sample_covariance_matrix(Sigma, N)
+    S, samples = sample_covariance_matrix(Sigma, N, seed = 567)
 
     lambda1= 0.05
     lambda2 = 0.01
     
     Omega_0 = get_K_identity(K,p)
     
-    sol, info = ADMM_MGL(S, lambda1, lambda2, reg, Omega_0, stopping_criterion = 'kkt', tol = 1e-6, rtol = 1e-5, verbose = True, latent = False)
+    sol, info = ADMM_MGL(S, lambda1, lambda2, reg, Omega_0, stopping_criterion = 'kkt', tol = 1e-8, rtol = 1e-5, verbose = True, latent = False)
     
-    sol2, info2 = warmPPDNA(S, lambda1, lambda2, reg, Omega_0, eps = 1e-6 , verbose = False, measure = True)
+    ppdna_params = {'max_iter' : 100, 'sigma_0' : 10}
     
-    sol3, info3 = PPDNA(S, lambda1, lambda2, reg, Omega_0, eps_ppdna = 1e-6 , verbose = True, measure = True)
+    sol2, info2 = warmPPDNA(S, lambda1, lambda2, reg, Omega_0, ppdna_params = ppdna_params,\
+                            eps = 1e-8 , verbose = True, measure = True)
+    
+    sol3, info3 = PPDNA(S, lambda1, lambda2, reg, Omega_0, ppdna_params = ppdna_params, \
+                        eps_ppdna = 1e-7 , verbose = True, measure = True)
     
     
     assert_array_almost_equal(sol['Theta'], sol2['Theta'], 2)

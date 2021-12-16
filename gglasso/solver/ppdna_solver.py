@@ -7,8 +7,8 @@ This file contains the proximal point algorithm proposed by Zhang et al., A prox
 import numpy as np
 import time
 
-from .ggl_helper import prox_p, phiplus, moreau_h, moreau_P, construct_gamma, construct_jacobian_prox_p
-from .ggl_helper import  Y_t, hessian_Y,  Phi_t, f, P_val, cg_ppdna
+from .ggl_helper import prox_p, phiplus, construct_gamma, construct_jacobian_prox_p
+from .ggl_helper import  Y_t, Phi_t, f, P_val, cg_ppdna
 from .admm_solver import ADMM_MGL
 from ..helper.basic_linalg import trp, Gdot
 
@@ -25,7 +25,7 @@ def get_ppdna_params(ppdna_params = None):
         assert ppdna_params['max_iter'] > 0
     
     if 'sigma_0' not in p0:
-        ppdna_params['sigma_0'] = 100
+        ppdna_params['sigma_0'] = 100.
     else:
         assert ppdna_params['sigma_0'] > 0
         
@@ -37,7 +37,7 @@ def get_ppdna_params(ppdna_params = None):
 
 def get_ppa_sub_params_default():
     ppa_sub_params = { 'sigma_t' : 1e3, 
-          'eta' : 1e-5, 'tau' : .2, 'rho' : .5, 'mu' : .1,
+          'eta' : 1e-1, 'tau' : .2, 'rho' : .5, 'mu' : 1e-4,
           'eps_t' : .95, 'delta_t' : .95} 
     
     return ppa_sub_params
@@ -89,52 +89,42 @@ def PPA_subproblem(Omega_t, Theta_t, X_t, S, reg, ppa_sub_params = None, verbose
     condB = False
     
     sub_iter = 0
+    Y_t_new = None
     
     while not(condA and condB) and sub_iter < 10:
         # step 0: set variables
-        W_t = Omega_t - (sigma_t * (S + X_t))  
-        V_t = Theta_t + (sigma_t * X_t)
+        W_t = Omega_t - (sigma_t*(S + X_t))  
+        V_t = Theta_t + (sigma_t*X_t)
         
-        funY_Xt, gradY_Xt = Y_t( X_t, Omega_t, Theta_t, S, lambda1, lambda2, sigma_t, reg)
-        
-        
-        eigD, eigQ = np.linalg.eigh(W_t)
-        if verbose:
-            print("Eigendecomposition is executed in PPA_subproblem")
+        # fun evaluation and eig can be reused from Armijo in  laster iter
+        if sub_iter == 0:
+            funY_Xt, Omega_sol, Theta_sol, (eigD, eigQ) = Y_t( X_t, Omega_t, Theta_t, S, lambda1, lambda2, sigma_t, reg)
+        else:
+            funY_Xt = Y_t_new
             
+        gradY_Xt = Omega_sol - Theta_sol
+        #eigD, eigQ = np.linalg.eigh(W_t)
+    
         Gamma = construct_gamma(W_t, sigma_t, D = eigD, Q = eigQ)
-        W = construct_jacobian_prox_p( (1/sigma_t) * V_t, lambda1 , lambda2, reg)
-        
+        W = construct_jacobian_prox_p( (1/sigma_t)*V_t, lambda1, lambda2, reg)
         # step 1: CG method
         cg_accur = min(eta, np.linalg.norm(gradY_Xt)**(1+tau))
-        if verbose:
-            print("Start CG method")
         
-        D = cg_ppdna(Gamma, eigQ, W, sigma_t, -gradY_Xt, eps = cg_accur, max_iter = 15)
+        D, cg_status = cg_ppdna(Gamma, eigQ, W, sigma_t, -gradY_Xt, tol = cg_accur, max_iter = 10)
         
         # step 2: line search 
-        if verbose:
-            print("Start Line search")
         alpha = 1.
-        Y_t_new = Y_t( X_t + alpha * D, Omega_t, Theta_t, S, lambda1, lambda2, sigma_t, reg)[0]
+        Y_t_new, Omega_sol, Theta_sol, (eigD, eigQ) = Y_t(X_t + alpha*D, Omega_t, Theta_t, S, lambda1, lambda2,\
+                                                          sigma_t, reg)
+            
         while Y_t_new < funY_Xt + mu * alpha * Gdot(gradY_Xt , D):
             alpha *= rho
-            Y_t_new = Y_t( X_t + alpha * D, Omega_t, Theta_t, S, lambda1, lambda2, sigma_t, reg)[0]
+            Y_t_new, Omega_sol, Theta_sol, (eigD, eigQ) = Y_t(X_t + alpha*D, Omega_t, Theta_t, S, lambda1, lambda2,\
+                                                              sigma_t, reg)
             
+                
         # step 3: update variables and check stopping condition
-        if verbose:
-            print("Update primal-dual variables")
-        X_t += alpha * D 
-        
-        X_sol = X_t.copy()
-        
-        Omega_sol = np.zeros((K,p,p))
-        eigW, eigV = np.linalg.eigh(Omega_t - sigma_t * (S + X_sol))
-        for k in np.arange(K):
-            _, phip_k, _ = moreau_h(sigma_t , eigW[k,:], eigV[k,:,:])
-            Omega_sol[k,:,:] = phip_k
-        
-        _, Theta_sol = moreau_P(Theta_t + sigma_t * X_sol, sigma_t * lambda1, sigma_t * lambda2, reg)
+        X_t += alpha*D 
         
         # step 4: evaluate stopping criterion
         opt_dist = Phi_t(Omega_sol, Theta_sol, S, Omega_t, Theta_t, sigma_t, lambda1, lambda2, reg) - Y_t_new
@@ -146,8 +136,9 @@ def PPA_subproblem(Omega_t, Theta_t, X_t, S, reg, ppa_sub_params = None, verbose
     if verbose and not(condA and condB):
         print("Subproblem could not be solve with the given accuracy! -- reached maximal iterations")
             
+    sub_info= {'niter' : sub_iter, 'armijo' : alpha}
     
-    return Omega_sol, Theta_sol, X_sol
+    return Omega_sol, Theta_sol, X_t, sub_info
 
 
 def PPDNA(S, lambda1, lambda2, reg, Omega_0, Theta_0 = np.array([]), X_0 = np.array([]), ppdna_params = None, eps_ppdna = 1e-5 , verbose = False, measure = False):
@@ -187,10 +178,8 @@ def PPDNA(S, lambda1, lambda2, reg, Omega_0, Theta_0 = np.array([]), X_0 = np.ar
         dictionary with solver parameters. Possible keys:
         
         * max_iter: maximum number of iterations, default is 20.
-        * sigma_0: step size starting point. STep size is increased by 1.3 in every iteration. Default for sigma_0 is 100.
+        * sigma_0: step size starting point. Step size is increased by 1.3 in every iteration. Default for sigma_0 is 100.
         
-    max_iter : int, optional
-        maximum number of iterations. The default is 1000.
     eps_ppdna : float, positive, optional
         tolerance for the kkt residual. See 'A proximal point dual Newton algorithm for solving group graphical Lasso problems', Zhang et al. for details.
         The default is 1e-5.
@@ -229,7 +218,7 @@ def PPDNA(S, lambda1, lambda2, reg, Omega_0, Theta_0 = np.array([]), X_0 = np.ar
     # adds all necessary paramters which are not given as input
     ppdna_params = get_ppdna_params(ppdna_params)
     max_iter = ppdna_params['max_iter']
-    sigma_0 = ppdna_params['sigma_0']
+    sigma_0 = float(ppdna_params['sigma_0'])
     
     ppa_sub_params = get_ppa_sub_params_default()
     ppa_sub_params['sigma_t'] = sigma_0
@@ -239,6 +228,10 @@ def PPDNA(S, lambda1, lambda2, reg, Omega_0, Theta_0 = np.array([]), X_0 = np.ar
     runtime = np.zeros(max_iter)
     residual = np.zeros(max_iter)
     objective = np.zeros(max_iter)
+    
+    hdr_fmt = "%6s\t%10s\t%10s\t%16s\t%10s\t%10s\t%10s"
+    out_fmt = "%6d\t%10.4g\t%10.4g\t%16.4g\t%10.4g\t%10.4g\t%10.4g"
+    print(hdr_fmt % ("iter", "eta", "sigma_t", "niter subproblem", "armijo", "eps_t", "delta_t"))
     
     for iter_t in np.arange(max_iter):
              
@@ -253,25 +246,22 @@ def PPDNA(S, lambda1, lambda2, reg, Omega_0, Theta_0 = np.array([]), X_0 = np.ar
             status = 'optimal'
             break
         
-        if verbose:
-            print(f"------------Iteration {iter_t} of the Proximal Point Algorithm----------------")
-        
-        Omega_t, Theta_t, X_t = PPA_subproblem(Omega_t, Theta_t, X_t, S, reg = reg, ppa_sub_params = ppa_sub_params, verbose = verbose)
+        Omega_t, Theta_t, X_t, sub_info = PPA_subproblem(Omega_t, Theta_t, X_t, S, reg = reg, ppa_sub_params = ppa_sub_params,\
+                                                         verbose = False)
         
         if measure:
             end = time.time()
             runtime[iter_t] = end-start
             objective[iter_t] = f(Omega_t, S) + P_val(Omega_t, lambda1, lambda2, reg)
             
-        
+        if verbose:
+            print(out_fmt % (iter_t, eta_P, ppa_sub_params['sigma_t'], sub_info["niter"], sub_info["armijo"], ppa_sub_params['eps_t'], ppa_sub_params['delta_t']))
+         
         if not ppdna_params['sigma_fix']:
             ppa_sub_params['sigma_t'] = 1.3 * ppa_sub_params['sigma_t']
-        ppa_sub_params['eps_t'] = 0.9 * ppa_sub_params['eps_t']
-        ppa_sub_params['delta_t'] = 0.9 * ppa_sub_params['delta_t']
-            
-        if verbose:
-            print("sigma_t value: " , ppa_sub_params['sigma_t'])
-            print(f"Current accuracy: ", eta_P)
+        ppa_sub_params['eps_t'] = 0.95 * ppa_sub_params['eps_t']
+        ppa_sub_params['delta_t'] = 0.95 * ppa_sub_params['delta_t']
+                    
      
     if eta_P > eps_ppdna:
             status = 'max iterations reached'    
@@ -309,7 +299,7 @@ def PPDNA_stopping_criterion(Omega, Theta, X, S , ppa_sub_params, reg):
     proxK = np.zeros((K,p,p))
     eigD, eigQ = np.linalg.eigh(Omega-S-X)
     for k in np.arange(K):       
-        proxK[k,:,:] = phiplus(beta = 1, D = eigD[k,:], Q = eigQ[k,:,:])
+        proxK[k,:,:] = phiplus(beta = 1., D = eigD[k,:], Q = eigQ[k,:,:])
     
     term3 = np.linalg.norm(Omega - proxK) / (1 + np.linalg.norm(Omega))
     
@@ -330,7 +320,8 @@ def warmPPDNA(S, lambda1, lambda2, reg, Omega_0, Theta_0 = np.array([]), X_0 = n
     
     rho = 1.
     sol1, info1 = ADMM_MGL(S, lambda1, lambda2, reg , Omega_0 , Theta_0, X_0, \
-                           tol = eps_admm, stopping_criterion = 'kkt', verbose = verbose, measure = measure, rho = rho)
+                           tol = eps_admm, stopping_criterion = 'kkt', verbose = verbose, measure = measure,\
+                           rho = rho, update_rho = False)
     
     assert info1['status'] == 'optimal'
     
@@ -340,7 +331,8 @@ def warmPPDNA(S, lambda1, lambda2, reg, Omega_0, Theta_0 = np.array([]), X_0 = n
     X_0 = rho*sol1['X']
     
     if phase2:
-        sol2, info2 = PPDNA(S, lambda1, lambda2, reg, Omega_0 = Omega_0, Theta_0 = Theta_0, X_0 = X_0, ppdna_params = ppdna_params,  eps_ppdna = eps_ppdna , verbose = verbose, measure = measure)
+        sol2, info2 = PPDNA(S, lambda1, lambda2, reg, Omega_0 = Omega_0, Theta_0 = Theta_0, X_0 = X_0,\
+                            ppdna_params = ppdna_params,  eps_ppdna = eps_ppdna , verbose = verbose, measure = measure)
     
         # append the infos
         if measure:
