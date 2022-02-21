@@ -76,7 +76,7 @@ class glasso_problem:
 
     """
     
-    def __init__(self, S, N, reg = "GGL", reg_params = None, latent = False, G = None, do_scaling = False):
+    def __init__(self, S, N, reg = "GGL", reg_params = None, latent = False, G = None, do_scaling = True):
         
         self.S = S.copy()
         self.N = N
@@ -267,17 +267,20 @@ class glasso_problem:
     def _default_reg_params(self):
         reg_params_default = dict()
         
-        reg_params_default['lambda1'] = 1e-2
+        reg_params_default['lambda1'] = None
         if self.multiple:
-            reg_params_default['lambda2'] = 1e-2
-        if self.latent:
-            if self.multiple:
-                reg_params_default['mu1'] = 1e-1*np.ones(self.K)
-            else:
-                reg_params_default['mu1'] = 1e-1
-        else:
-            reg_params_default['mu1'] = None
-            
+            reg_params_default['lambda2'] = None
+        # if self.latent:
+        #     reg_params_default['mu1'] = None
+        #     if self.multiple:
+        #         reg_params_default['mu1'] = 1e-1*np.ones(self.K)
+        #     else:
+        #         reg_params_default['mu1'] = 1e-1
+        # else:
+        #     reg_params_default['mu1'] = None
+        
+        reg_params_default['mu1'] = None
+        
         return reg_params_default
     
     def _default_start_point(self):
@@ -327,11 +330,10 @@ class glasso_problem:
             reg_params = dict()
         else:
             assert type(reg_params) == dict
-        
+            
         # when initialized set to default
         if self.reg_params is None:
             self.reg_params = self._default_reg_params()
-        
         
         # update with given input
         # update with empty dict does not change the dictionary
@@ -403,6 +405,7 @@ class glasso_problem:
         """
         
         assert solver in ["admm"], "Currently only the ADMM solver is supported as it is implemented for all cases."
+        assert self.reg_params.get('lambda1') is not None, "Regularization parameters need to be set first (at least lambda1), see function glasso_problem.set_reg_params()"
         
         # if solver == "ppdna":
         #     assert self.multiple,"PPDNA solver is only supported for MULTIPLE Graphical Lassp problems."
@@ -462,13 +465,13 @@ class glasso_problem:
     def _default_modelselect_params(self):
         
         params = dict()
-        params['lambda1_range'] = np.logspace(0,-3,5)
+        params['lambda1_range'] = np.logspace(0,-3,10)
         if self.multiple:
             #params['w2_range'] = np.logspace(-1,-3,5)
-            params['lambda2_range'] = np.logspace(-1,-4,4)
+            params['lambda2_range'] = np.logspace(-1,-4,5)
             
         if self.latent:
-            params['mu1_range'] = np.logspace(0,-2,5)
+            params['mu1_range'] = np.logspace(2,-1,10)
         else:
             params['mu1_range'] = None
         

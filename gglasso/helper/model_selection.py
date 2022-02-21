@@ -112,10 +112,11 @@ def grid_search(solver, S, N, p, reg, l1, l2 = None, w2 = None, method= 'eBIC', 
     if latent:
         assert np.all(mu_range > 0)
     
-
+    
     L1, L2, W2 = lambda_grid(l1, l2, w2)
     
     if verbose:
+        print("Grid of lambda1/lambda2:")
         print(L1)
         print(L2)
     
@@ -123,6 +124,7 @@ def grid_search(solver, S, N, p, reg, l1, l2 = None, w2 = None, method= 'eBIC', 
     AIC = np.zeros((grid1, grid2))
     AIC[:] = np.nan
     
+    # use default gammas plus the one for eBIC selection
     gammas = DEFAULT_GAMMAS
     gammas.append(gamma)
     gammas = list(set(gammas))
@@ -136,7 +138,7 @@ def grid_search(solver, S, N, p, reg, l1, l2 = None, w2 = None, method= 'eBIC', 
     SP[:] = np.nan
     #SKIP = np.zeros((grid1, grid2), dtype = bool)
     
-    
+    # solver kwargs
     kwargs = {'reg': reg, 'S': S, 'tol': tol, 'rtol': rtol, 'verbose': False, 'measure': False}
     if type(S) == dict:
         K = len(S.keys())
@@ -152,15 +154,17 @@ def grid_search(solver, S, N, p, reg, l1, l2 = None, w2 = None, method= 'eBIC', 
     
     curr_min = np.inf
     curr_best = None
-    # run down the columns --> hence move g1 fastest
+    #==================================================
+    # MAIN LOOP
+    #
+    # run down the columns --> move g1 fastest
     # g2 indices the values in l1
     for g2 in np.arange(grid2):
         for g1 in np.arange(grid1):
       
             if verbose:
                 print("Current grid point: ", (L1[g1,g2],L2[g1,g2]) )
-            
-            
+                      
             # set lambda1 and lambda2
             kwargs['lambda1'] = L1[g1,g2]  
             kwargs['lambda2'] = L2[g1,g2]
@@ -184,8 +188,7 @@ def grid_search(solver, S, N, p, reg, l1, l2 = None, w2 = None, method= 'eBIC', 
             # warm start
             kwargs['Omega_0'] = Omega_sol
                   
-            #########################################
-            
+            #########################################         
             # store diagnostics
             AIC[g1,g2] = aic(S, Theta_sol, N)
             for g in gammas:
@@ -288,12 +291,12 @@ def K_single_grid(S, lambda_range, N, method = 'eBIC', gamma = 0.3, latent = Fal
         
     if latent:
         assert mu_range is not None
-        M = len(mu_range)
+        _M = len(mu_range)
     else:
         mu_range = np.array([0])
-        M = 1
+        _M = 1
     
-    L = len(lambda_range)
+    _L = len(lambda_range)
     
     # create grid for stats, if latent = False MU is array of zeros
     MU, LAMB = np.meshgrid(mu_range, lambda_range)
@@ -304,16 +307,16 @@ def K_single_grid(S, lambda_range, N, method = 'eBIC', gamma = 0.3, latent = Fal
     
     BIC = dict()
     for g in gammas:
-        BIC[g] = np.zeros((K, L, M))
+        BIC[g] = np.zeros((K,_L,_M))
         BIC[g][:] = np.nan
     
-    AIC = np.zeros((K, L, M))
+    AIC = np.zeros((K,_L,_M))
     AIC[:] = np.nan
     
-    SP = np.zeros((K, L, M))
+    SP = np.zeros((K,_L,_M))
     SP[:] = np.nan
     
-    RANK = np.zeros((K,L,M))
+    RANK = np.zeros((K,_L,_M))
     
     estimates = dict()
     lowrank = dict()
@@ -354,13 +357,13 @@ def K_single_grid(S, lambda_range, N, method = 'eBIC', gamma = 0.3, latent = Fal
     
     ###########################################
     # get optimal low rank for each lambda
-    tmpSCORE = np.zeros((K,L))
+    tmpSCORE = np.zeros((K,_L))
     tmpSCORE[:] = np.nan
 
-    ix_mu = np.zeros((K,L), dtype = int)
+    ix_mu = np.zeros((K,_L), dtype = int)
     # for each lambda, get optimal mu
     for k in np.arange(K):
-        for j in np.arange(L):       
+        for j in np.arange(_L):       
             if method == 'AIC':
                 ix_mu[k,j] = np.nanargmin(AIC[k,j,:])     
                 tmpSCORE[k,j] = AIC[k,j,ix_mu[k,j]]
@@ -456,12 +459,12 @@ def single_grid_search(S, lambda_range, N, method = 'eBIC', gamma = 0.3, latent 
     
     if latent:
         assert mu_range is not None
-        M = len(mu_range)
+        _M = len(mu_range)
     else:
         mu_range = np.array([0])
-        M = 1
+        _M = 1
        
-    L = len(lambda_range)
+    _L = len(lambda_range)
     
     gammas = DEFAULT_GAMMAS
     gammas.append(gamma)
@@ -472,19 +475,19 @@ def single_grid_search(S, lambda_range, N, method = 'eBIC', gamma = 0.3, latent 
         
     BIC = dict()
     for g in gammas:
-        BIC[g] = np.zeros((L, M))
+        BIC[g] = np.zeros((_L, _M))
         BIC[g][:] = np.nan
     
-    AIC = np.zeros((L, M))
+    AIC = np.zeros((_L, _M))
     AIC[:] = np.inf
     
-    SP = np.zeros((L, M))
+    SP = np.zeros((_L, _M))
     SP[:] = np.inf
     
-    RANK = np.zeros((L,M))
+    RANK = np.zeros((_L,_M))
     
     if thresholding:
-        TAU = np.zeros((L, M))
+        TAU = np.zeros((_L, _M))
     else:
         TAU = None
     
@@ -492,8 +495,8 @@ def single_grid_search(S, lambda_range, N, method = 'eBIC', gamma = 0.3, latent 
               'verbose': False, 'measure': False}
     
     if store_all:
-        estimates = np.zeros((L,M,p,p))
-        lowrank = np.zeros((L,M,p,p))
+        estimates = np.zeros((_L,_M,p,p))
+        lowrank = np.zeros((_L,_M,p,p))
     else:
         estimates = None
         lowrank = None
@@ -502,10 +505,10 @@ def single_grid_search(S, lambda_range, N, method = 'eBIC', gamma = 0.3, latent 
     curr_min = np.inf
     
     # start range search
-    for j in np.arange(L):
+    for j in np.arange(_L):
         kwargs['lambda1'] = lambda_range[j]
         
-        for m in np.arange(M):
+        for m in np.arange(_M):
             if latent:
                 kwargs['mu1'] = mu_range[m]
                 kwargs['latent'] = True
@@ -526,7 +529,8 @@ def single_grid_search(S, lambda_range, N, method = 'eBIC', gamma = 0.3, latent 
             
             # tune optimal threshold, changes Theta_sol!
             if thresholding:
-                Theta_sol, opt_tau, _ = tune_threshold(Theta_sol, S, N, tau_range = None, method = method, gamma = gamma)
+                Theta_sol, opt_tau, _ = tune_threshold(Theta_sol, S, N,\
+                                                       tau_range = None, method = method, gamma = gamma)
                 TAU[j,m] = opt_tau
              
             AIC[j,m] = aic_single(S, Theta_sol, N)

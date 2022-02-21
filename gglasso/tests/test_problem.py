@@ -35,7 +35,6 @@ def template_problem_MGL(S, N, reg = 'GGL', latent = False, G = None):
         modelselectparams['mu1_range'] = None
     
     
-    P.solve()
     reg_params = {'lambda1': 0.01, 'lambda2': 0.001}
     if latent:
         reg_params['mu1'] = 1.
@@ -113,8 +112,7 @@ def template_problem_SGL(S, N, latent = False):
     P = glasso_problem(S = S, N = N, reg = None, latent = latent)
     print(P)
     
-    
-    P.solve()
+
     reg_params = {'lambda1': 0.01}
     if latent:
         reg_params['mu1'] = 1.
