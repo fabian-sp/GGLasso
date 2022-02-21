@@ -86,7 +86,6 @@ plot_runtime(iA, iP, vecN, save = save)
 #    N = p
 #
 #    Sigma, Theta = group_power_network(p, K, M)
-#    print(f"Sparsity level: {sparsity(Theta)}")
 #    Omega_0 = get_K_identity(K,p)
 #    
 #    S, sample = sample_covariance_matrix(Sigma, N)
