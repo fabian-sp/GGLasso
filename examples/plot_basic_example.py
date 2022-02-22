@@ -49,17 +49,17 @@ nx.draw_networkx(G, pos = pos, node_color = "darkblue", edge_color = "darkblue",
 # We now create an instance of ``glasso_problem``. The problem formulation is derived automatically from the input shape of ``S``.
 #
 
-P = glasso_problem(S, N, reg_params = {'lambda1': 0.05}, latent = False, do_scaling = True)
+P = glasso_problem(S, N, reg_params = {'lambda1': 0.05}, latent = False, do_scaling = False)
 print(P)
 
 #%%
 # Next, do model selection by solving the problem on a range of :math:`\lambda_1` values.
 #
 
-lambda1_range = np.logspace(0, -1, 30)
+lambda1_range = np.logspace(0, -3, 30)
 modelselect_params = {'lambda1_range': lambda1_range}
 
-P.model_selection(modelselect_params = modelselect_params, method = 'eBIC', gamma = 0.25)
+P.model_selection(modelselect_params = modelselect_params, method = 'eBIC', gamma = 0.1)
 
 # regularization parameters are set to the best ones found during model selection
 print(P.reg_params)

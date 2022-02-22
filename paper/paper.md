@@ -35,7 +35,7 @@ bibliography: paper.bib
 
 # Summary
 
-We introduce `GGLasso`, a Python package for solving General Graphical Lasso problems. The Graphical Lasso scheme, introduced by [@Friedman2007] (see also [@Yuan2007;@Banerjee2008]), estimates a sparse inverse covariance matrix $\Theta$ from multivariate Gaussian data $\mathcal{X} \sim \mathcal{N}(\mu, \Sigma) \in \mathbb{R}^p$. Originally proposed by [@Dempster1972] under the name Covariance Selection, this estimation framework has been extended to include latent variables in [@Chandrasekaran2012]. Recent extensions also include the joint estimation of multiple inverse covariance matrices, see, e.g., in [@Danaher2013; @Tomasi2018]. The `GGLasso` package contains methods for solving the general problem formulation:
+We introduce `GGLasso`, a Python package for solving General Graphical Lasso problems. The Graphical Lasso scheme, introduced by @Friedman2007 (see also @Yuan2007, @Banerjee2008), estimates a sparse inverse covariance matrix $\Theta$ from multivariate Gaussian data $\mathcal{X} \sim \mathcal{N}(\mu, \Sigma) \in \mathbb{R}^p$. Originally proposed by @Dempster1972 under the name Covariance Selection, this estimation framework has been extended to include latent variables in @Chandrasekaran2012. Recent extensions also include the joint estimation of multiple inverse covariance matrices, see, e.g., in @Danaher2013, @Tomasi2018. The `GGLasso` package contains methods for solving the general problem formulation:
 
 <div class="math">
 \begin{align}
@@ -53,7 +53,7 @@ Currently, there is no Python package available for solving general Graphical La
 - Proposing a uniform framework for solving Graphical Lasso problems.
 - Providing solvers for Group Graphical Lasso problems (with and without latent variables).
 - Providing a solver for -- what we call -- *nonconforming GGL* problems where not all variables need to be present in every instance. We detail a use case of this novel extension on synthetic data.
-- Implementing a block-wise ADMM solver for SGL problems following [@Witten2011] as well as proximal point solvers for FGL and GGL problems [@Zhang2021; @Zhang2020].
+- Implementing a block-wise ADMM solver for SGL problems following @Witten2011 as well as proximal point solvers for FGL and GGL problems [@Zhang2021; @Zhang2020].
 
 In the table below we give an overview of existing functionalities and the `GGLasso` package.
 
@@ -80,7 +80,7 @@ In the table below we give an overview of existing functionalities and the `GGLa
 pip install gglasso
 ```
 
-The central object of `GGLasso` is the class `glasso_problem` which streamlines the solving or model selection procedure for SGL, GGL, and FGL problems with or without latent variables.
+The central object of `GGLasso` is the class `glasso_problem`, which streamlines the solving or model selection procedure for SGL, GGL, and FGL problems with or without latent variables.
 
 As an example, we instantiate a single Graphical Lasso problem (see the problem formulation below). We input the empirical covariance matrix `S` and the number of samples `N`. We can choose to model latent variables and set the regularization parameters via the other input arguments.
 
@@ -130,7 +130,7 @@ For
 $$
 \mathcal{P}(\Theta) = \lambda_1 \sum_{k=1}^{K} \sum_{i \neq j} |\Theta_{ij}^{(k)}| + \lambda_2  \sum_{i \neq j} \left(\sum_{k=1}^{K} |\Theta_{ij}^{(k)}|^2 \right)^{\frac{1}{2}}
 $$
-we obtain the Group Graphical Lasso as formulated in [@Danaher2013].
+we obtain the Group Graphical Lasso as formulated in @Danaher2013.
 
 ### Fused Graphical Lasso (*FGL*): {#FGL}
 For
@@ -150,9 +150,9 @@ The `GGLasso` package implements several methods with provable convergence guara
 
 - *ADMM*: for all problem formulations we implemented the ADMM algorithm [@Boyd2011]. ADMM is a flexible and efficient optimization scheme which is specifically suited for Graphical Lasso problems as it only relies on efficient computation of the proximal operators of the involved functions [@Danaher2013; @Tomasi2018; @Ma2013].  
 
-- *PPDNA*: for GGL and FGL problems without latent variables, we included the proximal point solver proposed in [@Zhang2021; @Zhang2020]. According to the numerical experiments in [@Zhang2020], PPDNA can be an efficient alternative to ADMM especially for fast local convergence.
+- *PPDNA*: for GGL and FGL problems without latent variables, we included the proximal point solver proposed in @Zhang2021 and @Zhang2020. According to the numerical experiments in @Zhang2020, PPDNA can be an efficient alternative to ADMM especially for fast local convergence.
 
-- *block-ADMM*: for SGL problems without latent variables, we implemented a method which solves the problem block-wise, following the proposal in [@Witten2011]. This wrapper simply applies the ADMM solver to all connected components of the empirical covariance matrix after thresholding.
+- *block-ADMM*: for SGL problems without latent variables, we implemented a method which solves the problem block-wise, following the proposal in @Witten2011. This wrapper simply applies the ADMM solver to all connected components of the empirical covariance matrix after thresholding.
 
 ![Runtime comparison for SGL problems of varying dimension and sample size at three different $\lambda_1$ values. The left column shows the runtime at low accuracy, the right column at high accuracy. \label{fig2}](../docs/source/pictures/runtime_merged.pdf){width=90%}
 
@@ -163,7 +163,7 @@ In our example gallery, we included benchmarks comparing the solvers in `GGLasso
 
 - [Benchmarks](https://gglasso.readthedocs.io/en/latest/auto_examples/plot_benchmarks.html#sphx-glr-auto-examples-plot-benchmarks-py) for SGL problems: our solver is competitive with `scikit-learn` and `regain`. The newly implemented block-wise solver is highly efficient for large sparse networks (see \autoref{fig2} for runtime comparison at [low and high accuracy](https://gglasso.readthedocs.io/en/latest/auto_examples/plot_benchmarks.html#calculating-the-accuracy), respectively).
 
-- [Soil microbiome application](https://gglasso.readthedocs.io/en/latest/auto_examples/plot_soil_example.html#sphx-glr-auto-examples-plot-soil-example-py): following [@Kurtz2019], we demonstrate how latent variables can be used to identify hidden confounders in microbial network inference.
+- [Soil microbiome application](https://gglasso.readthedocs.io/en/latest/auto_examples/plot_soil_example.html#sphx-glr-auto-examples-plot-soil-example-py): following @Kurtz2019, we demonstrate how latent variables can be used to identify hidden confounders in microbial network inference.
 
 - [Nonconforming GGL](https://gglasso.readthedocs.io/en/latest/auto_examples/plot_nonconforming_ggl.html#sphx-glr-auto-examples-plot-nonconforming-ggl-py): we illustrate how to use `GGLasso` for GGL problems with missing variables.
 
