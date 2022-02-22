@@ -59,7 +59,7 @@ def grid_search(solver, S, N, p, reg, l1, l2 = None, w2 = None, method= 'eBIC', 
     Parameters
     ----------
     solver : solver method 
-        DESCRIPTION.
+        ``ADMM_MGL`` or ``ext_ADMM_MGL``.
     S : array of shape (K,p,p) or dict
         empirical covariance matrices.
     N : array
@@ -109,6 +109,13 @@ def grid_search(solver, S, N, p, reg, l1, l2 = None, w2 = None, method= 'eBIC', 
     assert method in ['AIC', 'eBIC']
     assert reg in ['FGL', 'GGL']
     
+    if type(S) == dict:
+        K = len(S.keys())
+    elif type(S) == np.ndarray:
+        K = S.shape[0]
+        
+    assert len(N) == K, f"N must be given as array, is given as {N}."
+    
     if latent:
         assert np.all(mu_range > 0)
     
@@ -141,11 +148,9 @@ def grid_search(solver, S, N, p, reg, l1, l2 = None, w2 = None, method= 'eBIC', 
     # solver kwargs
     kwargs = {'reg': reg, 'S': S, 'tol': tol, 'rtol': rtol, 'verbose': False, 'measure': False}
     if type(S) == dict:
-        K = len(S.keys())
         Omega_0 = id_dict(p)
         kwargs['G'] = G
     elif type(S) == np.ndarray:
-        K = S.shape[0]
         Omega_0 = id_array(K,p)
         
     kwargs['Omega_0'] = Omega_0.copy()
@@ -182,8 +187,9 @@ def grid_search(solver, S, N, p, reg, l1, l2 = None, w2 = None, method= 'eBIC', 
             Omega_sol = sol['Omega'].copy()
             Theta_sol = sol['Theta'].copy()
             
-            if latent:
-                RANK[:,g1,g2] = [np.linalg.matrix_rank(sol['L'][k]) for k in np.arange(K)]
+            # thresholding
+            # add curr_best_noth and curr_min_noth
+            
                          
             # warm start
             kwargs['Omega_0'] = Omega_sol
@@ -193,7 +199,10 @@ def grid_search(solver, S, N, p, reg, l1, l2 = None, w2 = None, method= 'eBIC', 
             AIC[g1,g2] = aic(S, Theta_sol, N)
             for g in gammas:
                 BIC[g][g1,g2] = ebic(S, Theta_sol, N, gamma = g)
-                
+            
+            if latent:
+                RANK[:,g1,g2] = [np.linalg.matrix_rank(sol['L'][k]) for k in np.arange(K)]
+            
             SP[g1,g2] = mean_sparsity(Theta_sol)
                 
             if verbose:
@@ -205,12 +214,10 @@ def grid_search(solver, S, N, p, reg, l1, l2 = None, w2 = None, method= 'eBIC', 
             # new best point found
             if method == 'eBIC':
                 if BIC[gamma][g1,g2] < curr_min:
-                    print("----------New optimum found in the grid----------")
                     curr_min = BIC[gamma][g1,g2]
                     curr_best = sol.copy()
             elif method == 'AIC':
                  if AIC[g1,g2] < curr_min:
-                    print("----------New optimum found in the grid----------")
                     curr_min = AIC[g1,g2]
                     curr_best = sol.copy()
         
@@ -286,8 +293,7 @@ def K_single_grid(S, lambda_range, N, method = 'eBIC', gamma = 0.3, latent = Fal
     elif type(S) == np.ndarray:
         K = S.shape[0]
         
-    if type(N) == int:
-        N = N * np.ones(K)
+    assert len(N) == K, f"N must be given as array, is given as {N}."
         
     if latent:
         assert mu_range is not None
@@ -666,7 +672,7 @@ def aic_dict(S, Theta, N):
     """
     K = len(S.keys())
     
-    if isinstance(N, (int,float)):
+    if isinstance(N, (int,float,np.integer,np.float)):
         N = np.ones(K) * N
         
     aic = 0
@@ -677,7 +683,7 @@ def aic_dict(S, Theta, N):
 def aic_array(S,Theta, N):
     (K,p,p) = S.shape
     
-    if isinstance(N, (int,float)):
+    if isinstance(N, (int,float,np.integer,np.float)):
         N = np.ones(K) * N
     
     aic = 0
@@ -688,7 +694,7 @@ def aic_array(S,Theta, N):
 
 def aic_single(S, Theta, N):
     (p,p) = S.shape
-    assert isinstance(N, (int,float))
+    assert isinstance(N, (int,float,np.integer,np.float))
         
     # count upper diagonal non-zero entries
     E = (np.count_nonzero(Theta) - p)/2
@@ -716,7 +722,7 @@ def ebic(S, Theta, N, gamma = 0.5):
 
 def ebic_single(S, Theta, N, gamma):
     (p,p) = S.shape
-    assert isinstance(N, (int,float))
+    assert isinstance(N, (int,float,np.integer,np.float))
     
     # count upper diagonal non-zero entries
     E = (np.count_nonzero(Theta) - p)/2
@@ -726,7 +732,7 @@ def ebic_single(S, Theta, N, gamma):
 
 def ebic_array(S, Theta, N, gamma):
     (K,p,p) = S.shape   
-    if isinstance(N, (int,float)):
+    if isinstance(N, (int,float,np.integer,np.float)):
         N = np.ones(K) * N
         
     bic = 0
@@ -740,7 +746,7 @@ def ebic_dict(S, Theta, N, gamma):
     N is array of sample sizes
     """
     K = len(S.keys())   
-    if isinstance(N, (int,float)):
+    if isinstance(N, (int,float,np.integer,np.float)):
         N = np.ones(K) * N
     
     bic = 0

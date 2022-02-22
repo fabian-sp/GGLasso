@@ -76,7 +76,7 @@ class glasso_problem:
 
     """
     
-    def __init__(self, S, N, reg = "GGL", reg_params = None, latent = False, G = None, do_scaling = True):
+    def __init__(self, S, N, reg = "GGL", reg_params = None, latent = False, G = None, do_scaling = False):
         
         self.S = S.copy()
         self.N = N
@@ -137,7 +137,7 @@ class glasso_problem:
         self.conforming = False
         self.multiple = False
         
-        assert isinstance(self.N, (int,float, np.ndarray)), "N must be either of type float, int or np.ndarray."
+        assert isinstance(self.N, (int,float,np.integer,np.float,np.ndarray)), "N must be either of type float, int or np.ndarray."
          
         if type(self.S) == np.ndarray:
             
@@ -146,7 +146,7 @@ class glasso_problem:
                 self.multiple = True
                 self._check_covariance_3d() # sets self.K, self.p
                 
-                if isinstance(self.N, (int,float)):
+                if isinstance(self.N, (int,float,np.integer,np.float)):
                     self.N = self.N * np.ones(self.K)
                      
             else:
@@ -154,7 +154,7 @@ class glasso_problem:
                 self.conforming = True
                 self._check_covariance_2d()
                 
-                assert isinstance(self.N, (int,float)), "For SGL problems, N needs to be a single number, float or int."
+                assert isinstance(self.N, (int,float,np.integer,np.float)), "For SGL problems, N needs to be a single number, float or int."
                 
         elif type(self.S) == list or type(self.S) == dict:
             
@@ -165,8 +165,8 @@ class glasso_problem:
             self.multiple = True
             self._check_covariance_list()
             
-            if isinstance(self.N, (int,float)):
-                    self.N = self.N * np.ones(self.K)
+            if isinstance(self.N, (int,float,np.integer,np.float)):
+                self.N = self.N * np.ones(self.K)
                 
             # G is also checked in the solver
             check_G(self.G, self.p)

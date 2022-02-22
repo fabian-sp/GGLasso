@@ -121,15 +121,7 @@ def template_problem_SGL(S, N, latent = False):
     P.set_reg_params(reg_params)
     P.solve()
     
-    # test model selection
-    # modelselectparams = dict()
-    # modelselectparams['lambda1_range'] = np.logspace(-3,0,4)
-    
-    # if latent:
-    #     modelselectparams['mu1_range'] = np.logspace(-2,0,4)
-    # else:
-    #     modelselectparams['mu1_range'] = None
-    
+    # test model selection    
     P.model_selection(method = 'AIC')
     P.model_selection(modelselect_params = None, method = 'eBIC', gamma = 0.1)
     
@@ -143,9 +135,10 @@ def test_SGL():
     S, samples = sample_covariance_matrix(Sigma, N, seed = 1234); S = S[0,:,:]  
     P = template_problem_SGL(S, N, latent = False)
     
-    first_row = np.zeros(p); first_row[:2] = np.array([0.02566107, 0.90966557])
+    first_row = np.zeros(p); first_row[:2] = np.array([0.0945606, 0.91819399])
     assert_array_almost_equal(P.solution.precision_[1,:], first_row)
     
+    assert P.reg_params['lambda1'] == 0.1
     return
     
 def test_SGL_latent():

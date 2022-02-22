@@ -101,7 +101,7 @@ for k in range(K):
 
 reg = 'GGL'
 
-P = glasso_problem(S = S, N = num_samples, reg = "GGL", reg_params = None, latent = True, G = G, do_scaling = True)
+P = glasso_problem(S = S, N = N, reg = "GGL", reg_params = None, latent = True, G = G, do_scaling = True)
 print(P)
 
 #%%
