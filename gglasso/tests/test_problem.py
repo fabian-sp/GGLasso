@@ -7,7 +7,7 @@ from numpy.testing import assert_array_almost_equal
 from gglasso.helper.data_generation import time_varying_power_network, group_power_network, sample_covariance_matrix, generate_precision_matrix
 from gglasso.problem import glasso_problem
 from gglasso.helper.ext_admm_helper import construct_trivial_G
-
+from gglasso.helper.basic_linalg import scale_array_by_diagonal
 
 p = 20
 K = 3
@@ -156,8 +156,8 @@ def test_scaling_SGL():
     # create matrix with ones on diagonal
     np.fill_diagonal(S,1)
     
-    sc = 10.
-    S2 = sc*S
+    sc = 1+np.random.rand(p)*10
+    S2 = scale_array_by_diagonal(S, 1/sc)
     reg_params = {'lambda1': 0.1}
     
     solver_params = {'rho': 1., 'update_rho': False}
