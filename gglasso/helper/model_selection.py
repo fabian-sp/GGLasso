@@ -192,28 +192,26 @@ def grid_search(solver, S, N, p, reg, l1, l2 = None, w2 = None, method= 'eBIC', 
                 
             # solve
             sol, info = solver(**kwargs)
-            Omega_sol = sol['Omega'].copy()
-            Theta_sol = sol['Theta'].copy()
+            # warm start
+            kwargs['Omega_0'] = sol['Omega'].copy()
             
             # thresholding
             if thresholding:
-                Theta_sol, opt_tau, _ = tune_multiple_threshold(Theta_sol, S, N, tau_range = None, method = method, gamma = gamma)
+                sol['Theta'], opt_tau, _ = tune_multiple_threshold(sol['Theta'], S, N, tau_range = None,\
+                                                                   method = method, gamma = gamma)
                 TAU[:,g1,g2] = opt_tau
             # add curr_best_noth and curr_min_noth
             
-            # warm start
-            kwargs['Omega_0'] = Omega_sol
-                  
             #########################################         
             # store diagnostics
-            AIC[g1,g2] = aic(S, Theta_sol, N)
+            AIC[g1,g2] = aic(S, sol['Theta'], N)
             for g in gammas:
-                BIC[g][g1,g2] = ebic(S, Theta_sol, N, gamma = g)
+                BIC[g][g1,g2] = ebic(S, sol['Theta'], N, gamma = g)
             
             if latent:
                 RANK[:,g1,g2] = [np.linalg.matrix_rank(sol['L'][k]) for k in np.arange(K)]
             
-            SP[g1,g2] = mean_sparsity(Theta_sol)
+            SP[g1,g2] = mean_sparsity(sol['Theta'])
                 
             if verbose:
                 print("Current eBIC grid:")
@@ -237,8 +235,7 @@ def grid_search(solver, S, N, p, reg, l1, l2 = None, w2 = None, method= 'eBIC', 
         ix= np.unravel_index(np.nanargmin(AIC), AIC.shape)   
     elif method == 'eBIC':    
         for g in gammas:
-            BIC[g][BIC[g]==-np.inf] = np.nan
-            
+            BIC[g][BIC[g]==-np.inf] = np.nan            
         ix= np.unravel_index(np.nanargmin(BIC[gamma]), BIC[gamma].shape)
         
     stats = {'BIC': BIC, 'AIC': AIC, 'SP': SP, 'RANK': RANK, 'TAU': TAU, 'L1': L1, 'L2': L2, \
@@ -533,8 +530,7 @@ def single_grid_search(S, lambda_range, N, method = 'eBIC', gamma = 0.3, latent 
                 sol = block_SGL(**kwargs)
             else:
                 sol, _ = ADMM_SGL(**kwargs)
-            
-            Theta_sol = sol['Theta'].copy()
+                        
             kwargs['Omega_0'] = sol['Omega'].copy() # warm start
             # as X is scaled with rho, warm starting the dual variables can go wrong when rho is adapted
             
@@ -543,20 +539,20 @@ def single_grid_search(S, lambda_range, N, method = 'eBIC', gamma = 0.3, latent 
                     lowrank[j,m,:,:] = sol['L'].copy()
                 RANK[j,m] = np.linalg.matrix_rank(sol['L'])
             
-            # tune optimal threshold, changes Theta_sol!
+            # tune optimal threshold, changes sol['Theta']
             if thresholding:
-                Theta_sol, opt_tau, _ = tune_threshold(Theta_sol, S, N,\
-                                                       tau_range = None, method = method, gamma = gamma)
+                sol['Theta'], opt_tau, _ = tune_threshold(sol['Theta'], S, N,\
+                                                          tau_range = None, method = method, gamma = gamma)
                 TAU[j,m] = opt_tau
              
-            AIC[j,m] = aic_single(S, Theta_sol, N)
+            AIC[j,m] = aic_single(S, sol['Theta'], N)
             for g in gammas:
-                BIC[g][j, m] = ebic_single(S, Theta_sol, N, gamma = g)
+                BIC[g][j, m] = ebic_single(S, sol['Theta'], N, gamma = g)
             
-            SP[j,m] = sparsity(Theta_sol)
+            SP[j,m] = sparsity(sol['Theta'])
             
             if store_all:
-                estimates[j,m,:,:] = Theta_sol.copy()
+                estimates[j,m,:,:] = sol['Theta'].copy()
             
             # new best point found
             if method == 'eBIC':
@@ -590,41 +586,33 @@ def single_grid_search(S, lambda_range, N, method = 'eBIC', gamma = 0.3, latent 
 
 def thresholding(A, tau):
     """
-    thresholdes array A by tau
-    CAUTION: inplace manipulation!
+    thresholding array A by tau
     """
-    # if type(A) == np.ndarray:
-    #     A[np.abs(A) <= tau] = 0.
-    # elif type(A) == dict:
-    #     K = len(A.keys())
-    #     for k in np.arange(K):
-    #         A[k][np.abs(A[k]) <= tau] = 0.
-    A[np.abs(A) <= tau] = 0.       
-    return A
-
+    mask = (np.abs(A) > tau)
+    np.fill_diagonal(mask,1.)
+       
+    return A*mask
 
 def tune_threshold(Theta, S, N, tau_range = None, method = 'eBIC', gamma = 0.1):
     """
-    CAUTION: inplace manipulation of Theta!
+    Pick the best threshold for 2d-array according to eBIC or AIC.
     """
     if tau_range is None:
         # diagonal is upper bound as this would make Theta indefinite.                   
-        tau_range = np.linspace(TAU_MIN, np.diag(Theta).min()*0.9, N_TAU) 
-    
-    tau_range.sort() # needs to be increasing!
+        #tau_range = np.linspace(TAU_MIN, np.diag(Theta).min()*0.9, N_TAU) 
+        tau_range = np.logspace(-12,-1,N_TAU)
+        
+    #tau_range.sort() # needs to be increasing!
     assert np.all(tau_range > 0)
-    
-    tmpT = Theta.copy()
+
     scores = np.zeros(len(tau_range))
     
     for j in range(len(tau_range)):
         tau = tau_range[j]
-        tmpT = thresholding(tmpT, tau)
-        
         if method == 'eBIC':
-            E = ebic(S, tmpT, N, gamma = gamma)
+            E = ebic(S, thresholding(Theta, tau), N, gamma = gamma)
         elif method == 'AIC':
-            E = aic(S, tmpT, N)
+            E = aic(S, thresholding(Theta, tau), N)
         scores[j] = E
         
     scores[scores==np.inf] = np.nan
@@ -633,16 +621,19 @@ def tune_threshold(Theta, S, N, tau_range = None, method = 'eBIC', gamma = 0.1):
     opt_tau = tau_range[opt_ix]
     
     # changes Theta INPLACE!
-    Theta = thresholding(Theta, opt_tau)
-    return Theta, opt_tau, scores
+    t_Theta = thresholding(Theta, opt_tau)
+    return t_Theta, opt_tau, scores
 
 def tune_multiple_threshold(Theta, S, N, tau_range, method = 'eBIC', gamma = 0.1):
-    
+    """
+    Pick the best threshold for 3d-array or dict according to eBIC or AIC. 
+    """
     if type(S) == dict:
         K = len(S.keys())
     elif type(S) == np.ndarray:
         K = S.shape[0]
     
+    t_Theta = Theta.copy()
     score = dict()
     tau = np.zeros(K)
     
@@ -650,9 +641,9 @@ def tune_multiple_threshold(Theta, S, N, tau_range, method = 'eBIC', gamma = 0.1
         Th_k, tau_k, scores_k = tune_threshold(Theta[k], S[k], N[k], tau_range, method, gamma)
         score[k] = scores_k
         tau[k] = tau_k
-        Theta[k] = Th_k.copy()
+        t_Theta[k] = Th_k
     
-    return Theta, tau, score
+    return t_Theta, tau, score
 
 ################################################################
 ## CRITERIA AIC/EBIC
