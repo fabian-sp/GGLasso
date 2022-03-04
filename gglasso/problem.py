@@ -559,6 +559,10 @@ class glasso_problem:
         
         if store_all:
             warnings.warn("Setting store_all=True might cause memory issues as the solution is stored at all grid points.")
+        
+        if self.do_scaling and (self.modelselect_params['lambda1_range'].max() > 1):
+            warnings.warn("Using do_scaling=True, you can restrict the range for lambda1 to 1. Larger lambdas will result in the zero solution.")
+            
             
         ###############################
         # SINGLE GL --> GRID SEARCH lambda1/mu
