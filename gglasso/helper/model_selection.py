@@ -589,7 +589,7 @@ def thresholding(A, tau):
     thresholding array A by tau
     """
     mask = (np.abs(A) > tau)
-    np.fill_diagonal(mask,1.)
+    np.fill_diagonal(mask,1.) # dont threshold on diagonal
        
     return A*mask
 
@@ -602,7 +602,7 @@ def tune_threshold(Theta, S, N, tau_range = None, method = 'eBIC', gamma = 0.1):
         #tau_range = np.linspace(TAU_MIN, np.diag(Theta).min()*0.9, N_TAU) 
         tau_range = np.logspace(-12,-1,N_TAU)
         
-    #tau_range.sort() # needs to be increasing!
+    #tau_range.sort()
     assert np.all(tau_range > 0)
 
     scores = np.zeros(len(tau_range))
@@ -620,7 +620,6 @@ def tune_threshold(Theta, S, N, tau_range = None, method = 'eBIC', gamma = 0.1):
     opt_ix = np.nanargmin(scores)
     opt_tau = tau_range[opt_ix]
     
-    # changes Theta INPLACE!
     t_Theta = thresholding(Theta, opt_tau)
     return t_Theta, opt_tau, scores
 
@@ -761,7 +760,7 @@ def robust_logdet(A, t=1e-6):
     slogdet returns always a finite number if the lowest EV is not EXACTLY 0
     because of numerical inaccuracies we want to avoid that behaviour but also avoid overflows
     """
-    D,Q = np.linalg.eigh(A)
+    D = np.linalg.eigvalsh(A)
     if D.min() <= t:
         print("WARNING: EBIC evaluated at non-positive definite matrix")
         return -np.inf
