@@ -174,7 +174,7 @@ def test_scaling_SGL():
     
     # scaled one has factor 1/sc after rescaling
     Theta = P.solution.precision_
-    Theta2 = sc*P2.solution.precision_
+    Theta2 = P2.solution.precision_
     
     assert np.linalg.norm(Theta - Theta2)/np.linalg.norm(Theta) <= 1e-10
     assert_array_almost_equal(P.solution.adjacency_, P2.solution.adjacency_)

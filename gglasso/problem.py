@@ -227,9 +227,11 @@ class glasso_problem:
     
     def _rescale_to_covariances(self, X, scale):
         """
-        rescales X with the given scale
+        rescales X with X_ij/sqrt(scale_i*scale_j)
         X: object of type like input data S
-        scale: array (or list) with diagonal elements of unscaled input S --> use self._scale
+        scale: array (or list) with diagonal elements of unscaled input S (i.e. covariances) --> use self._scale
+        
+        NOTE: we rescale an *inverse* cov. matrix estimate, thus variances (i.e. scale_i) is in denominator. 
         """
         Y = X.copy()
         if not self.multiple:
@@ -242,13 +244,14 @@ class glasso_problem:
     
     def _scale_input_to_correlation(self):
         """
-        scales input data S by diagonal elements 
-        scale factors are stored in self._scale for rescaling later
+        scales input data S from covariances to correlations, i.e. by 1/sqrt(diag) 
+        Scaling factors are stored in self._scale for possible rescaling
         
         NOTE: this overwrites self.S!
         """
         
-        print("NOTE: input data S is rescaled with the diagonal elements, this has impact on the scale of the regularization parameters!")
+        warnings.warn("NOTE: Input data S is rescaled to correlations, this has impact on the scale of the regularization parameters!")
+        warnings.warn("The output/solution is not rescaled automatically, you can rescale by self._rescale_to_covariances(X, self._scale).")
         
         if not self.multiple:
             self._scale = np.diag(self.S)
@@ -447,11 +450,11 @@ class glasso_problem:
                                          latent = self.latent, mu1 = self.reg_params['mu1'], **self.solver_params)
                 
  
-        # rescale
-        if self.do_scaling:
-            sol['Theta'] = self._rescale_to_covariances(sol['Theta'], self._scale)
-            if self.latent:
-                sol['L'] = self._rescale_to_covariances(sol['L'], self._scale)
+        # rescale (DEACTIVATED)
+        # if self.do_scaling:
+        #     sol['Theta'] = self._rescale_to_covariances(sol['Theta'], self._scale)
+        #     if self.latent:
+        #         sol['L'] = self._rescale_to_covariances(sol['L'], self._scale)
         
             
         # set the computed solution
@@ -619,11 +622,11 @@ class glasso_problem:
         # SET SOLUTION AND STORE INFOS
         ###############################
             
-        # rescale
-        if self.do_scaling:
-            sol['Theta'] = self._rescale_to_covariances(sol['Theta'], self._scale)
-            if self.latent:
-                sol['L'] = self._rescale_to_covariances(sol['L'], self._scale)
+        # rescale (DEACTIVATED)
+        # if self.do_scaling:
+        #     sol['Theta'] = self._rescale_to_covariances(sol['Theta'], self._scale)
+        #     if self.latent:
+        #         sol['L'] = self._rescale_to_covariances(sol['L'], self._scale)
             
         # set the computed solution
         if self.latent:
@@ -636,11 +639,7 @@ class glasso_problem:
         
         
         return
-    
-    
-    
-
-    
+        
 #%%
 
 class GGLassoEstimator():
