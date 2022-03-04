@@ -513,7 +513,7 @@ class glasso_problem:
             
         return
 
-    def model_selection(self, modelselect_params = None, method = 'eBIC', gamma = 0.1, tol = 1e-7, rtol = 1e-7):
+    def model_selection(self, modelselect_params = None, method = 'eBIC', gamma = 0.1, tol = 1e-7, rtol = 1e-7, store_all = False):
         """
         Method for doing model selection, i.e. trying to find the best regularization parameters.
         An instance of ``GGLassoEstimator`` will be created and assigned to ``self.solution``.
@@ -540,7 +540,8 @@ class glasso_problem:
             Tolerance for the primal residual used for the solver at each grid point. The default is 1e-7.
         rtol : float, positive, optional
             Tolerance for the dual residual used for the solver at each grid point. The default is 1e-7.
-        
+        store_all : bool, optional
+            Stores solution at every grid point (for SGL) and computes best estimator with uniform ``lambda1`` for MGL.
         
         Returns
         -------
@@ -556,13 +557,16 @@ class glasso_problem:
         if not np.all(self.modelselect_params['lambda1_range'] == np.sort(self.modelselect_params['lambda1_range'])[::-1]):
             warnings.warn("Ideally the lambda1 range is sorted in descending order, so the grid search is performed from sparse to dense.")
         
+        if store_all:
+            warnings.warn("Setting store_all=True might cause memory issues as the solution is stored at all grid points.")
+            
         ###############################
         # SINGLE GL --> GRID SEARCH lambda1/mu
         ###############################
         if not self.multiple:
-            sol, all_estimates, _, stats = single_grid_search(S = self.S, lambda_range = self.modelselect_params['lambda1_range'], N = self.N, \
-                               method = method, gamma = gamma, latent = self.latent, mu_range = self.modelselect_params['mu1_range'],
-                               use_block = True, store_all = False, tol = tol, rtol = rtol)
+            sol, self._all_theta, self._all_lowrank, stats = single_grid_search(S = self.S, lambda_range = self.modelselect_params['lambda1_range'], N = self.N, \
+                                                                                method = method, gamma = gamma, latent = self.latent, mu_range = self.modelselect_params['mu1_range'],
+                                                                                use_block = True, store_all = store_all, tol = tol, rtol = rtol)
             
             # update the regularization parameters to the best grid point
             self.set_reg_params(stats['BEST'])
@@ -578,14 +582,14 @@ class glasso_problem:
             # LATENT VARIABLES --> FIRST STAGE lambda1/mu1 for each instance
             ############################### 
             if self.latent:
-                _, self.est_indv, stage1_statistics = K_single_grid(S = self.S, lambda_range = self.modelselect_params['lambda1_range'], N = self.N, method = method,\
-                                                                  gamma = gamma, latent = self.latent, mu_range = self.modelselect_params['mu1_range'],
-                                                                  use_block = True, store_all = True, tol = tol, rtol= rtol)            
+                self._est_uniform, self._est_indv, stage1_statistics = K_single_grid(S = self.S, lambda_range = self.modelselect_params['lambda1_range'], N = self.N, method = method,\
+                                                                                     gamma = gamma, latent = self.latent, mu_range = self.modelselect_params['mu1_range'],
+                                                                                     use_block = True, store_all = store_all, tol = tol, rtol= rtol)            
                 
                 ix_mu = stage1_statistics['ix_mu']
                 
                 # store results from stage 1 (may be needed to compare Single estimator vs. Joint estimator)
-                self.stage1_stats = stage1_statistics          
+                self._stage1_stats = stage1_statistics          
             else:
                 ix_mu = None
             
@@ -595,9 +599,9 @@ class glasso_problem:
             ############################### 
     
             stats, best_ix, sol = grid_search(solver, S = self.S, N = self.N, p = self.p, reg = self.reg, l1 = self.modelselect_params['lambda1_range'], \
-                                        l2 = self.modelselect_params['lambda2_range'], w2 = None, method= method, gamma = gamma, \
-                                        G = self.G, latent = self.latent, mu_range = self.modelselect_params['mu1_range'], ix_mu = ix_mu, \
-                                        tol = tol, rtol = rtol, verbose = False)
+                                              l2 = self.modelselect_params['lambda2_range'], w2 = None, method= method, gamma = gamma, \
+                                              G = self.G, latent = self.latent, mu_range = self.modelselect_params['mu1_range'], ix_mu = ix_mu, \
+                                              tol = tol, rtol = rtol, verbose = False)
             
             # update the lambda1/lambda2 regularization parameters to the best grid point
             self.set_reg_params(stats['BEST'])
