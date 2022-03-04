@@ -18,7 +18,7 @@ def sparsity(S):
     """off-diagonal ratio of nonzero entries in S"""
     assert len(S.shape) == 2
     (p,p) = S.shape
-    off_nnz = np.count_nonzero(S) - np.count_nonzero(np.diag(S))
+    off_nnz = np.count_nonzero(S) - p
     s = off_nnz/(p**2-p)
     return s
 

@@ -4,7 +4,7 @@ author: Fabian Schaipp
 
 import numpy as np
 
-from .basic_linalg import Sdot, adjacency_matrix
+from .basic_linalg import Sdot
 from .utils import mean_sparsity, sparsity
 
 from .utils import get_K_identity as id_array
@@ -47,7 +47,7 @@ def lambda_grid(l1, l2 = None, w2 = None):
     return L1.squeeze(), L2.squeeze(), w2
 
 def grid_search(solver, S, N, p, reg, l1, l2 = None, w2 = None, method= 'eBIC', gamma = 0.3, \
-                G = None, latent = False, mu_range = None, ix_mu = None, tol = 1e-7, rtol = 1e-7, verbose = False):
+                G = None, latent = False, mu_range = None, ix_mu = None, thresholding = False, tol = 1e-7, rtol = 1e-7, verbose = False):
     """
     method for doing model selection for MGL problems using grid search and AIC/eBIC
     parameters to select: lambda1 (sparsity), lambda2 (group sparsity or total variation)
@@ -88,6 +88,8 @@ def grid_search(solver, S, N, p, reg, l1, l2 = None, w2 = None, method= 'eBIC', 
     ix_mu : array, optional
         shape (K,len(l1)). Indices for each element of l1 and each instance k which mu to choose from mu_range.
         Only needed when latent=True. Is computed by K_single_grid-method.
+    thresholding : boolean, optional
+        whether to tune a thresholded estimator for each (lambda1,lambda2) pair. See https://arxiv.org/pdf/2104.06389v1.pdf for details.
     tol : float, positive, optional
         Tolerance for the primal residual used for the solver at each grid point. The default is 1e-7.
     rtol : float, positive, optional
@@ -145,6 +147,13 @@ def grid_search(solver, S, N, p, reg, l1, l2 = None, w2 = None, method= 'eBIC', 
     SP[:] = np.nan
     #SKIP = np.zeros((grid1, grid2), dtype = bool)
     
+    RANK = np.zeros((K, grid1, grid2))
+    
+    if thresholding:
+        TAU = np.zeros((K, grid1, grid2))
+    else:
+        TAU = None
+    
     # solver kwargs
     kwargs = {'reg': reg, 'S': S, 'tol': tol, 'rtol': rtol, 'verbose': False, 'measure': False}
     if type(S) == dict:
@@ -155,7 +164,6 @@ def grid_search(solver, S, N, p, reg, l1, l2 = None, w2 = None, method= 'eBIC', 
         
     kwargs['Omega_0'] = Omega_0.copy()
     
-    RANK = np.zeros((K, grid1, grid2))
     
     curr_min = np.inf
     curr_best = None
@@ -188,9 +196,11 @@ def grid_search(solver, S, N, p, reg, l1, l2 = None, w2 = None, method= 'eBIC', 
             Theta_sol = sol['Theta'].copy()
             
             # thresholding
+            if thresholding:
+                Theta_sol, opt_tau, _ = tune_multiple_threshold(Theta_sol, S, N, tau_range = None, method = method, gamma = gamma)
+                TAU[:,g1,g2] = opt_tau
             # add curr_best_noth and curr_min_noth
             
-                         
             # warm start
             kwargs['Omega_0'] = Omega_sol
                   
@@ -231,7 +241,7 @@ def grid_search(solver, S, N, p, reg, l1, l2 = None, w2 = None, method= 'eBIC', 
             
         ix= np.unravel_index(np.nanargmin(BIC[gamma]), BIC[gamma].shape)
         
-    stats = {'BIC': BIC, 'AIC': AIC, 'SP': SP, 'RANK': RANK, 'L1': L1, 'L2': L2, \
+    stats = {'BIC': BIC, 'AIC': AIC, 'SP': SP, 'RANK': RANK, 'TAU': TAU, 'L1': L1, 'L2': L2, \
              'BEST': {'lambda1': L1[ix], 'lambda2': L2[ix]}, 'GAMMA': gammas}
     
     return stats, ix, curr_best
@@ -580,16 +590,16 @@ def single_grid_search(S, lambda_range, N, method = 'eBIC', gamma = 0.3, latent 
 
 def thresholding(A, tau):
     """
-    thresholdes array or dict A by tau
+    thresholdes array A by tau
     CAUTION: inplace manipulation!
     """
-    if type(A) == np.ndarray:
-        A[np.abs(A) <= tau] = 0.
-    elif type(A) == dict:
-        K = len(A.keys())
-        for k in np.arange(K):
-            A[k][np.abs(A[k]) <= tau] = 0.
-            
+    # if type(A) == np.ndarray:
+    #     A[np.abs(A) <= tau] = 0.
+    # elif type(A) == dict:
+    #     K = len(A.keys())
+    #     for k in np.arange(K):
+    #         A[k][np.abs(A[k]) <= tau] = 0.
+    A[np.abs(A) <= tau] = 0.       
     return A
 
 
