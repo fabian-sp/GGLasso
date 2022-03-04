@@ -109,7 +109,7 @@ print(P)
 # ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 # Set the regularization parameter grids and do model selection.
 
-l1 =    np.logspace(1,-1,5)
+l1 =    np.logspace(0,-2,7)
 mu1 =   np.logspace(1,-1,3)
 l2 =    np.logspace(0,-2,4)
 
