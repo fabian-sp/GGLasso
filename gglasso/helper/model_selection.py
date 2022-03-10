@@ -162,6 +162,12 @@ def grid_search(solver, S, N, p, reg, l1, l2 = None, w2 = None, method= 'eBIC', 
     
     curr_min = np.inf
     curr_best = None
+    
+    if thresholding:
+        _no_thr_curr_min = np.inf
+        _no_thr_best_params = None
+        _no_thr_curr_best = None # store also the best solution before thresholding
+            
     #==================================================
     # MAIN LOOP
     #
@@ -170,9 +176,6 @@ def grid_search(solver, S, N, p, reg, l1, l2 = None, w2 = None, method= 'eBIC', 
     for g2 in np.arange(grid2):
         for g1 in np.arange(grid1):
       
-            if verbose:
-                print("Current grid point: ", (L1[g1,g2],L2[g1,g2]) )
-                      
             # set lambda1 and lambda2
             kwargs['lambda1'] = L1[g1,g2]  
             kwargs['lambda2'] = L2[g1,g2]
@@ -182,8 +185,7 @@ def grid_search(solver, S, N, p, reg, l1, l2 = None, w2 = None, method= 'eBIC', 
                 this_mu = mu_range[ix_mu[:,g2]]
                 kwargs['latent'] = True
                 kwargs['mu1'] = this_mu.copy()
-                if verbose:
-                    print("MU values", kwargs['mu1'])
+                #print("MU values", kwargs['mu1'])
                 
             # solve
             sol, info = solver(**kwargs)
@@ -192,10 +194,17 @@ def grid_search(solver, S, N, p, reg, l1, l2 = None, w2 = None, method= 'eBIC', 
             
             # thresholding
             if thresholding:
+                # store also the best solution without solution
+                _no_thr_this_score = ebic(S, sol['Theta'], N, gamma = gamma)
+                if  _no_thr_this_score < _no_thr_curr_min:
+                    _no_thr_best_params = {'lambda1': L1[g1,g2], 'lambda2':L2[g1,g2]}
+                    _no_thr_curr_min = _no_thr_this_score
+                    _no_thr_curr_best = sol.copy()
+                
+                # now tune threshold
                 sol['Theta'], opt_tau, _ = tune_multiple_threshold(sol['Theta'], S, N, tau_range = None,\
                                                                    method = method, gamma = gamma)
                 TAU[:,g1,g2] = opt_tau
-            # add curr_best_noth and curr_min_noth
             
             #########################################         
             # store diagnostics
@@ -207,13 +216,7 @@ def grid_search(solver, S, N, p, reg, l1, l2 = None, w2 = None, method= 'eBIC', 
                 RANK[:,g1,g2] = [np.linalg.matrix_rank(sol['L'][k]) for k in np.arange(K)]
             
             SP[g1,g2] = mean_sparsity(sol['Theta'])
-                
-            if verbose:
-                print("Current eBIC grid:")
-                print(BIC[gamma])
-                print("Current Sparsity grid:")
-                print(SP)
-            
+                        
             # new best point found
             if method == 'eBIC':
                 if BIC[gamma][g1,g2] < curr_min:
@@ -224,6 +227,9 @@ def grid_search(solver, S, N, p, reg, l1, l2 = None, w2 = None, method= 'eBIC', 
                     curr_min = AIC[g1,g2]
                     curr_best = sol.copy()
         
+            if verbose:
+                print(f"Grid point: (l1,l2): {(L1[g1,g2],L2[g1,g2])}, sparsity: {np.round(SP[g1,g2],3)}, best score: {np.round(curr_min,1)}")
+            
     # get optimal lambda
     if method == 'AIC':
         AIC[AIC==-np.inf] = np.nan
@@ -232,9 +238,16 @@ def grid_search(solver, S, N, p, reg, l1, l2 = None, w2 = None, method= 'eBIC', 
         for g in gammas:
             BIC[g][BIC[g]==-np.inf] = np.nan            
         ix= np.unravel_index(np.nanargmin(BIC[gamma]), BIC[gamma].shape)
+    
+    if verbose:
+        print(f"Best regularization parameters: (l1,l2): {(L1[ix],L2[ix])}")
         
     stats = {'BIC': BIC, 'AIC': AIC, 'SP': SP, 'RANK': RANK, 'TAU': TAU, 'L1': L1, 'L2': L2, \
              'BEST': {'lambda1': L1[ix], 'lambda2': L2[ix]}, 'GAMMA': gammas}
+    
+    if thresholding:
+        stats['NO_THRESHOLDING_SOL'] = _no_thr_curr_best
+        stats['NO_THRESHOLDING_BEST'] = _no_thr_best_params
     
     return stats, ix, curr_best
 
