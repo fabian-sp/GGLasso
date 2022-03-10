@@ -120,8 +120,7 @@ def grid_search(solver, S, N, p, reg, l1, l2 = None, w2 = None, method= 'eBIC', 
     
     if latent:
         assert np.all(mu_range > 0)
-    
-    
+      
     L1, L2, W2 = lambda_grid(l1, l2, w2)
     
     if verbose:
@@ -130,8 +129,7 @@ def grid_search(solver, S, N, p, reg, l1, l2 = None, w2 = None, method= 'eBIC', 
         print(L2)
     
     grid1 = L1.shape[0]; grid2 = L2.shape[1]
-    AIC = np.zeros((grid1, grid2))
-    AIC[:] = np.nan
+    AIC = np.nan*np.zeros((grid1, grid2))
     
     # use default gammas plus the one for eBIC selection
     gammas = DEFAULT_GAMMAS
@@ -140,14 +138,11 @@ def grid_search(solver, S, N, p, reg, l1, l2 = None, w2 = None, method= 'eBIC', 
      
     BIC = dict()
     for g in gammas:
-        BIC[g] = np.zeros((grid1, grid2))
-        BIC[g][:] = np.nan
+        BIC[g] = np.nan*np.zeros((grid1, grid2))
         
-    SP = np.zeros((grid1, grid2))
-    SP[:] = np.nan
+    SP = np.nan*np.zeros((grid1, grid2))
     #SKIP = np.zeros((grid1, grid2), dtype = bool)
-    
-    RANK = np.zeros((K, grid1, grid2))
+    RANK = np.nan*np.zeros((K, grid1, grid2))
     
     if thresholding:
         TAU = np.zeros((K, grid1, grid2))
@@ -320,15 +315,10 @@ def K_single_grid(S, lambda_range, N, method = 'eBIC', gamma = 0.3, latent = Fal
     
     BIC = dict()
     for g in gammas:
-        BIC[g] = np.zeros((K,_L,_M))
-        BIC[g][:] = np.nan
-    
-    AIC = np.zeros((K,_L,_M))
-    AIC[:] = np.nan
-    
-    SP = np.zeros((K,_L,_M))
-    SP[:] = np.nan
-    
+        BIC[g] = np.nan*np.zeros((K,_L,_M))
+        
+    AIC = np.nan*np.zeros((K,_L,_M))
+    SP = np.nan*np.zeros((K,_L,_M))
     RANK = np.zeros((K,_L,_M))
     
     estimates = dict()
@@ -488,15 +478,10 @@ def single_grid_search(S, lambda_range, N, method = 'eBIC', gamma = 0.3, latent 
         
     BIC = dict()
     for g in gammas:
-        BIC[g] = np.zeros((_L, _M))
-        BIC[g][:] = np.nan
-    
-    AIC = np.zeros((_L, _M))
-    AIC[:] = np.inf
-    
-    SP = np.zeros((_L, _M))
-    SP[:] = np.inf
-    
+        BIC[g] = np.nan*np.zeros((_L, _M))
+        
+    AIC = np.nan*np.zeros((_L, _M))
+    SP = np.nan*np.zeros((_L, _M))
     RANK = np.zeros((_L,_M))
     
     if thresholding:
@@ -602,7 +587,6 @@ def tune_threshold(Theta, S, N, tau_range = None, method = 'eBIC', gamma = 0.1):
         #tau_range = np.linspace(TAU_MIN, np.diag(Theta).min()*0.9, N_TAU) 
         tau_range = np.logspace(-12,-1,N_TAU)
         
-    #tau_range.sort()
     assert np.all(tau_range > 0)
 
     scores = np.zeros(len(tau_range))
