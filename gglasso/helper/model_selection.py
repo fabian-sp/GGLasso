@@ -739,14 +739,13 @@ def ebic_dict(S, Theta, N, gamma):
         
     return bic
         
-def robust_logdet(A, t=1e-6):
+def robust_logdet(A, t=1e-12):
     """
     slogdet returns always a finite number if the lowest EV is not EXACTLY 0
-    because of numerical inaccuracies we want to avoid that behaviour but also avoid overflows
+    because of numerical inaccuracies we want to return inf if smallest eigenvalue is below threshold t
     """
     D = np.linalg.eigvalsh(A)
     if D.min() <= t:
-        print("WARNING: EBIC evaluated at non-positive definite matrix")
         return -np.inf
     else:
         l = np.linalg.slogdet(A)
