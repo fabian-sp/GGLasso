@@ -101,7 +101,7 @@ for k in range(K):
 
 reg = 'GGL'
 
-P = glasso_problem(S = S, N = num_samples, reg = "GGL", reg_params = None, latent = True, G = G, do_scaling = True)
+P = glasso_problem(S = S, N = N, reg = "GGL", reg_params = None, latent = True, G = G, do_scaling = True)
 print(P)
 
 #%%
@@ -109,7 +109,7 @@ print(P)
 # ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 # Set the regularization parameter grids and do model selection.
 
-l1 =    np.logspace(1,-1,5)
+l1 =    np.logspace(0,-2,7)
 mu1 =   np.logspace(1,-1,3)
 l2 =    np.logspace(0,-2,4)
 

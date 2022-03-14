@@ -4,7 +4,7 @@ author: Fabian Schaipp
 
 import numpy as np
 
-from .basic_linalg import Sdot, adjacency_matrix
+from .basic_linalg import Sdot
 from .utils import mean_sparsity, sparsity
 
 from .utils import get_K_identity as id_array
@@ -12,18 +12,20 @@ from .ext_admm_helper import get_K_identity as id_dict
 from ..solver.single_admm_solver import ADMM_SGL, block_SGL
 
 
+# default parameters
+DEFAULT_GAMMAS = [0.1, 0.3, 0.5, 0.7]
+TAU_MIN = 1e-12
+N_TAU = 20
       
 def lambda_parametrizer(l1 = 0.05, w2 = 0.5):
     """transforms given l1 and w2 into the respective l2"""
     a = 1/np.sqrt(2)
     l2 = (w2*l1)/(a*(1-w2))
-
     return l2
 
 def map_l_to_w(l1, l2):
     w1 = l1 + (1/np.sqrt(2)) *l2
-    w2 = l2/(w1*np.sqrt(2))
-    
+    w2 = l2/(w1*np.sqrt(2))   
     return (w1,w2)
     
 def lambda_grid(l1, l2 = None, w2 = None):
@@ -45,7 +47,7 @@ def lambda_grid(l1, l2 = None, w2 = None):
     return L1.squeeze(), L2.squeeze(), w2
 
 def grid_search(solver, S, N, p, reg, l1, l2 = None, w2 = None, method= 'eBIC', gamma = 0.3, \
-                G = None, latent = False, mu_range = None, ix_mu = None, tol = 1e-7, rtol = 1e-7, verbose = False):
+                G = None, latent = False, mu_range = None, ix_mu = None, thresholding = False, tol = 1e-7, rtol = 1e-7, verbose = False):
     """
     method for doing model selection for MGL problems using grid search and AIC/eBIC
     parameters to select: lambda1 (sparsity), lambda2 (group sparsity or total variation)
@@ -57,7 +59,7 @@ def grid_search(solver, S, N, p, reg, l1, l2 = None, w2 = None, method= 'eBIC', 
     Parameters
     ----------
     solver : solver method 
-        DESCRIPTION.
+        ``ADMM_MGL`` or ``ext_ADMM_MGL``.
     S : array of shape (K,p,p) or dict
         empirical covariance matrices.
     N : array
@@ -86,10 +88,12 @@ def grid_search(solver, S, N, p, reg, l1, l2 = None, w2 = None, method= 'eBIC', 
     ix_mu : array, optional
         shape (K,len(l1)). Indices for each element of l1 and each instance k which mu to choose from mu_range.
         Only needed when latent=True. Is computed by K_single_grid-method.
+    thresholding : boolean, optional
+        whether to tune a thresholded estimator for each (lambda1,lambda2) pair. See https://arxiv.org/pdf/2104.06389v1.pdf for details.
     tol : float, positive, optional
-            Tolerance for the primal residual used for the solver at each grid point. The default is 1e-7.
+        Tolerance for the primal residual used for the solver at each grid point. The default is 1e-7.
     rtol : float, positive, optional
-            Tolerance for the dual residual used for the solver at each grid point. The default is 1e-7.
+        Tolerance for the dual residual used for the solver at each grid point. The default is 1e-7.
     verbose : boolean, optional
         verbosity. The default is False.
 
@@ -107,58 +111,71 @@ def grid_search(solver, S, N, p, reg, l1, l2 = None, w2 = None, method= 'eBIC', 
     assert method in ['AIC', 'eBIC']
     assert reg in ['FGL', 'GGL']
     
+    if type(S) == dict:
+        K = len(S.keys())
+    elif type(S) == np.ndarray:
+        K = S.shape[0]
+        
+    assert len(N) == K, f"N must be given as array, is given as {N}."
+    
     if latent:
         assert np.all(mu_range > 0)
-    
-
+      
     L1, L2, W2 = lambda_grid(l1, l2, w2)
     
     if verbose:
+        print("Grid of lambda1/lambda2:")
         print(L1)
         print(L2)
     
     grid1 = L1.shape[0]; grid2 = L2.shape[1]
-    AIC = np.zeros((grid1, grid2))
-    AIC[:] = np.nan
+    AIC = np.nan*np.zeros((grid1, grid2))
     
-    gammas = [0.1, 0.3, 0.5, 0.7]
+    # use default gammas plus the one for eBIC selection
+    gammas = DEFAULT_GAMMAS
     gammas.append(gamma)
     gammas = list(set(gammas))
      
     BIC = dict()
     for g in gammas:
-        BIC[g] = np.zeros((grid1, grid2))
-        BIC[g][:] = np.nan
+        BIC[g] = np.nan*np.zeros((grid1, grid2))
         
-    SP = np.zeros((grid1, grid2))
-    SP[:] = np.nan
+    SP = np.nan*np.zeros((grid1, grid2))
     #SKIP = np.zeros((grid1, grid2), dtype = bool)
+    RANK = np.nan*np.zeros((K, grid1, grid2))
     
+    if thresholding:
+        TAU = np.zeros((K, grid1, grid2))
+    else:
+        TAU = None
     
+    # solver kwargs
     kwargs = {'reg': reg, 'S': S, 'tol': tol, 'rtol': rtol, 'verbose': False, 'measure': False}
     if type(S) == dict:
-        K = len(S.keys())
         Omega_0 = id_dict(p)
         kwargs['G'] = G
     elif type(S) == np.ndarray:
-        K = S.shape[0]
         Omega_0 = id_array(K,p)
         
     kwargs['Omega_0'] = Omega_0.copy()
     
-    RANK = np.zeros((K, grid1, grid2))
     
     curr_min = np.inf
     curr_best = None
-    # run down the columns --> hence move g1 fastest
+    
+    if thresholding:
+        _no_thr_curr_min = np.inf
+        _no_thr_best_params = None
+        _no_thr_curr_best = None # store also the best solution before thresholding
+            
+    #==================================================
+    # MAIN LOOP
+    #
+    # run down the columns --> move g1 fastest
     # g2 indices the values in l1
     for g2 in np.arange(grid2):
         for g1 in np.arange(grid1):
       
-            if verbose:
-                print("Current grid point: ", (L1[g1,g2],L2[g1,g2]) )
-            
-            
             # set lambda1 and lambda2
             kwargs['lambda1'] = L1[g1,g2]  
             kwargs['lambda2'] = L2[g1,g2]
@@ -168,74 +185,83 @@ def grid_search(solver, S, N, p, reg, l1, l2 = None, w2 = None, method= 'eBIC', 
                 this_mu = mu_range[ix_mu[:,g2]]
                 kwargs['latent'] = True
                 kwargs['mu1'] = this_mu.copy()
-                if verbose:
-                    print("MU values", kwargs['mu1'])
+                #print("MU values", kwargs['mu1'])
                 
             # solve
             sol, info = solver(**kwargs)
-            Omega_sol = sol['Omega']
-            Theta_sol = sol['Theta']
+            # warm start
+            kwargs['Omega_0'] = sol['Omega'].copy()
+            
+            # thresholding
+            if thresholding:
+                # store also the best solution without solution
+                _no_thr_this_score = ebic(S, sol['Theta'], N, gamma = gamma)
+                if  _no_thr_this_score < _no_thr_curr_min:
+                    _no_thr_best_params = {'lambda1': L1[g1,g2], 'lambda2':L2[g1,g2]}
+                    _no_thr_curr_min = _no_thr_this_score
+                    _no_thr_curr_best = sol.copy()
+                
+                # now tune threshold
+                sol['Theta'], opt_tau, _ = tune_multiple_threshold(sol['Theta'], S, N, tau_range = None,\
+                                                                   method = method, gamma = gamma)
+                TAU[:,g1,g2] = opt_tau
+            
+            #########################################         
+            # store diagnostics
+            AIC[g1,g2] = aic(S, sol['Theta'], N)
+            for g in gammas:
+                BIC[g][g1,g2] = ebic(S, sol['Theta'], N, gamma = g)
             
             if latent:
                 RANK[:,g1,g2] = [np.linalg.matrix_rank(sol['L'][k]) for k in np.arange(K)]
-                
-
             
-            # warm start
-            kwargs['Omega_0'] = Omega_sol.copy()
-            
-                
-            # store diagnostics
-            AIC[g1,g2] = aic(S, Theta_sol, N)
-            for g in gammas:
-                BIC[g][g1,g2] = ebic(S, Theta_sol, N, gamma = g)
-                
-            SP[g1,g2] = mean_sparsity(Theta_sol)
-                
-            if verbose:
-                print("Current eBIC grid:")
-                print(BIC[gamma])
-                print("Current Sparsity grid:")
-                print(SP)
-            
+            SP[g1,g2] = mean_sparsity(sol['Theta'])
+                        
             # new best point found
             if method == 'eBIC':
                 if BIC[gamma][g1,g2] < curr_min:
-                    print("----------New optimum found in the grid----------")
                     curr_min = BIC[gamma][g1,g2]
                     curr_best = sol.copy()
             elif method == 'AIC':
                  if AIC[g1,g2] < curr_min:
-                    print("----------New optimum found in the grid----------")
                     curr_min = AIC[g1,g2]
                     curr_best = sol.copy()
         
+            if verbose:
+                print(f"Grid point: (l1,l2): {(L1[g1,g2],L2[g1,g2])}, sparsity: {np.round(SP[g1,g2],3)}, best score: {np.round(curr_min,1)}")
+            
     # get optimal lambda
     if method == 'AIC':
         AIC[AIC==-np.inf] = np.nan
-        ix= np.unravel_index(np.nanargmin(AIC), AIC.shape)
-    
+        ix= np.unravel_index(np.nanargmin(AIC), AIC.shape)   
     elif method == 'eBIC':    
         for g in gammas:
-            BIC[g][BIC[g]==-np.inf] = np.nan
-            
+            BIC[g][BIC[g]==-np.inf] = np.nan            
         ix= np.unravel_index(np.nanargmin(BIC[gamma]), BIC[gamma].shape)
+    
+    if verbose:
+        print(f"Best regularization parameters: (l1,l2): {(L1[ix],L2[ix])}")
         
-    stats = {'BIC': BIC, 'AIC': AIC, 'SP': SP, 'RANK': RANK, 'L1': L1, 'L2': L2, \
+    stats = {'BIC': BIC, 'AIC': AIC, 'SP': SP, 'RANK': RANK, 'TAU': TAU, 'L1': L1, 'L2': L2, \
              'BEST': {'lambda1': L1[ix], 'lambda2': L2[ix]}, 'GAMMA': gammas}
+    
+    if thresholding:
+        stats['NO_THRESHOLDING_SOL'] = _no_thr_curr_best
+        stats['NO_THRESHOLDING_BEST'] = _no_thr_best_params
     
     return stats, ix, curr_best
 
 def K_single_grid(S, lambda_range, N, method = 'eBIC', gamma = 0.3, latent = False, mu_range = None,\
-                  use_block = True, store_all = True, tol = 1e-7, rtol = 1e-7):
+                  thresholding = False, use_block = True, store_all = True, tol = 1e-7, rtol = 1e-7):
     """
     method for doing model selection for K single Graphical Lasso problems, using grid search and AIC/eBIC
     parameters to select: lambda1 (sparsity), mu1 (lowrank, if latent=True)
     
     A grid search on lambda1/mu1 is run on each instance independently.
-    It returns two estimates:
+    It returns 
         1) est_indv: choosing optimal lambda1/mu1 pair for each k=1,..,K independently
-        2) est_uniform: choosing optimal lambda1 for all k=1,..,K uniformly and the respective optimal mu1 for each k=1,..,K independently
+        2) est_uniform: Only if ``store_all = True``. Choosing optimal lambda1 for all k=1,..,K uniformly and the respective optimal mu1 for each k=1,..,K independently.
+                        Caution as you might run into memory issues.
 
     Parameters
     ----------
@@ -253,10 +279,12 @@ def K_single_grid(S, lambda_range, N, method = 'eBIC', gamma = 0.3, latent = Fal
         whether to model latent variables or not. The default is False.
     mu_range : array, optional
         grid values for mu1. Only needed when latent=True.
+    thresholding : boolean, optional
+        whether to tune a thresholded estimator for each (lambda1,mu1) pair. See https://arxiv.org/pdf/2104.06389v1.pdf for details.
     use_block : boolean, optional
         whether to use ADMM on each connected component. Typically, for large and sparse graphs, this is a speedup. Only possible for latent=False.
     store_all : boolean, optional
-        If you want to compute est_indv and est_uniform, set to True. When only best mu for each k=1,..,K and lambda1 is needed, can be set to False. The default is False.
+        If you want to compute est_uniform, set to True. When only best mu for each k=1,..,K and lambda1 is needed, can be set to False. The default is True.
     tol : float, positive, optional
         Tolerance for the primal residual used for the solver at each grid point. The default is 1e-7.
     rtol : float, positive, optional
@@ -265,7 +293,7 @@ def K_single_grid(S, lambda_range, N, method = 'eBIC', gamma = 0.3, latent = Fal
 
     Returns
     -------
-    est_uniform : dict
+    est_uniform : dict (or None)
         uniformly chosen best grid point (see above for details)
     est_indv : dict
         individually chosen best grid point
@@ -280,41 +308,42 @@ def K_single_grid(S, lambda_range, N, method = 'eBIC', gamma = 0.3, latent = Fal
     elif type(S) == np.ndarray:
         K = S.shape[0]
         
-    if type(N) == int:
-        N = N * np.ones(K)
+    assert len(N) == K, f"N must be given as array, is given as {N}."
         
     if latent:
         assert mu_range is not None
-        M = len(mu_range)
+        _M = len(mu_range)
     else:
         mu_range = np.array([0])
-        M = 1
+        _M = 1
     
-    L = len(lambda_range)
+    _L = len(lambda_range)
     
     # create grid for stats, if latent = False MU is array of zeros
     MU, LAMB = np.meshgrid(mu_range, lambda_range)
     
-    gammas = [0.1, 0.3, 0.5, 0.7]
+    gammas = DEFAULT_GAMMAS
     gammas.append(gamma)
     gammas = list(set(gammas))
     
     BIC = dict()
     for g in gammas:
-        BIC[g] = np.zeros((K, L, M))
-        BIC[g][:] = np.nan
-    
-    AIC = np.zeros((K, L, M))
-    AIC[:] = np.nan
-    
-    SP = np.zeros((K, L, M))
-    SP[:] = np.nan
-    
-    RANK = np.zeros((K,L,M))
+        BIC[g] = np.nan*np.zeros((K,_L,_M))
+        
+    AIC = np.nan*np.zeros((K,_L,_M))
+    SP = np.nan*np.zeros((K,_L,_M))
+    RANK = np.zeros((K,_L,_M))
     
     estimates = dict()
     lowrank = dict()
-     
+    est_indv = dict()
+    est_indv['Theta'] = dict()
+    if latent: 
+        est_indv['L'] = dict()
+    
+    ###########################################
+    # MAIN LOOP
+    ###########################################
     for k in np.arange(K):
         print(f"------------Range search for instance {k}------------")
         
@@ -324,8 +353,14 @@ def K_single_grid(S, lambda_range, N, method = 'eBIC', gamma = 0.3, latent = Fal
             S_k = S[k,:,:].copy()
         
         best, est_k, lr_k, stats_k = single_grid_search(S = S_k, lambda_range = lambda_range, N = N[k], method = method, gamma = gamma, \
-                                                             latent = latent, mu_range = mu_range,\
-                                                             use_block = use_block, store_all = store_all, tol = tol, rtol = rtol)
+                                                        latent = latent, mu_range = mu_range, thresholding = thresholding,\
+                                                        use_block = use_block, store_all = store_all, tol = tol, rtol = rtol)
+        
+        #store best individual estimator
+        est_indv['Theta'][k] = best['Theta'].copy() 
+        if latent:
+            est_indv['L'][k] = best['L'].copy()
+        
         if store_all:
             estimates[k] = est_k.copy()
             lowrank[k] = lr_k.copy()
@@ -335,81 +370,64 @@ def K_single_grid(S, lambda_range, N, method = 'eBIC', gamma = 0.3, latent = Fal
         AIC[k,:,:] = stats_k['AIC'].copy()
         SP[k,:,:] = stats_k['SP'].copy()
         RANK[k,:,:] = stats_k['RANK'].copy()
-        
-    # get optimal low rank for each lambda
-    tmpBIC = dict()
-    for g in gammas:
-        tmpBIC[g] = np.zeros((K,L))
-        tmpBIC[g][:] = np.nan
     
-    tmpAIC = np.zeros((K, L))
-    tmpAIC[:] = np.nan
-                
-    ix_mu = np.zeros((K,L), dtype = int)
+    ###########################################
+    # get optimal low rank for each lambda
+    tmpSCORE = np.zeros((K,_L))
+    tmpSCORE[:] = np.nan
+
+    ix_mu = np.zeros((K,_L), dtype = int)
     # for each lambda, get optimal mu
     for k in np.arange(K):
-        for j in np.arange(L):
-            
+        for j in np.arange(_L):       
             if method == 'AIC':
-                ix_mu[k,j] = np.nanargmin(AIC[k,j,:])
-                
+                ix_mu[k,j] = np.nanargmin(AIC[k,j,:])     
+                tmpSCORE[k,j] = AIC[k,j,ix_mu[k,j]]
             elif method == 'eBIC':
                 ix_mu[k,j] = np.nanargmin(BIC[gamma][k,j,:])
-                
-            tmpAIC[k,j] = AIC[k,j,ix_mu[k,j]]
-            
-            for g in gammas:
-                tmpBIC[g][k,j] = BIC[g][k,j,ix_mu[k,j]]
+                tmpSCORE[k,j] = BIC[gamma][k,j,ix_mu[k,j]]
     
     # get optimal lambda (uniform over k=1,..,K and individual)
-    if method == 'AIC':
-        tmpAIC[tmpAIC==-np.inf] = np.nan
-        ix_uniform = np.nanargmin(tmpAIC.sum(axis=0))
-        ix_indv = np.nanargmin(tmpAIC, axis = 1)
-        
-    elif method == 'eBIC':    
-        for g in gammas:
-            tmpBIC[g][tmpBIC[g]==-np.inf] = np.nan
-        ix_uniform = np.nanargmin(tmpBIC[gamma].sum(axis=0))
-        ix_indv = np.nanargmin(tmpBIC[gamma], axis = 1)
-
-    # create the two alternative estimators
+    tmpSCORE[tmpSCORE==-np.inf] = np.nan
+    ix_uniform = np.nanargmin(tmpSCORE.sum(axis=0))
+    ix_indv = np.nanargmin(tmpSCORE, axis = 1)
+         
+    # stack in case of array
+    if type(S) == np.ndarray:
+        est_indv['Theta'] = np.stack([e for e in est_indv['Theta'].values()])
+        if latent:
+            est_indv['L'] = np.stack([e for e in est_indv['L'].values()])
+    
+    ###########################################
+    # create est_uniform
     if store_all:          
         est_uniform = dict()
-        est_indv = dict()
         est_uniform['Theta'] = dict()
-        est_indv['Theta'] = dict()
-        if latent:
+        if latent: 
             est_uniform['L'] = dict()
-            est_indv['L'] = dict()
-            
-        for k in np.arange(K):       
-            est_uniform['Theta'][k] = estimates[k][ix_uniform, ix_mu[k,ix_uniform] , :,:]
-            est_indv['Theta'][k] = estimates[k][ix_indv[k], ix_mu[k,ix_indv[k]], :, :]
-            
+        
+        for k in np.arange(K):  
+            est_uniform['Theta'][k] = estimates[k][ix_uniform, ix_mu[k,ix_uniform] , :,:]           
             if latent:
                 est_uniform['L'][k] = lowrank[k][ix_uniform, ix_mu[k,ix_uniform] , :,:]
-                est_indv['L'][k] = lowrank[k][ix_indv[k], ix_mu[k,ix_indv[k]], :, :]
                    
         if type(S) == np.ndarray:
-            est_indv['Theta'] = np.stack([e for e in est_indv['Theta'].values()])
             est_uniform['Theta'] = np.stack([e for e in est_uniform['Theta'].values()])
             if latent:
-                est_indv['L'] = np.stack([e for e in est_indv['L'].values()])
                 est_uniform['L'] = np.stack([e for e in est_uniform['L'].values()])
     else:
         est_uniform = None
-        est_indv = None
         
     statistics = {'BIC': BIC[gamma], 'AIC': AIC, 'SP': SP, 'RANK': RANK, \
                   'LAMB': LAMB, 'MU': MU,\
                   'ix_uniform': ix_uniform, 'ix_indv': ix_indv, 'ix_mu': ix_mu}
     
+            
     return est_uniform, est_indv, statistics
 
 
 def single_grid_search(S, lambda_range, N, method = 'eBIC', gamma = 0.3, latent = False, mu_range = None,\
-                       use_block = True, store_all = True, tol = 1e-7, rtol = 1e-7):
+                       thresholding = False, use_block = True, store_all = True, tol = 1e-7, rtol = 1e-7):
     """
     method for model selection for SGL problem, doing grid search and selection via eBIC or AIC
 
@@ -429,6 +447,8 @@ def single_grid_search(S, lambda_range, N, method = 'eBIC', gamma = 0.3, latent 
         whether to model latent variables or not. The default is False.  
     mu_range : array, optional
         range of mu1 values (low rank regularization parameter). Only needed when latent = True.
+    thresholding : boolean, optional
+        whether to tune a thresholded estimator for each (lambda1,mu1) pair. See https://arxiv.org/pdf/2104.06389v1.pdf for details.
     use_block : boolean, optional
         whether to use ADMM on each connected component. Typically, for large and sparse graphs, this is a speedup. Only possible for latent=False.
     store_all : boolean, optional
@@ -455,14 +475,14 @@ def single_grid_search(S, lambda_range, N, method = 'eBIC', gamma = 0.3, latent 
     
     if latent:
         assert mu_range is not None
-        M = len(mu_range)
+        _M = len(mu_range)
     else:
         mu_range = np.array([0])
-        M = 1
+        _M = 1
        
-    L = len(lambda_range)
+    _L = len(lambda_range)
     
-    gammas = [0.1, 0.3, 0.5, 0.7]
+    gammas = DEFAULT_GAMMAS
     gammas.append(gamma)
     gammas = list(set(gammas))
     
@@ -471,23 +491,23 @@ def single_grid_search(S, lambda_range, N, method = 'eBIC', gamma = 0.3, latent 
         
     BIC = dict()
     for g in gammas:
-        BIC[g] = np.zeros((L, M))
-        BIC[g][:] = np.nan
+        BIC[g] = np.nan*np.zeros((_L, _M))
+        
+    AIC = np.nan*np.zeros((_L, _M))
+    SP = np.nan*np.zeros((_L, _M))
+    RANK = np.zeros((_L,_M))
     
-    AIC = np.zeros((L, M))
-    AIC[:] = np.inf
-    
-    SP = np.zeros((L, M))
-    SP[:] = np.inf
-    
-    RANK = np.zeros((L,M))
+    if thresholding:
+        TAU = np.zeros((_L, _M))
+    else:
+        TAU = None
     
     kwargs = {'S': S, 'Omega_0': np.eye(p), 'X_0': np.eye(p), 'tol': tol, 'rtol': rtol,\
               'verbose': False, 'measure': False}
     
     if store_all:
-        estimates = np.zeros((L,M,p,p))
-        lowrank = np.zeros((L,M,p,p))
+        estimates = np.zeros((_L,_M,p,p))
+        lowrank = np.zeros((_L,_M,p,p))
     else:
         estimates = None
         lowrank = None
@@ -496,10 +516,10 @@ def single_grid_search(S, lambda_range, N, method = 'eBIC', gamma = 0.3, latent 
     curr_min = np.inf
     
     # start range search
-    for j in np.arange(L):
+    for j in np.arange(_L):
         kwargs['lambda1'] = lambda_range[j]
         
-        for m in np.arange(M):
+        for m in np.arange(_M):
             if latent:
                 kwargs['mu1'] = mu_range[m]
                 kwargs['latent'] = True
@@ -508,27 +528,29 @@ def single_grid_search(S, lambda_range, N, method = 'eBIC', gamma = 0.3, latent 
                 sol = block_SGL(**kwargs)
             else:
                 sol, _ = ADMM_SGL(**kwargs)
-            
-            Theta_sol = sol['Theta'].copy()
-            
-            if store_all:
-                estimates[j,m,:,:] = Theta_sol.copy()
+                        
+            kwargs['Omega_0'] = sol['Omega'].copy() # warm start
+            # as X is scaled with rho, warm starting the dual variables can go wrong when rho is adapted
             
             if latent:
                 if store_all:
                     lowrank[j,m,:,:] = sol['L'].copy()
                 RANK[j,m] = np.linalg.matrix_rank(sol['L'])
             
-            # warm start
-            kwargs['Omega_0'] = sol['Omega'].copy()
-            # as X is scaled with rho, warm starting the dual variables can go wrong when rho is adapted
-            
-            
-            AIC[j,m] = aic_single(S, Theta_sol, N)
+            # tune optimal threshold, changes sol['Theta']
+            if thresholding:
+                sol['Theta'], opt_tau, _ = tune_threshold(sol['Theta'], S, N,\
+                                                          tau_range = None, method = method, gamma = gamma)
+                TAU[j,m] = opt_tau
+             
+            AIC[j,m] = aic_single(S, sol['Theta'], N)
             for g in gammas:
-                BIC[g][j, m] = ebic_single(S, Theta_sol, N, gamma = g)
+                BIC[g][j, m] = ebic_single(S, sol['Theta'], N, gamma = g)
             
-            SP[j,m] = sparsity(Theta_sol)
+            SP[j,m] = sparsity(sol['Theta'])
+            
+            if store_all:
+                estimates[j,m,:,:] = sol['Theta'].copy()
             
             # new best point found
             if method == 'eBIC':
@@ -550,15 +572,74 @@ def single_grid_search(S, lambda_range, N, method = 'eBIC', gamma = 0.3, latent 
     elif method == 'eBIC':        
         ix = np.unravel_index(np.nanargmin(BIC[gamma]), BIC[gamma].shape)
         
-        
-    # best_sol['Theta'] = estimates[ix]
-    # if latent:
-    #     best_sol['L'] = lowrank[ix]
     
-    stats = {'BIC': BIC, 'AIC': AIC, 'SP': SP, 'RANK': RANK, 'LAMBDA': LAMB, 'MU': MU, \
+    stats = {'BIC': BIC, 'AIC': AIC, 'SP': SP, 'RANK': RANK, 'LAMBDA': LAMB, 'MU': MU, 'TAU': TAU,\
              'BEST': {'lambda1': LAMB[ix], 'mu1': MU[ix]}, 'GAMMA': gammas}
             
     return best_sol, estimates, lowrank, stats
+
+#######################################
+## THRESHOLDING
+#######################################
+
+def thresholding(A, tau):
+    """
+    thresholding array A by tau
+    """
+    mask = (np.abs(A) > tau)
+    np.fill_diagonal(mask,1.) # dont threshold on diagonal
+       
+    return A*mask
+
+def tune_threshold(Theta, S, N, tau_range = None, method = 'eBIC', gamma = 0.1):
+    """
+    Pick the best threshold for 2d-array according to eBIC or AIC.
+    """
+    if tau_range is None:
+        # diagonal is upper bound as this would make Theta indefinite.                   
+        #tau_range = np.linspace(TAU_MIN, np.diag(Theta).min()*0.9, N_TAU) 
+        tau_range = np.logspace(-12,-1,N_TAU)
+        
+    assert np.all(tau_range > 0)
+
+    scores = np.zeros(len(tau_range))
+    
+    for j in range(len(tau_range)):
+        tau = tau_range[j]
+        if method == 'eBIC':
+            E = ebic(S, thresholding(Theta, tau), N, gamma = gamma)
+        elif method == 'AIC':
+            E = aic(S, thresholding(Theta, tau), N)
+        scores[j] = E
+        
+    scores[scores==np.inf] = np.nan
+    
+    opt_ix = np.nanargmin(scores)
+    opt_tau = tau_range[opt_ix]
+    
+    t_Theta = thresholding(Theta, opt_tau)
+    return t_Theta, opt_tau, scores
+
+def tune_multiple_threshold(Theta, S, N, tau_range, method = 'eBIC', gamma = 0.1):
+    """
+    Pick the best threshold for 3d-array or dict according to eBIC or AIC. 
+    """
+    if type(S) == dict:
+        K = len(S.keys())
+    elif type(S) == np.ndarray:
+        K = S.shape[0]
+    
+    t_Theta = Theta.copy()
+    score = dict()
+    tau = np.zeros(K)
+    
+    for k in np.arange(K):
+        Th_k, tau_k, scores_k = tune_threshold(Theta[k], S[k], N[k], tau_range, method, gamma)
+        score[k] = scores_k
+        tau[k] = tau_k
+        t_Theta[k] = Th_k
+    
+    return t_Theta, tau, score
 
 ################################################################
 ## CRITERIA AIC/EBIC
@@ -588,7 +669,7 @@ def aic_dict(S, Theta, N):
     """
     K = len(S.keys())
     
-    if isinstance(N, (int,float)):
+    if isinstance(N, (int,float,np.integer,np.float)):
         N = np.ones(K) * N
         
     aic = 0
@@ -599,7 +680,7 @@ def aic_dict(S, Theta, N):
 def aic_array(S,Theta, N):
     (K,p,p) = S.shape
     
-    if isinstance(N, (int,float)):
+    if isinstance(N, (int,float,np.integer,np.float)):
         N = np.ones(K) * N
     
     aic = 0
@@ -610,10 +691,11 @@ def aic_array(S,Theta, N):
 
 def aic_single(S, Theta, N):
     (p,p) = S.shape
-    assert isinstance(N, (int,float))
+    assert isinstance(N, (int,float,np.integer,np.float))
         
-    A = adjacency_matrix(Theta, t=1e-5)
-    aic = N*Sdot(S, Theta) - N*robust_logdet(Theta) + A.sum()
+    # count upper diagonal non-zero entries
+    E = (np.count_nonzero(Theta) - p)/2
+    aic = N*Sdot(S, Theta) - N*robust_logdet(Theta) + E
     
     return aic
 
@@ -637,17 +719,17 @@ def ebic(S, Theta, N, gamma = 0.5):
 
 def ebic_single(S, Theta, N, gamma):
     (p,p) = S.shape
-    assert isinstance(N, (int,float))
+    assert isinstance(N, (int,float,np.integer,np.float))
     
-    A = adjacency_matrix(Theta, t=1e-5)
-    bic = N*Sdot(S, Theta) - N*robust_logdet(Theta) + A.sum()/2 * (np.log(N)+ 4*np.log(p)*gamma)
+    # count upper diagonal non-zero entries
+    E = (np.count_nonzero(Theta) - p)/2
+    bic = N*Sdot(S, Theta) - N*robust_logdet(Theta) + E*(np.log(N)+ 4*np.log(p)*gamma)
     
     return bic
 
 def ebic_array(S, Theta, N, gamma):
-    (K,p,p) = S.shape
-    
-    if isinstance(N, (int,float)):
+    (K,p,p) = S.shape   
+    if isinstance(N, (int,float,np.integer,np.float)):
         N = np.ones(K) * N
         
     bic = 0
@@ -660,9 +742,8 @@ def ebic_dict(S, Theta, N, gamma):
     S, Theta are dictionaries
     N is array of sample sizes
     """
-    K = len(S.keys())
-    
-    if isinstance(N, (int,float)):
+    K = len(S.keys())   
+    if isinstance(N, (int,float,np.integer,np.float)):
         N = np.ones(K) * N
     
     bic = 0
@@ -671,14 +752,13 @@ def ebic_dict(S, Theta, N, gamma):
         
     return bic
         
-def robust_logdet(A, t=1e-6):
+def robust_logdet(A, t=1e-12):
     """
     slogdet returns always a finite number if the lowest EV is not EXACTLY 0
-    because of numerical inaccuracies we want to avoid that behaviour but also avoid overflows
+    because of numerical inaccuracies we want to return inf if smallest eigenvalue is below threshold t
     """
-    D,Q = np.linalg.eigh(A)
+    D = np.linalg.eigvalsh(A)
     if D.min() <= t:
-        print("WARNING: solution may not be positive definite")
         return -np.inf
     else:
         l = np.linalg.slogdet(A)

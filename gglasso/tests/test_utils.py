@@ -3,7 +3,7 @@ author: Fabian Schaipp
 """
 import numpy as np
 import pandas as pd
-from numpy.testing import assert_array_almost_equal
+from numpy.testing import assert_array_almost_equal, assert_almost_equal
 
 from gglasso.helper.utils import hamming_distance, sparsity, mean_sparsity, deviation, get_K_identity
 from gglasso.helper.utils import zero_replacement, normalize, log_transform
@@ -24,28 +24,30 @@ def test_lambda_w_map():
     return 
 
 def test_sparsity_id():
-    
     I = np.eye(100)
     assert sparsity(I) == 0
     
     return
 
-def test_sparsity_K_id():
+def test_sparsity_small():    
+    I = np.ones((20,20))*1e-18
+    assert_almost_equal(sparsity(I), 1.)
     
+    return
+
+def test_sparsity_K_id():
     I = get_K_identity(10, 100)
     assert mean_sparsity(I) == 0
     
     return
 
 def test_sparsity_K_id_dict():
-    
     I = id_dict(100*np.ones(5, dtype = int))
     assert mean_sparsity(I) == 0
     
     return
 
 def test_deviation_K_id():
-    
     I = np.ones((5,10,10))
     assert np.all(deviation(I) == 0)
     

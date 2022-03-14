@@ -137,7 +137,7 @@ class glasso_problem:
         self.conforming = False
         self.multiple = False
         
-        assert isinstance(self.N, (int,float, np.ndarray)), "N must be either of type float, int or np.ndarray."
+        assert isinstance(self.N, (int,float,np.integer,np.float,np.ndarray)), "N must be either of type float, int or np.ndarray."
          
         if type(self.S) == np.ndarray:
             
@@ -146,7 +146,7 @@ class glasso_problem:
                 self.multiple = True
                 self._check_covariance_3d() # sets self.K, self.p
                 
-                if isinstance(self.N, (int,float)):
+                if isinstance(self.N, (int,float,np.integer,np.float)):
                     self.N = self.N * np.ones(self.K)
                      
             else:
@@ -154,7 +154,7 @@ class glasso_problem:
                 self.conforming = True
                 self._check_covariance_2d()
                 
-                assert isinstance(self.N, (int,float)), "For SGL problems, N needs to be a single number, float or int."
+                assert isinstance(self.N, (int,float,np.integer,np.float)), "For SGL problems, N needs to be a single number, float or int."
                 
         elif type(self.S) == list or type(self.S) == dict:
             
@@ -165,8 +165,8 @@ class glasso_problem:
             self.multiple = True
             self._check_covariance_list()
             
-            if isinstance(self.N, (int,float)):
-                    self.N = self.N * np.ones(self.K)
+            if isinstance(self.N, (int,float,np.integer,np.float)):
+                self.N = self.N * np.ones(self.K)
                 
             # G is also checked in the solver
             check_G(self.G, self.p)
@@ -227,9 +227,11 @@ class glasso_problem:
     
     def _rescale_to_covariances(self, X, scale):
         """
-        rescales X with the given scale
+        rescales X with X_ij/sqrt(scale_i*scale_j)
         X: object of type like input data S
-        scale: array (or list) with diagonal elements of unscaled input S --> use self._scale
+        scale: array (or list) with diagonal elements of unscaled input S (i.e. covariances) --> use self._scale
+        
+        NOTE: we rescale an *inverse* cov. matrix estimate, thus variances (i.e. scale_i) is in denominator. 
         """
         Y = X.copy()
         if not self.multiple:
@@ -242,13 +244,14 @@ class glasso_problem:
     
     def _scale_input_to_correlation(self):
         """
-        scales input data S by diagonal elements 
-        scale factors are stored in self._scale for rescaling later
+        scales input data S from covariances to correlations, i.e. by 1/sqrt(diag) 
+        Scaling factors are stored in self._scale for possible rescaling
         
         NOTE: this overwrites self.S!
         """
         
-        print("NOTE: input data S is rescaled with the diagonal elements, this has impact on the scale of the regularization parameters!")
+        warnings.warn("NOTE: Input data S is rescaled to correlations, this has impact on the scale of the regularization parameters!")
+        warnings.warn("The output/solution is not rescaled automatically, you can rescale by self._rescale_to_covariances(X, self._scale).")
         
         if not self.multiple:
             self._scale = np.diag(self.S)
@@ -267,17 +270,20 @@ class glasso_problem:
     def _default_reg_params(self):
         reg_params_default = dict()
         
-        reg_params_default['lambda1'] = 1e-2
+        reg_params_default['lambda1'] = None
         if self.multiple:
-            reg_params_default['lambda2'] = 1e-2
-        if self.latent:
-            if self.multiple:
-                reg_params_default['mu1'] = 1e-1*np.ones(self.K)
-            else:
-                reg_params_default['mu1'] = 1e-1
-        else:
-            reg_params_default['mu1'] = None
-            
+            reg_params_default['lambda2'] = None
+        # if self.latent:
+        #     reg_params_default['mu1'] = None
+        #     if self.multiple:
+        #         reg_params_default['mu1'] = 1e-1*np.ones(self.K)
+        #     else:
+        #         reg_params_default['mu1'] = 1e-1
+        # else:
+        #     reg_params_default['mu1'] = None
+        
+        reg_params_default['mu1'] = None
+        
         return reg_params_default
     
     def _default_start_point(self):
@@ -327,11 +333,10 @@ class glasso_problem:
             reg_params = dict()
         else:
             assert type(reg_params) == dict
-        
+            
         # when initialized set to default
         if self.reg_params is None:
             self.reg_params = self._default_reg_params()
-        
         
         # update with given input
         # update with empty dict does not change the dictionary
@@ -403,6 +408,7 @@ class glasso_problem:
         """
         
         assert solver in ["admm"], "Currently only the ADMM solver is supported as it is implemented for all cases."
+        assert self.reg_params.get('lambda1') is not None, "Regularization parameters need to be set first (at least lambda1), see function glasso_problem.set_reg_params()"
         
         # if solver == "ppdna":
         #     assert self.multiple,"PPDNA solver is only supported for MULTIPLE Graphical Lassp problems."
@@ -444,11 +450,11 @@ class glasso_problem:
                                          latent = self.latent, mu1 = self.reg_params['mu1'], **self.solver_params)
                 
  
-        # rescale
-        if self.do_scaling:
-            sol['Theta'] = self._rescale_to_covariances(sol['Theta'], self._scale)
-            if self.latent:
-                sol['L'] = self._rescale_to_covariances(sol['L'], self._scale)
+        # rescale (DEACTIVATED)
+        # if self.do_scaling:
+        #     sol['Theta'] = self._rescale_to_covariances(sol['Theta'], self._scale)
+        #     if self.latent:
+        #         sol['L'] = self._rescale_to_covariances(sol['L'], self._scale)
         
             
         # set the computed solution
@@ -468,13 +474,13 @@ class glasso_problem:
     def _default_modelselect_params(self):
         
         params = dict()
-        params['lambda1_range'] = np.logspace(0,-3,5)
+        params['lambda1_range'] = np.logspace(0,-3,10)
         if self.multiple:
             #params['w2_range'] = np.logspace(-1,-3,5)
-            params['lambda2_range'] = np.logspace(-1,-4,4)
+            params['lambda2_range'] = np.logspace(-1,-4,5)
             
         if self.latent:
-            params['mu1_range'] = np.logspace(0,-2,5)
+            params['mu1_range'] = np.logspace(2,-1,10)
         else:
             params['mu1_range'] = None
         
@@ -510,7 +516,7 @@ class glasso_problem:
             
         return
 
-    def model_selection(self, modelselect_params = None, method = 'eBIC', gamma = 0.1, tol = 1e-7, rtol = 1e-7):
+    def model_selection(self, modelselect_params = None, method = 'eBIC', gamma = 0.1, tol = 1e-7, rtol = 1e-7, store_all = False):
         """
         Method for doing model selection, i.e. trying to find the best regularization parameters.
         An instance of ``GGLassoEstimator`` will be created and assigned to ``self.solution``.
@@ -537,7 +543,8 @@ class glasso_problem:
             Tolerance for the primal residual used for the solver at each grid point. The default is 1e-7.
         rtol : float, positive, optional
             Tolerance for the dual residual used for the solver at each grid point. The default is 1e-7.
-        
+        store_all : bool, optional
+            Stores solution at every grid point (for SGL) and computes best estimator with uniform ``lambda1`` for MGL.
         
         Returns
         -------
@@ -553,13 +560,20 @@ class glasso_problem:
         if not np.all(self.modelselect_params['lambda1_range'] == np.sort(self.modelselect_params['lambda1_range'])[::-1]):
             warnings.warn("Ideally the lambda1 range is sorted in descending order, so the grid search is performed from sparse to dense.")
         
+        if store_all:
+            warnings.warn("Setting store_all=True might cause memory issues as the solution is stored at all grid points.")
+        
+        if self.do_scaling and (self.modelselect_params['lambda1_range'].max() > 1):
+            warnings.warn("Using do_scaling=True, you can restrict the range for lambda1 to 1. Larger lambdas will result in the zero solution.")
+            
+            
         ###############################
         # SINGLE GL --> GRID SEARCH lambda1/mu
         ###############################
         if not self.multiple:
-            sol, all_estimates, _, stats = single_grid_search(S = self.S, lambda_range = self.modelselect_params['lambda1_range'], N = self.N, \
-                               method = method, gamma = gamma, latent = self.latent, mu_range = self.modelselect_params['mu1_range'],
-                               use_block = True, store_all = False, tol = tol, rtol = rtol)
+            sol, self._all_theta, self._all_lowrank, stats = single_grid_search(S = self.S, lambda_range = self.modelselect_params['lambda1_range'], N = self.N, \
+                                                                                method = method, gamma = gamma, latent = self.latent, mu_range = self.modelselect_params['mu1_range'],
+                                                                                use_block = True, store_all = store_all, tol = tol, rtol = rtol)
             
             # update the regularization parameters to the best grid point
             self.set_reg_params(stats['BEST'])
@@ -575,14 +589,14 @@ class glasso_problem:
             # LATENT VARIABLES --> FIRST STAGE lambda1/mu1 for each instance
             ############################### 
             if self.latent:
-                est_uniform, est_indv, stage1_statistics = K_single_grid(S = self.S, lambda_range = self.modelselect_params['lambda1_range'], N = self.N, method = method,\
-                                                                  gamma = gamma, latent = self.latent, mu_range = self.modelselect_params['mu1_range'],
-                                                                  use_block = True, store_all = False, tol = tol, rtol= rtol)            
+                self._est_uniform, self._est_indv, stage1_statistics = K_single_grid(S = self.S, lambda_range = self.modelselect_params['lambda1_range'], N = self.N, method = method,\
+                                                                                     gamma = gamma, latent = self.latent, mu_range = self.modelselect_params['mu1_range'],
+                                                                                     use_block = True, store_all = store_all, tol = tol, rtol= rtol)            
                 
                 ix_mu = stage1_statistics['ix_mu']
                 
                 # store results from stage 1 (may be needed to compare Single estimator vs. Joint estimator)
-                self.stage1_stats = stage1_statistics          
+                self._stage1_stats = stage1_statistics          
             else:
                 ix_mu = None
             
@@ -592,9 +606,9 @@ class glasso_problem:
             ############################### 
     
             stats, best_ix, sol = grid_search(solver, S = self.S, N = self.N, p = self.p, reg = self.reg, l1 = self.modelselect_params['lambda1_range'], \
-                                        l2 = self.modelselect_params['lambda2_range'], w2 = None, method= method, gamma = gamma, \
-                                        G = self.G, latent = self.latent, mu_range = self.modelselect_params['mu1_range'], ix_mu = ix_mu, \
-                                        tol = tol, rtol = rtol, verbose = False)
+                                              l2 = self.modelselect_params['lambda2_range'], w2 = None, method= method, gamma = gamma, \
+                                              G = self.G, latent = self.latent, mu_range = self.modelselect_params['mu1_range'], ix_mu = ix_mu, \
+                                              tol = tol, rtol = rtol, verbose = False)
             
             # update the lambda1/lambda2 regularization parameters to the best grid point
             self.set_reg_params(stats['BEST'])
@@ -608,11 +622,11 @@ class glasso_problem:
         # SET SOLUTION AND STORE INFOS
         ###############################
             
-        # rescale
-        if self.do_scaling:
-            sol['Theta'] = self._rescale_to_covariances(sol['Theta'], self._scale)
-            if self.latent:
-                sol['L'] = self._rescale_to_covariances(sol['L'], self._scale)
+        # rescale (DEACTIVATED)
+        # if self.do_scaling:
+        #     sol['Theta'] = self._rescale_to_covariances(sol['Theta'], self._scale)
+        #     if self.latent:
+        #         sol['L'] = self._rescale_to_covariances(sol['L'], self._scale)
             
         # set the computed solution
         if self.latent:
@@ -625,11 +639,7 @@ class glasso_problem:
         
         
         return
-    
-    
-    
-
-    
+        
 #%%
 
 class GGLassoEstimator():

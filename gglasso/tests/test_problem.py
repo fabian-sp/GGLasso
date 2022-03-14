@@ -7,7 +7,7 @@ from numpy.testing import assert_array_almost_equal
 from gglasso.helper.data_generation import time_varying_power_network, group_power_network, sample_covariance_matrix, generate_precision_matrix
 from gglasso.problem import glasso_problem
 from gglasso.helper.ext_admm_helper import construct_trivial_G
-
+from gglasso.helper.basic_linalg import scale_array_by_diagonal
 
 p = 20
 K = 3
@@ -35,7 +35,6 @@ def template_problem_MGL(S, N, reg = 'GGL', latent = False, G = None):
         modelselectparams['mu1_range'] = None
     
     
-    P.solve()
     reg_params = {'lambda1': 0.01, 'lambda2': 0.001}
     if latent:
         reg_params['mu1'] = 1.
@@ -113,8 +112,7 @@ def template_problem_SGL(S, N, latent = False):
     P = glasso_problem(S = S, N = N, reg = None, latent = latent)
     print(P)
     
-    
-    P.solve()
+
     reg_params = {'lambda1': 0.01}
     if latent:
         reg_params['mu1'] = 1.
@@ -123,15 +121,7 @@ def template_problem_SGL(S, N, latent = False):
     P.set_reg_params(reg_params)
     P.solve()
     
-    # test model selection
-    # modelselectparams = dict()
-    # modelselectparams['lambda1_range'] = np.logspace(-3,0,4)
-    
-    # if latent:
-    #     modelselectparams['mu1_range'] = np.logspace(-2,0,4)
-    # else:
-    #     modelselectparams['mu1_range'] = None
-    
+    # test model selection    
     P.model_selection(method = 'AIC')
     P.model_selection(modelselect_params = None, method = 'eBIC', gamma = 0.1)
     
@@ -145,9 +135,10 @@ def test_SGL():
     S, samples = sample_covariance_matrix(Sigma, N, seed = 1234); S = S[0,:,:]  
     P = template_problem_SGL(S, N, latent = False)
     
-    first_row = np.zeros(p); first_row[:2] = np.array([0.02566107, 0.90966557])
+    first_row = np.zeros(p); first_row[:2] = np.array([0.0945606, 0.91819399])
     assert_array_almost_equal(P.solution.precision_[1,:], first_row)
     
+    assert P.reg_params['lambda1'] == 0.1
     return
     
 def test_SGL_latent():
@@ -165,8 +156,8 @@ def test_scaling_SGL():
     # create matrix with ones on diagonal
     np.fill_diagonal(S,1)
     
-    sc = 10.
-    S2 = sc*S
+    sc = 1+np.random.rand(p)*10
+    S2 = scale_array_by_diagonal(S, 1/sc)
     reg_params = {'lambda1': 0.1}
     
     solver_params = {'rho': 1., 'update_rho': False}
@@ -183,7 +174,7 @@ def test_scaling_SGL():
     
     # scaled one has factor 1/sc after rescaling
     Theta = P.solution.precision_
-    Theta2 = sc*P2.solution.precision_
+    Theta2 = P2.solution.precision_
     
     assert np.linalg.norm(Theta - Theta2)/np.linalg.norm(Theta) <= 1e-10
     assert_array_almost_equal(P.solution.adjacency_, P2.solution.adjacency_)
