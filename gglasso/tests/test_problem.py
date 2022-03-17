@@ -172,11 +172,13 @@ def test_scaling_SGL():
     P2.set_reg_params(reg_params)
     P2.solve(tol = 1e-15, rtol = 1e-15, solver_params = solver_params)
     
-    # scaled one has factor 1/sc after rescaling
+    # precision is rescaled with 1/sc
     Theta = P.solution.precision_
     Theta2 = P2.solution.precision_
     
-    assert np.linalg.norm(Theta - Theta2)/np.linalg.norm(Theta) <= 1e-10
+    Theta2 = scale_array_by_diagonal(Theta2, 1/sc) # from covariances to correlations on inverse
+    
+    assert_array_almost_equal(Theta, Theta2, decimal=3)
     assert_array_almost_equal(P.solution.adjacency_, P2.solution.adjacency_)
     
     return

@@ -251,7 +251,7 @@ class glasso_problem:
         """
         
         warnings.warn("NOTE: Input data S is rescaled to correlations, this has impact on the scale of the regularization parameters!")
-        warnings.warn("The output/solution is not rescaled automatically, you can rescale by self._rescale_to_covariances(X, self._scale).")
+        warnings.warn("The output/solution is rescaled to covariances. All model selection output, in particular the optimal regularization parameters in self.reg_params are corresponding to the correlations.")
         
         if not self.multiple:
             self._scale = np.diag(self.S)
@@ -424,7 +424,6 @@ class glasso_problem:
         self.solver_params.update(solver_params)
         self.solver_params["verbose"] = verbose
         
-        #print(self.solver_params.keys())
         #print(f"\n Solve problem with {solver.upper()} solver... \n ")
         
         if not self.multiple:
@@ -450,13 +449,13 @@ class glasso_problem:
                                          latent = self.latent, mu1 = self.reg_params['mu1'], **self.solver_params)
                 
  
-        # rescale (DEACTIVATED)
-        # if self.do_scaling:
-        #     sol['Theta'] = self._rescale_to_covariances(sol['Theta'], self._scale)
-        #     if self.latent:
-        #         sol['L'] = self._rescale_to_covariances(sol['L'], self._scale)
+        # rescale
+        if self.do_scaling:
+            sol['Theta'] = self._rescale_to_covariances(sol['Theta'], self._scale)
+            if self.latent:
+                sol['L'] = self._rescale_to_covariances(sol['L'], self._scale)
         
-            
+                
         # set the computed solution
         if self.latent:
             self.solution._set_solution(Theta = sol['Theta'], L = sol['L'])   
@@ -622,11 +621,11 @@ class glasso_problem:
         # SET SOLUTION AND STORE INFOS
         ###############################
             
-        # rescale (DEACTIVATED)
-        # if self.do_scaling:
-        #     sol['Theta'] = self._rescale_to_covariances(sol['Theta'], self._scale)
-        #     if self.latent:
-        #         sol['L'] = self._rescale_to_covariances(sol['L'], self._scale)
+        # rescale
+        if self.do_scaling:
+            sol['Theta'] = self._rescale_to_covariances(sol['Theta'], self._scale)
+            if self.latent:
+                sol['L'] = self._rescale_to_covariances(sol['L'], self._scale)
             
         # set the computed solution
         if self.latent:
