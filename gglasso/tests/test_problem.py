@@ -178,7 +178,7 @@ def test_scaling_SGL():
     
     Theta2 = scale_array_by_diagonal(Theta2, 1/sc) # from covariances to correlations on inverse
     
-    assert np.linalg.norm(Theta - Theta2)/np.linalg.norm(Theta) <= 1e-10
+    assert_array_almost_equal(Theta, Theta2, decimal=3)
     assert_array_almost_equal(P.solution.adjacency_, P2.solution.adjacency_)
     
     return
