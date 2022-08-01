@@ -31,7 +31,7 @@ def map_l_to_w(l1, l2):
 def lambda_grid(l1, l2 = None, w2 = None):
     """
     l1, l2, w2: values for the grid
-    either l2 or w2 has to be spcified
+    either l2 or w2 has to be specified
     idea: the grid goes from higher to smaller values when going down/right
     """   
     
