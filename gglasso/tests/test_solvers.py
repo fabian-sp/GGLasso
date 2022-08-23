@@ -29,11 +29,11 @@ def template_ADMM_MGL(p = 100, K = 5, N = 1000, reg = 'GGL', latent = False):
     M = 10 # M should be divisor of p
 
     if reg == 'GGL':
-        Sigma, Theta = group_power_network(p, K, M)
+        Sigma, Theta = group_power_network(p, K, M, seed=1234)
     elif reg == 'FGL':
-        Sigma, Theta = time_varying_power_network(p, K, M)
+        Sigma, Theta = time_varying_power_network(p, K, M, seed=1234)
     
-    S, samples = sample_covariance_matrix(Sigma, N)
+    S, samples = sample_covariance_matrix(Sigma, N, seed=1234)
 
     lambda1= 0.05
     lambda2 = 0.01
@@ -80,8 +80,8 @@ def template_extADMM_consistent(latent = False):
     lambda1= 0.05
     lambda2 = 0.01
     
-    Sigma, Theta = group_power_network(p, K, M)
-    S, samples = sample_covariance_matrix(Sigma, N)
+    Sigma, Theta = group_power_network(p, K, M, seed=1234)
+    S, samples = sample_covariance_matrix(Sigma, N, seed=1234)
     
     Sdict = dict()
     Omega_0 = dict()
@@ -152,11 +152,11 @@ def template_admm_vs_ppdna(p = 50, K = 3, N = 1000, reg = "GGL"):
     M = 5 # M should be divisor of p
 
     if reg == 'GGL':
-        Sigma, Theta = group_power_network(p, K, M, seed = 567)
+        Sigma, Theta = group_power_network(p, K, M, seed=567)
     elif reg == 'FGL':
-        Sigma, Theta = time_varying_power_network(p, K, M, seed = 567)
+        Sigma, Theta = time_varying_power_network(p, K, M, seed=567)
     
-    S, samples = sample_covariance_matrix(Sigma, N, seed = 567)
+    S, samples = sample_covariance_matrix(Sigma, N, seed=567)
 
     lambda1= 0.05
     lambda2 = 0.01
@@ -192,8 +192,8 @@ def test_lambda1_mask_SGL():
     p = 20
     N = 100
 
-    Sigma, Theta = generate_precision_matrix(p=p, M=2, style = 'erdos', gamma = 2.8, prob = 0.1, scale = False, seed = None)
-    S, _ = sample_covariance_matrix(Sigma, N)  
+    Sigma, Theta = generate_precision_matrix(p=p, M=2, style='erdos', gamma=2.8, prob=0.1, scale=False, seed=1234)
+    S, _ = sample_covariance_matrix(Sigma, N, seed=1234)  
     
     Omega_0 = np.eye(p)
     lambda1 = 0.01
@@ -219,24 +219,23 @@ def test_lambda1_mask_blockSGL():
     p = 20
     N = 100
 
-    Sigma, Theta = generate_precision_matrix(p=p, M=2, style = 'erdos', gamma = 2.8, prob = 0.1, scale = False, seed = None)
-    S, _ = sample_covariance_matrix(Sigma, N)  
+    Sigma, Theta = generate_precision_matrix(p=p, M=2, style='erdos', gamma=2.8, prob=0.1, scale=False, seed=1234)
+    S, _ = sample_covariance_matrix(Sigma, N, seed=1234)  
     
     Omega_0 = np.eye(p)
-    lambda1 = 0.2
-    
-    # solve with lambda1 as float
-    sol = block_SGL(S, lambda1, Omega_0, tol=1e-8, rtol=1e-7, verbose=True)
+    lambda1 = 0.3
     
     # solve with lambda1_mask as array of ones
-    l1_mask = np.ones((p,p))
-    sol2 = block_SGL(S, lambda1, Omega_0, tol=1e-8, rtol=1e-7, verbose=True, lambda1_mask=l1_mask)
+    lambda1_mask = 0.9 + 0.1*np.random.rand(p,p)
+    sol, info = ADMM_SGL(S, lambda1, Omega_0, tol=1e-10, rtol=1e-10, verbose=True, lambda1_mask=lambda1_mask)
+    
+    sol2 = block_SGL(S, lambda1, Omega_0, tol=1e-10, rtol=1e-10, verbose=True, lambda1_mask=lambda1_mask)
 
     assert_array_almost_equal(sol['Theta'], sol2['Theta'], 4)
     
     # solve with lambda1_mask as array of zeros --> inverse of S is solution
-    l1_mask = np.zeros((p,p))
-    sol3 = block_SGL(S, lambda1, Omega_0, tol=1e-10, rtol=1e-10, verbose=True, lambda1_mask=l1_mask)
+    lambda1_mask = np.zeros((p,p))
+    sol3 = block_SGL(S, lambda1, Omega_0, tol=1e-10, rtol=1e-10, verbose=True, lambda1_mask=lambda1_mask)
     
     assert_array_almost_equal(np.linalg.inv(S), sol3['Theta'], 4)
 
@@ -255,8 +254,8 @@ def test_SGL_scikit():
     N = 100
 
 
-    Sigma, Theta = generate_precision_matrix(p=p, M=2, style = 'erdos', gamma = 2.8, prob = 0.1, scale = False, seed = None)
-    S, samples = sample_covariance_matrix(Sigma, N)  # sample from multivar_norm(Sigma)
+    Sigma, Theta = generate_precision_matrix(p=p, M=2, style='erdos', gamma=2.8, prob=0.1, scale=False, seed=1234)
+    S, samples = sample_covariance_matrix(Sigma, N, seed=1234)
     
     lambda1 = 0.01
 

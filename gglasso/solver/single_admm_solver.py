@@ -380,7 +380,8 @@ def block_SGL(S, lambda1, Omega_0, Theta_0=None, X_0=None, rho=1., max_iter=1000
     if lambda1_mask is not None:
         assert lambda1_mask.shape == (p,p), f"lambda1_mask needs to be of shape (p,p), but is {lambda1_mask.shape}."
         assert np.all(lambda1_mask >= 0), "lambda1_mask needs to be non-negative."    
-        
+    else:
+        lambda1_mask = np.ones((p,p))
 
     if Theta_0 is None:
         Theta_0 = Omega_0.copy()
@@ -388,7 +389,7 @@ def block_SGL(S, lambda1, Omega_0, Theta_0=None, X_0=None, rho=1., max_iter=1000
         X_0 = np.zeros((p, p))
 
     # compute connected components of S with lambda_1 threshold
-    numC, allC = get_connected_components(S, lambda1)
+    numC, allC = get_connected_components(S, lambda1*lambda1_mask)
 
     allOmega = list()
     allTheta = list()
@@ -410,7 +411,7 @@ def block_SGL(S, lambda1, Omega_0, Theta_0=None, X_0=None, rho=1., max_iter=1000
         # else solve Graphical Lasso for the corresponding block
         else:
             block_S = S[np.ix_(C, C)]          
-            this_lambda1_mask = lambda1_mask[np.ix_(C,C)] if lambda1_mask is not None else None
+            this_lambda1_mask = lambda1_mask[np.ix_(C,C)]
             
             block_sol, block_info = ADMM_SGL(S=block_S, lambda1=lambda1, Omega_0=Omega_0[np.ix_(C, C)],
                                              Theta_0=Theta_0[np.ix_(C, C)], X_0=X_0[np.ix_(C, C)], tol=tol, rtol=rtol,
