@@ -31,20 +31,20 @@ def map_l_to_w(l1, l2):
 def lambda_grid(l1, l2 = None, w2 = None):
     """
     l1, l2, w2: values for the grid
-    either l2 or w2 has to be spcified
+    either l2 or w2 has to be specified
     idea: the grid goes from higher to smaller values when going down/right
     """   
     
-    assert np.all(l2!=None) | np.all(w2!=None), "Either a range of lambda2 or w2 values have to be specified"
-    if np.all(w2!=None):
+    assert np.all(l2 is not None) | np.all(w2 is not None), "Either a range of lambda2 or w2 values have to be specified"
+        
+    if np.all(l2 is not None):
+        L1, L2 = np.meshgrid(l1,l2)
+    else:
         l1grid, w2grid = np.meshgrid(l1,w2)
         L2 = lambda_parametrizer(l1grid, w2grid)
         L1 = l1grid.copy()
-    elif np.all(l2!=None):
-        L1, L2 = np.meshgrid(l1,l2)
-        w2 = None
         
-    return L1.squeeze(), L2.squeeze(), w2
+    return L1.squeeze(), L2.squeeze()
 
 def grid_search(solver, S, N, p, reg, l1, l2 = None, w2 = None, method= 'eBIC', gamma = 0.3, \
                 G = None, latent = False, mu_range = None, ix_mu = None, thresholding = False, tol = 1e-7, rtol = 1e-7, verbose = False):
@@ -121,7 +121,7 @@ def grid_search(solver, S, N, p, reg, l1, l2 = None, w2 = None, method= 'eBIC', 
     if latent:
         assert np.all(mu_range > 0)
       
-    L1, L2, W2 = lambda_grid(l1, l2, w2)
+    L1, L2 = lambda_grid(l1, l2, w2)
     
     if verbose:
         print("Grid of lambda1/lambda2:")

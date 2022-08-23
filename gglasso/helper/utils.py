@@ -64,6 +64,14 @@ def deviation(Theta):
         
     return d
 
+#%% functional graphical lasso
+
+def lambda_max_fsgl():
+    """
+    computes lambda_max for Funtional Single Graphical Lasso (FSGL)
+    """
+    return
+
 #%% utils for microbiome count data --> clr transform with zero replacement
 
 def geometric_mean(x):
