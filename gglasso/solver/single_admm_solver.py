@@ -73,7 +73,7 @@ def ADMM_SGL(S, lambda1, Omega_0, Theta_0=np.array([]), X_0=np.array([]),
         The default is ``False``.
     mu1 : float, positive, optional
         low-rank regularization parameter. Only needs to be specified if ``latent=True``.
-    lambda1_mask : array (p,p), non-negative, optional
+    lambda1_mask : array (p,p), non-negative, symmetric, optional
         A mask for the regularization parameter. If specified, the problem is solved with the element-wise regularization strength ``lambda1 * lambda1_mask``.
         
     Returns
@@ -93,7 +93,9 @@ def ADMM_SGL(S, lambda1, Omega_0, Theta_0=np.array([]), X_0=np.array([]),
     # use lambda1_mask if specified
     if lambda1_mask is not None:
         assert lambda1_mask.shape == (p,p), f"lambda1_mask needs to be of shape (p,p), but is {lambda1_mask.shape}."
-        assert np.all(lambda1_mask >=0 ), "lambda1_mask needs to be non-negative."       
+        assert np.all(lambda1_mask >=0 ), "lambda1_mask needs to be non-negative."    
+        assert np.all(np.abs(lambda1_mask.T - lambda1_mask) <= 1e-5), "lambda1_mask needs to be symmetric."
+        
         lambda1 = lambda1 * lambda1_mask
     
     assert np.all(lambda1 >= 0)
@@ -358,7 +360,7 @@ def block_SGL(S, lambda1, Omega_0, Theta_0=None, X_0=None, rho=1., max_iter=1000
         verbosity of the solver. The default is False.
     measure : boolean, optional
         turn on/off measurements of runtime per iteration. The default is False.
-    lambda1_mask : array (p,p), non-negative, optional
+    lambda1_mask : array (p,p), non-negative, symmetric, optional
         A mask for the regularization parameter. If specified, the problem is solved with the element-wise regularization strength ``lambda1 * lambda1_mask``.
     
 
@@ -379,7 +381,8 @@ def block_SGL(S, lambda1, Omega_0, Theta_0=None, X_0=None, rho=1., max_iter=1000
     # use lambda1_mask if specified
     if lambda1_mask is not None:
         assert lambda1_mask.shape == (p,p), f"lambda1_mask needs to be of shape (p,p), but is {lambda1_mask.shape}."
-        assert np.all(lambda1_mask >= 0), "lambda1_mask needs to be non-negative."    
+        assert np.all(lambda1_mask >= 0), "lambda1_mask needs to be non-negative."
+        assert np.all(np.abs(lambda1_mask.T - lambda1_mask) <= 1e-5), "lambda1_mask needs to be symmetric."
     else:
         lambda1_mask = np.ones((p,p))
 

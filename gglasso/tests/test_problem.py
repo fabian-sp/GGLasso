@@ -2,7 +2,7 @@
 author: Fabian Schaipp
 """
 import numpy as np
-from numpy.testing import assert_array_almost_equal
+from numpy.testing import assert_array_almost_equal, assert_almost_equal
 
 from gglasso.helper.data_generation import time_varying_power_network, group_power_network, sample_covariance_matrix, generate_precision_matrix
 from gglasso.problem import glasso_problem
@@ -183,3 +183,36 @@ def test_scaling_SGL():
     
     return
     
+
+def template_lambda1_mask_SGL(latent=False):
+    p = 100
+    N = 1000
+
+    Sigma, Theta = generate_precision_matrix(p=p, M=2, style='erdos', gamma=2.8, prob=0.1, scale=False, seed=12345)
+    S, samples = sample_covariance_matrix(Sigma, N, seed=12345)
+    
+    rng = np.random.RandomState(8787)
+    lambda1_mask = 0.5 + 0.5*rng.rand(p,p)
+    lambda1_mask = 0.5*(lambda1_mask + lambda1_mask.T)
+    
+    model_select_params= {'lambda1_mask': lambda1_mask}
+
+    P = glasso_problem(S = S, N = N, reg = None, latent = False)
+    P.set_modelselect_params(model_select_params)
+
+    print(P.modelselect_params)
+    P.model_selection(modelselect_params = None, method = 'eBIC', gamma = 0.1)    
+    print(P.reg_params)
+    
+    assert_almost_equal(P.reg_params['lambda1'], 0.2154434690031884)
+        
+    return
+
+def test_lambda1_mask():
+    template_lambda1_mask_SGL(latent=False)
+    return
+
+def test_lambda1_mask_latent():
+    template_lambda1_mask_SGL(latent=True)
+    return
+

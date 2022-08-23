@@ -427,7 +427,8 @@ def K_single_grid(S, lambda_range, N, method = 'eBIC', gamma = 0.3, latent = Fal
 
 
 def single_grid_search(S, lambda_range, N, method = 'eBIC', gamma = 0.3, latent = False, mu_range = None,\
-                       thresholding = False, use_block = True, store_all = True, tol = 1e-7, rtol = 1e-7):
+                       thresholding = False, use_block = True, store_all = True, tol = 1e-7, rtol = 1e-7,
+                       lambda1_mask = None):
     """
     method for model selection for SGL problem, doing grid search and selection via eBIC or AIC
 
@@ -457,6 +458,9 @@ def single_grid_search(S, lambda_range, N, method = 'eBIC', gamma = 0.3, latent 
         Tolerance for the primal residual used for the solver at each grid point. The default is 1e-7.
     rtol : float, positive, optional
         Tolerance for the dual residual used for the solver at each grid point. The default is 1e-7.
+    lambda1_mask : array (p,p), non-negative, optional
+        A mask for the regularization parameter. If specified, the problem is solved with the element-wise regularization strength ``lambda1 * lambda1_mask``.
+        The value of the mask is unchanged throughout the grid search (only ``lambda1`` is changed).
     
     
     Returns
@@ -504,6 +508,9 @@ def single_grid_search(S, lambda_range, N, method = 'eBIC', gamma = 0.3, latent 
     
     kwargs = {'S': S, 'Omega_0': np.eye(p), 'X_0': np.eye(p), 'tol': tol, 'rtol': rtol,\
               'verbose': False, 'measure': False}
+        
+    if lambda1_mask is not None:
+        kwargs['lambda1_mask'] = lambda1_mask
     
     if store_all:
         estimates = np.zeros((_L,_M,p,p))

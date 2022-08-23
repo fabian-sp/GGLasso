@@ -225,10 +225,14 @@ def test_lambda1_mask_blockSGL():
     Omega_0 = np.eye(p)
     lambda1 = 0.3
     
-    # solve with lambda1_mask as array of ones
+    # solve with random lambda1_mask
     lambda1_mask = 0.9 + 0.1*np.random.rand(p,p)
+    lambda1_mask = 0.5*(lambda1_mask + lambda1_mask.T)
+    
+    # solve with SGL
     sol, info = ADMM_SGL(S, lambda1, Omega_0, tol=1e-10, rtol=1e-10, verbose=True, lambda1_mask=lambda1_mask)
     
+    # solve block-wise
     sol2 = block_SGL(S, lambda1, Omega_0, tol=1e-10, rtol=1e-10, verbose=True, lambda1_mask=lambda1_mask)
 
     assert_array_almost_equal(sol['Theta'], sol2['Theta'], 4)
