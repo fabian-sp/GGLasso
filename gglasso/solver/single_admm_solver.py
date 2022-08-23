@@ -13,7 +13,7 @@ from .ggl_helper import prox_od_1norm, phiplus, prox_rank_norm
 
 def ADMM_SGL(S, lambda1, Omega_0, Theta_0=np.array([]), X_0=np.array([]),
              rho=1., max_iter=1000, tol=1e-7, rtol=1e-4, stopping_criterion='boyd',\
-             update_rho=True, verbose=False, measure=False, latent=False, mu1=None):
+             update_rho=True, verbose=False, measure=False, latent=False, mu1=None, lambda1_mask=None):
     """
     This is an ADMM solver for the (Latent variable) Single Graphical Lasso problem (SGL).
     If ``latent=False``, this function solves
@@ -33,6 +33,8 @@ def ADMM_SGL(S, lambda1, Omega_0, Theta_0=np.array([]), X_0=np.array([]),
     Note:
         * Typically, ``sol['Omega']`` is positive definite and ``sol['Theta']`` is sparse.
         * We use scaled ADMM, i.e. X are the scaled (with 1/rho) dual variables for the equality constraint.
+        * ``lambda1`` can be an array using the argument ``lambda1_mask``. The problem is then solved with the element-wise regularization strength ``lambda1 * lambda1_mask``.
+        
     Parameters
     ----------
     S : array (p,p)
@@ -63,14 +65,17 @@ def ADMM_SGL(S, lambda1, Omega_0, Theta_0=np.array([]), X_0=np.array([]),
     update_rho : boolean, optional
         Whether the penalty parameter ``rho`` is updated, see Boyd et al. page 20-21 for details. The default is True.
     verbose : boolean, optional
-        verbosity of the solver. The default is False.
+        verbosity of the solver. The default is ``False``.
     measure : boolean, optional
-        turn on/off measurements of runtime per iteration. The default is False.
+        turn on/off measurements of runtime per iteration. The default is ``False``.
     latent : boolean, optional
         Solve the SGL with or without latent variables (see above for the exact formulations).
-        The default is False.
+        The default is ``False``.
     mu1 : float, positive, optional
-        low-rank regularization parameter. Only needs to be specified if latent=True.
+        low-rank regularization parameter. Only needs to be specified if ``latent=True``.
+    lambda1_mask : array (p,p), non-negative, optional
+        A mask for the regularization parameter. If specified, the problem is solved with the element-wise regularization strength ``lambda1 * lambda1_mask``.
+        
     Returns
     -------
     sol : dict
@@ -80,16 +85,25 @@ def ADMM_SGL(S, lambda1, Omega_0, Theta_0=np.array([]), X_0=np.array([]),
     """
     assert Omega_0.shape == S.shape
     assert S.shape[0] == S.shape[1]
-    assert lambda1 > 0
+    
+    (p, p) = S.shape
+    
+    assert lambda1 > 0 , "lambda1 should be positive, otherwise using Graphical Lasso is redundant. Specify entries with zero regularization using lambda1_mask."
+    
+    # use lambda1_mask if specified
+    if lambda1_mask is not None:
+        assert lambda1_mask.shape == (p,p), f"lambda1_mask needs to be of shape (p,p), but is {lambda1_mask.shape}."
+        assert np.all(lambda1_mask >=0 ), "lambda1_mask needs to be non-negative."       
+        lambda1 = lambda1 * lambda1_mask
+    
+    assert np.all(lambda1 >= 0)
 
     assert stopping_criterion in ["boyd", "kkt"]
 
     if latent:
         assert mu1 is not None
         assert mu1 > 0
-
-    (p, p) = S.shape
-
+  
     assert rho > 0, "ADMM penalization parameter must be positive."
 
     # initialize
@@ -294,7 +308,7 @@ def kkt_stopping_criterion(Omega, Theta, L, X, S, lambda1, latent=False, mu1=Non
 
 def block_SGL(S, lambda1, Omega_0, Theta_0=None, X_0=None, rho=1., max_iter=1000, 
               tol=1e-7, rtol=1e-3, stopping_criterion="boyd",
-              update_rho=True, verbose=False, measure=False):
+              update_rho=True, verbose=False, measure=False, lambda1_mask=None):
     """
     This is a wrapper for solving SGL problems on connected components of the solution and solving each block separately.
     See Witten, Friedman, Simon "New Insights for the Graphical Lasso" for details.
@@ -344,6 +358,9 @@ def block_SGL(S, lambda1, Omega_0, Theta_0=None, X_0=None, rho=1., max_iter=1000
         verbosity of the solver. The default is False.
     measure : boolean, optional
         turn on/off measurements of runtime per iteration. The default is False.
+    lambda1_mask : array (p,p), non-negative, optional
+        A mask for the regularization parameter. If specified, the problem is solved with the element-wise regularization strength ``lambda1 * lambda1_mask``.
+    
 
     Returns
     -------
@@ -354,9 +371,16 @@ def block_SGL(S, lambda1, Omega_0, Theta_0=None, X_0=None, rho=1., max_iter=1000
     """
     assert Omega_0.shape == S.shape
     assert S.shape[0] == S.shape[1]
-    assert lambda1 > 0
-
+    
     (p, p) = S.shape
+    
+    assert lambda1 > 0 , "lambda1 should be positive, otherwise using Graphical Lasso is redundant. Specify entries with zero regularization using lambda1_mask."
+    
+    # use lambda1_mask if specified
+    if lambda1_mask is not None:
+        assert lambda1_mask.shape == (p,p), f"lambda1_mask needs to be of shape (p,p), but is {lambda1_mask.shape}."
+        assert np.all(lambda1_mask >= 0), "lambda1_mask needs to be non-negative."    
+        
 
     if Theta_0 is None:
         Theta_0 = Omega_0.copy()
@@ -385,11 +409,13 @@ def block_SGL(S, lambda1, Omega_0, Theta_0=None, X_0=None, rho=1., max_iter=1000
 
         # else solve Graphical Lasso for the corresponding block
         else:
-            block_S = S[np.ix_(C, C)]
+            block_S = S[np.ix_(C, C)]          
+            this_lambda1_mask = lambda1_mask[np.ix_(C,C)] if lambda1_mask is not None else None
+            
             block_sol, block_info = ADMM_SGL(S=block_S, lambda1=lambda1, Omega_0=Omega_0[np.ix_(C, C)],
                                              Theta_0=Theta_0[np.ix_(C, C)], X_0=X_0[np.ix_(C, C)], tol=tol, rtol=rtol,
                                              stopping_criterion=stopping_criterion, update_rho=update_rho,
-                                             rho=rho, max_iter=max_iter, verbose=verbose, measure=measure)
+                                             rho=rho, max_iter=max_iter, verbose=verbose, measure=measure, lambda1_mask=this_lambda1_mask)
 
             allOmega.append(block_sol['Omega'])
             allTheta.append(block_sol['Theta'])

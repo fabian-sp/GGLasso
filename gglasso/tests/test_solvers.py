@@ -147,6 +147,7 @@ def test_block_SGL():
     
     return
 
+## ADMM vs PPDNA 
 def template_admm_vs_ppdna(p = 50, K = 3, N = 1000, reg = "GGL"):
     M = 5 # M should be divisor of p
 
@@ -186,7 +187,62 @@ def test_admm_ppdna_fgl():
     template_admm_vs_ppdna(p = 50, K = 3, N = 2000, reg = "FGL")
     return
 
+## lambda1_mask TEST
+def test_lambda1_mask_SGL():
+    p = 20
+    N = 100
 
+    Sigma, Theta = generate_precision_matrix(p=p, M=2, style = 'erdos', gamma = 2.8, prob = 0.1, scale = False, seed = None)
+    S, _ = sample_covariance_matrix(Sigma, N)  
+    
+    Omega_0 = np.eye(p)
+    lambda1 = 0.01
+    
+    # solve with lambda1 as float
+    sol, info = ADMM_SGL(S, lambda1, Omega_0, tol=1e-8, rtol=1e-7, verbose=True, latent=False)
+    
+    # solve with lambda1_mask as array of ones
+    l1_mask = np.ones((p,p))
+    sol2, info2 = ADMM_SGL(S, lambda1, Omega_0, tol=1e-8, rtol=1e-7, verbose=True, latent=False, lambda1_mask=l1_mask)
+
+    assert_array_almost_equal(sol['Theta'], sol2['Theta'], 4)
+    
+    # solve with lambda1_mask as array of zeros --> inverse of S is solution
+    l1_mask = np.zeros((p,p))
+    sol3, info3 = ADMM_SGL(S, lambda1, Omega_0, tol=1e-10, rtol=1e-10, verbose=True, latent=False, lambda1_mask=l1_mask)
+    
+    assert_array_almost_equal(np.linalg.inv(S), sol3['Theta'], 4)
+
+    return
+
+def test_lambda1_mask_blockSGL():
+    p = 20
+    N = 100
+
+    Sigma, Theta = generate_precision_matrix(p=p, M=2, style = 'erdos', gamma = 2.8, prob = 0.1, scale = False, seed = None)
+    S, _ = sample_covariance_matrix(Sigma, N)  
+    
+    Omega_0 = np.eye(p)
+    lambda1 = 0.2
+    
+    # solve with lambda1 as float
+    sol = block_SGL(S, lambda1, Omega_0, tol=1e-8, rtol=1e-7, verbose=True)
+    
+    # solve with lambda1_mask as array of ones
+    l1_mask = np.ones((p,p))
+    sol2 = block_SGL(S, lambda1, Omega_0, tol=1e-8, rtol=1e-7, verbose=True, lambda1_mask=l1_mask)
+
+    assert_array_almost_equal(sol['Theta'], sol2['Theta'], 4)
+    
+    # solve with lambda1_mask as array of zeros --> inverse of S is solution
+    l1_mask = np.zeros((p,p))
+    sol3 = block_SGL(S, lambda1, Omega_0, tol=1e-10, rtol=1e-10, verbose=True, lambda1_mask=l1_mask)
+    
+    assert_array_almost_equal(np.linalg.inv(S), sol3['Theta'], 4)
+
+    return
+
+    
 ###############################################################
 ### TEST VS. OTHER PACKAGES 
 ###############################################################
@@ -210,7 +266,6 @@ def test_SGL_scikit():
     sol_scikit = model.precision_
 
     Omega_0 = np.eye(p)
-    
     sol, info = ADMM_SGL(S, lambda1, Omega_0, tol=1e-7, rtol=1e-5, verbose=True, latent=False)
     
     # run into max_iter
