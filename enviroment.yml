@@ -16,6 +16,7 @@ dependencies:
   - sphinx-gallery==0.8.2
   - sphinx_rtd_theme==0.5.2
   - fdasrsf==2.3.11
+  - pytest
   - pip
   - pip:
     - scikit-fda

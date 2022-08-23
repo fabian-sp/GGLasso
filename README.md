@@ -2,7 +2,7 @@
 
 [![PyPI version fury.io](https://badge.fury.io/py/gglasso.svg)](https://pypi.python.org/pypi/gglasso/)
 [![PyPI license](https://img.shields.io/pypi/l/gglasso.svg)](https://pypi.python.org/pypi/gglasso/)
-[![Python version](https://img.shields.io/badge/python-3.6%20%7C%203.7%20%7C%203.8%20%7C%203.9-blue)](https://www.python.org/)
+[![Python version](https://img.shields.io/badge/python-3.7%20%7C%203.8%20%7C%203.9-blue)](https://www.python.org/)
 [![Documentation Status](https://readthedocs.org/projects/gglasso/badge/?version=latest)](http://gglasso.readthedocs.io/?badge=latest)
 [![DOI](https://joss.theoj.org/papers/10.21105/joss.03865/status.svg)](https://doi.org/10.21105/joss.03865)
 [![arXiv](https://img.shields.io/badge/arXiv-2011.00898-b31b1b.svg)](https://arxiv.org/abs/2110.10521)
@@ -15,11 +15,16 @@ Graphical Lasso problems. <br>
 
 ## Getting started
 
-### Install via pip
+### Install via pip/conda
 
-The package is available on pip and can be installed with
+The package is available on pip and conda and can be installed with
 
     pip install gglasso
+
+or
+
+    conda install -c conda-forge gglasso
+
 
 ### Install from source
 
@@ -36,9 +41,9 @@ Test your installation with
 
 ### Advanced options
 
-When installing from source, you can also install dependencies with `conda` via the command
+If you want to create a conda environment with full development dependencies (for building docs, testing etc), run:
 
-	$ while read requirement; do conda install --yes $requirement || pip install $requirement; done < requirements.txt
+	conda env create -f environment.yml
 
 If you wish to install `gglasso` in developer mode, i.e. not having to reinstall `gglasso` everytime the source code changes (either by remote or local changes), run
 
