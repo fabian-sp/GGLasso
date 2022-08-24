@@ -66,11 +66,31 @@ def deviation(Theta):
 
 #%% functional graphical lasso
 
-def lambda_max_fsgl():
+def frob_norm_per_block(S, M):
+    (pM, pM) = S.shape
+    assert pM%M == 0
+    
+    p = int(pM/M)
+    Y = np.zeros((p,p))
+    
+    for i in np.arange(p):
+        for j in np.arange(start=i, stop=p):
+            if j == i:
+                Y[i,j] = np.linalg.norm(S[i*M:(i+1)*M,j*M:(j+1)*M])
+            else:
+                Y[i,j] = np.linalg.norm(S[i*M:(i+1)*M,j*M:(j+1)*M])
+                Y[j,i] = Y[i,j]
+
+    
+    return Y
+
+def lambda_max_fsgl(S, M):
     """
     computes lambda_max for Funtional Single Graphical Lasso (FSGL)
     """
-    return
+    Y = frob_norm_per_block(S, M)
+    
+    return Y.max()
 
 #%% utils for microbiome count data --> clr transform with zero replacement
 
