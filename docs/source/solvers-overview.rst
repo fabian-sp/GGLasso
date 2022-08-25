@@ -52,6 +52,10 @@ Here, ``list_of_samples`` stands for your list of data samples as described abov
 
 We recommend to have a look at the :ref:`Nonconforming Group Graphical Lasso experiment` in our example gallery.
 
+Functional Graphical Lasso
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+For Functional Graphical Lasso, we have implemented the ADMM algorithm, see ``from gglasso.solver.functional_sgl_admm import ADMM_FSGL``. Note that in [ref13]_ a block coordinate descent algorithm is proposed for solving.
 
 Further Remarks - proximal operators
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

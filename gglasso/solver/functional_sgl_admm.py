@@ -32,8 +32,8 @@ def ADMM_FSGL(S, lambda1, M, Omega_0, Theta_0=np.array([]), X_0=np.array([]),
        s.t. \quad \Omega = \Theta - L
 
     Note:
-        * Typically, ``sol['Omega']`` is positive definite and ``sol['Theta']`` is sparse.
         * We use scaled ADMM, i.e. X are the scaled (with ``1/rho``) dual variables for the equality constraint.
+
     Parameters
     ----------
     S : array (p*M,p*M)
@@ -68,10 +68,11 @@ def ADMM_FSGL(S, lambda1, M, Omega_0, Theta_0=np.array([]), X_0=np.array([]),
         The default is False.
     mu1 : float, positive, optional
         low-rank regularization parameter. Only needs to be specified if latent=True.
+    
     Returns
     -------
     sol : dict
-        contains the solution, i.e. Omega, Theta, X (and L if ``latent=True``) after termination. All elements are (p,p) arrays.
+        contains the solution, i.e. Omega, Theta, X (and L if ``latent=True``) after termination. All elements are (p*M,p*M) arrays.
     info : dict
         status and measurement information from the solver.
     """

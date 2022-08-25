@@ -114,6 +114,25 @@ where
 
 In ``GGLasso`` we implemented an ADMM algorithm for the above described problem formulation, possibly extended with latent variables. Have a look at the :ref:`Nonconforming Group Graphical Lasso experiment` in our example gallery.
 
+
+Functional Graphical Lasso
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Functional Graphical Lasso is a variant of the Single Graphical Lasso, where each variable is not measured as a scalar, but as a function (or time series) [ref13]_. Hence, assume that each variable has a :math:`M`-dimensional representation, for example coming from Functional PCA, Fourier transform or using a spline basis. 
+Functional Graphical Lasso can be understood as SGL but with each matrix entry being an :math:`M\times M` block, representing the association between two function variables. Therefore, the regularization results in each :math:`M\times M` block either being zero or non-zero, and typically being dense in the latter case.
+
+For :math:`p` variables, we compute the covariance matrix :math:`S \in \mathbb{R}^{pM\times pM}`. The problem formulation is 
+
+.. math::
+   \min_{\Theta \in \mathbb{S}^{p\cdot M}_{++}} - \log \det \Theta + \mathrm{Tr}(S\Theta) + \lambda_1 \sum_{j\neq l} \|\Theta_{jl}^M\|_{F}.
+
+With latent variables, our implementation solves
+
+.. math::
+   \min_{\Theta, L \in \mathbb{S}^{p\cdot M}_{++}} - \log \det (\Theta -L) + \mathrm{Tr}(S (\Theta -L)) + \lambda_1 \sum_{j\neq l} \|\Theta_{jl}^M\|_{F} + \mu_1 \|L\|_{\star}.
+
+
+
 Optimization algorithms
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
@@ -134,6 +153,7 @@ References
 .. [ref10] Foygel, R. and Drton, M. (2010). Extended Bayesian Information Criteria for Gaussian Graphical Models. In Lafferty, J., Williams, C., Shawe-Taylor, J.,Zemel, R., and Culotta, A., editors, Advances in Neural Information Processing Systems, volume 23. Curran Associates, Inc.
 .. [ref11] Condat, L. (2013). A Direct Algorithm for 1-D Total Variation Denoising, IEEE Signal Processing Letters, vol. 20, no. 11, pp. 1054-1057.
 .. [ref12] Kurtz,  Z.  D.,  Bonneau,  R.,  and  Mueller,  C.  L.  (2019).   Disentangling microbial associations from hidden environmental and technical factors via latent graphical models.
+.. [ref13] Qiao, X., Guo, S., and James, G. M. (2019) Functional graphical models, J. Amer. Statist. Assoc., 114, 211-222.
 
 
 
