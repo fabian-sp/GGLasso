@@ -44,7 +44,6 @@ def template_problem_MGL(S, N, reg = 'GGL', latent = False, G = None):
     P.solve(verbose = True)
     
     # test model selection
-    P.model_selection(method = 'AIC')
     P.model_selection(modelselect_params = modelselectparams, method = 'eBIC', gamma = 0.1)
     
     #tmp = P.modelselect_stats.copy()
@@ -54,51 +53,77 @@ def template_problem_MGL(S, N, reg = 'GGL', latent = False, G = None):
     return P
 
 def test_GGL():
-    Sigma, Theta = group_power_network(p, K, M)    
-    S, samples = sample_covariance_matrix(Sigma, N)
-    _ = template_problem_MGL(S, N, reg = 'GGL', latent = False)   
+    Sigma, Theta = group_power_network(p, K, M, seed=123)    
+    S, samples = sample_covariance_matrix(Sigma, N, seed=123)
+    P = template_problem_MGL(S, N, reg = 'GGL', latent = False)   
+    
+    assert P.reg_params['lambda1'] == 0.1
+    assert P.reg_params['lambda2'] == 0.01
+    assert_almost_equal(P.solution.ebic_, 69250.30820755142)
     return
 
 def test_GGL_latent():
-    Sigma, Theta = group_power_network(p, K, M)    
-    S, samples = sample_covariance_matrix(Sigma, N)
-    _ = template_problem_MGL(S, N, reg = 'GGL', latent = True)
+    Sigma, Theta = group_power_network(p, K, M, seed=123)    
+    S, samples = sample_covariance_matrix(Sigma, N, seed=123)
+    P = template_problem_MGL(S, N, reg = 'GGL', latent = True)
+    
+    assert P.reg_params['lambda1'] == 0.1
+    assert P.reg_params['lambda2'] == 0.01
+    assert_array_almost_equal(P.reg_params['mu1'], np.ones(K))
+    assert_almost_equal(P.solution.ebic_, 69250.30820755142)
     return
 
 def test_FGL():
-    Sigma, Theta = time_varying_power_network(p, K, M)
-    S, samples = sample_covariance_matrix(Sigma, N)
-    _ = template_problem_MGL(S, N, reg = 'FGL', latent = False)
+    Sigma, Theta = time_varying_power_network(p, K, M, seed=123)
+    S, samples = sample_covariance_matrix(Sigma, N, seed=123)
+    P = template_problem_MGL(S, N, reg = 'FGL', latent = False)
+    
+    assert P.reg_params['lambda1'] == 0.1
+    assert P.reg_params['lambda2'] == 0.01
+    assert_almost_equal(P.solution.ebic_, 67530.17571389768)
     return
 
 def test_FGL_latent():
-    Sigma, Theta = time_varying_power_network(p, K, M)
-    S, samples = sample_covariance_matrix(Sigma, N)
-    _ = template_problem_MGL(S, N, reg = 'FGL', latent = True)
+    Sigma, Theta = time_varying_power_network(p, K, M, seed=123)
+    S, samples = sample_covariance_matrix(Sigma, N, seed=123)
+    P = template_problem_MGL(S, N, reg = 'FGL', latent = True)
+    
+    assert P.reg_params['lambda1'] == 0.1
+    assert P.reg_params['lambda2'] == 0.01
+    assert_array_almost_equal(P.reg_params['mu1'], np.ones(K))
+    assert_almost_equal(P.solution.ebic_, 67530.17571389768)
     return
 
 def test_GGL_ext():
-    Sigma, Theta = group_power_network(p, K, M)
-    S, samples = sample_covariance_matrix(Sigma, N)
+    Sigma, Theta = group_power_network(p, K, M, seed=456)
+    S, samples = sample_covariance_matrix(Sigma, N, seed=456)
     
     Sdict = dict()
     for k in np.arange(K):
         Sdict[k] = S[k,:,:].copy()
         
     G = construct_trivial_G(p, K)
-    _ = template_problem_MGL(Sdict, N, reg = 'GGL', latent = False, G = G)
+    P = template_problem_MGL(Sdict, N, reg = 'GGL', latent = False, G = G)
+    assert P.reg_params['lambda1'] == 0.1
+    assert P.reg_params['lambda2'] == 0.001
+    assert_almost_equal(P.solution.ebic_, 64920.48000118762)
     return
 
 def test_GGL_ext_latent():
-    Sigma, Theta = group_power_network(p, K, M)
-    S, samples = sample_covariance_matrix(Sigma, N)
+    Sigma, Theta = group_power_network(p, K, M, seed=456)
+    S, samples = sample_covariance_matrix(Sigma, N, seed=456)
     
     Sdict = dict()
     for k in np.arange(K):
         Sdict[k] = S[k,:,:].copy()
         
     G = construct_trivial_G(p, K)
-    _ = template_problem_MGL(Sdict, N, reg = 'GGL', latent = True, G = G)
+    P = template_problem_MGL(Sdict, N, reg = 'GGL', latent = True, G = G)
+    
+    assert P.reg_params['lambda1'] == 0.1
+    assert P.reg_params['lambda2'] == 0.001
+    assert_array_almost_equal(P.reg_params['mu1'], np.ones(K))
+    assert_almost_equal(P.solution.ebic_, 64920.480001187614)
     return
 
 ###############################################################
@@ -122,31 +147,38 @@ def template_problem_SGL(S, N, latent = False):
     P.solve()
     
     # test model selection    
-    P.model_selection(method = 'AIC')
     P.model_selection(modelselect_params = None, method = 'eBIC', gamma = 0.1)
     
-    #tmp = P.modelselect_stats.copy()
     _ = P.solution.calc_ebic(gamma = 0.1)
     P.solution.calc_adjacency()
     return P
 
 def test_SGL():
-    Sigma, Theta = group_power_network(p, K = 1, M = 2, seed = 1234)
-    S, samples = sample_covariance_matrix(Sigma, N, seed = 1234); S = S[0,:,:]  
+    Sigma, Theta = generate_precision_matrix(p, M=2, style = 'powerlaw', gamma = 2.8, prob = 0.1, seed = 1234)
+    S, samples = sample_covariance_matrix(Sigma, N, seed = 1234)
     P = template_problem_SGL(S, N, latent = False)
     
-    first_row = np.zeros(p); first_row[:2] = np.array([0.0945606, 0.91819399])
-    assert_array_almost_equal(P.solution.precision_[1,:], first_row)
+    first_row = np.zeros(p); first_row[:2] = np.array([0.91903186, 0.11891509])
+    assert_array_almost_equal(P.solution.precision_[0,:], first_row)
     
     assert P.reg_params['lambda1'] == 0.1
     return
     
 def test_SGL_latent():
-    Sigma, Theta = group_power_network(p, K = 1, M = 2)
-    S, samples = sample_covariance_matrix(Sigma, N); S = S[0,:,:]  
+    Sigma, Theta = generate_precision_matrix(p, M=2, style = 'powerlaw', gamma = 2.8, prob = 0.1, seed = 2345)
+    S, samples = sample_covariance_matrix(Sigma, N, seed = 2345)
     P = template_problem_SGL(S, N, latent = True)
+    
+    first_row = np.zeros(p); first_row[:3] = np.array([0.94395251,  0.13135248,  0.00569105])
+    assert_array_almost_equal(P.solution.precision_[0,:], first_row)
+    
+    assert P.reg_params['lambda1'] == 0.1
+    assert P.reg_params['mu1'] == 46.4158883361278
+      
     return
-        
+
+################
+### SCALING
 
 def test_scaling_SGL():
     
@@ -183,6 +215,8 @@ def test_scaling_SGL():
     
     return
     
+##################
+### LAMBDA1 MASK
 
 def template_lambda1_mask_SGL(latent=False):
     p = 100

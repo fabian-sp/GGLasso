@@ -56,18 +56,22 @@ If you wish to install `gglasso` in developer mode, i.e. not having to reinstall
 
 ## Algorithms
 
-`GGLasso` contains algorithms for Single and Multiple Graphical Lasso problems. Moreover, it allows to model latent variables (Latent variable Graphical Lasso) in order to estimate a precision matrix of type **sparse - low rank**. The following algorithms are contained in the package.
-<br>
-1) ADMM for Single Graphical Lasso<br>
+`GGLasso` contains algorithms for solving a multitude of Graphical Lasso problem formulations. For a detailled overview, we refer to the [solver overview in our documentation](https://gglasso.readthedocs.io/en/latest/solvers-overview.html).
 
-2) ADMM for Group and Fused Graphical Lasso<br>
-The algorithm was proposed in [2] and [3]. To use this, import `ADMM_MGL` from `gglasso/solver/admm_solver`.<br>
+The package includes solvers for the following problems:<br>
 
-3) A Proximal Point method for Group and Fused Graphical Lasso<br>
-We implement the PPDNA Algorithm like proposed in [4]. To use this, import `warmPPDNA` from `gglasso/solver/ppdna_solver`.<br>
+1) Single Graphical Lasso<br>
 
-4) ADMM method for Group Graphical Lasso where the features/variables are non-conforming<br>
-Method for problems where not all variables exist in all instances/datasets.  To use this, import `ext_ADMM_MGL` from `gglasso/solver/ext_admm_solver`.<br>
+2) Group and Fused Graphical Lasso<br>
+We implemented the ADMM (see [2] and [3]) and a proximal point algorithm (see [4]). 
+
+4) Non-conforming Group Graphical Lasso<br>
+A Group Graphical Lasso problem where not all variables exist in all instances/datasets.  
+
+5) Functional Graphical Lasso
+A variant of Graphical Lasso where each variables has a functional representation (e.g. by Fourier coefficients).
+
+Moreover, for all problem formulation the package allows to model latent variables (Latent variable Graphical Lasso) in order to estimate a precision matrix of type **sparse - low rank**.
 
 ## Citation
 
