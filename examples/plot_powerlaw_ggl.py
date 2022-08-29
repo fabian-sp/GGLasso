@@ -14,7 +14,7 @@ from sklearn.covariance import GraphicalLasso
 
 from gglasso.solver.admm_solver import ADMM_MGL
 from gglasso.helper.data_generation import group_power_network, sample_covariance_matrix
-from gglasso.helper.experiment_helper import lambda_grid, discovery_rate, error
+from gglasso.helper.experiment_helper import lambda_parametrizer, discovery_rate, error
 from gglasso.helper.utils import get_K_identity
 from gglasso.helper.experiment_helper import draw_group_heatmap, plot_fpr_tpr, plot_diff_fpr_tpr, surface_plot
 from gglasso.helper.model_selection import aic, ebic
@@ -40,7 +40,12 @@ S, sample = sample_covariance_matrix(Sigma, N)
 #
 #
 
-L1, L2, W2 = lambda_grid(num1 = 3, num2 = 10, reg = reg)
+l2 = np.logspace(start = -0.5, stop = -2.5, num = 10, base = 10)
+W2 = np.linspace(0.2, 0.5, 3)
+l2grid, w2grid = np.meshgrid(l2, W2)
+
+L1 = lambda_parametrizer(l2grid, w2grid)
+L2 = l2grid.copy()
 grid1 = L1.shape[0]; grid2 = L2.shape[1]
 
 ERR = np.zeros((grid1, grid2))
