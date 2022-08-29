@@ -20,16 +20,16 @@ def ADMM_FSGL(S, lambda1, M, Omega_0, Theta_0=np.array([]), X_0=np.array([]),
     If ``latent=False``, this function solves
 
     .. math::
-       \min_{\Omega, \Theta \in \mathbb{S}^{p\cdot M}_{++}} - \log \det \Omega + \mathrm{Tr}(S\Omega) + \lambda_1 \sum_{j\neq l} \|\Theta_{jl}^M\|_{F}
+        \min_{\Omega, \Theta \in \mathbb{S}^{pM}_{++}} - \log \det \Omega + \mathrm{Tr}(S\Omega) + \lambda_1 \sum_{j \\neq l} \|\Theta_{jl}^M\|_{F}.
 
-       s.t. \quad \Omega = \Theta
+        s.t. \quad \Omega = \Theta.
 
     If ``latent=True``, this function solves
 
     .. math::
-       \min_{\Omega, \Theta, L \in \mathbb{S}^{p\cdot M}_{++}} - \log \det (\Omega) + \mathrm{Tr}(S \Omega) + \lambda_1 \sum_{j\neq l} \|\Theta_{jl}^M\|_{F} + \mu_1 \|L\|_{\star}
+        \min_{\Omega, \Theta, L \in \mathbb{S}^{p\cdot M}_{++}} - \log \det (\Omega) + \mathrm{Tr}(S \Omega) + \lambda_1 \sum_{j\\neq l} \|\Theta_{jl}^M\|_{F} + \mu_1 \|L\|_{\star}
 
-       s.t. \quad \Omega = \Theta - L
+        s.t. \quad \Omega = \Theta - L.
 
     Note:
         * We use scaled ADMM, i.e. X are the scaled (with ``1/rho``) dual variables for the equality constraint.

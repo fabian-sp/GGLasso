@@ -22,7 +22,7 @@ GGL nonconforming
 .. autofunction:: gglasso.solver.ext_admm_solver.ext_ADMM_MGL
 
 
-Functional GL
+Functional SGL
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 .. autofunction:: gglasso.solver.functional_sgl_admm.ADMM_FSGL
