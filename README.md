@@ -56,22 +56,22 @@ If you wish to install `gglasso` in developer mode, i.e. not having to reinstall
 
 ## Algorithms
 
-`GGLasso` contains algorithms for solving a multitude of Graphical Lasso problem formulations. For a detailled overview, we refer to the [solver overview in our documentation](https://gglasso.readthedocs.io/en/latest/solvers-overview.html).
+`GGLasso` contains algorithms for solving a multitude of Graphical Lasso problem formulations. For all the details, we refer to the [solver overview in our documentation](https://gglasso.readthedocs.io/en/latest/solvers-overview.html).
 
 The package includes solvers for the following problems:<br>
 
-1) Single Graphical Lasso<br>
+- **Single Graphical Lasso**<br>
 
-2) Group and Fused Graphical Lasso<br>
+- **Group and Fused Graphical Lasso**<br>
 We implemented the ADMM (see [2] and [3]) and a proximal point algorithm (see [4]). 
 
-4) Non-conforming Group Graphical Lasso<br>
+- **Non-conforming Group Graphical Lasso**<br>
 A Group Graphical Lasso problem where not all variables exist in all instances/datasets.  
 
-5) Functional Graphical Lasso
+- **Functional Graphical Lasso**<br>
 A variant of Graphical Lasso where each variables has a functional representation (e.g. by Fourier coefficients).
 
-Moreover, for all problem formulation the package allows to model latent variables (Latent variable Graphical Lasso) in order to estimate a precision matrix of type **sparse - low rank**.
+Moreover, for all problem formulation the package allows to model latent variables (Latent variable Graphical Lasso) in order to estimate a precision matrix of type *sparse - low rank*.
 
 ## Citation
 
