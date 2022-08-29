@@ -319,7 +319,7 @@ class glasso_problem:
                 * ``'lambda1'``: float, positive
                 * ``'lambda2'``: float, positive
                 * ``'mu1'``: float or array of length K, positive. Only needed if ``latent = True``.
-                * ``'lambda1_mask'``: array (p,p) , non-negative, symmetric. For componentwise l1-regularization (multiplied with ``lambda1``). Only available for SGL problems.
+                * ``'lambda1_mask'``: array (p,p) , non-negative, symmetric. The :math:`\\lambda_1` parameter is multiplied element-wise with this array. Only available for SGL.
                    
         """
         
@@ -499,7 +499,7 @@ class glasso_problem:
                 * ``'lambda1_range'``: array of values for :math:`\\lambda_1` parameter.
                 * ``'lambda2_range'``: array of values for :math:`\\lambda_2` parameter.
                 * ``'mu1_range'``: array of values for :math:`\\mu_1` parameter.
-                * ``'lambda1_mask'``: array (p,p). The :math:`\\lambda_1` parameter is multiplied element-wise with this array. Only availbale for SGL.
+                * ``'lambda1_mask'``: array (p,p), non-negative, symmetric. The :math:`\\lambda_1` parameter is multiplied element-wise with this array. Only available for SGL.
         """
         
         if modelselect_params is None:

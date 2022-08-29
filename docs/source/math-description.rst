@@ -118,7 +118,7 @@ In ``GGLasso`` we implemented an ADMM algorithm for the above described problem 
 Functional Graphical Lasso
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Functional Graphical Lasso is a variant of the Single Graphical Lasso, where each variable is not measured as a scalar, but as a function (or time series) [ref13]_. Hence, assume that each variable has a :math:`M`-dimensional representation, for example coming from Functional PCA, Fourier transform or using a spline basis. 
+Functional Graphical Lasso is a variant of Single Graphical Lasso, where each variable is not represented as a scalar, but as a function (or time series) [ref13]_. Hence, assume that each variable has a :math:`M`-dimensional representation, for example coming from Functional PCA, Fourier transform or using a spline basis. 
 Functional Graphical Lasso can be understood as SGL but with each matrix entry being an :math:`M\times M` block, representing the association between two function variables. Therefore, the regularization results in each :math:`M\times M` block either being zero or non-zero, and typically being dense in the latter case.
 
 For :math:`p` variables, we compute the covariance matrix :math:`S \in \mathbb{R}^{pM\times pM}`. The problem formulation is 
