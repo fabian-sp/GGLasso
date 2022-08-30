@@ -1,16 +1,15 @@
 """
-Soil microbiome networks
+Funtional Graphical Lasso
 ===========================================
 
-In this example, we want to explain how Functional Graphical Lasso [ref13]_ works and how you can make use of it with `GGLasso`. 
-For this tutorial, we use the `scikit-fda` package.
+In this example, we want to explain how Functional Graphical Lasso [ref13]_ works and how you can make use of it with ``GGLasso``. 
+For this tutorial, we use the ``scikit-fda`` package.
 
 For Functional Graphical Lasso every variable is representing a function or time series. 
-In order to obtain a finite-dimensional problem, we represent the function in some basis (e.g. by computing Fourier coefficients and truncating). Then, we compute correlations of the corresponding coefficients and are interested in the relationships between different functional variables.
+In order to obtain a finite-dimensional problem, we represent the function in some basis (e.g. by computing Fourier coefficients and truncating). 
+Then, we compute correlations of the corresponding coefficients and are interested in the relationships between different functional variables.
  
 """
-
-#%%
 
 import matplotlib.pyplot as plt
 import seaborn as sns
@@ -26,7 +25,8 @@ from skfda.representation.grid import FDataGrid
 #%%
 # We work in the following setup: we create (functional) variables, called :math:`v_0, v_1, \dots`. Some of those will come from a Gaussian process, some will be constructed in particular ways. 
 # We then draw samples for each variable. 
-# In the next step, we will compute representations with respect to some basis. Here, we have the option between Fourier basis and BSplines.
+# In the next step, we will compute representations with respect to some basis (e.g. Fourier or BSplines). 
+# Here, we choose the Fourier basis.
 
 t0 = 0
 t1 = 4
@@ -43,12 +43,10 @@ def get_basis(style, n_components):
         basis = Fourier(domain_range=(t0, t1), n_basis=n_components, period=None)
     return basis
 
-# decide on a basis
 style = 'fourier'
 
-
 #%%
-# Generate samples from a simple function
+# Generate samples from a simple function.
 
 def hat(t,A): 
     y = (t<= t1/2) * (2*A/t1 * t) + (t> t1/2) *(2*A - 2*A/t1 * t)
@@ -62,7 +60,7 @@ for j in range(n_samples):
 
 
 #%%
-# Define variables from Gaussian process
+# Define variables from Gaussian process.
 
 cov0 = Gaussian(variance=1., length_scale=1.)
 cov1 = Gaussian(variance=1, length_scale=0.5)
@@ -100,12 +98,12 @@ for j in np.arange(n_var):
 
 #%%
 # We want to create a fourth variable that is constructed using the first variable :math:`v_0` as follows: 
+# 
 # * permute the coefficients of the basis representation
 # * retransform to a time series, but with the basis elements not permuted. 
 #
-# This creates a variable where the relationship to the original :math:`v_0`is not obvious if only looking at the time series.
+# This creates a variable where the relationship to the original :math:`v_0` is not obvious if only looking at the time series.
 
-# components for v3 
 n_comp = 9
 
 basis = get_basis(style, n_comp)
@@ -113,16 +111,12 @@ _traf = samples[0].to_basis(basis)
 
 rng = np.random.default_rng(1917)
 _perm = rng.permutation(n_comp)
-
-# permute
 _traf.coefficients = _traf.coefficients[:, _perm]
 
-# retransform to time series
 v3_ds = _traf.to_grid(samples[0].grid_points)
 
 n_var += 1
 
-# add new time series
 samples.append(v3_ds)
 _lb3 = np.array(['v3'] * n_samples)
 labels.append(_lb3)
@@ -145,9 +139,10 @@ fig.tight_layout()
 
 #%%
 # Next steps:
+# 
 # * compute a basis representation (for a finite number of basis components!)
-# * reconstruct the time series 
-# * plot the reconstruction as well as the error
+# * reconstruct the time series and plot
+# * compute the reconstruction error (defined as the median relative l2 error) 
 
 q = 7
 fig, axs = plt.subplots(n_var, 2, figsize=(15,9))
@@ -171,7 +166,7 @@ for j in range(n_var):
 fig.tight_layout()
 
 #%%
-# Now, we compute the reconstruction error (as a relative median l2 error) for an increasing number of basis components. 
+# Now, we compute the reconstruction error for an increasing number of basis components. 
 # We would expect that the error goes to zero - if we have chosen a suitable basis (e.g.Fourier for periodic functions).
 
 
@@ -203,10 +198,11 @@ ax.grid(ls = '-', lw = .5)
 ax.legend()
 
 #%%
-# ## Functional Graphical Lasso (FSGL)
+# Functional Graphical Lasso computation
+# ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 # 
 # As seen above, with sufficiently many basis components we have a good representation of the original function.
-# Now, compute the coefficients for the first :math:`n_{comp} basis components. Then, compute their correlations which will be the input for Functional Graphical Lasso.
+# Now, compute the coefficients for the first :math:`n_{comp}` basis components. Then, compute their correlations which will be the input for Functional Graphical Lasso.
 # 
 # If we choose :math:`n_{comp}=9`, we expect :math:`4\cdot9=36` variables in total.
 
@@ -223,7 +219,6 @@ all_traf = list()
     
 for j in range(n_var):
     basis = get_basis(style, n_comp)
-    print(basis)
     _traf = samples[j].to_basis(basis)
     
     all_traf.append(_traf.coefficients)
@@ -280,7 +275,7 @@ for j in range(len(lambda_range)):
     all_sol[_lam] = sol.copy()
 
 #%%
-# As :math`v_3` was constructed from :math`v_0`, we would expect that their relationship can be recovered. Also, :math`v_0`and :math`v_1` are more related than :math`v_0` and :math`v_2` as both come from a Gaussian process whereas :math`v_2` was piecewise linear.
+# As :math:`v_3` was constructed from :math:`v_0`, we would expect that their relationship can be recovered. Also, :math:`v_0`and :math:`v_1` are more related than :math:`v_0` and :math:`v_2` as both come from a Gaussian process whereas :math`v_2:` was piecewise linear.
 # Let's see whether these relationships are correctly identified by FSGL. 
 # For this, we are only interested whether the corresponding block (of size MxM) is **non-zero**. The block itself could be sparse or dense and its individual entries are harder to interpret.
 
