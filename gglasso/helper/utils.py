@@ -66,7 +66,7 @@ def deviation(Theta):
 
 #%% functional graphical lasso
 
-def frob_norm_per_block(S, M):
+def frob_norm_per_block(S, M, off_diag=False):
     (pM, pM) = S.shape
     assert pM%M == 0
     
@@ -76,19 +76,33 @@ def frob_norm_per_block(S, M):
     for i in np.arange(p):
         for j in np.arange(start=i, stop=p):
             if j == i:
-                Y[i,j] = np.linalg.norm(S[i*M:(i+1)*M,j*M:(j+1)*M])
+                if off_diag:
+                    Y[i,j] = 0.
+                else:
+                    Y[i,j] = np.linalg.norm(S[i*M:(i+1)*M,j*M:(j+1)*M])
             else:
                 Y[i,j] = np.linalg.norm(S[i*M:(i+1)*M,j*M:(j+1)*M])
                 Y[j,i] = Y[i,j]
-
-    
+   
     return Y
 
 def lambda_max_fsgl(S, M):
     """
     computes lambda_max for Funtional Single Graphical Lasso (FSGL)
+    
+    Let X0 be matrix which is zero on all off-diagonal subblocks
+    Idea: for which lambda is zero in the subdifferential of the objective function at X0 
+    
+    -log det X0  + <S,X0> has derivative S (on the off-diagonal blocks) 
+    
+    as D[-log det](X0)[Y] = <X0^-1, Y> and X0^-1 is zero on off-diagonal blocks
+    
+    subdiff of Frobenius norm at 0 is (Frobenius norm) ball of radius 1
+    
+    --> If lambda >= max_j,l ||S^M_{jl}||_F , then 0 is in subdiff at X0 
+    (for each j,l pick U_jl = -1/lambda S_jl from subdiff)
     """
-    Y = frob_norm_per_block(S, M)
+    Y = frob_norm_per_block(S, M, off_diag=True)
     
     return Y.max()
 

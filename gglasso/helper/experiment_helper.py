@@ -397,6 +397,19 @@ def single_surface_plot(L1, L2, C, ax, name = 'eBIC'):
     
     return
 
+def plot_fsgl_heatmap(Omega, p, M, cval=1., ax=None):
+    pM = p*M
+    
+    if ax is None:
+        fig, ax = plt.subplots()
+    
+    sns.heatmap(Omega, cmap="coolwarm", vmin=-cval, vmax=cval, linewidth=0.005, linecolor='lightgrey',
+                xticklabels=[], yticklabels=[], ax=ax)
+    
+    ax.hlines([(j+1)*M for j in range(p)], 0, pM, color='k', lw=3)
+    ax.vlines([(j+1)*M for j in range(p)], 0, pM, color='k', lw=3)
+
+    return 
 
 #################################################################################################################
 ############################ GIF ################################################################################
