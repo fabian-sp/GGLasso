@@ -132,6 +132,8 @@ With latent variables, our implementation solves
    \min_{\Theta, L \in \mathbb{S}^{p\cdot M}_{++}} - \log \det (\Theta -L) + \mathrm{Tr}(S (\Theta -L)) + \lambda_1 \sum_{j\neq l} \|\Theta_{jl}^M\|_{F} + \mu_1 \|L\|_{\star}.
 
 
+We have a simple tutorial on this in the :ref:`Functional Graphical Lasso experiment`.
+
 
 Optimization algorithms
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

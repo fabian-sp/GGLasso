@@ -1,11 +1,11 @@
 """
-Funtional Graphical Lasso
+Functional Graphical Lasso experiment
 ===========================================
 
 In this example, we want to explain how Functional Graphical Lasso [ref13]_ works and how you can make use of it with ``GGLasso``. 
 For this tutorial, we use the ``scikit-fda`` package.
 
-For Functional Graphical Lasso every variable is representing a function or time series. 
+For Functional Graphical Lasso **every variable is representing a function or time series.** 
 In order to obtain a finite-dimensional problem, we represent the function in some basis (e.g. by computing Fourier coefficients and truncating). 
 Then, we compute correlations of the corresponding coefficients and are interested in the relationships between different functional variables.
  
@@ -84,10 +84,7 @@ for j in np.arange(n_var):
                 n_features=n_ts,
                 start=t0,
                 stop=t1,
-                cov=all_var[j],
-                mean=0,
-                random_state=20
-                )
+                cov=all_var[j], mean=0, random_state=20)
     else:
         _ds = FDataGrid(all_var[j], _t)
     
@@ -140,9 +137,10 @@ fig.tight_layout()
 #%%
 # Next steps:
 # 
-# * compute a basis representation (for a finite number of basis components!)
-# * reconstruct the time series and plot
-# * compute the reconstruction error (defined as the median relative l2 error) 
+# * compute a basis representation (for a finite number of basis components!). This is done using the scikit-fda function ``.to_basis()``.
+# * reconstruct the time series. This is done using the scikit-fda function ``.to_grid()``.
+# * compute the reconstruction error (defined as the median relative :math:`ell_2` error).
+# * plot the reconstructed time series and the error. 
 
 q = 7
 fig, axs = plt.subplots(n_var, 2, figsize=(15,9))
@@ -167,7 +165,7 @@ fig.tight_layout()
 
 #%%
 # Now, we compute the reconstruction error for an increasing number of basis components. 
-# We would expect that the error goes to zero - if we have chosen a suitable basis (e.g.Fourier for periodic functions).
+# We would expect the error to go to zero - if we have chosen a suitable basis (e.g. Fourier for periodic functions).
 
 
 fig, ax = plt.subplots()
@@ -198,8 +196,8 @@ ax.grid(ls = '-', lw = .5)
 ax.legend()
 
 #%%
-# Functional Graphical Lasso computation
-# ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+# Functional Graphical Lasso (FSGL) computation
+# ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 # 
 # As seen above, with sufficiently many basis components we have a good representation of the original function.
 # Now, compute the coefficients for the first :math:`n_{comp}` basis components. Then, compute their correlations which will be the input for Functional Graphical Lasso.
@@ -275,9 +273,10 @@ for j in range(len(lambda_range)):
     all_sol[_lam] = sol.copy()
 
 #%%
-# As :math:`v_3` was constructed from :math:`v_0`, we would expect that their relationship can be recovered. Also, :math:`v_0`and :math:`v_1` are more related than :math:`v_0` and :math:`v_2` as both come from a Gaussian process whereas :math`v_2:` was piecewise linear.
+# As :math:`v_3` was constructed from :math:`v_0`, we would expect that their relationship can be recovered. Also, :math:`v_0`and :math:`v_1` are more related than :math:`v_0` and :math:`v_2` as both come from a Gaussian process whereas :math:`v_2` was piecewise linear.
 # Let's see whether these relationships are correctly identified by FSGL. 
-# For this, we are only interested whether the corresponding block (of size MxM) is **non-zero**. The block itself could be sparse or dense and its individual entries are harder to interpret.
+# Two variables :math:`v_j` and :math:`v_l` are associated if and only if **the corresponding block :math:`\Theta^M_{jl}` is non-zero**. If the basis represenation is exact, this result is given in Lemma 1 in [ref13]_ .
+# The block itself could be sparse or dense and its individual entries are harder to interpret.
 
 fig, axs = plt.subplots(3,3, figsize=(17,15))
 

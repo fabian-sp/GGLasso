@@ -52,12 +52,14 @@ class glasso_problem:
         The default is 'GGL'.
         
     reg_params : dict, optional
-        Dictionary of regularization parameters. Possible keys are:
+        Dictionary of regularization parameters. Needs to be specified before calling ``.solve()``.
+        
+        Possible keys are:
             
         * ``'lambda1'``: float, positive
         * ``'lambda2'``: float, positive
         * ``'mu1'``: float or array of length K, positive. Only needed if ``latent = True``.
-        * ``'lambda1_mask'``: array (p,p) , non-negative, symmetric. For componentwise l1-regularization (multiplied with ``lambda1``). Only available for SGL problems.
+        * ``'lambda1_mask'``: array (p,p) , non-negative, symmetric. The :math:`\\lambda_1` parameter is multiplied element-wise with this array. Only available for SGL.
                
     latent : boolean, optional
         Specify whether latent variables should be modeled.
