@@ -241,7 +241,7 @@ ax.vlines([(j+1)*n_comp for j in range(n_var)], 0, n_samples, color='k', lw=4)
 ax.set_title('Basis coefficients for all samples and variables')
 
 # plot heatmap
-fig, axs = plt.subplots(1,2,figsize=(9,4), gridspec_kw={'width_ratios': [5.5,4.5]})
+fig, axs = plt.subplots(1,2,figsize=(9,4), gridspec_kw={'width_ratios': [5.8,4.5]})
 _v = 1.
 ax = axs[0]
 plot_fsgl_heatmap(S, p, M, ax=ax)
@@ -275,7 +275,7 @@ for j in range(len(lambda_range)):
 #%%
 # As :math:`v_3` was constructed from :math:`v_0`, we would expect that their relationship can be recovered. Also, :math:`v_0`and :math:`v_1` are more related than :math:`v_0` and :math:`v_2` as both come from a Gaussian process whereas :math:`v_2` was piecewise linear.
 # Let's see whether these relationships are correctly identified by FSGL. 
-# Two variables :math:`v_j` and :math:`v_l` are associated if and only if **the corresponding block :math:`\Theta^M_{jl}` is non-zero**. If the basis represenation is exact, this result is given in Lemma 1 in [ref13]_ .
+# Two variables :math:`v_j` and :math:`v_l` are associated if and only if the corresponding block :math:`\Theta^M_{jl}` **is non-zero**. If the basis represenation is exact, this result is given in Lemma 1 in [ref13]_ .
 # The block itself could be sparse or dense and its individual entries are harder to interpret.
 
 fig, axs = plt.subplots(3,3, figsize=(17,15))
