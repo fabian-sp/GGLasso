@@ -3,6 +3,7 @@ author: Fabian Schaipp
 """
 
 import numpy as np
+import pandas as pd
 
 from .basic_linalg import adjacency_matrix
 
@@ -137,3 +138,34 @@ def log_transform(X):
     g = X.apply(geometric_mean)
     Z = np.log(X / g)
     return Z
+
+def _save_labels(S):
+    """
+    Saves data columns names (if any) as lables before solving Graphical Lasso problem.
+    """
+    # SGL problem
+    idx_dict = dict()
+    if isinstance(S, pd.DataFrame):
+        for col in S.columns:
+            idx_dict[col] = S.columns.get_loc(col)
+
+    # MGL problem
+    elif isinstance(S, list):
+        K = S.copy()  # copy K instances
+        if len(np.array(K).shape) == 3:  # check if array is 3d
+
+            i = 0
+            for k in K:  # for each instance k out of K
+                k_idx_dict = dict()  # save labels of k
+
+                if isinstance(k, pd.DataFrame):
+                    for col in k.columns:
+                        k_idx_dict[col] = k.columns.get_loc(col)
+
+                idx_dict[i] = k_idx_dict  # save all labels of K
+                i += 1
+
+    elif isinstance(S, np.ndarray):
+        idx_dict = None  # no lables provided
+
+    return idx_dict
