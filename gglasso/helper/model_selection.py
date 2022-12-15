@@ -552,7 +552,7 @@ def single_grid_search(S, lambda_range, N, method = 'eBIC', gamma = 0.3, latent 
              
             AIC[j,m] = aic_single(S, sol['Theta'], N)
             for g in gammas:
-                BIC[g][j, m] = ebic_single(S, sol['Theta'], N, gamma = g)
+                BIC[g][j, m] = ebic_single(S, sol['Theta'], N, gamma = g, lambda1_mask = lambda1_mask)
             
             SP[j,m] = sparsity(sol['Theta'])
             
@@ -724,12 +724,20 @@ def ebic(S, Theta, N, gamma = 0.5):
     
     return ebic
 
-def ebic_single(S, Theta, N, gamma):
+def ebic_single(S, Theta, N, gamma, lambda1_mask=None):
     (p,p) = S.shape
-    assert isinstance(N, (int,float,np.integer,np.float))
     
-    # count upper diagonal non-zero entries
-    E = (np.count_nonzero(Theta) - p)/2
+    assert isinstance(N, (int,float,np.integer,np.float))
+    if lambda1_mask is not None:
+        assert lambda1_mask.shape == S.shape
+        assert np.count_nonzero(Theta) == (Theta!=0).sum(), "count_nonzero and indicator give different results!"
+        
+        E_mat = (Theta!=0) * lambda1_mask # weight with mask
+        np.fill_diagonal(E_mat, 0) # do not count diagonal
+        E = E_mat.sum()/2
+    else:         
+        E = (np.count_nonzero(Theta) - p)/2 # count upper diagonal non-zero entries
+    
     bic = N*Sdot(S, Theta) - N*robust_logdet(Theta) + E*(np.log(N)+ 4*np.log(p)*gamma)
     
     return bic
