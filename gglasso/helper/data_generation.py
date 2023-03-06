@@ -75,10 +75,10 @@ def generate_precision_matrix(p=100, M=10, style = 'powerlaw', gamma = 2.8, prob
         
         # generate random numbers for the nonzero entries
         if seed is not None:
-            np.random.seed(seed)
+            rng = np.random.default_rng(seed)
             
-        B1 = np.random.uniform(low = .1, high = .4, size = (L,L))
-        B2 = np.random.choice(a = [-1,1], p=[.5, .5], size = (L,L))
+        B1 = rng.uniform(low = .1, high = .4, size = (L,L))
+        B2 = rng.choice(a = [-1,1], p=[.5, .5], size = (L,L))
         
         A_m = A_m * (B1*B2)
         
@@ -182,9 +182,9 @@ def group_power_network(p=100, K=10, M=10, scale = False, seed = None):
     Sigma_0,_ = generate_precision_matrix(p = p, M = M, style = 'powerlaw', scale = scale, seed = seed)
     # contains the number of the block disappearing for each k=1,..,K
     if seed is not None:
-        np.random.seed(seed)
+        rng = np.random.default_rng(seed)
         
-    block = np.random.randint(M, size = K)
+    block = rng.integers(M, size = K)
     
     for k in np.arange(K):    
         Sigma_k = Sigma_0.copy()           
@@ -216,13 +216,13 @@ def sample_covariance_matrix(Sigma, N, seed = None):
     return: sample covariance matrix S
     """
     if seed is not None:
-        np.random.seed(seed)
+        rng = np.random.default_rng(seed)
     
     if len(Sigma.shape) == 2:
         assert abs(Sigma - Sigma.T).max() <= 1e-10
         (p,p) = Sigma.shape
         
-        sample = np.random.multivariate_normal(np.zeros(p), Sigma, N).T
+        sample = rng.multivariate_normal(np.zeros(p), Sigma, N).T
         S = np.cov(sample, bias = True)
         
     else:
@@ -231,7 +231,7 @@ def sample_covariance_matrix(Sigma, N, seed = None):
 
         sample = np.zeros((K,p,N))
         for k in np.arange(K):
-            sample[k,:,:] = np.random.multivariate_normal(np.zeros(p), Sigma[k,:,:], N).T
+            sample[k,:,:] = rng.multivariate_normal(np.zeros(p), Sigma[k,:,:], N).T
     
         S = np.zeros((K,p,p))
         for k in np.arange(K):

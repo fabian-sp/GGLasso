@@ -152,11 +152,11 @@ def template_admm_vs_ppdna(p = 50, K = 3, N = 1000, reg = "GGL"):
     M = 5 # M should be divisor of p
 
     if reg == 'GGL':
-        Sigma, Theta = group_power_network(p, K, M, seed=567)
+        Sigma, Theta = group_power_network(p, K, M, seed=56789)
     elif reg == 'FGL':
-        Sigma, Theta = time_varying_power_network(p, K, M, seed=567)
+        Sigma, Theta = time_varying_power_network(p, K, M, seed=56789)
     
-    S, samples = sample_covariance_matrix(Sigma, N, seed=567)
+    S, samples = sample_covariance_matrix(Sigma, N, seed=56789)
 
     lambda1= 0.05
     lambda2 = 0.01
