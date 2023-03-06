@@ -76,7 +76,9 @@ def generate_precision_matrix(p=100, M=10, style = 'powerlaw', gamma = 2.8, prob
         # generate random numbers for the nonzero entries
         if seed is not None:
             rng = np.random.default_rng(seed)
-            
+        else:
+            rng = np.random.default_rng(np.random.randint(low=11111, high=99999))
+
         B1 = rng.uniform(low = .1, high = .4, size = (L,L))
         B2 = rng.choice(a = [-1,1], p=[.5, .5], size = (L,L))
         
@@ -183,7 +185,9 @@ def group_power_network(p=100, K=10, M=10, scale = False, seed = None):
     # contains the number of the block disappearing for each k=1,..,K
     if seed is not None:
         rng = np.random.default_rng(seed)
-        
+    else:
+        rng = np.random.default_rng(np.random.randint(low=11111, high=99999))
+
     block = rng.integers(M, size = K)
     
     for k in np.arange(K):    
@@ -217,7 +221,9 @@ def sample_covariance_matrix(Sigma, N, seed = None):
     """
     if seed is not None:
         rng = np.random.default_rng(seed)
-    
+    else:
+        rng = np.random.default_rng(np.random.randint(low=11111, high=99999))
+        
     if len(Sigma.shape) == 2:
         assert abs(Sigma - Sigma.T).max() <= 1e-10
         (p,p) = Sigma.shape
