@@ -20,8 +20,6 @@ jobs:
           activate-environment: gglasso_env
           environment-file: environment.yml
           python-version: 3.8
-      - run: |
-        python setup.py clean --all develop clean --all
       
       # Install package and run tests
       - name: Test with pytest
