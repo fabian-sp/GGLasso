@@ -22,7 +22,8 @@ jobs:
           python-version: 3.8
       
       # Install package and run tests
-      - name: Test with pytest
+      - name: run tests
         run: |
-          which python
+          pip install -e .
+          pip install pytest
           pytest gglasso/tests -v
