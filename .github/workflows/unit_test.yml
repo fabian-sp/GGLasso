@@ -24,6 +24,5 @@ jobs:
       # Install package and run tests
       - name: Test with pytest
         run: |
-          conda info
-          conda list
-          
+          python setup.py clean --all develop clean --all
+          pytest gglasso/tests -v
