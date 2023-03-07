@@ -17,13 +17,13 @@ jobs:
 
       - uses: conda-incubator/setup-miniconda@v2
         with:
-          activate-environment: gglasso_env 
+          activate-environment: gglasso_env
+          environment-file: environment.yml
+          python-version: 3.8
       
       # Install package and run tests
       - name: Test with pytest
         run: |
-          conda env update --file environment.yml --prune
           conda info
           conda list
-          ls
           
