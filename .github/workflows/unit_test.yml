@@ -22,6 +22,7 @@ jobs:
       # Install package and run tests
       - name: Test with pytest
         run: |
+          conda env update --file environment.yml --prune
           conda info
           conda list
           ls
