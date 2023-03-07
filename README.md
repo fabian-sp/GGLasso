@@ -91,7 +91,6 @@ If you use `GGLasso`, please consider the following citation
     }
 
 
-
 ## Community Guidelines
 
 1)  Contributions and suggestions to the software are always welcome.
