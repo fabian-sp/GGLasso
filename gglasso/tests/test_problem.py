@@ -11,6 +11,14 @@ from gglasso.helper.ext_admm_helper import construct_trivial_G, create_group_arr
 from gglasso.helper.basic_linalg import scale_array_by_diagonal
 
 
+##########################################
+# NOTE
+# Numpy can not produce identical random numbers across versions/machines (even for same seed)
+# Particularly the multivariate_normal function is not deterministic
+# Hence, for now we do not assert on fixed outcomes.
+# see: https://github.com/numpy/numpy/issues/22975
+##########################################
+
 p = 20
 K = 3
 N = 1000
@@ -59,9 +67,6 @@ def test_GGL():
     S, samples = sample_covariance_matrix(Sigma, N, seed=123)
     P = template_problem_MGL(S, N, reg = 'GGL', latent = False)   
     
-    assert P.reg_params['lambda1'] == 0.1
-    assert P.reg_params['lambda2'] == 0.01
-    assert_almost_equal(P.solution.ebic_, 69250.30820755142)
     return
 
 def test_GGL_latent():
@@ -69,10 +74,6 @@ def test_GGL_latent():
     S, samples = sample_covariance_matrix(Sigma, N, seed=123)
     P = template_problem_MGL(S, N, reg = 'GGL', latent = True)
     
-    assert P.reg_params['lambda1'] == 0.1
-    assert P.reg_params['lambda2'] == 0.01
-    assert_array_almost_equal(P.reg_params['mu1'], np.ones(K))
-    assert_almost_equal(P.solution.ebic_, 69250.30820755142)
     return
 
 def test_FGL():
@@ -80,9 +81,6 @@ def test_FGL():
     S, samples = sample_covariance_matrix(Sigma, N, seed=123)
     P = template_problem_MGL(S, N, reg = 'FGL', latent = False)
     
-    assert P.reg_params['lambda1'] == 0.1
-    assert P.reg_params['lambda2'] == 0.01
-    assert_almost_equal(P.solution.ebic_, 67530.17571389768)
     return
 
 def test_FGL_latent():
@@ -90,10 +88,6 @@ def test_FGL_latent():
     S, samples = sample_covariance_matrix(Sigma, N, seed=123)
     P = template_problem_MGL(S, N, reg = 'FGL', latent = True)
     
-    assert P.reg_params['lambda1'] == 0.1
-    assert P.reg_params['lambda2'] == 0.01
-    assert_array_almost_equal(P.reg_params['mu1'], np.ones(K))
-    assert_almost_equal(P.solution.ebic_, 67530.17571389768)
     return
 
 def test_GGL_ext():
@@ -106,9 +100,6 @@ def test_GGL_ext():
         
     G = construct_trivial_G(p, K)
     P = template_problem_MGL(Sdict, N, reg = 'GGL', latent = False, G = G)
-    assert P.reg_params['lambda1'] == 0.1
-    assert P.reg_params['lambda2'] == 0.001
-    assert_almost_equal(P.solution.ebic_, 64920.48000118762)
     return
 
 def test_GGL_ext_latent():
@@ -122,10 +113,6 @@ def test_GGL_ext_latent():
     G = construct_trivial_G(p, K)
     P = template_problem_MGL(Sdict, N, reg = 'GGL', latent = True, G = G)
     
-    assert P.reg_params['lambda1'] == 0.1
-    assert P.reg_params['lambda2'] == 0.001
-    assert_array_almost_equal(P.reg_params['mu1'], np.ones(K))
-    assert_almost_equal(P.solution.ebic_, 64920.480001187614)
     return
 
 def test_GGL_ext_nonuniform():
@@ -182,10 +169,6 @@ def test_SGL():
     S, samples = sample_covariance_matrix(Sigma, N, seed = 1234)
     P = template_problem_SGL(S, N, latent = False)
     
-    first_row = np.zeros(p); first_row[:2] = np.array([0.91903186, 0.11891509])
-    assert_array_almost_equal(P.solution.precision_[0,:], first_row)
-    
-    assert P.reg_params['lambda1'] == 0.1
     return
     
 def test_SGL_latent():
@@ -193,12 +176,6 @@ def test_SGL_latent():
     S, samples = sample_covariance_matrix(Sigma, N, seed = 2345)
     P = template_problem_SGL(S, N, latent = True)
     
-    first_row = np.zeros(p); first_row[:3] = np.array([0.94395251,  0.13135248,  0.00569105])
-    assert_array_almost_equal(P.solution.precision_[0,:], first_row)
-    
-    assert P.reg_params['lambda1'] == 0.1
-    assert P.reg_params['mu1'] == 46.4158883361278
-      
     return
 
 ################
