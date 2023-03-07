@@ -23,6 +23,7 @@ jobs:
       
       # Install package and run tests
       - name: run tests
+        shell: bash -l {0}
         run: |
           pip install -e .
           pip install pytest
