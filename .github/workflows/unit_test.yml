@@ -5,6 +5,8 @@ on:
     branches: [ master ]
   pull_request:
 
+  # Allows you to run this workflow manually from the Actions tab
+  workflow_dispatch:
 
 jobs:
   build:
@@ -13,12 +15,15 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       - name: Add conda to system path
+        # $CONDA is an environment variable pointing to the root of the miniconda directory
         run: |
-          # $CONDA is an environment variable pointing to the root of the miniconda directory
           echo $CONDA/bin >> $GITHUB_PATH
+
       - name: Install dependencies
         run: |
           conda env update --file environment.yml --name base
+      
+      # Install package and run tests
       - name: Test with pytest
         run: |
           python setup.py clean --all develop clean --all
