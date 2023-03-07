@@ -27,5 +27,5 @@ jobs:
         shell: bash -l {0}
         run: |
           pip install -e .
-          pytest gglasso/tests -v
           conda list
+          pytest gglasso/tests -v
