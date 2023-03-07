@@ -23,8 +23,9 @@ jobs:
       
       # Install package and run tests
       - name: run tests
+        # This one is very important so we can reuse conda env from last step
         shell: bash -l {0}
         run: |
           pip install -e .
-          pip install pytest
           pytest gglasso/tests -v
+          conda list
