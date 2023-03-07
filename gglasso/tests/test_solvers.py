@@ -165,7 +165,7 @@ def template_admm_vs_ppdna(p = 50, K = 3, N = 1000, reg = "GGL"):
     
     sol, info = ADMM_MGL(S, lambda1, lambda2, reg, Omega_0, stopping_criterion = 'kkt', tol = 1e-8, rtol = 1e-5, verbose = True, latent = False)
     
-    ppdna_params = {'max_iter' : 60, 'sigma_0' : 10}
+    ppdna_params = {'max_iter' : 20, 'sigma_0' : 10}
     
     sol2, info2 = warmPPDNA(S, lambda1, lambda2, reg, Omega_0, ppdna_params = ppdna_params,\
                             eps = 1e-7 , verbose = True, measure = True)
