@@ -13,6 +13,9 @@ from gglasso.helper.ext_admm_helper import get_K_identity as id_dict
 from gglasso.helper.ext_admm_helper import construct_indexer, create_group_array, check_G, consensus
 from gglasso.helper.model_selection import lambda_parametrizer, map_l_to_w
 
+def test_dummy():
+    assert False
+    return
 
 def test_lambda_w_map():
     l1 = 0.1
