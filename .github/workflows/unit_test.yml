@@ -14,12 +14,15 @@ jobs:
 
     steps:
       - uses: actions/checkout@v3
-      - name: Add conda to system path
-        # $CONDA is an environment variable pointing to the root of the miniconda directory
-        run: |
-          echo $CONDA/bin >> $GITHUB_PATH
+
+      - uses: conda-incubator/setup-miniconda@v2
+        with:
+          activate-environment: gglasso_env 
       
       # Install package and run tests
       - name: Test with pytest
         run: |
-          python setup.py clean --all develop clean --all
+          conda info
+          conda list
+          ls
+          
