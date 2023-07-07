@@ -696,7 +696,7 @@ class GGLassoEstimator():
         
         return
     
-    def _set_solution(self, Theta, L = None):
+    def _set_solution(self, Theta, L=None):
         
         self.precision_ = Theta.copy()
         self.calc_adjacency()
@@ -706,22 +706,22 @@ class GGLassoEstimator():
         
         return
     
-    def calc_ebic(self, gamma = 0.5):
+    def calc_ebic(self, gamma=0.5):
         """
         calculates the eBIC for a given value of :math:`\\gamma`. Note that this can differ from eBIC values in model selection because of the scaling.
         """
-        self.ebic_ = ebic(self.sample_covariance_, self.precision_, self.n_samples, gamma = gamma)          
+        self.ebic_ = ebic(self.sample_covariance_, self.precision_, self.lowrank_, self.n_samples, gamma=gamma)          
         return self.ebic_
     
-    def calc_adjacency(self, t = 1e-8):
+    def calc_adjacency(self, t=1e-8):
         
         if self.conforming:
-            self.adjacency_ = adjacency_matrix(S = self.precision_, t = t)
+            self.adjacency_ = adjacency_matrix(S=self.precision_, t=t)
         
         else:
             self.adjacency_ = dict()
             for k in range(self.K):
-                self.adjacency_[k] = adjacency_matrix(S = self.precision_[k], t = t)
+                self.adjacency_[k] = adjacency_matrix(S=self.precision_[k], t=t)
             
         return 
         

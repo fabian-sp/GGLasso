@@ -5,7 +5,7 @@ author: Fabian Schaipp
 import numpy as np
 
 from .basic_linalg import Sdot
-from .utils import mean_sparsity, sparsity
+from .utils import mean_sparsity, sparsity, assert_L_iszero, create_zero_L
 
 from .utils import get_K_identity as id_array
 from .ext_admm_helper import get_K_identity as id_dict
@@ -189,6 +189,10 @@ def grid_search(solver, S, N, p, reg, l1, l2 = None, w2 = None, method= 'eBIC', 
                 
             # solve
             sol, info = solver(**kwargs)
+
+            if not latent:
+                assert_L_iszero(sol) # just to be sure!
+
             # warm start
             kwargs['Omega_0'] = sol['Omega'].copy()
             
@@ -196,6 +200,7 @@ def grid_search(solver, S, N, p, reg, l1, l2 = None, w2 = None, method= 'eBIC', 
             if thresholding:
                 # store also the best solution without solution
                 _no_thr_this_score = ebic(S, sol['Theta'], N, gamma = gamma)
+
                 if  _no_thr_this_score < _no_thr_curr_min:
                     _no_thr_best_params = {'lambda1': L1[g1,g2], 'lambda2':L2[g1,g2]}
                     _no_thr_curr_min = _no_thr_this_score
@@ -210,7 +215,7 @@ def grid_search(solver, S, N, p, reg, l1, l2 = None, w2 = None, method= 'eBIC', 
             # store diagnostics
             AIC[g1,g2] = aic(S, sol['Theta'], N)
             for g in gammas:
-                BIC[g][g1,g2] = ebic(S, sol['Theta'], N, gamma = g)
+                BIC[g][g1,g2] = ebic(S, sol['Theta'], sol['L'], N, gamma=g)
             
             if latent:
                 RANK[:,g1,g2] = [np.linalg.matrix_rank(sol['L'][k]) for k in np.arange(K)]
@@ -543,16 +548,23 @@ def single_grid_search(S, lambda_range, N, method = 'eBIC', gamma = 0.3, latent 
                 if store_all:
                     lowrank[j,m,:,:] = sol['L'].copy()
                 RANK[j,m] = np.linalg.matrix_rank(sol['L'])
-            
+
             # tune optimal threshold, changes sol['Theta']
             if thresholding:
-                sol['Theta'], opt_tau, _ = tune_threshold(sol['Theta'], S, N,\
-                                                          tau_range = None, method = method, gamma = gamma)
+                sol['Theta'], opt_tau, _ = tune_threshold(sol['Theta'], S, N,
+                                                          tau_range=None, method=method, gamma=gamma)
                 TAU[j,m] = opt_tau
              
             AIC[j,m] = aic_single(S, sol['Theta'], N)
+            
+            # EBIC calculation
             for g in gammas:
-                BIC[g][j, m] = ebic_single(S, sol['Theta'], N, gamma = g, lambda1_mask = lambda1_mask)
+                if latent:
+                    BIC[g][j, m] = ebic_single(S, sol['Theta'], sol['L'], 
+                                               N, gamma=g, lambda1_mask=lambda1_mask)
+                else:
+                    BIC[g][j, m] = ebic_single(S, sol['Theta'], None, 
+                                               N, gamma=g, lambda1_mask=lambda1_mask)
             
             SP[j,m] = sparsity(sol['Theta'])
             
@@ -708,26 +720,31 @@ def aic_single(S, Theta, N):
 
 ################################################################
     
-def ebic(S, Theta, N, gamma = 0.5):
+def ebic(S, Theta, L, N, gamma=0.5):
     """
     extended BIC after Drton et al.
     """
+
+    if L is None:
+        L = create_zero_L(S)
+
     if type(S) == dict:
-        ebic = ebic_dict(S, Theta, N, gamma)
+        ebic = ebic_dict(S, Theta, L, N, gamma)
     elif type(S) == np.ndarray:
         if len(S.shape) == 3:
-            ebic = ebic_array(S, Theta, N, gamma)
+            ebic = ebic_array(S, Theta, L, N, gamma)
         else:
-            ebic = ebic_single(S, Theta, N, gamma)
+            ebic = ebic_single(S, Theta, L, N, gamma)
     else:
         raise KeyError("Not a valid input type -- should be either dictionary or ndarray")
     
     return ebic
 
-def ebic_single(S, Theta, N, gamma, lambda1_mask=None):
+def ebic_single(S, Theta, L, N, gamma, lambda1_mask=None):
     (p,p) = S.shape
     
     assert isinstance(N, (int,float,np.integer,np.float))
+
     if lambda1_mask is not None:
         assert lambda1_mask.shape == S.shape
         assert np.count_nonzero(Theta) == (Theta!=0).sum(), "count_nonzero and indicator give different results!"
@@ -738,23 +755,33 @@ def ebic_single(S, Theta, N, gamma, lambda1_mask=None):
     else:         
         E = (np.count_nonzero(Theta) - p)/2 # count upper diagonal non-zero entries
     
-    bic = N*Sdot(S, Theta) - N*robust_logdet(Theta) + E*(np.log(N)+ 4*np.log(p)*gamma)
+    # new formula using L
+    if L is not None:
+        r = np.linalg.matrix_rank(L)
+        E2 = (p-r)*r
+        t1 = (E+E2) * np.log(N)
+        t2 = E * 4*np.log(p)*gamma       
+        bic = N*Sdot(S, Theta-L) - N*robust_logdet(Theta-L) + t1 + t2
     
+    # formula as before
+    else:
+        bic = N*Sdot(S, Theta) - N*robust_logdet(Theta) + E*(np.log(N)+ 4*np.log(p)*gamma)
+
     return bic
 
-def ebic_array(S, Theta, N, gamma):
+def ebic_array(S, Theta, L, N, gamma):
     (K,p,p) = S.shape   
     if isinstance(N, (int,float,np.integer,np.float)):
         N = np.ones(K) * N
-        
+    
     bic = 0
     for k in np.arange(K):
-        bic += ebic_single(S[k,:,:], Theta[k,:,:], N[k], gamma)
+        bic += ebic_single(S[k,:,:], Theta[k,:,:], L[k,:,:], N[k], gamma)
     return bic
 
-def ebic_dict(S, Theta, N, gamma):
+def ebic_dict(S, Theta, L, N, gamma):
     """
-    S, Theta are dictionaries
+    S, Theta, L are dictionaries
     N is array of sample sizes
     """
     K = len(S.keys())   
@@ -763,7 +790,7 @@ def ebic_dict(S, Theta, N, gamma):
     
     bic = 0
     for k in np.arange(K):
-        bic += ebic_single(S[k], Theta[k], N[k], gamma)
+        bic += ebic_single(S[k], Theta[k], L[k], N[k], gamma)
         
     return bic
         

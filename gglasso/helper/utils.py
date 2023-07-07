@@ -64,6 +64,30 @@ def deviation(Theta):
         
     return d
 
+def assert_L_iszero(sol):
+    """Asserts that the low-rank part of the solution is a zero-array."""
+
+    L = sol['L']
+
+    if isinstance(L, dict):
+        for k in L.keys():
+            assert np.count_nonzero(L[k]) == 0, "L should be zero, but it isn't."
+    else:
+        assert np.count_nonzero(L) == 0, "L should be zero, but it isn't."
+
+    return 
+
+def create_zero_L(S):
+    """When latent=False, it is useful to work with L as being zero for eBIC calculation."""
+
+    if isinstance(S, dict):
+        K = len(S.keys())
+        L = dict([(k, np.zeros_like(S[k])) for k in range(K)])
+    else:
+        L = np.zeros_like(S)
+    return L
+
+
 #%% functional graphical lasso
 
 def frob_norm_per_block(S, M, off_diag=False):
