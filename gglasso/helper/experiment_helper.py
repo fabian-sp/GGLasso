@@ -379,7 +379,7 @@ def surface_plot(L1, L2, C, name = 'eBIC'):
     fig = plt.figure(figsize = (8,5))  
         
     if type(C) == np.ndarray:
-        ax = fig.gca(projection='3d')
+        ax = fig.add_subplot(projection='3d')
         single_surface_plot(L1, L2, C, ax, name = name)
              
     else:
