@@ -651,7 +651,9 @@ def tune_multiple_threshold(Theta, S, N, tau_range, method = 'eBIC', gamma = 0.1
 ################################################################
 ## CRITERIA AIC/EBIC
 ################################################################
-    
+
+SINGLE_FLOAT_INT_TYPES = (int,float,np.int16,np.int32,np.int64,np.float16,np.float32,np.float64)
+
 def aic(S, Theta, N):
     """
     AIC information criterion after Danaher et al.
@@ -676,7 +678,7 @@ def aic_dict(S, Theta, N):
     """
     K = len(S.keys())
     
-    if isinstance(N, (int,float,np.integer,np.float)):
+    if isinstance(N, SINGLE_FLOAT_INT_TYPES):
         N = np.ones(K) * N
         
     aic = 0
@@ -687,7 +689,7 @@ def aic_dict(S, Theta, N):
 def aic_array(S,Theta, N):
     (K,p,p) = S.shape
     
-    if isinstance(N, (int,float,np.integer,np.float)):
+    if isinstance(N, SINGLE_FLOAT_INT_TYPES):
         N = np.ones(K) * N
     
     aic = 0
@@ -698,7 +700,7 @@ def aic_array(S,Theta, N):
 
 def aic_single(S, Theta, N):
     (p,p) = S.shape
-    assert isinstance(N, (int,float,np.integer,np.float))
+    assert isinstance(N, SINGLE_FLOAT_INT_TYPES)
         
     # count upper diagonal non-zero entries
     E = (np.count_nonzero(Theta) - p)/2
@@ -726,8 +728,7 @@ def ebic(S, Theta, N, gamma = 0.5):
 
 def ebic_single(S, Theta, N, gamma, lambda1_mask=None):
     (p,p) = S.shape
-    
-    assert isinstance(N, (int,float,np.integer,np.float))
+    assert isinstance(N, SINGLE_FLOAT_INT_TYPES)
     if lambda1_mask is not None:
         assert lambda1_mask.shape == S.shape
         assert np.count_nonzero(Theta) == (Theta!=0).sum(), "count_nonzero and indicator give different results!"
@@ -744,7 +745,7 @@ def ebic_single(S, Theta, N, gamma, lambda1_mask=None):
 
 def ebic_array(S, Theta, N, gamma):
     (K,p,p) = S.shape   
-    if isinstance(N, (int,float,np.integer,np.float)):
+    if isinstance(N, SINGLE_FLOAT_INT_TYPES):
         N = np.ones(K) * N
         
     bic = 0
@@ -758,7 +759,7 @@ def ebic_dict(S, Theta, N, gamma):
     N is array of sample sizes
     """
     K = len(S.keys())   
-    if isinstance(N, (int,float,np.integer,np.float)):
+    if isinstance(N, SINGLE_FLOAT_INT_TYPES):
         N = np.ones(K) * N
     
     bic = 0
