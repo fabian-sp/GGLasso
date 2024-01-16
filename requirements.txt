@@ -7,4 +7,3 @@ matplotlib
 seaborn
 networkx
 regain
-decorator==4.4.2

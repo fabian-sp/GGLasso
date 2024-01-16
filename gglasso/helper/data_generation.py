@@ -219,10 +219,7 @@ def sample_covariance_matrix(Sigma, N, seed = None):
     samples data for a given covariance matrix Sigma (with K layers)
     return: sample covariance matrix S
     """
-    if seed is not None:
-        rng = np.random.default_rng(seed)
-    else:
-        rng = np.random.default_rng(np.random.randint(low=11111, high=99999))
+    rng = np.random.default_rng(seed)
         
     if len(Sigma.shape) == 2:
         assert abs(Sigma - Sigma.T).max() <= 1e-10
