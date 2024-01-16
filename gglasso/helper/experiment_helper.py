@@ -17,36 +17,11 @@ from .utils import deviation
 ############################ FOR EXPERIMENT SETUP ##################################################################
 #################################################################################################################
 
-def lambda_parametrizer(l2 = 0.05, w2 = 0.5):
-    
+def lambda_parametrizer(l2 = 0.05, w2 = 0.5):    
     w1 = l2/(w2*np.sqrt(2))
     l1 = w1 - l2/np.sqrt(2)
     return l1
 
-
-def lambda_grid(num1 = 5, num2 = 2, reg = 'GGL'):
-    """
-    num1: number of grid point for lambda 1
-    num2: number of grid point for lambda 2
-    reg: grid for GGL or FGL (interpretation changes)
-    creates a grid of lambda1 / lambda2 values
-    idea: the grid goes from smaller to higher values when going down/right
-    """
-    
-    if reg == 'GGL':
-        l2 = np.logspace(start = -0.5, stop = -2.5, num = num2, base = 10)
-        w2 = np.linspace(0.2, 0.5, num1)
-        l2grid, w2grid = np.meshgrid(l2,w2)
-        L1 = lambda_parametrizer(l2grid, w2grid)
-        L2 = l2grid.copy()
-    elif reg == 'FGL':
-        l2 = 2*np.logspace(start = -1, stop = -3, num = num2, base = 10)
-        l1 = 2*np.logspace(start = -1, stop = -3, num = num1, base = 10)
-        L2, L1 = np.meshgrid(l2,l1)
-        w2 = None
-        
-    return L1.squeeze(), L2.squeeze(), w2
-           
         
 def discovery_rate(S_sol , S_true, t = 1e-10):
     if len(S_true.shape) == 2:
@@ -422,6 +397,19 @@ def single_surface_plot(L1, L2, C, ax, name = 'eBIC'):
     
     return
 
+def plot_fsgl_heatmap(Omega, p, M, cval=1., ax=None):
+    pM = p*M
+    
+    if ax is None:
+        fig, ax = plt.subplots()
+    
+    sns.heatmap(Omega, cmap="coolwarm", vmin=-cval, vmax=cval, linewidth=0.005, linecolor='lightgrey',
+                xticklabels=[], yticklabels=[], ax=ax)
+    
+    ax.hlines([(j+1)*M for j in range(p)], 0, pM, color='k', lw=3)
+    ax.vlines([(j+1)*M for j in range(p)], 0, pM, color='k', lw=3)
+
+    return 
 
 #################################################################################################################
 ############################ GIF ################################################################################

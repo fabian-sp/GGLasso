@@ -99,7 +99,6 @@ for k in range(K):
 #
 # We now create the instance of Group Graphical Lasso problem. As we are in the non-conforming case, we need to spcify the array ``G`` which we created before.
 
-reg = 'GGL'
 
 P = glasso_problem(S = S, N = N, reg = "GGL", reg_params = None, latent = True, G = G, do_scaling = True)
 print(P)

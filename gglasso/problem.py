@@ -52,11 +52,14 @@ class glasso_problem:
         The default is 'GGL'.
         
     reg_params : dict, optional
-        Dictionary of regularization parameters. Possible keys are:
+        Dictionary of regularization parameters. Needs to be specified before calling ``.solve()``.
+        
+        Possible keys are:
             
         * ``'lambda1'``: float, positive
         * ``'lambda2'``: float, positive
         * ``'mu1'``: float or array of length K, positive. Only needed if ``latent = True``.
+        * ``'lambda1_mask'``: array (p,p) , non-negative, symmetric. The :math:`\\lambda_1` parameter is multiplied element-wise with this array. Only available for SGL.
                
     latent : boolean, optional
         Specify whether latent variables should be modeled.
@@ -274,14 +277,6 @@ class glasso_problem:
         reg_params_default['lambda1'] = None
         if self.multiple:
             reg_params_default['lambda2'] = None
-        # if self.latent:
-        #     reg_params_default['mu1'] = None
-        #     if self.multiple:
-        #         reg_params_default['mu1'] = 1e-1*np.ones(self.K)
-        #     else:
-        #         reg_params_default['mu1'] = 1e-1
-        # else:
-        #     reg_params_default['mu1'] = None
         
         reg_params_default['mu1'] = None
         
@@ -327,7 +322,8 @@ class glasso_problem:
                 * ``'lambda1'``: float, positive
                 * ``'lambda2'``: float, positive
                 * ``'mu1'``: float or array of length K, positive. Only needed if ``latent = True``.
-            
+                * ``'lambda1_mask'``: array (p,p) , non-negative, symmetric. The :math:`\\lambda_1` parameter is multiplied element-wise with this array. Only available for SGL.
+                   
         """
         
         if reg_params is None:
@@ -430,11 +426,13 @@ class glasso_problem:
         if not self.multiple:
             if self.latent:
                 sol, info = ADMM_SGL(S = self.S, lambda1 = self.reg_params['lambda1'], Omega_0 = self.Omega_0, \
-                                     tol = self.tol , rtol = self.rtol, latent = self.latent, mu1 = self.reg_params['mu1'], **self.solver_params)
+                                     tol = self.tol , rtol = self.rtol, latent = self.latent, mu1 = self.reg_params['mu1'], 
+                                     lambda1_mask = self.reg_params.get('lambda1_mask'), **self.solver_params)
             
             else:
                 sol = block_SGL(S = self.S, lambda1 = self.reg_params['lambda1'], Omega_0 = self.Omega_0,  \
-                                tol = self.tol, rtol = self.tol, **self.solver_params)
+                                tol = self.tol, rtol = self.tol, 
+                                lambda1_mask = self.reg_params.get('lambda1_mask'), **self.solver_params)
                 info = {}
             
                 
@@ -475,15 +473,19 @@ class glasso_problem:
         
         params = dict()
         params['lambda1_range'] = np.logspace(0,-3,10)
+        
         if self.multiple:
-            #params['w2_range'] = np.logspace(-1,-3,5)
             params['lambda2_range'] = np.logspace(-1,-4,5)
-            
+                    
         if self.latent:
             params['mu1_range'] = np.logspace(2,-1,10)
         else:
             params['mu1_range'] = None
-        
+            
+        if not self.multiple:
+            # lambda1_mask is only available for SGL
+            params['lambda1_mask'] = None
+
         return params
     
     def set_modelselect_params(self, modelselect_params = None):
@@ -494,18 +496,18 @@ class glasso_problem:
         ----------
         modelselect_params : dict
             Contains values for (a subset of) the grid parameters for :math:`\\lambda_1`, :math:`\\lambda_2`, :math:`\\mu_1`.
-            Each dictionary value should be an array. For optimal performance sort :math:`\\lambda_1` in a descending order.
+            See below on how the dictionary should be structured. For optimal performance sort :math:`\\lambda_1` in a descending order.
             
             Possible dictionary keys:
-                * ``'lambda1_range'``: range for :math:`\\lambda_1` parameter.
-                * ``'lambda2_range'``: range for :math:`\\lambda_2` parameter.
-                * ``'mu1_range'``: range for :math:`\\mu_1` parameter.
-                
+                * ``'lambda1_range'``: array of values for :math:`\\lambda_1` parameter.
+                * ``'lambda2_range'``: array of values for :math:`\\lambda_2` parameter.
+                * ``'mu1_range'``: array of values for :math:`\\mu_1` parameter.
+                * ``'lambda1_mask'``: array (p,p), non-negative, symmetric. The :math:`\\lambda_1` parameter is multiplied element-wise with this array. Only available for SGL.
         """
         
         if modelselect_params is None:
             modelselect_params = dict()
-            warnings.warn("No grid for model selection is specified and thus default values are used. A grid can be specified with the argument modelselect_params.")
+            warnings.warn("No grid for model selection is specified and thus default (or previous) values are used. A grid can be specified with the argument modelselect_params.")
             
         else:
             assert type(modelselect_params) == dict
@@ -573,7 +575,8 @@ class glasso_problem:
         if not self.multiple:
             sol, self._all_theta, self._all_lowrank, stats = single_grid_search(S = self.S, lambda_range = self.modelselect_params['lambda1_range'], N = self.N, \
                                                                                 method = method, gamma = gamma, latent = self.latent, mu_range = self.modelselect_params['mu1_range'],
-                                                                                use_block = True, store_all = store_all, tol = tol, rtol = rtol)
+                                                                                use_block = True, store_all = store_all, tol = tol, rtol = rtol,
+                                                                                lambda1_mask = self.modelselect_params['lambda1_mask'])
             
             # update the regularization parameters to the best grid point
             self.set_reg_params(stats['BEST'])

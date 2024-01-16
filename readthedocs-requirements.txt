@@ -1,0 +1,7 @@
+-r ./requirements.txt
+
+sphinx
+sphinx-gallery
+sphinx_rtd_theme
+
+scikit-fda

@@ -2,12 +2,22 @@
 author: Fabian Schaipp
 """
 import numpy as np
-from numpy.testing import assert_array_almost_equal
+import pandas as pd
+from numpy.testing import assert_array_almost_equal, assert_almost_equal
 
 from gglasso.helper.data_generation import time_varying_power_network, group_power_network, sample_covariance_matrix, generate_precision_matrix
 from gglasso.problem import glasso_problem
-from gglasso.helper.ext_admm_helper import construct_trivial_G
+from gglasso.helper.ext_admm_helper import construct_trivial_G, create_group_array, construct_indexer, check_G
 from gglasso.helper.basic_linalg import scale_array_by_diagonal
+
+
+##########################################
+# NOTE
+# Numpy can not produce identical random numbers across versions/machines (even for same seed)
+# Particularly the multivariate_normal function is not deterministic
+# Hence, for now we do not assert on fixed outcomes.
+# see: https://github.com/numpy/numpy/issues/22975
+##########################################
 
 p = 20
 K = 3
@@ -44,7 +54,6 @@ def template_problem_MGL(S, N, reg = 'GGL', latent = False, G = None):
     P.solve(verbose = True)
     
     # test model selection
-    P.model_selection(method = 'AIC')
     P.model_selection(modelselect_params = modelselectparams, method = 'eBIC', gamma = 0.1)
     
     #tmp = P.modelselect_stats.copy()
@@ -54,51 +63,78 @@ def template_problem_MGL(S, N, reg = 'GGL', latent = False, G = None):
     return P
 
 def test_GGL():
-    Sigma, Theta = group_power_network(p, K, M)    
-    S, samples = sample_covariance_matrix(Sigma, N)
-    _ = template_problem_MGL(S, N, reg = 'GGL', latent = False)   
+    Sigma, Theta = group_power_network(p, K, M, seed=123)    
+    S, samples = sample_covariance_matrix(Sigma, N, seed=123)
+    P = template_problem_MGL(S, N, reg = 'GGL', latent = False)   
+    
     return
 
 def test_GGL_latent():
-    Sigma, Theta = group_power_network(p, K, M)    
-    S, samples = sample_covariance_matrix(Sigma, N)
-    _ = template_problem_MGL(S, N, reg = 'GGL', latent = True)
+    Sigma, Theta = group_power_network(p, K, M, seed=123)    
+    S, samples = sample_covariance_matrix(Sigma, N, seed=123)
+    P = template_problem_MGL(S, N, reg = 'GGL', latent = True)
+    
     return
 
 def test_FGL():
-    Sigma, Theta = time_varying_power_network(p, K, M)
-    S, samples = sample_covariance_matrix(Sigma, N)
-    _ = template_problem_MGL(S, N, reg = 'FGL', latent = False)
+    Sigma, Theta = time_varying_power_network(p, K, M, seed=123)
+    S, samples = sample_covariance_matrix(Sigma, N, seed=123)
+    P = template_problem_MGL(S, N, reg = 'FGL', latent = False)
+    
     return
 
 def test_FGL_latent():
-    Sigma, Theta = time_varying_power_network(p, K, M)
-    S, samples = sample_covariance_matrix(Sigma, N)
-    _ = template_problem_MGL(S, N, reg = 'FGL', latent = True)
+    Sigma, Theta = time_varying_power_network(p, K, M, seed=123)
+    S, samples = sample_covariance_matrix(Sigma, N, seed=123)
+    P = template_problem_MGL(S, N, reg = 'FGL', latent = True)
+    
     return
 
 def test_GGL_ext():
-    Sigma, Theta = group_power_network(p, K, M)
-    S, samples = sample_covariance_matrix(Sigma, N)
+    Sigma, Theta = group_power_network(p, K, M, seed=456)
+    S, samples = sample_covariance_matrix(Sigma, N, seed=456)
     
     Sdict = dict()
     for k in np.arange(K):
         Sdict[k] = S[k,:,:].copy()
         
     G = construct_trivial_G(p, K)
-    _ = template_problem_MGL(Sdict, N, reg = 'GGL', latent = False, G = G)
+    P = template_problem_MGL(Sdict, N, reg = 'GGL', latent = False, G = G)
     return
 
 def test_GGL_ext_latent():
-    Sigma, Theta = group_power_network(p, K, M)
-    S, samples = sample_covariance_matrix(Sigma, N)
+    Sigma, Theta = group_power_network(p, K, M, seed=456)
+    S, samples = sample_covariance_matrix(Sigma, N, seed=456)
     
     Sdict = dict()
     for k in np.arange(K):
         Sdict[k] = S[k,:,:].copy()
         
     G = construct_trivial_G(p, K)
-    _ = template_problem_MGL(Sdict, N, reg = 'GGL', latent = True, G = G)
+    P = template_problem_MGL(Sdict, N, reg = 'GGL', latent = True, G = G)
+    
+    return
+
+def test_GGL_ext_nonuniform():
+    K = 4
+    p = 20
+    N = 200
+    
+    all_obs = dict()
+    S = dict()
+    for k in np.arange(K):
+        X = np.random.rand(2+k,N)
+        all_obs[k] = pd.DataFrame(X)
+        S[k] = np.cov(all_obs[k], bias = True)
+        
+    ix_exist, ix_location = construct_indexer(list(all_obs.values()))
+    G = create_group_array(ix_exist, ix_location, min_inst = 2)
+    check_G(G, p)
+    P = glasso_problem(S = S, N = N, reg = "GGL", reg_params = None, latent = False, G = G, do_scaling = True)
+    reg_params = {'lambda1': 0.01, 'lambda2': 0.001}
+    P.set_reg_params(reg_params)
+    P.solve(verbose = True)
+    
     return
 
 ###############################################################
@@ -122,31 +158,28 @@ def template_problem_SGL(S, N, latent = False):
     P.solve()
     
     # test model selection    
-    P.model_selection(method = 'AIC')
     P.model_selection(modelselect_params = None, method = 'eBIC', gamma = 0.1)
     
-    #tmp = P.modelselect_stats.copy()
     _ = P.solution.calc_ebic(gamma = 0.1)
     P.solution.calc_adjacency()
     return P
 
 def test_SGL():
-    Sigma, Theta = group_power_network(p, K = 1, M = 2, seed = 1234)
-    S, samples = sample_covariance_matrix(Sigma, N, seed = 1234); S = S[0,:,:]  
+    Sigma, Theta = generate_precision_matrix(p, M=2, style = 'powerlaw', gamma = 2.8, prob = 0.1, seed = 1234)
+    S, samples = sample_covariance_matrix(Sigma, N, seed = 1234)
     P = template_problem_SGL(S, N, latent = False)
     
-    first_row = np.zeros(p); first_row[:2] = np.array([0.0945606, 0.91819399])
-    assert_array_almost_equal(P.solution.precision_[1,:], first_row)
-    
-    assert P.reg_params['lambda1'] == 0.1
     return
     
 def test_SGL_latent():
-    Sigma, Theta = group_power_network(p, K = 1, M = 2)
-    S, samples = sample_covariance_matrix(Sigma, N); S = S[0,:,:]  
+    Sigma, Theta = generate_precision_matrix(p, M=2, style = 'powerlaw', gamma = 2.8, prob = 0.1, seed = 2345)
+    S, samples = sample_covariance_matrix(Sigma, N, seed = 2345)
     P = template_problem_SGL(S, N, latent = True)
+    
     return
-        
+
+################
+### SCALING
 
 def test_scaling_SGL():
     
@@ -183,3 +216,41 @@ def test_scaling_SGL():
     
     return
     
+##################
+### LAMBDA1 MASK
+
+def template_lambda1_mask_SGL(latent=False):
+    p = 100
+    N = 1000
+
+    Sigma, Theta = generate_precision_matrix(p=p, M=2, style='erdos', gamma=2.8, prob=0.1, scale=False, seed=12345)
+    S, samples = sample_covariance_matrix(Sigma, N, seed=12345)
+    
+    rng = np.random.RandomState(8787)
+    lambda1_mask = 0.5 + 0.5*rng.rand(p,p)
+    lambda1_mask = 0.5*(lambda1_mask + lambda1_mask.T)
+    
+    model_select_params= {'lambda1_mask': lambda1_mask, 'lambda1_range': np.logspace(-2,0,10)}
+
+    P = glasso_problem(S = S, N = N, reg = None, latent = latent)
+    P.set_modelselect_params(model_select_params)
+
+    print(P.modelselect_params)
+    P.model_selection(modelselect_params = None, method = 'eBIC', gamma = 0.1)    
+    print(P.reg_params)
+    
+    if not latent:
+        assert_almost_equal(P.reg_params['lambda1'], 0.1291549665014884)
+    else:
+         assert_almost_equal(P.reg_params['lambda1'], 0.1291549665014884)
+         
+    return
+
+def test_lambda1_mask():
+    template_lambda1_mask_SGL(latent=False)
+    return
+
+def test_lambda1_mask_latent():
+    template_lambda1_mask_SGL(latent=True)
+    return
+

@@ -17,7 +17,7 @@ from regain.covariance import TimeGraphicalLasso
 
 from gglasso.solver.admm_solver import ADMM_MGL
 from gglasso.helper.data_generation import time_varying_power_network, sample_covariance_matrix
-from gglasso.helper.experiment_helper import lambda_grid, discovery_rate, error
+from gglasso.helper.experiment_helper import discovery_rate, error
 from gglasso.helper.utils import get_K_identity
 from gglasso.helper.experiment_helper import plot_evolution, plot_deviation, surface_plot, single_heatmap_animation
 from gglasso.helper.model_selection import aic, ebic
@@ -57,7 +57,10 @@ anim = single_heatmap_animation(Theta)
 # Note: the package contains functions for doing this grid search, but here we also want to evaluate True and False positive rates on each grid points.
 #
 #
-L1, L2, _ = lambda_grid(num1 = 10, num2 = 5, reg = reg)
+
+l2 = 2*np.logspace(start = -1, stop = -3, num = 5, base = 10)
+l1 = 2*np.logspace(start = -1, stop = -3, num = 10, base = 10)
+L2, L1 = np.meshgrid(l2,l1)
 grid1 = L1.shape[0]; grid2 = L2.shape[1]
 
 ERR = np.zeros((grid1, grid2))
