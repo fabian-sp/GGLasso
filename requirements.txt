@@ -6,4 +6,3 @@ pandas
 matplotlib
 seaborn
 networkx
-regain

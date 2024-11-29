@@ -10,14 +10,14 @@ DESCRIPTION = 'Algorithms for Single and Multiple Graphical Lasso problems.'
 URL = 'https://github.com/fabian-sp/GGLasso'
 EMAIL = 'fabian.schaipp@tum.de'
 AUTHOR = 'Fabian Schaipp'
-REQUIRES_PYTHON = '>=3.7.0'
+REQUIRES_PYTHON = '>=3.9.0'
 VERSION = gglasso.__version__
 
 
 # What packages are required for this module to be executed?
 REQUIRED = [
     "numpy>=1.17.3", "scipy>=0.11.0", "scikit-learn>=0.24.1", "numba>=0.46.0", "pandas",
-    "matplotlib", "seaborn", "networkx", "regain"]
+    "matplotlib", "seaborn", "networkx"]
 
 # What packages are optional?
 EXTRAS = {
@@ -27,6 +27,10 @@ EXTRAS = {
             "sphinx-gallery",
             "sphinx_rtd_theme",
         ],
+        "examples": [
+            "regain",
+            "scikit-fda",
+        ]
     }
 
 here = os.path.abspath(os.path.dirname(__file__))
@@ -42,13 +46,12 @@ except FileNotFoundError:
 
 CLASSIFIERS = """\
 Development Status :: 5 - Production/Stable
-Intended Audience :: Science/Research
-Intended Audience :: Developers
-License :: OSI Approved
+License :: OSI Approved :: MIT License
 Programming Language :: Python
-Programming Language :: Python :: 3
-Topic :: Software Development
-Operating System :: Unix
+Programming Language :: Python :: 3.9
+Programming Language :: Python :: 3.10
+Programming Language :: Python :: 3.11
+Programming Language :: Python :: 3.12
 """
 
 

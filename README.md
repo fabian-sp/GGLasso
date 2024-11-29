@@ -25,28 +25,23 @@ or
     conda install -c conda-forge gglasso
 
 
-### Install from source
+### Developer installation
 
-Alternatively, you can install the package from source using the following commands:
-
-    git clone https://github.com/fabian-sp/GGLasso.git
-    pip install -r requirements.txt
-    python setup.py
-
-Test your installation with 
-
-    pytest gglasso/ -v
-
-
-### Advanced options
-
-If you want to create a conda environment with full development dependencies (for building docs, testing etc), run:
+If you want to create a conda environment with full development dependencies (for building docs, testing,...), run:
 
 	conda env create -f environment.yml
 
-If you wish to install `gglasso` in developer mode, i.e. not having to reinstall `gglasso` everytime the source code changes (either by remote or local changes), run
+To install `gglasso` in developer mode run
 
-    python setup.py clean --all develop clean --all
+    python -m pip install --editable .
+
+
+Test your installation with 
+
+    pytest tests/ -v
+
+
+
 
 ## The `glasso_problem` class
 
