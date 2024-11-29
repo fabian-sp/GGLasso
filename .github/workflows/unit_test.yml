@@ -19,13 +19,12 @@ jobs:
         with:
           activate-environment: gglasso_env
           environment-file: environment.yml
-          python-version: 3.8
+          python-version: 3.9
       
       # Install package and run tests
       - name: run tests
         # This one is very important so we can reuse conda env from last step
         shell: bash -l {0}
         run: |
-          pip install -e .
-          conda list
-          pytest gglasso/tests -v
+          python -m pip install --editable .
+          pytest tests/ -v
