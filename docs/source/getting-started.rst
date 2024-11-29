@@ -6,29 +6,31 @@ Getting started
 Installation
 ^^^^^^^^^^^^^^^^
 
-``GGLasso`` is available over Pypi or `Github`_. For installation with pip, simply run 
+The official repository can be found on `Github`_
+``GGLasso`` is available over ``pip`` and ``conda``. For installation from PyPi, simply run 
 
 .. code-block::
 
      pip install gglasso
 
-To install from source, clone the repository and make sure you have all requirements installed. Then move to the directory and run
+For ``conda``, use
 
 .. code-block::
 
-     python setup.py
+     conda install -c conda-forge gglasso
 
-This installs a package called ``gglasso`` in your Python environment. In case you want to edit the source code and use the ``gglasso`` package without re-installing, you can run instead
-
-.. code-block::
-
-     python setup.py clean --all develop clean --all
-
-To make sure that everything works properly you can run unit tests in ``gglasso/tests``, for example
+Alternatively, you can clone from Github and install a developer version with the command
 
 .. code-block::
 
-     pytest gglasso/ -v
+     python -m pip install --editable .
+
+
+To make sure that everything works properly you can run unit tests with
+
+.. code-block::
+
+     pytest tests/ -v
 
 To import from ``GGLasso`` in Python, type for example
 
