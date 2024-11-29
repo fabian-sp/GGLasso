@@ -6,8 +6,7 @@ Getting started
 Installation
 ^^^^^^^^^^^^^^^^
 
-The official repository can be found on `Github`_
-``GGLasso`` is available over ``pip`` and ``conda``. For installation from PyPi, simply run 
+The official repository can be found on `Github`_. ``GGLasso`` is available over ``pip`` and ``conda``. For installation from PyPi, simply run 
 
 .. code-block::
 
