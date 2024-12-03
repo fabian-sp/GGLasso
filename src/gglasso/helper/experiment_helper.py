@@ -199,7 +199,6 @@ def plot_runtime(iA, iP, vecN, save = False):
             p1 = ax.plot(iA[j]['residual'], c = color_dict['ADMM'], label = 'ADMM residual')
             p2 = ax.plot(iP[j]['residual'], c = color_dict['PPDNA'], marker = 'o', markersize = 3, label = 'PPDNA residual')
             
-            #ax.tick_params(axis='both', which='major', labelsize=7)
             ax.set_yscale('log')
             ax.set_xscale('log')
             ax.set_ylim(1e-6,0.2)
@@ -212,9 +211,6 @@ def plot_runtime(iA, iP, vecN, save = False):
             # plot start x axis at 
             ax.vlines(iP[j]['iter_admm']-1, 0, 0.2, 'grey')
             ax.set_xlim(max(iP[j]['iter_admm'] - 5,1), )
-            
-            #ax.get_xaxis().set_major_formatter(matplotlib.ticker.ScalarFormatter())
-            #ax2.get_xaxis().set_major_formatter(matplotlib.ticker.ScalarFormatter())
             
             if j in [0,2]:
                 ax.set_ylabel('KKT residual')
@@ -377,8 +373,6 @@ def single_surface_plot(L1, L2, C, ax, name = 'eBIC'):
     
     ax.set_xlabel(r'$\lambda_1$', fontsize = 14)
     ax.set_ylabel(r'$\lambda_2$', fontsize = 14)
-    #ax.set_xlabel(r'$w_1$', fontsize = 14)
-    #ax.set_ylabel(r'$w_2$', fontsize = 14)
     ax.set_zlabel(name, fontsize = 14)
     ax.view_init(elev = 18, azim = 51)
     
