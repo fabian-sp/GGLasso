@@ -5,13 +5,26 @@
 import numpy as np
 import time
 import warnings
+from typing import Optional
 
 from .ggl_helper import prox_sum_Frob, phiplus, prox_rank_norm
 
-
-def ADMM_FSGL(S, lambda1, M, Omega_0, Theta_0=np.array([]), X_0=np.array([]),
-             rho=1., max_iter=1000, tol=1e-7, rtol=1e-4,\
-             update_rho=True, verbose=False, measure=False, latent=False, mu1=None):
+def ADMM_FSGL(S: np.ndarray,
+              lambda1: float,
+              M: int,
+              Omega_0: np.ndarray,
+              Theta_0: np.ndarray=np.array([]),
+              X_0: np.ndarray=np.array([]),
+              rho: float=1.,
+              max_iter: int=1000,
+              tol: float=1e-7,
+              rtol: float=1e-4,
+              update_rho: bool=True,
+              verbose: bool=False,
+              measure: bool=False,
+              latent: bool=False,
+              mu1: Optional[float]=None
+    ):
     """
     This is an ADMM solver for the (Latent variable) Functional Single Graphical Lasso problem (FSGL).
     It solves a SGL problem for the case when each of the ``p`` variables has an ``M``-dimensional functional representation (e.g. Fourier transform).
@@ -80,14 +93,13 @@ def ADMM_FSGL(S, lambda1, M, Omega_0, Theta_0=np.array([]), X_0=np.array([]),
     assert S.shape[0] == S.shape[1]
     assert lambda1 > 0
 
-
     if latent:
         assert mu1 is not None
         assert mu1 > 0
 
-    (pM,pM) = S.shape
+    (pM, pM) = S.shape
 
-    assert pM%M == 0
+    assert pM % M == 0
     p = int(pM/M)
     
     if verbose:
@@ -111,7 +123,6 @@ def ADMM_FSGL(S, lambda1, M, Omega_0, Theta_0=np.array([]), X_0=np.array([]),
     residual = np.zeros(max_iter)
     status = ''
 
-
     if verbose:
         print("------------ADMM Algorithm for Functional Single Graphical Lasso----------------")
   
@@ -126,12 +137,11 @@ def ADMM_FSGL(S, lambda1, M, Omega_0, Theta_0=np.array([]), X_0=np.array([]),
         if measure:
             start = time.time()
 
-
         # Omega Update
-        W_t = Theta_t - L_t - X_t - (1 / rho) * S
+        W_t = Theta_t - L_t - X_t - (1/rho)*S
         eigD, eigQ = np.linalg.eigh(W_t)
         Omega_t_1 = Omega_t.copy()
-        Omega_t = phiplus(beta=1 / rho, D=eigD, Q=eigQ)
+        Omega_t = phiplus(beta=1/rho, D=eigD, Q=eigQ)
 
         # Theta Update
         Theta_t = prox_sum_Frob(Omega_t + L_t + X_t, M, (1/rho)*lambda1)
@@ -145,14 +155,19 @@ def ADMM_FSGL(S, lambda1, M, Omega_0, Theta_0=np.array([]), X_0=np.array([]),
         # X Update
         X_t = X_t + Omega_t - Theta_t + L_t
 
-                
         if measure:
             end = time.time()
             runtime[iter_t] = end - start
 
         # Stopping criterion
-        r_t,s_t,e_pri,e_dual = ADMM_stopping_criterion(Omega_t, Omega_t_1, Theta_t, L_t, X_t,\
-                                                           S, rho, tol, rtol, latent)
+        r_t, s_t, e_pri, e_dual = ADMM_stopping_criterion(Omega_t,
+                                                          Omega_t_1,
+                                                          Theta_t,
+                                                          L_t,
+                                                          X_t,
+                                                          S,
+                                                          rho, tol, rtol, latent
+        )
             
         # update rho
         if update_rho:
@@ -167,16 +182,13 @@ def ADMM_FSGL(S, lambda1, M, Omega_0, Theta_0=np.array([]), X_0=np.array([]),
             X_t = (rho/rho_new)*X_t
             rho = rho_new
             
-            
-        residual[iter_t] = max(r_t,s_t)
+        residual[iter_t] = max(r_t, s_t)
 
         if verbose:
             print(out_fmt % (iter_t,r_t,s_t,e_pri,e_dual,rho))
         if (r_t <= e_pri) and  (s_t <= e_dual):
             status = 'optimal'
             break
-
-
 
     ##################################################################
     ### MAIN LOOP FINISHED
@@ -226,20 +238,18 @@ def ADMM_FSGL(S, lambda1, M, Omega_0, Theta_0=np.array([]), X_0=np.array([]),
     return sol, info
 
 
-
 def ADMM_stopping_criterion(Omega, Omega_t_1, Theta, L, X, S, rho, eps_abs, eps_rel, latent=False):
     # X is inputed as scaled dual variable, this is accounted for by factor rho in e_dual
     if not latent:
-        assert np.all(L == 0)
+        assert np.all(L==0)
 
-    (pM,pM) = S.shape
+    (pM, pM) = S.shape
 
-
-    dim = ((pM ** 2 + pM) / 2)  # number of elements of off-diagonal matrix
+    dim = ((pM**2 + pM)/2)  # number of elements of off-diagonal matrix
     e_pri = dim * eps_abs + eps_rel * np.maximum(np.linalg.norm(Omega), np.linalg.norm(Theta-L))
     e_dual = dim * eps_abs + eps_rel * rho * np.linalg.norm(X)
 
     r = np.linalg.norm(Omega - Theta + L)
     s = rho*np.linalg.norm(Omega - Omega_t_1)
 
-    return r,s,e_pri,e_dual
+    return r, s, e_pri, e_dual
