@@ -1,9 +1,8 @@
-numpy>=1.17.3
-numba>=0.46.0
+numpy>=1.17.3,<2.0.0
+numba>=0.46.0,<0.60.0
 scipy>=0.11.0
 scikit-learn>=0.24.1
 pandas
 matplotlib
 seaborn
 networkx
-regain

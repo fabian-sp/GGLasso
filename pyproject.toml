@@ -1,0 +1,82 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+###############################################################################
+#                                 Main library                                #
+###############################################################################
+
+[project]
+name = "gglasso"
+dynamic = ["version"]
+description = 'Algorithms for Single and Multiple Graphical Lasso problems.'
+readme = "README.md"
+requires-python = ">=3.9"
+license = "MIT"
+keywords = ["network inference",
+            "graphcial models",
+            "graphical lasso",
+            "optimization"]
+authors = [
+  {name = "Fabian Schaipp", email = "fabian.schaipp@tum.de" },
+  {name = "Oleg Vlasovets", email = ""},
+  {name = "Christian L. Müller", email = ""},
+]
+classifiers = [
+  "Development Status :: 5 - Production/Stable",
+  "License :: OSI Approved :: MIT License",
+  "Programming Language :: Python",
+  "Programming Language :: Python :: 3.9",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: Implementation :: CPython",
+  "Programming Language :: Python :: Implementation :: PyPy",
+]
+dependencies = [
+  "numpy>=1.17.3, <2.0.0",
+  "scipy>=0.11.0",
+  "scikit-learn>=0.24.1",
+  "numba>=0.46.0, <0.60.0",
+  "pandas",
+  "matplotlib",
+  "seaborn",
+  "networkx",
+]
+
+[project.urls]
+Documentation = "https://gglasso.readthedocs.io/en/stable/"
+Issues = "https://github.com/fabian-sp/GGLasso/issues"
+Source = "https://github.com/fabian-sp/GGLasso"
+
+[tool.hatch.version]
+path = "src/gglasso/__init__.py"
+
+[[tool.hatch.envs.all.matrix]]
+python = ["3.9", "3.10", "3.11", "3.12"]
+
+# The minimum Python version that should be supported
+target-version = "py39"
+
+[tool.hatch.build.targets.sdist]
+include = ["src/gglasso"]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/gglasso"]
+
+###############################################################################
+#                           Development dependencies                          #
+###############################################################################
+
+# See: https://packaging.python.org/en/latest/guides/writing-pyproject-toml/#writing-pyproject-toml
+[project.optional-dependencies]
+tests = ["pytest", "pytest-cov"]
+docs = [
+  "sphinx",
+  "sphinx-gallery",
+  "sphinx_rtd_theme",
+]
+examples = [
+  "regain",
+  "scikit-fda",
+]

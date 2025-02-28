@@ -1,3 +1,50 @@
+#%%
+# prox operator in case numba version does not work
+
+# def prox_2norm_G(X, G, l2):
+#     """
+#     calculates the proximal operator at points X for the group penalty induced by G
+#     G: 2xLxK matrix where the -th row contains the (i,j)-index of the element in Theta^k which contains to group l
+#        if G has a entry -1 no element is contained in the group for this Theta^k
+#     X: dictionary with X^k at key k, each X[k] is assumed to be symmetric
+#     """
+#     assert l2 > 0
+#     K = len(X.keys())
+#     for  k in np.arange(K):
+#         assert abs(X[k] - X[k].T).max() <= 1e-5, "X[k] has to be symmetric"
+    
+#     d = G.shape
+#     assert d[0] == 2
+#     assert d[2] == K
+#     L = d[1]
+    
+#     X1 = copy.deepcopy(X)
+#     group_size = (G[0,:,:] != -1).sum(axis = 1)
+    
+#     for l in np.arange(L):
+#         # for each group construct v, calculate prox, and insert the result. Ignore -1 entries of G
+#         v0 = np.zeros(K)
+#         for k in np.arange(K):
+#             if G[0,l,k] == -1:
+#                 v0[k] = np.nan
+#             else:
+#                 v0[k] = X[k][G[0,l,k], G[1,l,k]]
+        
+#         v = v0[~np.isnan(v0)]
+#         # scale with square root of the group size
+#         z0 = prox_2norm(v,l2 * np.sqrt(group_size[l]))
+#         v0[~np.isnan(v0)] = z0
+        
+#         for k in np.arange(K):
+#             if G[0,l,k] == -1:
+#                 continue
+#             else:
+#                 X1[k][G[0,l,k], G[1,l,k]] = v0[k]
+#                 # lower triangular
+#                 X1[k][G[1,l,k], G[0,l,k]] = v0[k]
+             
+#     return X1
+
 ############################
 ## some old snippets befor jitting
 ############################

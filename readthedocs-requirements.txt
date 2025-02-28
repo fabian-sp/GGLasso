@@ -5,3 +5,4 @@ sphinx-gallery
 sphinx_rtd_theme
 
 scikit-fda
+regain

@@ -3,10 +3,9 @@ author: Fabian Schaipp
 """
 
 import numpy as np
-#from tick.prox import ProxTV
 from numba import njit
 
-from ..helper.basic_linalg import trp,Gdot,Sdot
+from ..helper.basic_linalg import trp, Gdot, Sdot
 from .fgl_helper import condat_method
 
 # functions specifically related to the GGL regularizer
@@ -19,15 +18,15 @@ def prox_od_1norm(A, l):
     """
     calculates the prox of the off-diagonal 1norm at a point A
     """    
-    (d1,d2) = A.shape
+    (d1, d2) = A.shape
     res = np.sign(A) * np.maximum(np.abs(A) - l, 0.)
     
-    for i in np.arange(np.minimum(d1,d2)):
+    for i in np.arange(np.minimum(d1, d2)):
         res[i,i] = A[i,i]
     
     return res
 
-def prox_rank_norm(A, beta, D = np.array([]), Q = np.array([])):
+def prox_rank_norm(A, beta, D=np.array([]), Q=np.array([])):
 
     if len(D) != A.shape[0]:
         D, Q = np.linalg.eigh(A)
@@ -50,7 +49,7 @@ def prox_sum_Frob(X, M, l):
     \lambda \sum_{j\neq l} \|X^M_{jl}\|_F 
     """
     (pM, pM) = X.shape
-    assert pM%M == 0
+    assert pM % M == 0
     
     p = int(pM/M)
     Y = np.zeros((pM,pM))
@@ -58,11 +57,11 @@ def prox_sum_Frob(X, M, l):
     for i in np.arange(p):
         for j in np.arange(start=i, stop=p):
             if j == i:
-                Y[i*M:(i+1)*M,j*M:(j+1)*M] = X[i*M:(i+1)*M,j*M:(j+1)*M] 
+                Y[i*M:(i+1)*M, j*M:(j+1)*M] = X[i*M:(i+1)*M, j*M:(j+1)*M] 
             else:
-                B = prox_2norm(X[i*M:(i+1)*M,j*M:(j+1)*M], l)
-                Y[i*M:(i+1)*M,j*M:(j+1)*M] = B
-                Y[j*M:(j+1)*M,i*M:(i+1)*M] = B.T
+                B = prox_2norm(X[i*M:(i+1)*M, j*M:(j+1)*M], l)
+                Y[i*M:(i+1)*M, j*M:(j+1)*M] = B
+                Y[j*M:(j+1)*M, i*M:(i+1)*M] = B.T
                              
     return Y
 
@@ -78,7 +77,7 @@ def jacobian_projection(v, l):
     if a <= l:
         g = np.eye(K)
     else:
-        g = (l/a) * ( np.eye(K) - (1/a**2) * np.outer(v,v) )
+        g = (l/a) * (np.eye(K) - (1/a**2) * np.outer(v,v))
         
     return g
     
@@ -96,7 +95,7 @@ def jacobian_1norm(v,l):
     return np.diag(d)
 
 @njit()
-def jacobian_prox_phi_ggl(v , l1 , l2):
+def jacobian_prox_phi_ggl(v, l1, l2):
     u = prox_1norm(v, l1)
     sig = jacobian_projection(u, l2)
     lam = jacobian_1norm(v, l1)
@@ -106,14 +105,13 @@ def jacobian_prox_phi_ggl(v , l1 , l2):
     return M
 
 # functions specifically related to the FGL regularizer
-
 @njit()
 def construct_B(K):
     dd = np.eye(K)
-    ld = - np.tri(K, k = -1) + np.tri(K, k = -2) 
+    ld = - np.tri(K, k=-1) + np.tri(K, k=-2) 
     
-    B = dd+ld
-    B = B[1:,:]
+    B = dd + ld
+    B = B[1:, :]
     # older numba versions modify B when applying pinv, hence copy
     tB = B.T.copy()
     # this is the left-inverse of B.T, is needed to reconstruct the dual solution z_lambda
@@ -121,18 +119,19 @@ def construct_B(K):
     
     return B, invB
 
-# also implemented in package tick, but our implementation is faster
+# old version using tick package:
+# from tick.prox import ProxTV
+# a = ProxTV(l).call(np.ascontiguousarray(v))
+
 @njit()
 def prox_tv(v,l):
-    a = condat_method(v,l)
-    #a = ProxTV(l).call(np.ascontiguousarray(v))
+    a = condat_method(v, l)
     return a
 
 @njit()
 def prox_phi_fgl(v, l1, l2):
-    res = prox_1norm(prox_tv(v,l2) , l1)
+    res = prox_1norm(prox_tv(v,l2), l1)
     return res
-
 
 @njit()
 def jacobian_tv(v,l):   
@@ -147,14 +146,14 @@ def jacobian_tv(v,l):
     z_tmp[ind1] = 0.
     
     Sigma = np.diag(z_tmp)   
-    P_hat = np.linalg.pinv(Sigma @ B@ B.T @ Sigma)
+    P_hat = np.linalg.pinv(Sigma @ B @ B.T @ Sigma)
     P = np.eye(K) - B.T @ P_hat @ B
     return P
 
 @njit()
-def jacobian_prox_phi_fgl(v , l1 , l2): 
-    x = prox_tv(v,l2)
-    P = jacobian_tv(v,l2)
+def jacobian_prox_phi_fgl(v, l1, l2): 
+    x = prox_tv(v, l2)
+    P = jacobian_tv(v, l2)
     Theta = jacobian_1norm(x, l1)
     
     return Theta @ P
@@ -167,11 +166,11 @@ def P_val(X, l1, l2, reg):
     res = 0
     for i in np.arange(p):
         # start at i+1 because P does NOT operate on diagonal
-        for j in np.arange(start = i + 1 , stop = p):
+        for j in np.arange(start=i+1 , stop=p):
             if reg == 'GGL':
-                res += l1 * np.linalg.norm(X[:,i,j] , 1) + l2 * np.linalg.norm(X[:,i,j] , 2)
+                res += l1 * np.linalg.norm(X[:,i,j], 1) + l2 * np.linalg.norm(X[:,i,j], 2)
             elif reg == 'FGL':
-                res += l1 * np.linalg.norm(X[:,i,j] , 1) + l2 * np.linalg.norm(X[1:,i,j] - X[:-1,i,j] , 1)
+                res += l1 * np.linalg.norm(X[:,i,j], 1) + l2 * np.linalg.norm(X[1:,i,j] - X[:-1,i,j], 1)
                 
     # multiply by 2 as we only summed the upper triangular
     return 2 * res
@@ -186,19 +185,18 @@ def prox_phi(v, l1, l2, reg):
     elif reg == 'FGL':
         res = prox_phi_fgl(v, l1, l2)
     return res
-    
 
 
 @njit()
 def prox_p(X, l1, l2, reg):
     #X is always symmetric and hence we only calculate upper diagonals
     assert np.abs(X - trp(X)).max() <= 1e-5, "input X is not symmetric"
-    assert np.minimum(l1,l2) > 0, "lambda 1 and lambda2 have to be positive"
+    assert np.minimum(l1, l2) > 0, "lambda 1 and lambda2 have to be positive"
     
     (K,p,p) = X.shape
     M = np.zeros((K,p,p))
     for i in np.arange(p):
-        for j in np.arange(start = i, stop = p):
+        for j in np.arange(start=i, stop=p):
             if i == j:
                 # factor 1/2 because we later add again
                 M[:,i,j] = (1/2)*X[:,i,j]
@@ -221,9 +219,9 @@ def jacobian_prox_phi(v , l1 , l2, reg):
     assert reg in ['GGL', 'FGL']
     
     if reg == 'GGL':
-        res = jacobian_prox_phi_ggl(v , l1 , l2)
+        res = jacobian_prox_phi_ggl(v, l1, l2)
     elif reg == 'FGL':
-        res = jacobian_prox_phi_fgl(v , l1 , l2)
+        res = jacobian_prox_phi_fgl(v, l1, l2)
         
     return res
 
@@ -241,21 +239,22 @@ def construct_jacobian_prox_p(X, l1 , l2, reg):
     
     W = np.zeros((K,K,p,p))
     for i in np.arange(p):
-        for j in np.arange(start = i, stop = p):
+        for j in np.arange(start=i, stop=p):
             if i == j:
                 W[:,:,i,j] = np.eye(K)
             else:
-                ij_entry = jacobian_prox_phi(X[:,i,j] , l1 , l2, reg)
+                ij_entry = jacobian_prox_phi(X[:,i,j], l1, l2, reg)
                 W[:,:,i,j] = ij_entry
                 W[:,:,j,i] = ij_entry                 
     return W
 
 
-def eval_jacobian_prox_p(Y , W):
+def eval_jacobian_prox_p(Y, W):
     # W is the result of construct_jacobian_prox_p
     (K,p,p) = Y.shape
-    assert W.shape == (K,K,p,p)
+    assert W.shape == (K, K, p, p)
     fun = np.einsum('lkij,kij->lij', W, Y)
+    # without einsum (but slow):
     # fun = np.zeros((K,p,p))
     # for i in np.arange(p):
     #     for j in np.arange(p):
@@ -300,13 +299,12 @@ def phiplus(beta, D, Q):
     B : array of shape (p,p)
         proximal operator.
     """
-    #B = Q @ np.diag(phip(D,beta)) @ Q.T
-    B = (Q * phip(D,beta))@Q.T   
+    B = (Q * phip(D,beta)) @ Q.T   
     return B
 
 @njit() 
 def phiminus(beta, D, Q):
-    B = (Q * phim(D,beta))@Q.T
+    B = (Q * phim(D,beta)) @ Q.T
     return B
 
 #@njit() 
@@ -315,26 +313,25 @@ def moreau_h(beta, D, Q):
     D: array (p,p)
     Q: array (p,p)
     """
-    
     pp = phiplus(beta, D, Q)
     pm = phiminus(beta, D, Q)
-    psi =  - (beta * np.log (np.linalg.det(pp))) + (0.5 * np.linalg.norm(pm)**2 )
+    psi =  -(beta * np.log (np.linalg.det(pp))) + (0.5 * np.linalg.norm(pm)**2)
     return psi, pp, pm
 
 
 # tile is not numba supported, could be replaced by repeat+reshape
-def construct_gamma(A, beta, D = np.array([]), Q = np.array([])):
+def construct_gamma(A, beta, D=np.array([]), Q=np.array([])):
     (K,p,p) = A.shape
     Gamma = np.zeros((K,p,p))
     
     if D.shape[0] != A.shape[0]:
-        raise KeyError
+        raise KeyError("Shapes don't match.")
     
     for k in np.arange(K):
-        phip_d = phip(D[k,:] , beta) 
+        phip_d = phip(D[k,:], beta) 
             
-        h1 = np.tile(np.sqrt(D[k,:]**2 + 4* beta), (p,1))
-        h1 = h1 + h1.T 
+        h1 = np.tile(np.sqrt(D[k,:]**2 + 4*beta), (p,1))
+        h1 = h1 + h1.T
         
         h2 = np.tile(phip_d, (p,1))
         h2 = h2 + h2.T 
@@ -357,12 +354,10 @@ def eval_jacobian_phiplus(B, Gamma, Q):
     return res
 
 # functions related to the proximal point algorithm
-    
 def Phi_t(Omega, Theta, S, Omega_t, Theta_t, sigma_t, lambda1, lambda2, reg):
     res = f(Omega, S) + P_val(Theta, lambda1, lambda2, reg) + 1/(2*sigma_t) * (np.linalg.norm(Omega - Omega_t)**2 + np.linalg.norm(Theta - Theta_t)**2)
     return res
 
- 
 def hessian_Y(D , Gamma, eigQ, W, sigma_t):
     """
     this is the linear operator for the CG method
@@ -371,18 +366,16 @@ def hessian_Y(D , Gamma, eigQ, W, sigma_t):
     """
     tmp1 = eval_jacobian_phiplus(D, Gamma, eigQ)
     tmp2 = eval_jacobian_prox_p(D, W)
-
     res = - sigma_t * (tmp1 + tmp2) 
     return res
 
-
-def cg_ppdna(Gamma, eigQ, W, sigma_t, b, tol = 1e-6, max_iter = 20):
+def cg_ppdna(Gamma, eigQ, W, sigma_t, b, tol=1e-6, max_iter=20):
     """
     solves the linear system in the PPDNA subproblem
     
-    Gamma, eigQ,W, sigma_t are constructed beforehand
-    b: right-hand-side of linear system
+    Gamma, eigQ, W, sigma_t are constructed beforehand
     
+    b: right-hand-side of linear system
     tol: tolerance to CG method
     max_iter: max iterations of CG method
     """
@@ -390,7 +383,7 @@ def cg_ppdna(Gamma, eigQ, W, sigma_t, b, tol = 1e-6, max_iter = 20):
     dim = b.shape
     x = np.zeros(dim)
     r = b - hessian_Y(x, Gamma, eigQ, W, sigma_t)
-    r_norm = np.linalg.norm(r)**2 #Gdot(r,r)
+    r_norm = np.linalg.norm(r)**2
     p = r.copy()
     
     j = 0
@@ -415,7 +408,7 @@ def cg_ppdna(Gamma, eigQ, W, sigma_t, b, tol = 1e-6, max_iter = 20):
         
     return x, status
 
-def Y_t( X, Omega_t, Theta_t, S, lambda1, lambda2, sigma_t, reg):
+def Y_t(X, Omega_t, Theta_t, S, lambda1, lambda2, sigma_t, reg):
     assert np.min(np.array([lambda1, lambda2, sigma_t])) > 0 , "at least one parameter is not positive"
     assert X.shape[1] == X.shape[2], "dimensions are not as expected"
   
@@ -429,17 +422,16 @@ def Y_t( X, Omega_t, Theta_t, S, lambda1, lambda2, sigma_t, reg):
     grad1 = np.zeros((K,p,p))
     term1 = 0
     for k in np.arange(K):
-        Psi_h, proxh, _ = moreau_h(sigma_t, D = eigD[k,:], Q = eigQ[k,:,:])
+        Psi_h, proxh, _ = moreau_h(sigma_t, D=eigD[k,:], Q=eigQ[k,:,:])
         term1 += (1/sigma_t) * Psi_h
         grad1[k,:,:] = proxh
     
-    term2 = - 1/(2*sigma_t) * (np.linalg.norm(W_t)**2 + np.linalg.norm(V_t)**2) # (Gdot(W_t, W_t) + Gdot(V_t, V_t))
-    term3 = 1/(2*sigma_t) * (np.linalg.norm(Omega_t)**2 + np.linalg.norm(Theta_t)**2) # (Gdot(Omega_t, Omega_t)  +  Gdot(Theta_t, Theta_t))  
+    term2 = - 1/(2*sigma_t) * (np.linalg.norm(W_t)**2 + np.linalg.norm(V_t)**2)
+    term3 = 1/(2*sigma_t) * (np.linalg.norm(Omega_t)**2 + np.linalg.norm(Theta_t)**2)
   
-    Psi_P , U = moreau_P(V_t, sigma_t * lambda1, sigma_t * lambda2, reg)  
+    Psi_P, U = moreau_P(V_t, sigma_t*lambda1, sigma_t*lambda2, reg)  
     term4 = (1/sigma_t) * Psi_P
   
     fun = term1 + term2 + term3 + term4
-    #grad = grad1 - U
   
     return fun, grad1, U, (eigD, eigQ)

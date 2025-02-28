@@ -7,13 +7,28 @@ import time
 from scipy.sparse.csgraph import connected_components
 from scipy.linalg import block_diag
 import warnings
+from typing import Optional
 
 from .ggl_helper import prox_od_1norm, phiplus, prox_rank_norm
 
 
-def ADMM_SGL(S, lambda1, Omega_0, Theta_0=np.array([]), X_0=np.array([]),
-             rho=1., max_iter=1000, tol=1e-7, rtol=1e-4, stopping_criterion='boyd',\
-             update_rho=True, verbose=False, measure=False, latent=False, mu1=None, lambda1_mask=None):
+def ADMM_SGL(S: np.ndarray,
+             lambda1: float,
+             Omega_0: np.ndarray,
+             Theta_0: np.ndarray=np.array([]),
+             X_0: np.ndarray=np.array([]),
+             rho: float=1.,
+             max_iter: int=1000,
+             tol: float=1e-7,
+             rtol: float=1e-4,
+             stopping_criterion: str='boyd',
+             update_rho: bool=True,
+             verbose: bool=False,
+             measure: bool=False,
+             latent: bool=False,
+             mu1: Optional[float]=None,
+             lambda1_mask: Optional[np.ndarray]=None
+    ):
     """
     This is an ADMM solver for the (Latent variable) Single Graphical Lasso problem (SGL).
     If ``latent=False``, this function solves
@@ -83,8 +98,8 @@ def ADMM_SGL(S, lambda1, Omega_0, Theta_0=np.array([]), X_0=np.array([]),
     info : dict
         status and measurement information from the solver.
     """
-    assert Omega_0.shape == S.shape
-    assert S.shape[0] == S.shape[1]
+    assert Omega_0.shape==S.shape
+    assert S.shape[0]==S.shape[1]
     
     (p, p) = S.shape
     
@@ -92,13 +107,13 @@ def ADMM_SGL(S, lambda1, Omega_0, Theta_0=np.array([]), X_0=np.array([]),
     
     # use lambda1_mask if specified
     if lambda1_mask is not None:
-        assert lambda1_mask.shape == (p,p), f"lambda1_mask needs to be of shape (p,p), but is {lambda1_mask.shape}."
-        assert np.all(lambda1_mask >=0 ), "lambda1_mask needs to be non-negative."    
+        assert lambda1_mask.shape==(p,p), f"lambda1_mask needs to be of shape (p,p), but is {lambda1_mask.shape}."
+        assert np.all(lambda1_mask>=0), "lambda1_mask needs to be non-negative."    
         assert np.all(np.abs(lambda1_mask.T - lambda1_mask) <= 1e-5), "lambda1_mask needs to be symmetric."
         
         lambda1 = lambda1 * lambda1_mask
     
-    assert np.all(lambda1 >= 0)
+    assert np.all(lambda1>=0)
 
     assert stopping_criterion in ["boyd", "kkt"]
 
@@ -111,9 +126,9 @@ def ADMM_SGL(S, lambda1, Omega_0, Theta_0=np.array([]), X_0=np.array([]),
     # initialize
     Omega_t = Omega_0.copy()
 
-    if len(Theta_0) == 0:
+    if len(Theta_0)==0:
         Theta_0 = Omega_0.copy()
-    if len(X_0) == 0:
+    if len(X_0)==0:
         X_0 = np.zeros((p, p))
 
     Theta_t = Theta_0.copy()
@@ -123,7 +138,6 @@ def ADMM_SGL(S, lambda1, Omega_0, Theta_0=np.array([]), X_0=np.array([]),
     runtime = np.zeros(max_iter)
     residual = np.zeros(max_iter)
     status = ''
-
 
     if verbose:
         print("------------ADMM Algorithm for Single Graphical Lasso----------------")
@@ -149,31 +163,34 @@ def ADMM_SGL(S, lambda1, Omega_0, Theta_0=np.array([]), X_0=np.array([]),
         W_t = Theta_t - L_t - X_t - (1 / rho) * S
         eigD, eigQ = np.linalg.eigh(W_t)
         Omega_t_1 = Omega_t.copy()
-        Omega_t = phiplus(beta=1 / rho, D=eigD, Q=eigQ)
+        Omega_t = phiplus(beta=1/rho, D=eigD, Q=eigQ)
 
         # Theta Update
-        Theta_t = prox_od_1norm(Omega_t + L_t + X_t, (1 / rho) * lambda1)
+        Theta_t = prox_od_1norm(Omega_t + L_t + X_t, (1/rho) * lambda1)
 
         # L Update
         if latent:
             C_t = Theta_t - X_t - Omega_t
-            # C_t = (C_t.T + C_t)/2
             eigD1, eigQ1 = np.linalg.eigh(C_t)
             L_t = prox_rank_norm(C_t, mu1/rho, D=eigD1, Q=eigQ1)
 
         # X Update
         X_t = X_t + Omega_t - Theta_t + L_t
 
-        
-        
         if measure:
             end = time.time()
             runtime[iter_t] = end - start
 
         # Stopping criterion
         if stopping_criterion == 'boyd':
-            r_t,s_t,e_pri,e_dual = ADMM_stopping_criterion(Omega_t, Omega_t_1, Theta_t, L_t, X_t,\
-                                                           S, rho, tol, rtol, latent)
+            r_t, s_t, e_pri, e_dual = ADMM_stopping_criterion(Omega_t,
+                                                              Omega_t_1,
+                                                              Theta_t,
+                                                              L_t,
+                                                              X_t,
+                                                              S,
+                                                              rho, tol, rtol, latent
+            )
             
             # update rho
             if update_rho:
@@ -187,26 +204,24 @@ def ADMM_SGL(S, lambda1, Omega_0, Theta_0=np.array([]), X_0=np.array([]),
                 # rescale dual variables
                 X_t = (rho/rho_new)*X_t
                 rho = rho_new
-                
-                
+                          
             residual[iter_t] = max(r_t,s_t)
 
             if verbose:
-                print(out_fmt % (iter_t,r_t,s_t,e_pri,e_dual))
+                print(out_fmt % (iter_t, r_t, s_t, e_pri, e_dual))
             if (r_t <= e_pri) and  (s_t <= e_dual):
                 status = 'optimal'
                 break
 
         elif stopping_criterion == 'kkt':
-            eta_A = kkt_stopping_criterion(Omega_t, Theta_t, L_t, rho * X_t, S, lambda1, latent, mu1)
+            eta_A = kkt_stopping_criterion(Omega_t, Theta_t, L_t, rho*X_t, S, lambda1, latent, mu1)
             residual[iter_t] = eta_A
 
             if verbose:
-                print(out_fmt % (iter_t,eta_A))
+                print(out_fmt % (iter_t, eta_A))
             if eta_A <= tol:
                 status = 'optimal'
                 break
-
 
     ##################################################################
     ### MAIN LOOP FINISHED
@@ -266,7 +281,6 @@ def ADMM_stopping_criterion(Omega, Omega_t_1, Theta, L, X, S, rho, eps_abs, eps_
 
     (p, p) = S.shape
 
-
     dim = ((p ** 2 + p) / 2)  # number of elements of off-diagonal matrix
     e_pri = dim * eps_abs + eps_rel * np.maximum(np.linalg.norm(Omega), np.linalg.norm(Theta -L))
     e_dual = dim * eps_abs + eps_rel * rho * np.linalg.norm(X)
@@ -274,7 +288,7 @@ def ADMM_stopping_criterion(Omega, Omega_t_1, Theta, L, X, S, rho, eps_abs, eps_
     r = np.linalg.norm(Omega - Theta + L)
     s = rho*np.linalg.norm(Omega - Omega_t_1)
 
-    return r,s,e_pri,e_dual
+    return r, s, e_pri, e_dual
 
 def kkt_stopping_criterion(Omega, Theta, L, X, S, lambda1, latent=False, mu1=None):
     assert Omega.shape == Theta.shape == S.shape
@@ -285,19 +299,20 @@ def kkt_stopping_criterion(Omega, Theta, L, X, S, lambda1, latent=False, mu1=Non
 
     (p, p) = S.shape
 
-    term1 = np.linalg.norm(Theta - prox_od_1norm(Theta + X, l=lambda1)) / (1 + np.linalg.norm(Theta))
+    term1 = np.linalg.norm(Theta - prox_od_1norm(Theta+X,
+                                                 l=lambda1)) / (1+np.linalg.norm(Theta))
 
-    term2 = np.linalg.norm(Omega - Theta + L) / (1 + np.linalg.norm(Theta))
+    term2 = np.linalg.norm(Omega - Theta + L) / (1+np.linalg.norm(Theta))
 
     eigD, eigQ = np.linalg.eigh(Omega - S - X)
     proxO = phiplus(beta=1, D=eigD, Q=eigQ)
-    term3 = np.linalg.norm(Omega - proxO) / (1 + np.linalg.norm(Omega))
+    term3 = np.linalg.norm(Omega - proxO) / (1+np.linalg.norm(Omega))
 
     term4 = 0
     if latent:
         eigD, eigQ = np.linalg.eigh(L - X)
-        proxL = prox_rank_norm(A=L - X, beta=mu1, D=eigD, Q=eigQ)
-        term4 = np.linalg.norm(L - proxL) / (1 + np.linalg.norm(L))
+        proxL = prox_rank_norm(A=L-X, beta=mu1, D=eigD, Q=eigQ)
+        term4 = np.linalg.norm(L - proxL) / (1+np.linalg.norm(L))
 
     residual = max(term1, term2, term3, term4)
 
@@ -308,9 +323,21 @@ def kkt_stopping_criterion(Omega, Theta, L, X, S, lambda1, latent=False, mu1=Non
 ## BLOCK-WISE GRAPHICAL LASSO AFTER WITTEN ET AL.
 #######################################################
 
-def block_SGL(S, lambda1, Omega_0, Theta_0=None, X_0=None, rho=1., max_iter=1000, 
-              tol=1e-7, rtol=1e-3, stopping_criterion="boyd",
-              update_rho=True, verbose=False, measure=False, lambda1_mask=None):
+def block_SGL(S: np.ndarray,
+              lambda1: float,
+              Omega_0: np.ndarray,
+              Theta_0: Optional[np.ndarray]=None,
+              X_0: Optional[np.ndarray]=None,
+              rho: float=1.,
+              max_iter: int=1000,
+              tol: float=1e-7,
+              rtol: float=1e-3,
+              stopping_criterion: str="boyd",
+              update_rho: bool=True,
+              verbose: bool=False,
+              measure: bool=False,
+              lambda1_mask: Optional[np.ndarray]=None
+    ):
     """
     This is a wrapper for solving SGL problems on connected components of the solution and solving each block separately.
     See Witten, Friedman, Simon "New Insights for the Graphical Lasso" for details.
@@ -380,11 +407,11 @@ def block_SGL(S, lambda1, Omega_0, Theta_0=None, X_0=None, rho=1., max_iter=1000
     
     # use lambda1_mask if specified
     if lambda1_mask is not None:
-        assert lambda1_mask.shape == (p,p), f"lambda1_mask needs to be of shape (p,p), but is {lambda1_mask.shape}."
+        assert lambda1_mask.shape == (p, p), f"lambda1_mask needs to be of shape (p,p), but is {lambda1_mask.shape}."
         assert np.all(lambda1_mask >= 0), "lambda1_mask needs to be non-negative."
         assert np.all(np.abs(lambda1_mask.T - lambda1_mask) <= 1e-5), "lambda1_mask needs to be symmetric."
     else:
-        lambda1_mask = np.ones((p,p))
+        lambda1_mask = np.ones((p, p))
 
     if Theta_0 is None:
         Theta_0 = Omega_0.copy()
@@ -410,16 +437,26 @@ def block_SGL(S, lambda1, Omega_0, Theta_0=None, X_0=None, rho=1., max_iter=1000
             allTheta.append(closed_sol)
             allX.append(np.array([0]))
 
-
         # else solve Graphical Lasso for the corresponding block
         else:
             block_S = S[np.ix_(C, C)]          
-            this_lambda1_mask = lambda1_mask[np.ix_(C,C)]
+            this_lambda1_mask = lambda1_mask[np.ix_(C, C)]
             
-            block_sol, block_info = ADMM_SGL(S=block_S, lambda1=lambda1, Omega_0=Omega_0[np.ix_(C, C)],
-                                             Theta_0=Theta_0[np.ix_(C, C)], X_0=X_0[np.ix_(C, C)], tol=tol, rtol=rtol,
-                                             stopping_criterion=stopping_criterion, update_rho=update_rho,
-                                             rho=rho, max_iter=max_iter, verbose=verbose, measure=measure, lambda1_mask=this_lambda1_mask)
+            block_sol, block_info = ADMM_SGL(S=block_S,
+                                             lambda1=lambda1,
+                                             Omega_0=Omega_0[np.ix_(C, C)],
+                                             Theta_0=Theta_0[np.ix_(C, C)],
+                                             X_0=X_0[np.ix_(C, C)],
+                                             tol=tol,
+                                             rtol=rtol,
+                                             stopping_criterion=stopping_criterion,
+                                             update_rho=update_rho,
+                                             rho=rho,
+                                             max_iter=max_iter,
+                                             verbose=verbose,
+                                             measure=measure,
+                                             lambda1_mask=this_lambda1_mask
+            )
 
             allOmega.append(block_sol['Omega'])
             allTheta.append(block_sol['Theta'])
@@ -448,11 +485,9 @@ def get_connected_components(S, lambda1):
     for i in range(numC):
         # need hstack for avoiding redundant dimensions
         thisC = np.hstack(np.argwhere(labelsC == i))
-
         allC.append(thisC)
 
     return numC, allC
-
 
 def invert_permutation(p):
     """The argument p is assumed to be some permutation of 0, 1, ..., len(p)-1.
