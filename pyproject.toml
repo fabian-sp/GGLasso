@@ -58,6 +58,9 @@ python = ["3.9", "3.10", "3.11", "3.12"]
 # The minimum Python version that should be supported
 target-version = "py39"
 
+[tool.hatch.build.targets.sdist]
+include = ["src/gglasso"]
+
 [tool.hatch.build.targets.wheel]
 packages = ["src/gglasso"]
 
