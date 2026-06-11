@@ -351,7 +351,7 @@ def block_SGL(
     It solves
 
     .. math::
-       \\min_{\\Omega, \\Theta \\in \\mathbb{S}^p_{++}} - \\log \\det \ßOmega + \\mathrm{Tr}(S\Omega) + \\lambda \\|\\Theta\\|_{1,od}
+       \\min_{\\Omega, \\Theta \\in \\mathbb{S}^p_{++}} - \\log \\det \\Omega + \\mathrm{Tr}(S\Omega) + \\lambda \\|\\Theta\\|_{1,od}
 
        s.t. \\quad \\Omega = \\Theta
 
