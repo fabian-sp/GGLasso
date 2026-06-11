@@ -39,23 +39,23 @@ def prox_rank_norm(A, beta, D=np.array([]), Q=np.array([])):
 def prox_2norm(v,l):
     # prox of standard Euclidean norm
     # if v is matrix, this is the Frobenius norm
-    a = np.maximum(np.linalg.norm(v) , l)
+    a = np.maximum(np.linalg.norm(v), l)
     return v * (a - l) / a
 
 @njit()
 def prox_sum_Frob(X, M, l):
     """
     computes prox of 
-    \lambda \sum_{j\neq l} \|X^M_{jl}\|_F 
+    \\lambda \\sum_{j\\neq l} \|X^M_{jl}\|_F 
     """
     (pM, pM) = X.shape
     assert pM % M == 0
     
-    p = int(pM/M)
-    Y = np.zeros((pM,pM))
+    p = int(pM / M)
+    Y = np.zeros((pM, pM))
     
     for i in np.arange(p):
-        for j in np.arange(start=i, stop=p):
+        for j in np.arange(i, p):
             if j == i:
                 Y[i*M:(i+1)*M, j*M:(j+1)*M] = X[i*M:(i+1)*M, j*M:(j+1)*M] 
             else:
@@ -155,7 +155,6 @@ def jacobian_prox_phi_fgl(v, l1, l2):
     x = prox_tv(v, l2)
     P = jacobian_tv(v, l2)
     Theta = jacobian_1norm(x, l1)
-    
     return Theta @ P
 
 # general functions related to the regularizer P
@@ -166,7 +165,7 @@ def P_val(X, l1, l2, reg):
     res = 0
     for i in np.arange(p):
         # start at i+1 because P does NOT operate on diagonal
-        for j in np.arange(start=i+1 , stop=p):
+        for j in np.arange(i+1, p):
             if reg == 'GGL':
                 res += l1 * np.linalg.norm(X[:,i,j], 1) + l2 * np.linalg.norm(X[:,i,j], 2)
             elif reg == 'FGL':
@@ -194,14 +193,14 @@ def prox_p(X, l1, l2, reg):
     assert np.minimum(l1, l2) > 0, "lambda 1 and lambda2 have to be positive"
     
     (K,p,p) = X.shape
-    M = np.zeros((K,p,p))
+    M = np.zeros((K, p, p))
     for i in np.arange(p):
-        for j in np.arange(start=i, stop=p):
+        for j in np.arange(i, p):
             if i == j:
                 # factor 1/2 because we later add again
                 M[:,i,j] = (1/2)*X[:,i,j]
             else:
-                M[:,i,j] = prox_phi(X[:,i,j], l1, l2 , reg)
+                M[:,i,j] = prox_phi(X[:,i,j], l1, l2, reg)
     # add transposed for lower diagonal
     M = M + trp(M)
     return M
@@ -210,8 +209,7 @@ def prox_p(X, l1, l2, reg):
 def moreau_P(X, l1, l2, reg):
   # returns the Moreau_Yosida reg. value as well as the proximal map of P
   Y = prox_p(X, l1, l2, reg)
-  psi = P_val(Y, l1, l2, reg) + 0.5 * Gdot(X-Y, X-Y) 
- 
+  psi = P_val(Y, l1, l2, reg) + 0.5 * Gdot(X-Y, X-Y)
   return psi, Y           
           
 @njit()
@@ -237,9 +235,9 @@ def construct_jacobian_prox_p(X, l1 , l2, reg):
     (K,p,p) = X.shape
     assert np.abs(X - trp(X)).max() <= 1e-5
     
-    W = np.zeros((K,K,p,p))
+    W = np.zeros((K, K, p, p))
     for i in np.arange(p):
-        for j in np.arange(start=i, stop=p):
+        for j in np.arange(i, p):
             if i == j:
                 W[:,:,i,j] = np.eye(K)
             else:
@@ -299,12 +297,12 @@ def phiplus(beta, D, Q):
     B : array of shape (p,p)
         proximal operator.
     """
-    B = (Q * phip(D,beta)) @ Q.T   
+    B = (Q * phip(D, beta)) @ Q.T   
     return B
 
 @njit() 
 def phiminus(beta, D, Q):
-    B = (Q * phim(D,beta)) @ Q.T
+    B = (Q * phim(D, beta)) @ Q.T
     return B
 
 #@njit() 
@@ -322,7 +320,7 @@ def moreau_h(beta, D, Q):
 # tile is not numba supported, could be replaced by repeat+reshape
 def construct_gamma(A, beta, D=np.array([]), Q=np.array([])):
     (K,p,p) = A.shape
-    Gamma = np.zeros((K,p,p))
+    Gamma = np.zeros((K, p, p))
     
     if D.shape[0] != A.shape[0]:
         raise KeyError("Shapes don't match.")
@@ -330,13 +328,13 @@ def construct_gamma(A, beta, D=np.array([]), Q=np.array([])):
     for k in np.arange(K):
         phip_d = phip(D[k,:], beta) 
             
-        h1 = np.tile(np.sqrt(D[k,:]**2 + 4*beta), (p,1))
+        h1 = np.tile(np.sqrt(D[k,:]**2 + 4*beta), (p, 1))
         h1 = h1 + h1.T
         
-        h2 = np.tile(phip_d, (p,1))
-        h2 = h2 + h2.T 
-        
-        Gamma[k,:,:] =  h2/h1
+        h2 = np.tile(phip_d, (p, 1))
+        h2 = h2 + h2.T
+
+        Gamma[k,:,:] =  h2 / h1
         
     return Gamma
 
@@ -345,7 +343,7 @@ def eval_jacobian_phiplus(B, Gamma, Q):
     # numba version of function eval_jacobian_phiplus
     # numba only supports @ for 2D-arrays --> loop through K
     (K,p,p) = B.shape
-    res = np.zeros((K,p,p))
+    res = np.zeros((K, p, p))
     
     for k in np.arange(K):
         Q_k = Q[k,:,:].copy()
@@ -397,7 +395,7 @@ def cg_ppdna(Gamma, eigQ, W, sigma_t, b, tol=1e-6, max_iter=20):
         x += alpha*p
         r_norm_old = r_norm
         r -= alpha*linp
-        r_norm = np.linalg.norm(r)**2 #Gdot(r,r)
+        r_norm = np.linalg.norm(r)**2 # Gdot(r,r)
         
         if np.sqrt(r_norm) <= tol:
             status = f'converged in iter {j}'
@@ -419,7 +417,7 @@ def Y_t(X, Omega_t, Theta_t, S, lambda1, lambda2, sigma_t, reg):
 
     eigD, eigQ = np.linalg.eigh(W_t)
   
-    grad1 = np.zeros((K,p,p))
+    grad1 = np.zeros((K, p, p))
     term1 = 0
     for k in np.arange(K):
         Psi_h, proxh, _ = moreau_h(sigma_t, D=eigD[k,:], Q=eigQ[k,:,:])
