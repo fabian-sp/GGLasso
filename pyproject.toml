@@ -11,12 +11,11 @@ name = "gglasso"
 dynamic = ["version"]
 description = 'Algorithms for Single and Multiple Graphical Lasso problems.'
 readme = "README.md"
-requires-python = ">=3.9"
+requires-python = ">=3.10"
 license = "MIT"
-keywords = ["network inference",
-            "graphcial models",
-            "graphical lasso",
-            "optimization"]
+keywords = [
+  "network inference", "graphcial models", "graphical lasso", "optimization"
+]
 authors = [
   {name = "Fabian Schaipp", email = "fabian.schaipp@tum.de" },
   {name = "Oleg Vlasovets", email = ""},
@@ -26,18 +25,18 @@ classifiers = [
   "Development Status :: 5 - Production/Stable",
   "License :: OSI Approved :: MIT License",
   "Programming Language :: Python",
-  "Programming Language :: Python :: 3.9",
   "Programming Language :: Python :: 3.10",
   "Programming Language :: Python :: 3.11",
   "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
   "Programming Language :: Python :: Implementation :: CPython",
   "Programming Language :: Python :: Implementation :: PyPy",
 ]
 dependencies = [
-  "numpy>=1.17.3, <2.0.0",
+  "numpy>=1.17.3",
   "scipy>=0.11.0",
   "scikit-learn>=0.24.1",
-  "numba>=0.46.0, <0.60.0",
+  "numba>=0.46.0",
   "pandas",
   "matplotlib",
   "seaborn",
@@ -53,10 +52,10 @@ Source = "https://github.com/fabian-sp/GGLasso"
 path = "src/gglasso/__init__.py"
 
 [[tool.hatch.envs.all.matrix]]
-python = ["3.9", "3.10", "3.11", "3.12"]
+python = ["3.10", "3.11", "3.12", "3.13"]
 
 # The minimum Python version that should be supported
-target-version = "py39"
+target-version = "py310"
 
 [tool.hatch.build.targets.sdist]
 include = ["src/gglasso"]
