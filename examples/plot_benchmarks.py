@@ -34,7 +34,7 @@ df.reset_index(drop=True)
 
 #%%
 
-all_p_N= list(pd.unique(list(zip(df.p, df.N))))
+all_p_N = sorted(list(set(zip(df['p'], df['N']))))
 print("Dimensionality and sample size: (p,N) =", all_p_N )
 
 all_l1 = pd.unique(df.l1)
@@ -81,3 +81,5 @@ plot_bm(df, min_acc= 5e-3, lambda_list=all_l1)
 #
 
 plot_bm(df, min_acc = 5e-2, lambda_list=all_l1)
+
+# %%

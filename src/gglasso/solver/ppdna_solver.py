@@ -179,9 +179,9 @@ def PPDNA(
     It solves
     
     .. math::
-       \min_{\Omega, \Theta} \sum_{k=1}^{K} (-\log\det(\Omega^{(k)}) + \mathrm{Tr}(S^{(k)} \Omega^{(k)}) ) + \mathcal{P}(\Theta)
+       \\min_{\\Omega, \\Theta} \\sum_{k=1}^{K} (-\\log\\det(\\Omega^{(k)}) + \\mathrm{Tr}(S^{(k)} \\Omega^{(k)}) ) + \\mathcal{P}(\\Theta)
        
-       s.t. \quad \Omega^{(k)} = \Theta^{(k)} \quad k=1,\dots,K
+       s.t. \\quad \\Omega^{(k)} = \\Theta^{(k)} \\quad k=1,\\dots,K
     
     Here, :math:`\\mathcal{P}` is a regularization function which depends on the application. Group Graphical Lasso (GGL) or Fused Graphical Lasso (FGL) is implemented.
     

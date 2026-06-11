@@ -44,12 +44,12 @@ def ext_ADMM_MGL(
     If ``latent=False``, this function solves
     
     .. math::
-        \min_{\Omega,\Theta,\Lambda} \sum_{k=1}^K - \log \det(\Omega^{(k)}) + \mathrm{Tr}(S^{(k)}\Omega^{(k)}) + \sum_{k=1}^K \lambda_1 ||\Theta^{(k)}||_{1,od} 
-                                    + \sum_{l} \lambda_2 \\beta_l ||\Lambda_{[l]}||_2
+        \\min_{\\Omega,\\Theta,\\Lambda} \\sum_{k=1}^K - \\log \\det(\\Omega^{(k)}) + \\mathrm{Tr}(S^{(k)}\\Omega^{(k)}) + \\sum_{k=1}^K \\lambda_1 ||\\Theta^{(k)}||_{1,od} 
+                                    + \\sum_{l} \\lambda_2 \\\\beta_l ||\\Lambda_{[l]}||_2
         
-        s.t. \quad \Omega^{(k)} = \Theta^{(k)} \quad  k=1,\dots,K
+        s.t. \\quad \\Omega^{(k)} = \\Theta^{(k)} \\quad  k=1,\\dots,K
              
-        \quad  \quad  \Lambda^{(k)} = \Theta^{(k)} \quad k=1,\dots,K 
+        \\quad  \\quad  \\Lambda^{(k)} = \\Theta^{(k)} \\quad k=1,\\dots,K 
     
     where l indexes the groups of overlapping variables and :math:`\\Lambda_{[l]}` is the array of all respective components.
     To account for differing group sizes we multiply with :math:`\\beta_l`, the square root of the group size.
@@ -57,13 +57,13 @@ def ext_ADMM_MGL(
     If ``latent=True``, this function solves
     
     .. math::
-        \min_{\Omega,\Theta,\Lambda,L} \sum_{k=1}^K - \log \det(\Omega^{(k)}) + \mathrm{Tr}(S^{(k)}\Omega^{(k)}) + \sum_{k=1}^K \lambda_1 ||\Theta^{(k)}||_{1,od} 
+        \\min_{\\Omega,\\Theta,\\Lambda,L} \\sum_{k=1}^K - \\log \\det(\\Omega^{(k)}) + \\mathrm{Tr}(S^{(k)}\\Omega^{(k)}) + \\sum_{k=1}^K \\lambda_1 ||\\Theta^{(k)}||_{1,od} 
         
-        + \sum_{l} \lambda_2 \\beta_l ||\Lambda_{[l]}||_2 +\sum_{k=1}^{K} \mu_{1,k} \|L^{(k)}\|_{\star}
+        + \\sum_{l} \\lambda_2 \\\\beta_l ||\\Lambda_{[l]}||_2 +\\sum_{k=1}^{K} \\mu_{1,k} \\|L^{(k)}\\|_{\\star}
         
-        s.t. \quad \Omega^{(k)} = \Theta^{(k)} - L^{(k)} \quad  k=1,\dots,K
+        s.t. \\quad \\Omega^{(k)} = \\Theta^{(k)} - L^{(k)} \\quad  k=1,\\dots,K
              
-        \quad  \quad  \Lambda^{(k)} = \Theta^{(k)} \quad k=1,\dots,K 
+        \\quad  \\quad  \\Lambda^{(k)} = \\Theta^{(k)} \\quad k=1,\\dots,K
     
     Note:
        * Typically, ``sol['Omega']`` is positive definite and ``sol['Theta']`` is sparse.

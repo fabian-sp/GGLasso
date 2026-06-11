@@ -35,16 +35,16 @@ def ADMM_SGL(
     If ``latent=False``, this function solves
 
     .. math::
-       \min_{\Omega, \Theta \in \mathbb{S}^p_{++}} - \log \det \Omega + \mathrm{Tr}(S\Omega) + \lambda \|\Theta\|_{1,od}
+       \\min_{\\Omega, \\Theta \\in \\mathbb{S}^p_{++}} - \\log \\det \Omega + \\mathrm{Tr}(S\\Omega) + \\lambda \\|\\Theta\\|_{1,od}
 
-       s.t. \quad \Omega = \Theta
+       s.t. \\quad \\Omega = \\Theta
 
     If ``latent=True``, this function solves
 
     .. math::
-       \min_{\Omega, \Theta, L \in \mathbb{S}^p_{++}} - \log \det (\Omega) + \mathrm{Tr}(S \Omega) + \lambda_1 \|\Theta\|_{1,od} + \mu_1 \|L\|_{\star}
+       \\min_{\\Omega, \\Theta, L \\in \mathbb{S}^p_{++}} - \\log \\det (\\Omega) + \\mathrm{Tr}(S \\Omega) + \\lambda_1 \\|\\Theta\|_{1,od} + \\mu_1 \\|L\\|_{\\star}
 
-       s.t. \quad \Omega = \Theta - L
+       s.t. \\quad \\Omega = \\Theta - L
 
     Note:
         * Typically, ``sol['Omega']`` is positive definite and ``sol['Theta']`` is sparse.
@@ -351,9 +351,9 @@ def block_SGL(
     It solves
 
     .. math::
-       \min_{\Omega, \Theta \in \mathbb{S}^p_{++}} - \log \det \Omega + \mathrm{Tr}(S\Omega) + \lambda \|\Theta\|_{1,od}
+       \\min_{\\Omega, \\Theta \\in \\mathbb{S}^p_{++}} - \\log \\det \ßOmega + \\mathrm{Tr}(S\Omega) + \\lambda \\|\\Theta\\|_{1,od}
 
-       s.t. \quad \Omega = \Theta
+       s.t. \\quad \\Omega = \\Theta
 
 
     Note:

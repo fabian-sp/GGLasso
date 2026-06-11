@@ -36,18 +36,18 @@ def ADMM_MGL(
     If ``latent=False``, this function solves
     
     .. math::
-       \min_{\Omega, \Theta} \sum_{k=1}^{K} (-\log\det(\Omega^{(k)}) + \mathrm{Tr}(S^{(k)} \Omega^{(k)}) ) + \mathcal{P}(\Theta)
+       \\min_{\\Omega, \\Theta} \\sum_{k=1}^{K} (-\\log\\det(\\Omega^{(k)}) + \\mathrm{Tr}(S^{(k)} \\Omega^{(k)}) ) + \\mathcal{P}(\\Theta)
        
-       s.t. \quad \Omega^{(k)} = \Theta^{(k)} \quad k=1,\dots,K
-       
+       s.t. \\quad \\Omega^{(k)} = \\Theta^{(k)} \\quad k=1,\\dots,K
+   
     Here, :math:`\\mathcal{P}` is a regularization function which depends on the application. Group Graphical Lasso (GGL) or Fused Graphical Lasso (FGL) is implemented.        
     If ``latent=True``, this function solves
     
     .. math::
-       \min_{\Omega, \Theta, L}\quad \sum_{k=1}^{K} (-\log\det(\Omega^{(k)}) + \mathrm{Tr}(S^{(k)},\Omega^{(k)}) ) + \mathcal{P}(\Theta) +\sum_{k=1}^{K} \mu_{1,k} \|L^{(k)}\|_{\star}
+       \\min_{\\Omega, \\Theta, L}\\quad \\sum_{k=1}^{K} (-\\log\\det(\\Omega^{(k)}) + \\mathrm{Tr}(S^{(k)},\\Omega^{(k)}) ) + \\mathcal{P}(\\Theta) +\\sum_{k=1}^{K} \\mu_{1,k} \\|L^{(k)}\\|_{\\star}
        
-       s.t. \quad \Omega^{(k)} = \Theta^{(k)} - L^{(k)} \quad k=1,\dots,K
-    
+       s.t. \\quad \\Omega^{(k)} = \\Theta^{(k)} - L^{(k)} \\quad k=1,\\dots,K
+
     Note:    
         * Typically, ``sol['Omega']`` is positive definite and ``sol['Theta']`` is sparse.
         * We use scaled ADMM, i.e. X are the scaled (with 1/rho) dual variables for the equality constraint. 
