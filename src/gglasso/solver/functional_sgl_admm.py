@@ -9,21 +9,22 @@ from typing import Optional
 
 from .ggl_helper import prox_sum_Frob, phiplus, prox_rank_norm
 
-def ADMM_FSGL(S: np.ndarray,
-              lambda1: float,
-              M: int,
-              Omega_0: np.ndarray,
-              Theta_0: np.ndarray=np.array([]),
-              X_0: np.ndarray=np.array([]),
-              rho: float=1.,
-              max_iter: int=1000,
-              tol: float=1e-7,
-              rtol: float=1e-4,
-              update_rho: bool=True,
-              verbose: bool=False,
-              measure: bool=False,
-              latent: bool=False,
-              mu1: Optional[float]=None
+def ADMM_FSGL(
+        S: np.ndarray,
+        lambda1: float,
+        M: int,
+        Omega_0: np.ndarray,
+        Theta_0: np.ndarray=np.array([]),
+        X_0: np.ndarray=np.array([]),
+        rho: float=1.,
+        max_iter: int=1000,
+        tol: float=1e-7,
+        rtol: float=1e-4,
+        update_rho: bool=True,
+        verbose: bool=False,
+        measure: bool=False,
+        latent: bool=False,
+        mu1: Optional[float]=None
     ):
     """
     This is an ADMM solver for the (Latent variable) Functional Single Graphical Lasso problem (FSGL).
@@ -160,13 +161,14 @@ def ADMM_FSGL(S: np.ndarray,
             runtime[iter_t] = end - start
 
         # Stopping criterion
-        r_t, s_t, e_pri, e_dual = ADMM_stopping_criterion(Omega_t,
-                                                          Omega_t_1,
-                                                          Theta_t,
-                                                          L_t,
-                                                          X_t,
-                                                          S,
-                                                          rho, tol, rtol, latent
+        r_t, s_t, e_pri, e_dual = ADMM_stopping_criterion(
+            Omega_t,
+            Omega_t_1,
+            Theta_t,
+            L_t,
+            X_t,
+            S,
+            rho, tol, rtol, latent
         )
             
         # update rho
@@ -231,7 +233,11 @@ def ADMM_FSGL(S: np.ndarray,
         sol = {'Omega': Omega_t, 'Theta': Theta_t, 'X': X_t}
 
     if measure:
-        info = {'status': status, 'runtime': runtime[:iter_t+1], 'residual': residual[:iter_t+1]}
+        info = {
+            'status': status,
+            'runtime': runtime[:iter_t+1],
+            'residual': residual[:iter_t+1]
+        }
     else:
         info = {'status': status}
 

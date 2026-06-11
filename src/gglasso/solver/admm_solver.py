@@ -10,24 +10,25 @@ from typing import Optional, Union
 from ..helper.basic_linalg import trp, Gdot
 from .ggl_helper import prox_p, phiplus, prox_rank_norm, f, P_val
 
-def ADMM_MGL(S: np.ndarray,
-             lambda1: float,
-             lambda2: float,
-             reg: str,
-             Omega_0: np.ndarray,
-             Theta_0: np.ndarray=np.array([]),
-             X_0: np.ndarray=np.array([]),
-             n_samples: Optional[Union[int, np.ndarray]]=None,
-             tol: float=1e-5,
-             rtol: float=1e-4,
-             stopping_criterion: str='boyd',
-             update_rho: bool=True,
-             rho: float=1.,
-             max_iter: int=1000,
-             verbose: bool=False,
-             measure: bool=False,
-             latent: bool=False,
-             mu1: Optional[Union[float, np.ndarray]]=None
+def ADMM_MGL(
+        S: np.ndarray,
+        lambda1: float,
+        lambda2: float,
+        reg: str,
+        Omega_0: np.ndarray,
+        Theta_0: np.ndarray=np.array([]),
+        X_0: np.ndarray=np.array([]),
+        n_samples: Optional[Union[int, np.ndarray]]=None,
+        tol: float=1e-5,
+        rtol: float=1e-4,
+        stopping_criterion: str='boyd',
+        update_rho: bool=True,
+        rho: float=1.,
+        max_iter: int=1000,
+        verbose: bool=False,
+        measure: bool=False,
+        latent: bool=False,
+        mu1: Optional[Union[float, np.ndarray]]=None
     ):
     """
     This is an ADMM solver for the (Latent variable) Multiple Graphical Lasso problem (MGL). It jointly estimates K precision matrices of shape (p,p).
@@ -181,16 +182,18 @@ def ADMM_MGL(S: np.ndarray,
         eigD, eigQ = np.linalg.eigh(W_t)
         
         for k in np.arange(K):
-            Omega_t[k,:,:] = phiplus(beta=nk[k,0,0]/rho,
-                                     D=eigD[k,:],
-                                     Q=eigQ[k,:,:]
+            Omega_t[k,:,:] = phiplus(
+                beta=nk[k,0,0]/rho,
+                D=eigD[k,:],
+                Q=eigQ[k,:,:]
             )
         
         # Theta Update
-        Theta_t = prox_p(Omega_t + L_t + X_t,
-                         (1/rho)*lambda1,
-                         (1/rho)*lambda2,
-                         reg
+        Theta_t = prox_p(
+            Omega_t + L_t + X_t,
+            (1/rho)*lambda1,
+            (1/rho)*lambda2,
+            reg
         )
         
         #L Update
@@ -198,10 +201,11 @@ def ADMM_MGL(S: np.ndarray,
             C_t = Theta_t - X_t - Omega_t
             eigD, eigQ = np.linalg.eigh(C_t)
             for k in np.arange(K):
-                L_t[k] = prox_rank_norm(C_t[k,:,:],
-                                        mu1[k]/rho,
-                                        D=eigD[k,:],
-                                        Q = eigQ[k,:,:]
+                L_t[k] = prox_rank_norm(
+                    C_t[k,:,:],
+                    mu1[k]/rho,
+                    D=eigD[k,:],
+                    Q = eigQ[k,:,:]
                 )
                 
         # X Update
@@ -214,13 +218,17 @@ def ADMM_MGL(S: np.ndarray,
         
         # Stopping condition
         if stopping_criterion == 'boyd':
-            r_t,s_t,e_pri,e_dual = ADMM_stopping_criterion(Omega_t,
-                                                           Omega_t_1,
-                                                           Theta_t,
-                                                           L_t,
-                                                           X_t,
-                                                           S,
-                                                           rho, tol, rtol, latent
+            r_t,s_t,e_pri,e_dual = ADMM_stopping_criterion(
+                Omega_t,
+                Omega_t_1,
+                Theta_t,
+                L_t,
+                X_t,
+                S,
+                rho,
+                tol,
+                rtol,
+                latent
             )
         
             # update rho
@@ -246,12 +254,13 @@ def ADMM_MGL(S: np.ndarray,
                 break
             
         elif stopping_criterion == 'kkt':
-            eta_A = kkt_stopping_criterion(Omega_t,
-                                           Theta_t,
-                                           L_t,
-                                           rho*X_t,
-                                           S,
-                                           lambda1, lambda2, nk, reg, latent, mu1
+            eta_A = kkt_stopping_criterion(
+                Omega_t,
+                Theta_t,
+                L_t,
+                rho*X_t,
+                S,
+                lambda1, lambda2, nk, reg, latent, mu1
             )
             residual[iter_t] = eta_A
             
@@ -302,10 +311,11 @@ def ADMM_MGL(S: np.ndarray,
         
     sol = {'Omega': Omega_t, 'Theta': Theta_t, 'L': L_t, 'X': X_t}
     if measure:
-        info = {'status': status ,
-                'runtime': runtime[:iter_t+1],
-                'residual': residual[:iter_t+1],
-                'objective': objective[:iter_t+1]
+        info = {
+            'status': status,
+            'runtime': runtime[:iter_t+1],
+            'residual': residual[:iter_t+1],
+            'objective': objective[:iter_t+1]
         }
     else:
         info = {'status': status}
@@ -340,10 +350,9 @@ def kkt_stopping_criterion(Omega, Theta, L, X, S, lambda1, lambda2, nk, reg, lat
     
     (K,p,p) = S.shape
     
-    term1 = np.linalg.norm(Theta - prox_p(Theta+X,
-                                          l1=lambda1,
-                                          l2=lambda2,
-                                          reg=reg)) / (1 + np.linalg.norm(Theta))
+    term1 = np.linalg.norm(
+        Theta - prox_p(Theta+X, l1=lambda1, l2=lambda2, reg=reg)
+        ) / (1 + np.linalg.norm(Theta))
     
     term2 = np.linalg.norm(Theta - Omega - L) / (1 + np.linalg.norm(Theta))
     
@@ -358,10 +367,11 @@ def kkt_stopping_criterion(Omega, Theta, L, X, S, lambda1, lambda2, nk, reg, lat
         proxL = np.zeros((K,p,p))
         eigD, eigQ = np.linalg.eigh(L - X)
         for k in np.arange(K):
-            proxL[k,:,:] = prox_rank_norm(L[k,:,:] - X[k,:,:],
-                                          beta=mu1[k],
-                                          D=eigD[k,:],
-                                          Q=eigQ[k,:,:]
+            proxL[k,:,:] = prox_rank_norm(
+                L[k,:,:] - X[k,:,:],
+                beta=mu1[k],
+                D=eigD[k,:],
+                Q=eigQ[k,:,:]
             )
         
         term4 = np.linalg.norm(L - proxL) / (1 + np.linalg.norm(L))

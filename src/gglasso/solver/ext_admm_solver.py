@@ -15,23 +15,24 @@ from gglasso.solver.ggl_helper import phiplus, prox_od_1norm, prox_rank_norm
 from gglasso.helper.ext_admm_helper import check_G
 
 
-def ext_ADMM_MGL(S: dict,
-                 lambda1: float,
-                 lambda2: float,
-                 reg: str,
-                 Omega_0: dict,
-                 G: np.ndarray,
-                 X0: Optional[dict]=None,
-                 X1: Optional[dict]=None,
-                 tol: float=1e-5,
-                 rtol: float=1e-4,
-                 stopping_criterion: str='boyd',
-                 rho: float=1.,
-                 max_iter: int=1000,
-                 verbose: bool=False,
-                 measure: bool=False,
-                 latent: bool=False,
-                 mu1: Optional[float]=None
+def ext_ADMM_MGL(
+        S: dict,
+        lambda1: float,
+        lambda2: float,
+        reg: str,
+        Omega_0: dict,
+        G: np.ndarray,
+        X0: Optional[dict]=None,
+        X1: Optional[dict]=None,
+        tol: float=1e-5,
+        rtol: float=1e-4,
+        stopping_criterion: str='boyd',
+        rho: float=1.,
+        max_iter: int=1000,
+        verbose: bool=False,
+        measure: bool=False,
+        latent: bool=False,
+        mu1: Optional[float]=None
     ):
     """
     This is an ADMM algorithm for solving the Group Graphical Lasso problem
@@ -231,16 +232,17 @@ def ext_ADMM_MGL(S: dict,
         
         # Stopping condition
         if stopping_criterion == 'boyd':
-            r_t, s_t, e_pri, e_dual = ADMM_stopping_criterion(Omega_t,
-                                                              Omega_t_1,
-                                                              Theta_t,
-                                                              L_t,
-                                                              Lambda_t,
-                                                              Lambda_t_1,
-                                                              X0_t,
-                                                              X1_t,
-                                                              S,
-                                                              rho, p, tol, rtol, latent
+            r_t, s_t, e_pri, e_dual = ADMM_stopping_criterion(
+                Omega_t,
+                Omega_t_1,
+                Theta_t,
+                L_t,
+                Lambda_t,
+                Lambda_t_1,
+                X0_t,
+                X1_t,
+                S,
+                rho, p, tol, rtol, latent
             )
             
             residual[iter_t] = max(r_t, s_t)
@@ -253,15 +255,16 @@ def ext_ADMM_MGL(S: dict,
                 break
             
         elif stopping_criterion == 'kkt':
-            eta_A = kkt_stopping_criterion(Omega_t,
-                                           Theta_t,
-                                           L_t,
-                                           Lambda_t,
-                                           dict((k, rho*v) for k,v in X0_t.items()),
-                                           dict((k, rho*v) for k,v in X1_t.items()),
-                                           S,
-                                           G,
-                                           lambda1, lambda2, reg, latent, mu1
+            eta_A = kkt_stopping_criterion(
+                Omega_t,
+                Theta_t,
+                L_t,
+                Lambda_t,
+                dict((k, rho*v) for k,v in X0_t.items()),
+                dict((k, rho*v) for k,v in X1_t.items()),
+                S,
+                G,
+                lambda1, lambda2, reg, latent, mu1
             )
             residual[iter_t] = eta_A
             
@@ -382,12 +385,13 @@ def kkt_stopping_criterion(Omega, Theta, L, Lambda, X0, X1, S , G, lambda1, lamb
     for k in np.arange(K):
         term4[k] = np.linalg.norm(V[k] - Lambda[k]) / (1+np.linalg.norm(Lambda[k]))
     
-    res = max(np.linalg.norm(term1),
-              np.linalg.norm(term2),
-              np.linalg.norm(term3),
-              np.linalg.norm(term4),
-              np.linalg.norm(term5),
-              np.linalg.norm(term6)
+    res = max(
+        np.linalg.norm(term1),
+        np.linalg.norm(term2),
+        np.linalg.norm(term3),
+        np.linalg.norm(term4),
+        np.linalg.norm(term5),
+        np.linalg.norm(term6)
     )
     return res
 
