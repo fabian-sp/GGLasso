@@ -34,14 +34,14 @@ def ADMM_FSGL(
     If ``latent=False``, this function solves
 
     .. math::
-        \\min_{\\Omega, \\Theta \\in \\mathbb{S}^{pM}_{++}} - \\log \\det \\Omega + \\mathrm{Tr}(S\\Omega) + \\lambda_1 \\sum_{j \\\\neq l} \\|\\Theta_{jl}^M\\|_{F}.
+        \\min_{\\Omega, \\Theta \\in \\mathbb{S}^{pM}_{++}} - \\log \\det \\Omega + \\mathrm{Tr}(S\\Omega) + \\lambda_1 \\sum_{j \\neq l} \\|\\Theta_{jl}^M\\|_{F}.
 
         s.t. \\quad \\Omega = \\Theta.
     
     If ``latent=True``, this function solves
 
     .. math::
-        \\min_{\\Omega, \\Theta, L \\in \\mathbb{S}^{p\\cdot M}_{++}} - \\log \\det (\\Omega) + \\mathrm{Tr}(S \\Omega) + \\lambda_1 \\sum_{j\\\\neq l} \\|\\Theta_{jl}^M\\|_{F} + \\mu_1 \\|L\\|_{\\star}
+        \\min_{\\Omega, \\Theta, L \\in \\mathbb{S}^{p\\cdot M}_{++}} - \\log \\det (\\Omega) + \\mathrm{Tr}(S \\Omega) + \\lambda_1 \\sum_{j\\neq l} \\|\\Theta_{jl}^M\\|_{F} + \\mu_1 \\|L\\|_{\\star}
 
         s.t. \\quad \\Omega = \\Theta - L.
 

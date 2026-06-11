@@ -45,7 +45,7 @@ def ext_ADMM_MGL(
     
     .. math::
         \\min_{\\Omega,\\Theta,\\Lambda} \\sum_{k=1}^K - \\log \\det(\\Omega^{(k)}) + \\mathrm{Tr}(S^{(k)}\\Omega^{(k)}) + \\sum_{k=1}^K \\lambda_1 ||\\Theta^{(k)}||_{1,od} 
-                                    + \\sum_{l} \\lambda_2 \\\\beta_l ||\\Lambda_{[l]}||_2
+                                    + \\sum_{l} \\lambda_2 \\beta_l ||\\Lambda_{[l]}||_2
         
         s.t. \\quad \\Omega^{(k)} = \\Theta^{(k)} \\quad  k=1,\\dots,K
              
@@ -59,7 +59,7 @@ def ext_ADMM_MGL(
     .. math::
         \\min_{\\Omega,\\Theta,\\Lambda,L} \\sum_{k=1}^K - \\log \\det(\\Omega^{(k)}) + \\mathrm{Tr}(S^{(k)}\\Omega^{(k)}) + \\sum_{k=1}^K \\lambda_1 ||\\Theta^{(k)}||_{1,od} 
         
-        + \\sum_{l} \\lambda_2 \\\\beta_l ||\\Lambda_{[l]}||_2 +\\sum_{k=1}^{K} \\mu_{1,k} \\|L^{(k)}\\|_{\\star}
+        + \\sum_{l} \\lambda_2 \\beta_l ||\\Lambda_{[l]}||_2 +\\sum_{k=1}^{K} \\mu_{1,k} \\|L^{(k)}\\|_{\\star}
         
         s.t. \\quad \\Omega^{(k)} = \\Theta^{(k)} - L^{(k)} \\quad  k=1,\\dots,K
              
