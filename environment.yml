@@ -1,4 +1,4 @@
-name: gglasso2_env
+name: gglasso_env
 
 dependencies:
   - python>=3.13
