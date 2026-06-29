@@ -12,38 +12,39 @@ from typing import Optional
 from .ggl_helper import prox_od_1norm, phiplus, prox_rank_norm
 
 
-def ADMM_SGL(S: np.ndarray,
-             lambda1: float,
-             Omega_0: np.ndarray,
-             Theta_0: np.ndarray=np.array([]),
-             X_0: np.ndarray=np.array([]),
-             rho: float=1.,
-             max_iter: int=1000,
-             tol: float=1e-7,
-             rtol: float=1e-4,
-             stopping_criterion: str='boyd',
-             update_rho: bool=True,
-             verbose: bool=False,
-             measure: bool=False,
-             latent: bool=False,
-             mu1: Optional[float]=None,
-             lambda1_mask: Optional[np.ndarray]=None
+def ADMM_SGL(
+        S: np.ndarray,
+        lambda1: float,
+        Omega_0: np.ndarray,
+        Theta_0: np.ndarray=np.array([]),
+        X_0: np.ndarray=np.array([]),
+        rho: float=1.,
+        max_iter: int=1000,
+        tol: float=1e-7,
+        rtol: float=1e-4,
+        stopping_criterion: str='boyd',
+        update_rho: bool=True,
+        verbose: bool=False,
+        measure: bool=False,
+        latent: bool=False,
+        mu1: Optional[float]=None,
+        lambda1_mask: Optional[np.ndarray]=None
     ):
     """
     This is an ADMM solver for the (Latent variable) Single Graphical Lasso problem (SGL).
     If ``latent=False``, this function solves
 
     .. math::
-       \min_{\Omega, \Theta \in \mathbb{S}^p_{++}} - \log \det \Omega + \mathrm{Tr}(S\Omega) + \lambda \|\Theta\|_{1,od}
+       \\min_{\\Omega, \\Theta \\in \\mathbb{S}^p_{++}} - \\log \\det \Omega + \\mathrm{Tr}(S\\Omega) + \\lambda \\|\\Theta\\|_{1,od}
 
-       s.t. \quad \Omega = \Theta
+       s.t. \\quad \\Omega = \\Theta
 
     If ``latent=True``, this function solves
 
     .. math::
-       \min_{\Omega, \Theta, L \in \mathbb{S}^p_{++}} - \log \det (\Omega) + \mathrm{Tr}(S \Omega) + \lambda_1 \|\Theta\|_{1,od} + \mu_1 \|L\|_{\star}
+       \\min_{\\Omega, \\Theta, L \\in \mathbb{S}^p_{++}} - \\log \\det (\\Omega) + \\mathrm{Tr}(S \\Omega) + \\lambda_1 \\|\\Theta\|_{1,od} + \\mu_1 \\|L\\|_{\\star}
 
-       s.t. \quad \Omega = \Theta - L
+       s.t. \\quad \\Omega = \\Theta - L
 
     Note:
         * Typically, ``sol['Omega']`` is positive definite and ``sol['Theta']`` is sparse.
@@ -183,13 +184,17 @@ def ADMM_SGL(S: np.ndarray,
 
         # Stopping criterion
         if stopping_criterion == 'boyd':
-            r_t, s_t, e_pri, e_dual = ADMM_stopping_criterion(Omega_t,
-                                                              Omega_t_1,
-                                                              Theta_t,
-                                                              L_t,
-                                                              X_t,
-                                                              S,
-                                                              rho, tol, rtol, latent
+            r_t, s_t, e_pri, e_dual = ADMM_stopping_criterion(
+                Omega_t,
+                Omega_t_1,
+                Theta_t,
+                L_t,
+                X_t,
+                S,
+                rho,
+                tol,
+                rtol,
+                latent
             )
             
             # update rho
@@ -323,20 +328,21 @@ def kkt_stopping_criterion(Omega, Theta, L, X, S, lambda1, latent=False, mu1=Non
 ## BLOCK-WISE GRAPHICAL LASSO AFTER WITTEN ET AL.
 #######################################################
 
-def block_SGL(S: np.ndarray,
-              lambda1: float,
-              Omega_0: np.ndarray,
-              Theta_0: Optional[np.ndarray]=None,
-              X_0: Optional[np.ndarray]=None,
-              rho: float=1.,
-              max_iter: int=1000,
-              tol: float=1e-7,
-              rtol: float=1e-3,
-              stopping_criterion: str="boyd",
-              update_rho: bool=True,
-              verbose: bool=False,
-              measure: bool=False,
-              lambda1_mask: Optional[np.ndarray]=None
+def block_SGL(
+        S: np.ndarray,
+        lambda1: float,
+        Omega_0: np.ndarray,
+        Theta_0: Optional[np.ndarray]=None,
+        X_0: Optional[np.ndarray]=None,
+        rho: float=1.,
+        max_iter: int=1000,
+        tol: float=1e-7,
+        rtol: float=1e-3,
+        stopping_criterion: str="boyd",
+        update_rho: bool=True,
+        verbose: bool=False,
+        measure: bool=False,
+        lambda1_mask: Optional[np.ndarray]=None
     ):
     """
     This is a wrapper for solving SGL problems on connected components of the solution and solving each block separately.
@@ -345,9 +351,9 @@ def block_SGL(S: np.ndarray,
     It solves
 
     .. math::
-       \min_{\Omega, \Theta \in \mathbb{S}^p_{++}} - \log \det \Omega + \mathrm{Tr}(S\Omega) + \lambda \|\Theta\|_{1,od}
+       \\min_{\\Omega, \\Theta \\in \\mathbb{S}^p_{++}} - \\log \\det \\Omega + \\mathrm{Tr}(S\Omega) + \\lambda \\|\\Theta\\|_{1,od}
 
-       s.t. \quad \Omega = \Theta
+       s.t. \\quad \\Omega = \\Theta
 
 
     Note:
@@ -442,20 +448,21 @@ def block_SGL(S: np.ndarray,
             block_S = S[np.ix_(C, C)]          
             this_lambda1_mask = lambda1_mask[np.ix_(C, C)]
             
-            block_sol, block_info = ADMM_SGL(S=block_S,
-                                             lambda1=lambda1,
-                                             Omega_0=Omega_0[np.ix_(C, C)],
-                                             Theta_0=Theta_0[np.ix_(C, C)],
-                                             X_0=X_0[np.ix_(C, C)],
-                                             tol=tol,
-                                             rtol=rtol,
-                                             stopping_criterion=stopping_criterion,
-                                             update_rho=update_rho,
-                                             rho=rho,
-                                             max_iter=max_iter,
-                                             verbose=verbose,
-                                             measure=measure,
-                                             lambda1_mask=this_lambda1_mask
+            block_sol, block_info = ADMM_SGL(
+                S=block_S,
+                lambda1=lambda1,
+                Omega_0=Omega_0[np.ix_(C, C)],
+                Theta_0=Theta_0[np.ix_(C, C)],
+                X_0=X_0[np.ix_(C, C)],
+                tol=tol,
+                rtol=rtol,
+                stopping_criterion=stopping_criterion,
+                update_rho=update_rho,
+                rho=rho,
+                max_iter=max_iter,
+                verbose=verbose,
+                measure=measure,
+                lambda1_mask=this_lambda1_mask
             )
 
             allOmega.append(block_sol['Omega'])

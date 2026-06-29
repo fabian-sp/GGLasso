@@ -15,23 +15,24 @@ from gglasso.solver.ggl_helper import phiplus, prox_od_1norm, prox_rank_norm
 from gglasso.helper.ext_admm_helper import check_G
 
 
-def ext_ADMM_MGL(S: dict,
-                 lambda1: float,
-                 lambda2: float,
-                 reg: str,
-                 Omega_0: dict,
-                 G: np.ndarray,
-                 X0: Optional[dict]=None,
-                 X1: Optional[dict]=None,
-                 tol: float=1e-5,
-                 rtol: float=1e-4,
-                 stopping_criterion: str='boyd',
-                 rho: float=1.,
-                 max_iter: int=1000,
-                 verbose: bool=False,
-                 measure: bool=False,
-                 latent: bool=False,
-                 mu1: Optional[float]=None
+def ext_ADMM_MGL(
+        S: dict,
+        lambda1: float,
+        lambda2: float,
+        reg: str,
+        Omega_0: dict,
+        G: np.ndarray,
+        X0: Optional[dict]=None,
+        X1: Optional[dict]=None,
+        tol: float=1e-5,
+        rtol: float=1e-4,
+        stopping_criterion: str='boyd',
+        rho: float=1.,
+        max_iter: int=1000,
+        verbose: bool=False,
+        measure: bool=False,
+        latent: bool=False,
+        mu1: Optional[float]=None
     ):
     """
     This is an ADMM algorithm for solving the Group Graphical Lasso problem
@@ -43,12 +44,12 @@ def ext_ADMM_MGL(S: dict,
     If ``latent=False``, this function solves
     
     .. math::
-        \min_{\Omega,\Theta,\Lambda} \sum_{k=1}^K - \log \det(\Omega^{(k)}) + \mathrm{Tr}(S^{(k)}\Omega^{(k)}) + \sum_{k=1}^K \lambda_1 ||\Theta^{(k)}||_{1,od} 
-                                    + \sum_{l} \lambda_2 \\beta_l ||\Lambda_{[l]}||_2
+        \\min_{\\Omega,\\Theta,\\Lambda} \\sum_{k=1}^K - \\log \\det(\\Omega^{(k)}) + \\mathrm{Tr}(S^{(k)}\\Omega^{(k)}) + \\sum_{k=1}^K \\lambda_1 ||\\Theta^{(k)}||_{1,od} 
+                                    + \\sum_{l} \\lambda_2 \\beta_l ||\\Lambda_{[l]}||_2
         
-        s.t. \quad \Omega^{(k)} = \Theta^{(k)} \quad  k=1,\dots,K
+        s.t. \\quad \\Omega^{(k)} = \\Theta^{(k)} \\quad  k=1,\\dots,K
              
-        \quad  \quad  \Lambda^{(k)} = \Theta^{(k)} \quad k=1,\dots,K 
+        \\quad  \\quad  \\Lambda^{(k)} = \\Theta^{(k)} \\quad k=1,\\dots,K 
     
     where l indexes the groups of overlapping variables and :math:`\\Lambda_{[l]}` is the array of all respective components.
     To account for differing group sizes we multiply with :math:`\\beta_l`, the square root of the group size.
@@ -56,13 +57,13 @@ def ext_ADMM_MGL(S: dict,
     If ``latent=True``, this function solves
     
     .. math::
-        \min_{\Omega,\Theta,\Lambda,L} \sum_{k=1}^K - \log \det(\Omega^{(k)}) + \mathrm{Tr}(S^{(k)}\Omega^{(k)}) + \sum_{k=1}^K \lambda_1 ||\Theta^{(k)}||_{1,od} 
+        \\min_{\\Omega,\\Theta,\\Lambda,L} \\sum_{k=1}^K - \\log \\det(\\Omega^{(k)}) + \\mathrm{Tr}(S^{(k)}\\Omega^{(k)}) + \\sum_{k=1}^K \\lambda_1 ||\\Theta^{(k)}||_{1,od} 
         
-        + \sum_{l} \lambda_2 \\beta_l ||\Lambda_{[l]}||_2 +\sum_{k=1}^{K} \mu_{1,k} \|L^{(k)}\|_{\star}
+        + \\sum_{l} \\lambda_2 \\beta_l ||\\Lambda_{[l]}||_2 +\\sum_{k=1}^{K} \\mu_{1,k} \\|L^{(k)}\\|_{\\star}
         
-        s.t. \quad \Omega^{(k)} = \Theta^{(k)} - L^{(k)} \quad  k=1,\dots,K
+        s.t. \\quad \\Omega^{(k)} = \\Theta^{(k)} - L^{(k)} \\quad  k=1,\\dots,K
              
-        \quad  \quad  \Lambda^{(k)} = \Theta^{(k)} \quad k=1,\dots,K 
+        \\quad  \\quad  \\Lambda^{(k)} = \\Theta^{(k)} \\quad k=1,\\dots,K
     
     Note:
        * Typically, ``sol['Omega']`` is positive definite and ``sol['Theta']`` is sparse.
@@ -231,16 +232,17 @@ def ext_ADMM_MGL(S: dict,
         
         # Stopping condition
         if stopping_criterion == 'boyd':
-            r_t, s_t, e_pri, e_dual = ADMM_stopping_criterion(Omega_t,
-                                                              Omega_t_1,
-                                                              Theta_t,
-                                                              L_t,
-                                                              Lambda_t,
-                                                              Lambda_t_1,
-                                                              X0_t,
-                                                              X1_t,
-                                                              S,
-                                                              rho, p, tol, rtol, latent
+            r_t, s_t, e_pri, e_dual = ADMM_stopping_criterion(
+                Omega_t,
+                Omega_t_1,
+                Theta_t,
+                L_t,
+                Lambda_t,
+                Lambda_t_1,
+                X0_t,
+                X1_t,
+                S,
+                rho, p, tol, rtol, latent
             )
             
             residual[iter_t] = max(r_t, s_t)
@@ -253,15 +255,16 @@ def ext_ADMM_MGL(S: dict,
                 break
             
         elif stopping_criterion == 'kkt':
-            eta_A = kkt_stopping_criterion(Omega_t,
-                                           Theta_t,
-                                           L_t,
-                                           Lambda_t,
-                                           dict((k, rho*v) for k,v in X0_t.items()),
-                                           dict((k, rho*v) for k,v in X1_t.items()),
-                                           S,
-                                           G,
-                                           lambda1, lambda2, reg, latent, mu1
+            eta_A = kkt_stopping_criterion(
+                Omega_t,
+                Theta_t,
+                L_t,
+                Lambda_t,
+                dict((k, rho*v) for k,v in X0_t.items()),
+                dict((k, rho*v) for k,v in X1_t.items()),
+                S,
+                G,
+                lambda1, lambda2, reg, latent, mu1
             )
             residual[iter_t] = eta_A
             
@@ -382,12 +385,13 @@ def kkt_stopping_criterion(Omega, Theta, L, Lambda, X0, X1, S , G, lambda1, lamb
     for k in np.arange(K):
         term4[k] = np.linalg.norm(V[k] - Lambda[k]) / (1+np.linalg.norm(Lambda[k]))
     
-    res = max(np.linalg.norm(term1),
-              np.linalg.norm(term2),
-              np.linalg.norm(term3),
-              np.linalg.norm(term4),
-              np.linalg.norm(term5),
-              np.linalg.norm(term6)
+    res = max(
+        np.linalg.norm(term1),
+        np.linalg.norm(term2),
+        np.linalg.norm(term3),
+        np.linalg.norm(term4),
+        np.linalg.norm(term5),
+        np.linalg.norm(term6)
     )
     return res
 

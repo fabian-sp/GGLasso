@@ -19,7 +19,7 @@ jobs:
         with:
           activate-environment: gglasso_env
           environment-file: environment.yml
-          python-version: 3.9
+          python-version: 3.14
       
       # Install package and run tests
       - name: run tests

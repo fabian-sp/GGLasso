@@ -36,13 +36,14 @@ def get_ppdna_params(ppdna_params=None):
          
 
 def get_ppa_sub_params_default():
-    ppa_sub_params = {'sigma_t': 1e3,
-                      'eta': 1e-1,
-                      'tau': .2,
-                      'rho': .5,
-                      'mu': 1e-4,
-                      'eps_t': .95,
-                      'delta_t': .95
+    ppa_sub_params = {
+        'sigma_t': 1e3,
+        'eta': 1e-1,
+        'tau': .2,
+        'rho': .5,
+        'mu': 1e-4,
+        'eps_t': .95,
+        'delta_t': .95
     } 
     return ppa_sub_params
 
@@ -102,11 +103,12 @@ def PPA_subproblem(Omega_t, Theta_t, X_t, S, reg, ppa_sub_params=None, verbose=F
         
         # fun evaluation and eig can be reused from Armijo in  laster iter
         if sub_iter == 0:
-            funY_Xt, Omega_sol, Theta_sol, (eigD, eigQ) = Y_t(X_t,
-                                                              Omega_t,
-                                                              Theta_t,
-                                                              S,
-                                                              lambda1, lambda2, sigma_t, reg
+            funY_Xt, Omega_sol, Theta_sol, (eigD, eigQ) = Y_t(
+                X_t,
+                Omega_t,
+                Theta_t,
+                S,
+                lambda1, lambda2, sigma_t, reg
             )
         else:
             funY_Xt = Y_t_new
@@ -122,20 +124,22 @@ def PPA_subproblem(Omega_t, Theta_t, X_t, S, reg, ppa_sub_params=None, verbose=F
         
         # step 2: line search 
         alpha = 1.
-        Y_t_new, Omega_sol, Theta_sol, (eigD, eigQ) = Y_t(X_t + alpha*D,
-                                                          Omega_t,
-                                                          Theta_t,
-                                                          S,
-                                                          lambda1, lambda2, sigma_t, reg
+        Y_t_new, Omega_sol, Theta_sol, (eigD, eigQ) = Y_t(
+            X_t + alpha*D,
+            Omega_t,
+            Theta_t,
+            S,
+            lambda1, lambda2, sigma_t, reg
         )
             
         while Y_t_new < funY_Xt + mu*alpha*Gdot(gradY_Xt , D):
             alpha *= rho
-            Y_t_new, Omega_sol, Theta_sol, (eigD, eigQ) = Y_t(X_t + alpha*D,
-                                                              Omega_t,
-                                                              Theta_t,
-                                                              S,
-                                                              lambda1, lambda2, sigma_t, reg
+            Y_t_new, Omega_sol, Theta_sol, (eigD, eigQ) = Y_t(
+                X_t + alpha*D,
+                Omega_t,
+                Theta_t,
+                S,
+                lambda1, lambda2, sigma_t, reg
             )
             
                 
@@ -157,26 +161,27 @@ def PPA_subproblem(Omega_t, Theta_t, X_t, S, reg, ppa_sub_params=None, verbose=F
     return Omega_sol, Theta_sol, X_t, sub_info
 
 
-def PPDNA(S,
-          lambda1,
-          lambda2,
-          reg,
-          Omega_0,
-          Theta_0=np.array([]),
-          X_0=np.array([]),
-          ppdna_params=None,
-          eps_ppdna=1e-5,
-          verbose=False,
-          measure=False
+def PPDNA(
+        S,
+        lambda1,
+        lambda2,
+        reg,
+        Omega_0,
+        Theta_0=np.array([]),
+        X_0=np.array([]),
+        ppdna_params=None,
+        eps_ppdna=1e-5,
+        verbose=False,
+        measure=False
     ):
     """
     Proximal Point algorithm for the Multiple Graphical Lasso problem (MGL).
     It solves
     
     .. math::
-       \min_{\Omega, \Theta} \sum_{k=1}^{K} (-\log\det(\Omega^{(k)}) + \mathrm{Tr}(S^{(k)} \Omega^{(k)}) ) + \mathcal{P}(\Theta)
+       \\min_{\\Omega, \\Theta} \\sum_{k=1}^{K} (-\\log\\det(\\Omega^{(k)}) + \\mathrm{Tr}(S^{(k)} \\Omega^{(k)}) ) + \\mathcal{P}(\\Theta)
        
-       s.t. \quad \Omega^{(k)} = \Theta^{(k)} \quad k=1,\dots,K
+       s.t. \\quad \\Omega^{(k)} = \\Theta^{(k)} \\quad k=1,\\dots,K
     
     Here, :math:`\\mathcal{P}` is a regularization function which depends on the application. Group Graphical Lasso (GGL) or Fused Graphical Lasso (FGL) is implemented.
     
@@ -273,13 +278,14 @@ def PPDNA(S,
             status = 'optimal'
             break
         
-        Omega_t, Theta_t, X_t, sub_info = PPA_subproblem(Omega_t,
-                                                         Theta_t,
-                                                         X_t,
-                                                         S,
-                                                         reg=reg,
-                                                         ppa_sub_params=ppa_sub_params,
-                                                         verbose=False
+        Omega_t, Theta_t, X_t, sub_info = PPA_subproblem(
+            Omega_t,
+            Theta_t,
+            X_t,
+            S,
+            reg=reg,
+            ppa_sub_params=ppa_sub_params,
+            verbose=False
         )
         
         if measure:
@@ -312,10 +318,11 @@ def PPDNA(S,
     sol = {'Omega': Omega_t, 'Theta': Theta_t, 'X': X_t}
     if measure:
         # last runtime irrelevant (as break) and first residual irrelevant
-        info = {'status': status ,
-                'runtime': runtime[:iter_t],
-                'residual': residual[1:iter_t + 1],
-                'objective': objective[:iter_t]
+        info = {
+            'status': status ,
+            'runtime': runtime[:iter_t],
+            'residual': residual[1:iter_t + 1],
+            'objective': objective[:iter_t]
         }
     else:
         info = {'status': status}
@@ -328,10 +335,14 @@ def PPDNA_stopping_criterion(Omega, Theta, X, S, ppa_sub_params, reg):
     
     (K,p,p) = S.shape
     
-    term1 = np.linalg.norm(Theta-prox_p(Theta+X,
-                                        l1=ppa_sub_params['lambda1'],
-                                        l2=ppa_sub_params['lambda2'],
-                                        reg=reg)) / (1+np.linalg.norm(Theta))
+    term1 = np.linalg.norm(
+        Theta-prox_p(
+            Theta+X,
+            l1=ppa_sub_params['lambda1'],
+            l2=ppa_sub_params['lambda2'],
+            reg=reg
+        )
+    ) / (1+np.linalg.norm(Theta))
     
     term2 = np.linalg.norm(Theta - Omega) / (1+np.linalg.norm(Theta))
     
@@ -358,19 +369,20 @@ def warmPPDNA(S, lambda1, lambda2, reg, Omega_0, Theta_0=np.array([]), X_0=np.ar
         phase2 = True
     
     rho = 1.
-    sol1, info1 = ADMM_MGL(S,
-                           lambda1,
-                           lambda2,
-                           reg,
-                           Omega_0,
-                           Theta_0,
-                           X_0,
-                           tol=eps_admm,
-                           stopping_criterion='kkt',
-                           verbose=verbose,
-                           measure=measure,
-                           rho=rho,
-                           update_rho=False
+    sol1, info1 = ADMM_MGL(
+        S,
+        lambda1,
+        lambda2,
+        reg,
+        Omega_0,
+        Theta_0,
+        X_0,
+        tol=eps_admm,
+        stopping_criterion='kkt',
+        verbose=verbose,
+        measure=measure,
+        rho=rho,
+        update_rho=False
     )
     
     assert info1['status'] == 'optimal'
@@ -381,17 +393,18 @@ def warmPPDNA(S, lambda1, lambda2, reg, Omega_0, Theta_0=np.array([]), X_0=np.ar
     X_0 = rho*sol1['X']
     
     if phase2:
-        sol2, info2 = PPDNA(S,
-                            lambda1,
-                            lambda2,
-                            reg,
-                            Omega_0=Omega_0,
-                            Theta_0=Theta_0,
-                            X_0=X_0,
-                            ppdna_params=ppdna_params,
-                            eps_ppdna=eps_ppdna,
-                            verbose=verbose,
-                            measure=measure
+        sol2, info2 = PPDNA(
+            S,
+            lambda1,
+            lambda2,
+            reg,
+            Omega_0=Omega_0,
+            Theta_0=Theta_0,
+            X_0=X_0,
+            ppdna_params=ppdna_params,
+            eps_ppdna=eps_ppdna,
+            verbose=verbose,
+            measure=measure
         )
     
         # append the infos
