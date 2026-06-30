@@ -1,13 +1,11 @@
 # GGLasso SLR Transfer Pack
 
-Hand-off from **Oleg Vlasovets** to **Fabian Schaipp** for integrating two
-modifications to the single (sparse + low-rank, "SLR") graphical lasso ADMM
-solver into GGLasso, plus the data needed to validate them against the R
+Two modifications to the single (sparse + low-rank, "SLR") graphical lasso ADMM
+solver, for integration into GGLasso, plus data to validate them against the R
 **SpiecEasi** SLR implementation.
 
-This is a **drop-in reference folder**, not a patch against the package source.
-The code under `code/` is a standalone variant of GGLasso's single-GL solver;
-the two modifications below are the parts intended for integration.
+The code under `code/` is a standalone variant of GGLasso's single-GL solver.
+The two modifications below are the parts to integrate.
 
 ---
 
@@ -15,44 +13,41 @@ the two modifications below are the parts intended for integration.
 
 ### (a) On/off diagonal penalization in the L1 penalty — `shrink_diag`
 
-- **Where:** `code/solver.py`, `ADMM_single()` — parameter declared at **line 18**
+- **Where:** `code/solver.py`, `ADMM_single()` — parameter at **line 18**
   (`shrink_diag=False`), implemented at **lines 102–107**.
-- **What it does:** when `shrink_diag=True`, the empirical covariance `S` is
-  rescaled to correlation form `S_ij / sqrt(S_ii · S_jj)` and an entry-wise
-  effective penalty mask `1 / (d_i · d_j)` is applied to `lambda1`
-  (via `lambda1_mask`). This reproduces SpiecEasi's `shrinkDiag=TRUE` behaviour
-  in its C++ ADMM. The back-transform to the original scale happens after the
-  solve (`code/solver.py` ~line 247).
-- **Helper dependency:** `prox_od_1norm(A, l, diag=True)` in `code/helper.py`
-  **line 617** — when `diag=True` the diagonal of `A` is preserved (off-diagonal
+- **Behaviour:** when `shrink_diag=True`, the empirical covariance `S` is rescaled
+  to correlation form `S_ij / sqrt(S_ii · S_jj)` and an entry-wise penalty mask
+  `1 / (d_i · d_j)` is applied to `lambda1` (via `lambda1_mask`). Equivalent to
+  SpiecEasi's `shrinkDiag=TRUE`. The back-transform to the original scale happens
+  after the solve (`code/solver.py` ~line 247).
+- **Helper:** `prox_od_1norm(A, l, diag=True)` in `code/helper.py` **line 617** —
+  with `diag=True` the diagonal of `A` is preserved (off-diagonal
   soft-thresholding only).
-- **GGLasso integration target:** `gglasso/solver/single_admm_solver.py`
-  (`ADMM_SGL`); the prox lives in `gglasso/solver/ggl_helper.py`
-  (`prox_od_1norm`).
+- **Integration target:** `gglasso/solver/single_admm_solver.py` (`ADMM_SGL`);
+  prox in `gglasso/solver/ggl_helper.py` (`prox_od_1norm`).
 
 ### (b) Explicit rank criterion replacing the continuous `mu1` — `r`
 
 - **Where:** `code/solver.py`, `prox_rank_norm()` — definition at **line 333**,
   rank logic at **lines 339–344**; called in the `L`-update at **lines 174–180**.
-- **What it does:** instead of thresholding singular values continuously at
+- **Behaviour:** instead of thresholding singular values continuously at
   `beta = mu1 / rho` (nuclear-norm prox), passing an integer `r` fixes the rank
-  directly by thresholding at the `r`-th largest eigenvalue
-  (`beta = D[-(r+1)]`), zeroing everything below. This mirrors SpiecEasi's
-  fixed-rank SLR (`src/ADMM.cpp`, the `method='slr', r=...` path).
-- **GGLasso integration target:** `gglasso/solver/ggl_helper.py`
-  (`prox_rank_norm`), invoked from the latent branch of `ADMM_SGL`.
-
-### Stability selection
+  by thresholding at the `r`-th largest eigenvalue (`beta = D[-(r+1)]`). Mirrors
+  SpiecEasi's fixed-rank SLR (`src/ADMM.cpp`, the `method='slr', r=...` path).
+- **Integration target:** `gglasso/solver/ggl_helper.py` (`prox_rank_norm`),
+  invoked from the latent branch of `ADMM_SGL`.
+- With `r` set, `mu1` is not required (the latent-branch assertion accepts `r`
+  alone). The only combination still needing `mu1` is `stopping_criterion='kkt'`
+  with `r` set, which raises an error pointing to `'boyd'`.
 
 `code/stability_selection.py` is the StARS subsampling/instability routine
-(SpiecEasi/`huge` style) used to select `lambda1` along the path. Included so
-the validation recipe below is reproducible end-to-end.
+(SpiecEasi/`huge` style) for selecting `lambda1` along a path.
 
 ---
 
 ## 2. Files
 
-### `code/` — standalone solver variant
+### `code/` — solver
 
 | File | Contents |
 |------|----------|
@@ -60,127 +55,60 @@ the validation recipe below is reproducible end-to-end.
 | `helper.py` | `prox_od_1norm(..., diag=)` and other prox/helpers |
 | `stability_selection.py` | StARS `subsample()` + `estimate_instability()` |
 
-Copied from the tutorial repo, with **one deliberate fix** in `solver.py`: the
-latent-branch assertion now accepts an explicit rank `r` *without* a `mu1`
-(previously `mu1 > 0` was required even when `r` made it inert). See §4.
-
 `solver.py` imports `phiplus` from `gglasso.solver.ggl_helper` (with an inline
-NumPy fallback if gglasso's numba dependency is unavailable) and
-`prox_od_1norm` from `helper.py`.
+NumPy fallback) and `prox_od_1norm` from `helper.py`.
 
 ### `data/inputs/` — solver inputs (empirical covariance)
 
-| File | Shape | Notes |
-|------|-------|-------|
+| File | Shape | Description |
+|------|-------|-------------|
 | `cov_smoker.csv` | 40×40 (+ index) | empirical covariance, smoker group |
 | `cov_non_smoker.csv` | 40×40 (+ index) | empirical covariance, non-smoker group |
 
-### `data/spiec_easi_slr/` — R SpiecEasi **SLR** outputs (validation ground-truth, both groups)
+### `data/spiec_easi_slr/` — SLR ground-truth (optimal solution, both groups)
 
-| File | Shape | Role |
-|------|-------|------|
+| File | Shape | Description |
+|------|-------|-------------|
 | `theta_smoker.csv`, `theta_non_smoker.csv` | 40×40 (+ index) | sparse precision Θ̂ at the StARS-optimal λ (`method='slr'`, `r=10`) |
-| `low_rank_smoker.csv`, `low_rank_non_smoker.csv` | 40×40 (+ index) | low-rank component L (rank `r=10`) |
+| `low_rank_smoker.csv`, `low_rank_non_smoker.csv` | 40×40 (+ index) | low-rank component L (`r=10`) |
 
-StARS-optimal λ index: **smoker = 10**, **non-smoker = 8** (different per group).
-`theta_non_smoker.csv` was **corrected** to index 8 — see the provenance note in
-§5; the smoker files and `low_rank_non_smoker.csv` were already correct.
+StARS-optimal λ index per group: smoker = 10, non-smoker = 8.
 
-### `data/spiec_easi_slr_path/{smoker,non_smoker}/` — full SLR λ-path (regenerated)
+### `data/spiec_easi_slr_path/{smoker,non_smoker}/` — full SLR λ-path
 
-Produced by `regenerate_slr_path.R` (see §3). Per group: `theta_01..20.csv`
-(sparse precision), `low_rank_01..20.csv` (low-rank L), and `lambda_path.csv`
-(λ value + StARS-optimal flag). The optimal-index slices reproduce the files in
-`data/spiec_easi_slr/` bit-for-bit. The path estimates are deterministic; only
-the StARS-selected optimal index depends on subsampling (it was stable at
-smoker=10 / non-smoker=8 across runs).
+Per group: `theta_01..20.csv` (sparse precision), `low_rank_01..20.csv`
+(low-rank L), and `lambda_path.csv` (λ value + StARS-optimal flag). Produced by
+`regenerate_slr_path.R`. The optimal-index slices equal the files in
+`data/spiec_easi_slr/`.
 
-### `data/glasso_path_non_smoker/` — plain **glasso** (sparse-only) λ-path, non-smoker
+### `data/glasso_path_non_smoker/` — plain glasso (sparse-only) λ-path, non-smoker
 
-| File | Shape | Role |
-|------|-------|------|
-| `sub_icov_1.csv` … `sub_icov_20.csv` | 40×40 (**no index**) | precision Θ̂ along the 20-step λ path from `method='glasso'` (sparse only, **no low-rank**), **non-smoker group only** |
+| File | Shape | Description |
+|------|-------|-------------|
+| `sub_icov_1.csv` … `sub_icov_20.csv` | 40×40 (no index) | precision Θ̂ along the 20-step λ path from `method='glasso'` (sparse only, no low-rank), non-smoker group |
 
-**Important — these are NOT SLR outputs.** They were generated by the plain
-graphical-lasso run (`se_1 <- spiec.easi(countMat2, method='glasso', ...)`) and
-verified to match `se_1$est$icov[[i]]` to machine precision against the saved
-`se_non_smokers.rds`. Use them to validate the solver's **sparse-only** mode
-(`latent=False`, `r=None`) — not the low-rank functionality.
+Use these to validate the solver's **sparse-only** mode (`latent=False`,
+`r=None`), not the low-rank functionality.
 
-### `data/raw/` — count matrices (inputs for regenerating the SLR path)
+### `data/raw/` — count matrices (inputs for `regenerate_slr_path.R`)
 
-| File | Shape | Role |
-|------|-------|------|
-| `counts_smoker.csv`, `counts_non_smoker.csv` | 234 samples × 40 taxa (+ index) | raw counts (`net_W$countMat1` / `countMat2`); fed to `spiec.easi(method='slr')` |
+| File | Shape | Description |
+|------|-------|-------------|
+| `counts_smoker.csv`, `counts_non_smoker.csv` | 234 samples × 40 taxa (+ index) | raw counts fed to `spiec.easi` |
 
-### `regenerate_slr_path.R` — produce the full SLR λ-path (both groups)
-
-The pack ships only the SLR *optimal* solution. To get the entire path as
-ground-truth (sparse precision **and** low-rank component at every λ), run:
-
-```bash
-Rscript regenerate_slr_path.R     # requires SpiecEasi with method='slr'
-```
-
-It reads `data/raw/counts_*.csv`, reruns SLR with the tutorial parameters
-(`r=10, nlambda=20, lambda.min.ratio=1e-2, sel.criterion='stars', rep.num=20`),
-and writes to `data/spiec_easi_slr_path/{smoker,non_smoker}/`:
-`theta_01..20.csv`, `low_rank_01..20.csv`, and `lambda_path.csv` (λ values +
-StARS-optimal flag). This is a StARS subsampling sweep — run it via SLURM
-(`sbatch`/`salloc`), not on a login node. Verified to run (SLR returns 40×40
-`icov`/`resid` with `rank(L)=10`); the full sweep is left for you to execute.
-
-**Format caveat:** `cov_*`, `theta_*`, `low_rank_*` carry a row-name/index
-column (`read.csv(..., index_col=0)`); the `sub_icov_*` path files were written
-with `row.names=FALSE`, so they have **no index column** (40 columns, not 41).
-
-All matrices cover **40 taxa** after filtering. The data are aggregate
-covariance/precision matrices derived from the public American Gut Project — no
-individual-level data.
+**CSV format:** `cov_*`, `theta_*`, `low_rank_*`, and `counts_*` carry a
+row-name/index column (read with `index_col=0`); the `sub_icov_*` files have no
+index column (40 columns, not 41). All matrices cover 40 taxa. The data are
+aggregate covariance/precision matrices from the public American Gut Project.
 
 ---
 
-## 3. How the validation data was generated (R)
+## 3. Validate against the SLR ground-truth (Python)
 
-From `Causal_Microbiome_Tutorial/5_networks_AG/5.1_Networks_compare_AG.Rmd`.
-
-**SLR optimal solution** (`theta_*`, `low_rank_*`; both groups; lines 275–336):
-
-```r
-se_0_slr <- spiec.easi(net_W$countMat1, method='slr', r=10,        # smoker
-                       lambda.min.ratio=1e-2, nlambda=20,
-                       sel.criterion='stars', beta=0,
-                       pulsar.params=list(rep.num=20, ncores=1))
-se_1_slr <- spiec.easi(net_W$countMat2, method='slr', r=10, ...)   # non-smoker
-S_inv <- se_X_slr$est$icov[[getOptInd(se_X_slr)]]    # -> theta_*.csv
-L     <- se_X_slr$est$resid[[getOptInd(se_X_slr)]]   # -> low_rank_*.csv
-```
-
-Key SLR parameters: **`r = 10`**, **`nlambda = 20`**, `lambda.min.ratio = 1e-2`,
-StARS selection, `rep.num = 20`.
-
-**Glasso λ-path** (`sub_icov_*`; non-smoker only; lines 180–206):
-
-```r
-se_1 <- spiec.easi(net_W$countMat2, method='glasso',              # non-smoker
-                   lambda.min.ratio=1e-2, nlambda=20,
-                   pulsar.params=list(rep.num=20, ncores=1))
-for (i in seq_along(se_1$est$icov))
-  write.csv(se_1$est$icov[[i]], paste0("sub_icov_", i, ".csv"), row.names=FALSE)
-```
-
-This is the **sparse-only** path (no low-rank term). Confirmed by loading
-`se_non_smokers.rds` (`est$method == "glasso"`) and matching each
-`se_1$est$icov[[i]]` to `sub_icov_i.csv` bit-for-bit.
-
----
-
-## 4. Suggested validation recipe (Python)
-
-A runnable harness is included: **`validate.py`** (run from this directory).
+Run `validate.py` from this directory:
 
 ```bash
-python validate.py                 # both groups, illustrative lambda1
+python validate.py                 # both groups
 python validate.py --lambda1 0.05  # custom L1 penalty
 python validate.py --group smoker  # one group
 ```
@@ -194,50 +122,39 @@ sol, info = ADMM_single(S, lambda1=<λ>, Omega_0=np.eye(p),
 ```
 
 and reports, per group, Frobenius + relative error of `sol['Theta']` vs.
-`theta_*.csv` (with off-diagonal support agreement) and of `sol['L']` vs.
+`theta_*.csv` (with off-diagonal support agreement) and `sol['L']` vs.
 `low_rank_*.csv`, plus the recovered `rank(L)`.
 
-Notes:
-- **Explicit-rank calls no longer need a dummy `mu1`.** The latent-branch
-  assertion was relaxed to accept `r` alone (when `r` is set, the L-update uses
-  the fixed-rank prox and `mu1` is never read under `boyd` stopping). The one
-  combination still requiring `mu1` is `stopping_criterion='kkt'` with `r` set,
-  which now raises a clear error pointing to `boyd`.
-- The default `--lambda1` is illustrative; to reproduce the StARS-optimal
-  solution exactly, pass the SpiecEasi-selected λ.
+- `--lambda1` defaults to an illustrative value. To reproduce the StARS-optimal
+  solution, pass the SpiecEasi-selected λ.
+- `validate.py` aliases the local `helper` module as `utils.helper` so
+  `solver.py`'s imports resolve in this flat folder; under GGLasso these point at
+  `gglasso.solver.ggl_helper`.
 
-To validate the **sparse-only** mode separately, sweep the 20 λ values, run
-`ADMM_single(S, lambda1=λ_i, ..., latent=False)` on the non-smoker covariance,
-and compare each estimate against `data/glasso_path_non_smoker/sub_icov_i.csv`
-(plain glasso path — no low-rank).
-
-`validate.py` aliases the local `helper` module as `utils.helper` so the
-verbatim `solver.py` imports resolve in this flat folder; during GGLasso
-integration these imports point at `gglasso.solver.ggl_helper` instead.
+To validate the **sparse-only** mode, sweep the 20 λ values with
+`ADMM_single(S, lambda1=λ_i, ..., latent=False)` on the non-smoker covariance and
+compare each estimate against `data/glasso_path_non_smoker/sub_icov_i.csv`.
 
 ---
 
-## 5. Provenance & open question
+## 4. Regenerate the SLR λ-path (R)
 
-- **Source repos:**
-  - Code: `Causal_Sparse_Low_Rank_Microbiome_Tutorial/utils/` (the `shrink_diag`
-    switch was added in commit `b7b2219`; the `r` criterion pre-dates it).
-  - Data: `Causal_Microbiome_Tutorial/design_AG/` (branch `main`).
-- **Pinned dependency:** `gglasso==0.2.1`.
-- **`sub_icov_*` provenance (RESOLVED):** these are the **non-smoker, plain
-  `method='glasso'` (sparse-only)** precision matrices along the 20-step λ path —
-  **not** SLR outputs. Verified by loading `se_non_smokers.rds`
-  (`est$method == "glasso"`) and matching `se_1$est$icov[[i]]` to
-  `sub_icov_i.csv` to machine precision. File timestamps agree (path + rds on
-  2026-04-17; SLR outputs on 2026-04-18). Hence they live under
-  `data/glasso_path_non_smoker/`, separate from the SLR ground-truth.
-- **`theta_non_smoker.csv` correction:** the tutorial (`5.1_Networks_compare_AG.Rmd`
-  line 311) extracted the non-smoker sparse precision with the **smoker's**
-  StARS index (`se_1_slr$est$icov[[getOptInd(se_0_slr)]]`, index 10) while the
-  matching low-rank component (line 314) correctly used the non-smoker's own
-  index (8) — so the originally shipped Θ and L were at **different λ**.
-  Confirmed by regenerating the path: the old `theta_non_smoker.csv` equalled
-  `non_smoker/theta_10.csv` exactly, and `low_rank_non_smoker.csv` equalled
-  `non_smoker/low_rank_08.csv` exactly. `theta_non_smoker.csv` has been replaced
-  with the index-8 slice so the (Θ, L) pair is consistent. (The same bug affects
-  the corresponding file in the tutorial repo, which is left untouched here.)
+```bash
+sbatch regenerate_slr_path.sbatch    # SLURM (StARS sweep — do not run on a login node)
+# or: Rscript regenerate_slr_path.R
+```
+
+Requires SpiecEasi with `method='slr'`. Reads `data/raw/counts_*.csv`, runs SLR
+with `r=10, nlambda=20, lambda.min.ratio=1e-2, sel.criterion='stars',
+rep.num=20`, and writes `data/spiec_easi_slr_path/{smoker,non_smoker}/`
+(`theta_01..20.csv`, `low_rank_01..20.csv`, `lambda_path.csv`). Uses each group's
+own `getOptInd()` for the optimal index.
+
+---
+
+## 5. Source and dependencies
+
+- Code: `Causal_Sparse_Low_Rank_Microbiome_Tutorial/utils/`.
+- Data: `Causal_Microbiome_Tutorial/` (`design_AG/`, generated by
+  `5_networks_AG/5.1_Networks_compare_AG.Rmd`).
+- Pinned: `gglasso==0.2.1`.
