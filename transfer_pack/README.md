@@ -112,17 +112,39 @@ StARS selection, `rep.num = 20`.
 
 ## 4. Suggested validation recipe (Python)
 
-1. Load `data/inputs/cov_smoker.csv` (and non-smoker) as `S` (drop the index col).
-2. Run the SLR solver with the fixed rank and diagonal switch:
-   ```python
-   sol = ADMM_single(S, lambda1=<λ>, Omega_0=np.eye(p),
-                     latent=True, r=10, shrink_diag=True)
-   ```
-3. Compare `sol['Theta']` against `theta_*.csv` and `sol['L']` against
-   `low_rank_*.csv` (Frobenius / support agreement).
-4. To check the path, sweep the 20 λ values and compare each precision estimate
-   against the corresponding `sub_icov_i.csv`; selection should land on the same
-   optimal index StARS picked in R.
+A runnable harness is included: **`validate.py`** (run from this directory).
+
+```bash
+python validate.py                 # both groups, illustrative lambda1
+python validate.py --lambda1 0.05  # custom L1 penalty
+python validate.py --group smoker  # one group
+```
+
+It loads the `cov_*` inputs, runs
+
+```python
+sol, info = ADMM_single(S, lambda1=<λ>, Omega_0=np.eye(p),
+                        latent=True, r=10, mu1=1.0, shrink_diag=True,
+                        stopping_criterion="boyd")
+```
+
+and reports, per group, Frobenius + relative error of `sol['Theta']` vs.
+`theta_*.csv` (with off-diagonal support agreement) and of `sol['L']` vs.
+`low_rank_*.csv`, plus the recovered `rank(L)`.
+
+Notes:
+- `mu1` must be positive to pass the solver's latent-branch assertion, but it is
+  **inert** when `r` is set (the L-update uses the fixed-rank threshold) under
+  `boyd` stopping.
+- The default `--lambda1` is illustrative; to reproduce the StARS-optimal
+  solution exactly, pass the SpiecEasi-selected λ.
+- To check the path, sweep the 20 λ values and compare each precision estimate
+  against the corresponding `sub_icov_i.csv`; selection should land on the same
+  optimal index StARS picked in R.
+
+`validate.py` aliases the local `helper` module as `utils.helper` so the
+verbatim `solver.py` imports resolve in this flat folder; during GGLasso
+integration these imports point at `gglasso.solver.ggl_helper` instead.
 
 ---
 
