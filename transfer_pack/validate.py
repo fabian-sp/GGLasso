@@ -86,13 +86,11 @@ def run_group(group, lambda1):
     p = S.shape[0]
     print(f"[{group}]  S: {p}x{p}   lambda1={lambda1}   r={RANK}   shrink_diag=True")
 
-    # mu1 must be positive to pass the solver's latent-branch assertion, but it
-    # is inert here: when r is set, the L-update uses the fixed-rank threshold
-    # (prox_rank_norm with r) and ignores mu1, and 'boyd' stopping is
-    # residual-based (the mu1-dependent path is the 'kkt' criterion only).
+    # Explicit-rank solve: r fixes the low-rank prox, so mu1 is not needed
+    # (the relaxed latent-branch assertion accepts r alone under 'boyd').
     sol, info = ADMM_single(
         S, lambda1=lambda1, Omega_0=np.eye(p),
-        latent=True, r=RANK, mu1=1.0, shrink_diag=True,
+        latent=True, r=RANK, shrink_diag=True,
         stopping_criterion="boyd",
         tol=1e-7, rtol=1e-4, max_iter=1000, verbose=False,
     )

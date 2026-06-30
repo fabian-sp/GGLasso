@@ -119,9 +119,23 @@ def ADMM_single(S, lambda1, Omega_0, Theta_0=np.array([]), X_0=np.array([]),
     assert stopping_criterion in ["boyd", "kkt"]
 
     if latent:
-        assert mu1 is not None
-        assert mu1 > 0
-  
+        # The latent (low-rank) model needs EITHER an explicit rank ``r`` OR a
+        # continuous nuclear-norm penalty ``mu1``. When ``r`` is given the
+        # L-update uses the fixed-rank prox and ``mu1`` is never read, so we no
+        # longer force callers to pass a dummy ``mu1`` in that case.
+        if r is not None:
+            assert r >= 0, "explicit rank r must be a non-negative integer"
+        else:
+            assert mu1 is not None, \
+                "latent=True requires either r (explicit rank) or mu1 (nuclear-norm penalty)"
+            assert mu1 > 0, "mu1 must be positive"
+        # The kkt stopping criterion evaluates the nuclear-norm subgradient and
+        # therefore still needs mu1; guard the rank-only case explicitly.
+        if stopping_criterion == 'kkt' and r is not None and mu1 is None:
+            raise ValueError(
+                "stopping_criterion='kkt' with explicit rank r also requires mu1; "
+                "use stopping_criterion='boyd' for rank-constrained solves.")
+
     assert rho > 0, "ADMM penalization parameter must be positive."
 
     # initialize

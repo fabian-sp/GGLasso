@@ -1,6 +1,8 @@
 #!/bin/bash
 #SBATCH --job-name=slr_path
 #SBATCH --output=slr_path_%j.log
+#SBATCH --partition=cpu_p
+#SBATCH --qos=cpu_normal
 #SBATCH --cpus-per-task=1
 #SBATCH --mem=4G
 #SBATCH --time=00:30:00

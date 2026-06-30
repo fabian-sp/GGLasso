@@ -52,13 +52,17 @@ the validation recipe below is reproducible end-to-end.
 
 ## 2. Files
 
-### `code/` — standalone solver variant (copied verbatim)
+### `code/` — standalone solver variant
 
 | File | Contents |
 |------|----------|
 | `solver.py` | `ADMM_single()` (with `shrink_diag`, `r`), `prox_rank_norm()` |
 | `helper.py` | `prox_od_1norm(..., diag=)` and other prox/helpers |
 | `stability_selection.py` | StARS `subsample()` + `estimate_instability()` |
+
+Copied from the tutorial repo, with **one deliberate fix** in `solver.py`: the
+latent-branch assertion now accepts an explicit rank `r` *without* a `mu1`
+(previously `mu1 > 0` was required even when `r` made it inert). See §4.
 
 `solver.py` imports `phiplus` from `gglasso.solver.ggl_helper` (with an inline
 NumPy fallback if gglasso's numba dependency is unavailable) and
@@ -78,7 +82,18 @@ NumPy fallback if gglasso's numba dependency is unavailable) and
 | `theta_smoker.csv`, `theta_non_smoker.csv` | 40×40 (+ index) | sparse precision Θ̂ at the StARS-optimal λ (`method='slr'`, `r=10`) |
 | `low_rank_smoker.csv`, `low_rank_non_smoker.csv` | 40×40 (+ index) | low-rank component L (rank `r=10`) |
 
-Only the **optimal** SLR solution was saved — there is no saved SLR λ-path.
+StARS-optimal λ index: **smoker = 10**, **non-smoker = 8** (different per group).
+`theta_non_smoker.csv` was **corrected** to index 8 — see the provenance note in
+§5; the smoker files and `low_rank_non_smoker.csv` were already correct.
+
+### `data/spiec_easi_slr_path/{smoker,non_smoker}/` — full SLR λ-path (regenerated)
+
+Produced by `regenerate_slr_path.R` (see §3). Per group: `theta_01..20.csv`
+(sparse precision), `low_rank_01..20.csv` (low-rank L), and `lambda_path.csv`
+(λ value + StARS-optimal flag). The optimal-index slices reproduce the files in
+`data/spiec_easi_slr/` bit-for-bit. The path estimates are deterministic; only
+the StARS-selected optimal index depends on subsampling (it was stable at
+smoker=10 / non-smoker=8 across runs).
 
 ### `data/glasso_path_non_smoker/` — plain **glasso** (sparse-only) λ-path, non-smoker
 
@@ -174,7 +189,7 @@ It loads the `cov_*` inputs, runs
 
 ```python
 sol, info = ADMM_single(S, lambda1=<λ>, Omega_0=np.eye(p),
-                        latent=True, r=10, mu1=1.0, shrink_diag=True,
+                        latent=True, r=10, shrink_diag=True,
                         stopping_criterion="boyd")
 ```
 
@@ -183,9 +198,11 @@ and reports, per group, Frobenius + relative error of `sol['Theta']` vs.
 `low_rank_*.csv`, plus the recovered `rank(L)`.
 
 Notes:
-- `mu1` must be positive to pass the solver's latent-branch assertion, but it is
-  **inert** when `r` is set (the L-update uses the fixed-rank threshold) under
-  `boyd` stopping.
+- **Explicit-rank calls no longer need a dummy `mu1`.** The latent-branch
+  assertion was relaxed to accept `r` alone (when `r` is set, the L-update uses
+  the fixed-rank prox and `mu1` is never read under `boyd` stopping). The one
+  combination still requiring `mu1` is `stopping_criterion='kkt'` with `r` set,
+  which now raises a clear error pointing to `boyd`.
 - The default `--lambda1` is illustrative; to reproduce the StARS-optimal
   solution exactly, pass the SpiecEasi-selected λ.
 
@@ -214,3 +231,13 @@ integration these imports point at `gglasso.solver.ggl_helper` instead.
   `sub_icov_i.csv` to machine precision. File timestamps agree (path + rds on
   2026-04-17; SLR outputs on 2026-04-18). Hence they live under
   `data/glasso_path_non_smoker/`, separate from the SLR ground-truth.
+- **`theta_non_smoker.csv` correction:** the tutorial (`5.1_Networks_compare_AG.Rmd`
+  line 311) extracted the non-smoker sparse precision with the **smoker's**
+  StARS index (`se_1_slr$est$icov[[getOptInd(se_0_slr)]]`, index 10) while the
+  matching low-rank component (line 314) correctly used the non-smoker's own
+  index (8) — so the originally shipped Θ and L were at **different λ**.
+  Confirmed by regenerating the path: the old `theta_non_smoker.csv` equalled
+  `non_smoker/theta_10.csv` exactly, and `low_rank_non_smoker.csv` equalled
+  `non_smoker/low_rank_08.csv` exactly. `theta_non_smoker.csv` has been replaced
+  with the index-8 slice so the (Θ, L) pair is consistent. (The same bug affects
+  the corresponding file in the tutorial repo, which is left untouched here.)
