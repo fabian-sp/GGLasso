@@ -1,0 +1,345 @@
+import numpy as np
+import time
+import warnings
+
+try:
+    from gglasso.solver.ggl_helper import phiplus
+except Exception:
+    # Fallback when gglasso's numba dependency is unavailable/incompatible.
+    def phiplus(beta, D, Q):
+        d = (D + np.sqrt(D**2 + 4.0 * beta)) / 2.0
+        return (Q * d) @ Q.T
+from utils.helper import prox_od_1norm
+
+
+def ADMM_single(S, lambda1, Omega_0, Theta_0=np.array([]), X_0=np.array([]),
+             rho=1., max_iter=1000, tol=1e-7, rtol=1e-4, stopping_criterion='boyd',\
+             update_rho=True, verbose=False, measure=False, latent=False, mu1=None, r=None, lambda1_mask=None,
+             shrink_diag=False):
+    """
+    This is an ADMM solver for the (Latent variable) Single Graphical Lasso problem (SGL).
+    If ``latent=False``, this function solves
+
+    .. math::
+       \min_{\Omega, \Theta \in \mathbb{S}^p_{++}} - \log \det \Omega + \mathrm{Tr}(S\Omega) + \lambda \|\Theta\|_{1,od}
+
+       s.t. \quad \Omega = \Theta
+
+    If ``latent=True``, this function solves
+
+    .. math::
+       \min_{\Omega, \Theta, L \in \mathbb{S}^p_{++}} - \log \det (\Omega) + \mathrm{Tr}(S \Omega) + \lambda_1 \|\Theta\|_{1,od} + \mu_1 \|L\|_{\star}
+
+       s.t. \quad \Omega = \Theta - L
+
+    Note:
+        * Typically, ``sol['Omega']`` is positive definite and ``sol['Theta']`` is sparse.
+        * We use scaled ADMM, i.e. X are the scaled (with 1/rho) dual variables for the equality constraint.
+        * ``lambda1`` can be an array using the argument ``lambda1_mask``. The problem is then solved with the element-wise regularization strength ``lambda1 * lambda1_mask``.
+        
+    Parameters
+    ----------
+    S : array (p,p)
+        empirical covariance matrix. Needs to be symmetric and positive semidefinite.
+    lambda1 : float, positive
+        sparsity regularization parameter.
+    Omega_0 : array (p,p)
+        starting point for the Omega variable. Choose ``np.eye(p)`` if no better starting point is known.
+    Theta_0 : array (p,p), optional
+        starting point for the Theta variable. If not specified, it is set to the same as Omega_0.
+    X_0 : array (p,p), optional
+        starting point for the X variable. If not specified, it is set to zero array.
+    rho : float, positive, optional
+        step size paramater for the augmented Lagrangian in ADMM. The default is 1. Tune this parameter for optimal performance.
+    max_iter : int, optional
+        maximum number of iterations. The default is 1000.
+    tol : float, positive, optional
+        tolerance for the primal residual. See "Distributed Optimization and Statistical Learning via the Alternating Direction Method of Multipliers", Boyd et al. for details.
+        The default is 1e-7.
+    rtol : float, positive, optional
+        tolerance for the dual residual. The default is 1e-4.
+    stopping_criterion : str, optional
+
+        * 'boyd': Stopping criterion after Boyd et al.
+        * 'kkt': KKT residual is chosen as stopping criterion. This is computationally expensive to compute.
+
+        The default is 'boyd'.
+    update_rho : boolean, optional
+        Whether the penalty parameter ``rho`` is updated, see Boyd et al. page 20-21 for details. The default is True.
+    verbose : boolean, optional
+        verbosity of the solver. The default is ``False``.
+    measure : boolean, optional
+        turn on/off measurements of runtime per iteration. The default is ``False``.
+    latent : boolean, optional
+        Solve the SGL with or without latent variables (see above for the exact formulations).
+        The default is ``False``.
+    mu1 : float, positive, optional
+        low-rank regularization parameter. Only needs to be specified if ``latent=True``.
+    r : int, positive, optional
+        Rank constraint for the low-rank component L_t. If specified, L_t is updated to have at most rank r instead of using nuclear norm regularization. Default is None.
+    lambda1_mask : array (p,p), non-negative, symmetric, optional
+        A mask for the regularization parameter. If specified, the problem is solved with the element-wise regularization strength ``lambda1 * lambda1_mask``.
+        
+    Returns
+    -------
+    sol : dict
+        contains the solution, i.e. Omega, Theta, X (and L if ``latent=True``) after termination. All elements are (p,p) arrays.
+    info : dict
+        status and measurement information from the solver.
+    """
+    assert Omega_0.shape == S.shape
+    assert S.shape[0] == S.shape[1]
+    
+    (p, p) = S.shape
+    
+    assert lambda1 > 0 , "lambda1 should be positive, otherwise using Graphical Lasso is redundant. Specify entries with zero regularization using lambda1_mask."
+
+    # Diagonal rescaling (shrinkDiag=TRUE in SE's C++ ADMM).
+    # Rescales S to correlation form: S_ij / sqrt(S_ii * S_jj).
+    # Applies entry-wise effective lambda: lambda / (d_i * d_j).
+    # GLasso path: SE exports a correlation matrix (unit diagonal), so this is a no-op there.
+    _shrink_scale = None
+    if shrink_diag:
+        _shrink_d = np.sqrt(np.diag(S).clip(1e-12))
+        _shrink_scale = np.outer(_shrink_d, _shrink_d)
+        S = S / _shrink_scale
+        _mask = 1.0 / _shrink_scale
+        lambda1_mask = _mask if lambda1_mask is None else lambda1_mask * _mask
+
+    # use lambda1_mask if specified
+    if lambda1_mask is not None:
+        assert lambda1_mask.shape == (p,p), f"lambda1_mask needs to be of shape (p,p), but is {lambda1_mask.shape}."
+        assert np.all(lambda1_mask >=0 ), "lambda1_mask needs to be non-negative."    
+        assert np.all(np.abs(lambda1_mask.T - lambda1_mask) <= 1e-5), "lambda1_mask needs to be symmetric."
+        
+        lambda1 = lambda1 * lambda1_mask
+    
+    assert np.all(lambda1 >= 0)
+
+    assert stopping_criterion in ["boyd", "kkt"]
+
+    if latent:
+        assert mu1 is not None
+        assert mu1 > 0
+  
+    assert rho > 0, "ADMM penalization parameter must be positive."
+
+    # initialize
+    Omega_t = Omega_0.copy()
+
+    if len(Theta_0) == 0:
+        Theta_0 = Omega_0.copy()
+    if len(X_0) == 0:
+        X_0 = np.zeros((p, p))
+
+    Theta_t = Theta_0.copy()
+    L_t = np.zeros((p, p))
+    X_t = X_0.copy()
+
+    runtime = np.zeros(max_iter)
+    residual = np.zeros(max_iter)
+    status = ''
+
+
+    if verbose:
+        print("------------ADMM Algorithm for Single Graphical Lasso----------------")
+
+        if stopping_criterion == 'boyd':
+            hdr_fmt = "%4s\t%10s\t%10s\t%10s\t%10s"
+            out_fmt = "%4d\t%10.4g\t%10.4g\t%10.4g\t%10.4g"
+            print(hdr_fmt % ("iter", "r_t", "s_t", "eps_pri", "eps_dual"))
+        elif stopping_criterion == 'kkt':
+            hdr_fmt = "%4s\t%10s"
+            out_fmt = "%4d\t%10.4g"
+            print(hdr_fmt % ("iter", "kkt residual"))
+
+    ##################################################################
+    ### MAIN LOOP STARTS
+    ##################################################################
+    for iter_t in np.arange(max_iter):
+        if measure:
+            start = time.time()
+
+
+        # Omega Update
+        W_t = Theta_t - L_t - X_t - (1 / rho) * S
+        eigD, eigQ = np.linalg.eigh(W_t)
+        Omega_t_1 = Omega_t.copy()
+        Omega_t = phiplus(beta=1 / rho, D=eigD, Q=eigQ)
+
+        # Theta Update
+        Theta_t = prox_od_1norm(Omega_t + L_t + X_t, (1 / rho) * lambda1, diag=False)
+
+        # L Update
+        if latent:
+            C_t = Theta_t - X_t - Omega_t
+            eigD1, eigQ1 = np.linalg.eigh(C_t)
+            if r is None:
+                L_t = prox_rank_norm(C_t, mu1=mu1, rho=rho, D=eigD1, Q=eigQ1)
+            else:
+                L_t = prox_rank_norm(C_t, r=r, D=eigD1, Q=eigQ1)
+
+        # X Update
+        X_t = X_t + Omega_t - Theta_t + L_t
+
+        
+        
+        if measure:
+            end = time.time()
+            runtime[iter_t] = end - start
+
+        # Stopping criterion
+        if stopping_criterion == 'boyd':
+            r_t,s_t,e_pri,e_dual = ADMM_stopping_criterion(Omega_t, Omega_t_1, Theta_t, L_t, X_t,\
+                                                           S, rho, tol, rtol, latent)
+            
+            # update rho
+            if update_rho:
+                if r_t >= 10*s_t:
+                    rho_new = 2*rho
+                elif s_t >= 10*r_t:
+                    rho_new = 0.5*rho
+                else:
+                    rho_new = 1.*rho
+                
+                # rescale dual variables
+                X_t = (rho/rho_new)*X_t
+                rho = rho_new
+                
+                
+            residual[iter_t] = max(r_t,s_t)
+
+            if verbose:
+                print(out_fmt % (iter_t,r_t,s_t,e_pri,e_dual))
+            if (r_t <= e_pri) and  (s_t <= e_dual):
+                status = 'optimal'
+                break
+
+        elif stopping_criterion == 'kkt':
+            eta_A = kkt_stopping_criterion(Omega_t, Theta_t, L_t, rho * X_t, S, lambda1, latent, mu1)
+            residual[iter_t] = eta_A
+
+            if verbose:
+                print(out_fmt % (iter_t,eta_A))
+            if eta_A <= tol:
+                status = 'optimal'
+                break
+
+
+    ##################################################################
+    ### MAIN LOOP FINISHED
+    ##################################################################
+
+    # retrieve status (partially optimal or max iter)
+    if status != 'optimal':
+        if stopping_criterion == 'boyd':
+            if (r_t <= e_pri):
+                status = 'primal optimal'
+            elif (s_t <= e_dual):
+                status = 'dual optimal'
+            else:
+                status = 'max iterations reached'
+        else:
+            status = 'max iterations reached'
+
+    print(f"ADMM terminated after {iter_t+1} iterations with status: {status}.")
+
+    # Back-transform from correlation scale to original scale.
+    if _shrink_scale is not None:
+        Omega_t = Omega_t / _shrink_scale
+        Theta_t = Theta_t / _shrink_scale
+        if latent:
+            L_t = L_t / _shrink_scale
+
+    ### CHECK FOR SYMMETRY
+    if abs((Omega_t).T - Omega_t).max() > 1e-5:
+        warnings.warn(f"Omega variable is not symmetric, largest deviation is {abs((Omega_t).T - Omega_t).max()}.")
+    
+    if abs((Theta_t).T - Theta_t).max() > 1e-5:
+        warnings.warn(f"Theta variable is not symmetric, largest deviation is {abs((Theta_t).T - Theta_t).max()}.")
+    
+    if abs((L_t).T - L_t).max() > 1e-5:
+        warnings.warn(f"L variable is not symmetric, largest deviation is {abs((L_t).T - L_t).max()}.")
+
+    ### CHECK FOR POSDEF
+    D = np.linalg.eigvalsh(Theta_t - L_t)
+    if D.min() <= 0:
+        print(
+            f"WARNING: Theta (Theta - L resp.) is not positive definite. Solve to higher accuracy! (min EV is {D.min()})")
+
+    if latent:
+        D = np.linalg.eigvalsh(L_t)
+        if D.min() < -1e-8:
+            print(f"WARNING: L is not positive semidefinite. Solve to higher accuracy! (min EV is {D.min()})")
+
+    if latent:
+        sol = {'Omega': Omega_t, 'Theta': Theta_t, 'L': L_t, 'X': X_t}
+    else:
+        sol = {'Omega': Omega_t, 'Theta': Theta_t, 'X': X_t}
+
+    if measure:
+        info = {'status': status, 'runtime': runtime[:iter_t+1], 'residual': residual[:iter_t+1]}
+    else:
+        info = {'status': status}
+
+    return sol, info
+
+
+def kkt_stopping_criterion(Omega, Theta, L, X, S, lambda1, latent=False, mu1=None):
+    assert Omega.shape == Theta.shape == S.shape
+    assert S.shape[0] == S.shape[1]
+
+    if not latent:
+        assert np.all(L == 0)
+
+    (p, p) = S.shape
+
+    term1 = np.linalg.norm(Theta - prox_od_1norm(Theta + X, l=lambda1, diag=False)) / (1 + np.linalg.norm(Theta))
+
+    term2 = np.linalg.norm(Omega - Theta + L) / (1 + np.linalg.norm(Theta))
+
+    eigD, eigQ = np.linalg.eigh(Omega - S - X)
+    proxO = phiplus(beta=1, D=eigD, Q=eigQ)
+    term3 = np.linalg.norm(Omega - proxO) / (1 + np.linalg.norm(Omega))
+
+    term4 = 0
+    if latent:
+        eigD, eigQ = np.linalg.eigh(L - X)
+        proxL = prox_rank_norm(A=L - X, beta=mu1, D=eigD, Q=eigQ)
+        term4 = np.linalg.norm(L - proxL) / (1 + np.linalg.norm(L))
+
+    residual = max(term1, term2, term3, term4)
+
+    return residual
+
+def ADMM_stopping_criterion(Omega, Omega_t_1, Theta, L, X, S, rho, eps_abs, eps_rel, latent=False):
+    # X is inputed as scaled dual variable, this is accounted for by factor rho in e_dual
+    if not latent:
+        assert np.all(L == 0)
+
+    (p, p) = S.shape
+
+
+    dim = ((p ** 2 + p) / 2)  # number of elements of off-diagonal matrix
+    e_pri = dim * eps_abs + eps_rel * np.maximum(np.linalg.norm(Omega), np.linalg.norm(Theta -L))
+    e_dual = dim * eps_abs + eps_rel * rho * np.linalg.norm(X)
+
+    r = np.linalg.norm(Omega - Theta + L)
+    s = rho*np.linalg.norm(Omega - Omega_t_1)
+
+    return r,s,e_pri,e_dual
+
+
+def prox_rank_norm(A, r=None, mu1=None, rho=None, D = np.array([]), Q = np.array([])):
+
+    if len(D) != A.shape[0]:
+        D, Q = np.linalg.eigh(A)
+        print("Single eigendecomposition is executed in prox_rank_norm")
+
+    if r is None:
+        beta = mu1 / rho
+        B = (Q * np.maximum(D-beta, 0.))@Q.T
+    else:
+        beta = D[-(r+1)] ### largest eigenvalue corresponding to rank r
+        B = (Q * np.maximum(D-beta, 0.))@Q.T ### line 78 https://github.com/zdk123/SpiecEasi/blob/lowrank/src/ADMM.cpp#L71
+    return B
