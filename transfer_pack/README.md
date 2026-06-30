@@ -92,6 +92,29 @@ verified to match `se_1$est$icov[[i]]` to machine precision against the saved
 `se_non_smokers.rds`. Use them to validate the solver's **sparse-only** mode
 (`latent=False`, `r=None`) — not the low-rank functionality.
 
+### `data/raw/` — count matrices (inputs for regenerating the SLR path)
+
+| File | Shape | Role |
+|------|-------|------|
+| `counts_smoker.csv`, `counts_non_smoker.csv` | 234 samples × 40 taxa (+ index) | raw counts (`net_W$countMat1` / `countMat2`); fed to `spiec.easi(method='slr')` |
+
+### `regenerate_slr_path.R` — produce the full SLR λ-path (both groups)
+
+The pack ships only the SLR *optimal* solution. To get the entire path as
+ground-truth (sparse precision **and** low-rank component at every λ), run:
+
+```bash
+Rscript regenerate_slr_path.R     # requires SpiecEasi with method='slr'
+```
+
+It reads `data/raw/counts_*.csv`, reruns SLR with the tutorial parameters
+(`r=10, nlambda=20, lambda.min.ratio=1e-2, sel.criterion='stars', rep.num=20`),
+and writes to `data/spiec_easi_slr_path/{smoker,non_smoker}/`:
+`theta_01..20.csv`, `low_rank_01..20.csv`, and `lambda_path.csv` (λ values +
+StARS-optimal flag). This is a StARS subsampling sweep — run it via SLURM
+(`sbatch`/`salloc`), not on a login node. Verified to run (SLR returns 40×40
+`icov`/`resid` with `rank(L)=10`); the full sweep is left for you to execute.
+
 **Format caveat:** `cov_*`, `theta_*`, `low_rank_*` carry a row-name/index
 column (`read.csv(..., index_col=0)`); the `sub_icov_*` path files were written
 with `row.names=FALSE`, so they have **no index column** (40 columns, not 41).
