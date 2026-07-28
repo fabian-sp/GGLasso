@@ -30,13 +30,14 @@ def ADMM_SGL(
         mu1: Optional[float]=None,
         lambda1_mask: Optional[np.ndarray]=None,
         off_diagonal_l1: bool=True,
+        fix_latent_rank: bool=False,
     ):
     """
     This is an ADMM solver for the (Latent variable) Single Graphical Lasso problem (SGL).
     If ``latent=False``, this function solves
 
     .. math::
-       \\min_{\\Omega, \\Theta \\in \\mathbb{S}^p_{++}} - \\log \\det \Omega + \\mathrm{Tr}(S\\Omega) + \\lambda \\|\\Theta\\|_{1,od}
+       \\min_{\\Omega, \\Theta \\in \\mathbb{S}^p_{++}} - \\log \\det \\Omega + \\mathrm{Tr}(S\\Omega) + \\lambda \\|\\Theta\\|_{1,od}
 
        s.t. \\quad \\Omega = \\Theta
 
@@ -94,6 +95,8 @@ def ADMM_SGL(
         A mask for the regularization parameter. If specified, the problem is solved with the element-wise regularization strength ``lambda1 * lambda1_mask``.
     off_diagonal_l1 : boolean, optional
         L1 penalty is applied only to the off-diagonal elements. The default is ``True``.
+    fix_latent_rank : boolean, optional
+        Use SpiecEasi way to fix rank for low-rank matrix L. Will use ``int(mu1)`` as the desired rank. The default is ``False``.
 
     Returns
     -------
@@ -121,10 +124,16 @@ def ADMM_SGL(
 
     assert stopping_criterion in ["boyd", "kkt"]
 
+    _r = None # dummy value 
     if latent:
         assert mu1 is not None
         assert mu1 > 0
-  
+
+        if fix_latent_rank:
+            _r = int(mu1) # Use mu1 as desired rank for L
+            assert 0 <= _r <= p, f"Rank for latent part must lie between 0 and p, but given as {_r}."
+            assert stopping_criterion == "boyd", "When fixing the rank of L, only the boyd stopping criterion is available."
+        
     assert rho > 0, "ADMM penalization parameter must be positive."
 
     # initialize
@@ -176,7 +185,7 @@ def ADMM_SGL(
         if latent:
             C_t = Theta_t - X_t - Omega_t
             eigD1, eigQ1 = np.linalg.eigh(C_t)
-            L_t = prox_rank_norm(C_t, mu1/rho, D=eigD1, Q=eigQ1)
+            L_t = prox_rank_norm(C_t, mu1/rho, D=eigD1, Q=eigQ1, fix_rank=fix_latent_rank, r=_r)
 
         # X Update
         X_t = X_t + Omega_t - Theta_t + L_t
@@ -356,7 +365,7 @@ def block_SGL(
     It solves
 
     .. math::
-       \\min_{\\Omega, \\Theta \\in \\mathbb{S}^p_{++}} - \\log \\det \\Omega + \\mathrm{Tr}(S\Omega) + \\lambda \\|\\Theta\\|_{1,od}
+       \\min_{\\Omega, \\Theta \\in \\mathbb{S}^p_{++}} - \\log \\det \\Omega + \\mathrm{Tr}(S\\Omega) + \\lambda \\|\\Theta\\|_{1,od}
 
        s.t. \\quad \\Omega = \\Theta
 

@@ -27,13 +27,21 @@ def prox_mat_1norm(A, l, off_diagonal=True):
     
     return res
 
-def prox_rank_norm(A, beta, D=np.array([]), Q=np.array([])):
+def prox_rank_norm(A, beta, D=np.array([]), Q=np.array([]), fix_rank=False, r=None):
 
     if len(D) != A.shape[0]:
         D, Q = np.linalg.eigh(A)
         print("Single eigendecomposition is executed in prox_rank_norm")
+
+    # SpiecEasi way to fix a rank
+    # eigvals are sorted increasing --> use -(r+1) to keep r positive eigvals 
+    if fix_rank:
+        # for full rank (r=len(D)), we set _beta=0
+        _beta = D[-(r+1)] if r < len(D) else 0.0
+    else:
+        _beta = beta
     
-    B = (Q * np.maximum(D-beta, 0.))@Q.T
+    B = (Q * np.maximum(D - _beta, 0.)) @ Q.T
     return B
 
 @njit()          

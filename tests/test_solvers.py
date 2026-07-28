@@ -245,7 +245,30 @@ def test_lambda1_mask_blockSGL():
 
     return
 
+###############################################################
+### TEST LATENT SGL 
+###############################################################
+
+def test_latent_SGL_fixed_rank():
+    """
+    tests whether the SpiecEasi way to fix the rank of L works
+    """
+    p = 100
+    lambda1 = 0.05
     
+    np.random.seed(seed=1234)
+    A = np.random.randn(p, p)
+    S = A.T@A + 90 * np.eye(p)
+    S = scale_array_by_diagonal(S)
+    
+    Omega_0 = np.eye(p)
+    sol, _ = ADMM_SGL(S, lambda1, Omega_0, latent=True, mu1=2.3, verbose=False, fix_latent_rank=True)
+    
+    assert np.linalg.matrix_rank(sol["L"]) == 2
+    
+    return
+
+
 ###############################################################
 ### TEST VS. OTHER PACKAGES 
 ###############################################################
