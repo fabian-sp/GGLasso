@@ -28,7 +28,8 @@ def ADMM_SGL(
         measure: bool=False,
         latent: bool=False,
         mu1: Optional[float]=None,
-        lambda1_mask: Optional[np.ndarray]=None
+        lambda1_mask: Optional[np.ndarray]=None,
+        off_diagonal_l1: bool=True,
     ):
     """
     This is an ADMM solver for the (Latent variable) Single Graphical Lasso problem (SGL).
@@ -91,7 +92,9 @@ def ADMM_SGL(
         low-rank regularization parameter. Only needs to be specified if ``latent=True``.
     lambda1_mask : array (p,p), non-negative, symmetric, optional
         A mask for the regularization parameter. If specified, the problem is solved with the element-wise regularization strength ``lambda1 * lambda1_mask``.
-        
+    off_diagonal_l1 : boolean, optional
+        L1 penalty is applied only to the off-diagonal elements. The default is ``True``.
+
     Returns
     -------
     sol : dict
@@ -167,7 +170,7 @@ def ADMM_SGL(
         Omega_t = phiplus(beta=1/rho, D=eigD, Q=eigQ)
 
         # Theta Update
-        Theta_t = prox_mat_1norm(Omega_t + L_t + X_t, (1/rho) * lambda1)
+        Theta_t = prox_mat_1norm(Omega_t + L_t + X_t, (1/rho) * lambda1, off_diagonal=off_diagonal_l1)
 
         # L Update
         if latent:
@@ -219,7 +222,7 @@ def ADMM_SGL(
                 break
 
         elif stopping_criterion == 'kkt':
-            eta_A = kkt_stopping_criterion(Omega_t, Theta_t, L_t, rho*X_t, S, lambda1, latent, mu1)
+            eta_A = kkt_stopping_criterion(Omega_t, Theta_t, L_t, rho*X_t, S, lambda1, latent, mu1, off_diagonal_l1)
             residual[iter_t] = eta_A
 
             if verbose:
@@ -287,7 +290,7 @@ def ADMM_stopping_criterion(Omega, Omega_t_1, Theta, L, X, S, rho, eps_abs, eps_
     (p, p) = S.shape
 
     dim = ((p ** 2 + p) / 2)  # number of elements of off-diagonal matrix
-    e_pri = dim * eps_abs + eps_rel * np.maximum(np.linalg.norm(Omega), np.linalg.norm(Theta -L))
+    e_pri = dim * eps_abs + eps_rel * np.maximum(np.linalg.norm(Omega), np.linalg.norm(Theta-L))
     e_dual = dim * eps_abs + eps_rel * rho * np.linalg.norm(X)
 
     r = np.linalg.norm(Omega - Theta + L)
@@ -295,7 +298,7 @@ def ADMM_stopping_criterion(Omega, Omega_t_1, Theta, L, X, S, rho, eps_abs, eps_
 
     return r, s, e_pri, e_dual
 
-def kkt_stopping_criterion(Omega, Theta, L, X, S, lambda1, latent=False, mu1=None):
+def kkt_stopping_criterion(Omega, Theta, L, X, S, lambda1, latent=False, mu1=None, off_diagonal_l1=True):
     assert Omega.shape == Theta.shape == S.shape
     assert S.shape[0] == S.shape[1]
 
@@ -305,7 +308,7 @@ def kkt_stopping_criterion(Omega, Theta, L, X, S, lambda1, latent=False, mu1=Non
     (p, p) = S.shape
 
     term1 = np.linalg.norm(
-        Theta - prox_mat_1norm(Theta+X,l=lambda1)
+        Theta - prox_mat_1norm(Theta+X, l=lambda1, off_diagonal=off_diagonal_l1)
     ) / (1+np.linalg.norm(Theta))
 
     term2 = np.linalg.norm(Omega - Theta + L) / (1+np.linalg.norm(Theta))
@@ -343,7 +346,8 @@ def block_SGL(
         update_rho: bool=True,
         verbose: bool=False,
         measure: bool=False,
-        lambda1_mask: Optional[np.ndarray]=None
+        lambda1_mask: Optional[np.ndarray]=None,
+        off_diagonal_l1: bool=True,
     ):
     """
     This is a wrapper for solving SGL problems on connected components of the solution and solving each block separately.
@@ -396,7 +400,8 @@ def block_SGL(
         turn on/off measurements of runtime per iteration. The default is False.
     lambda1_mask : array (p,p), non-negative, symmetric, optional
         A mask for the regularization parameter. If specified, the problem is solved with the element-wise regularization strength ``lambda1 * lambda1_mask``.
-    
+    off_diagonal_l1 : boolean, optional
+        L1 penalty is applied only to the off-diagonal elements. The default is ``True``.
 
     Returns
     -------
@@ -437,8 +442,11 @@ def block_SGL(
 
         # single node connected components have a closed form solution, see Witten, Friedman, Simon "NEW INSIGHTS FOR THE GRAPHICAL LASSO "
         if len(C) == 1:
-            # we use the OFF-DIAGONAL l1-penalty, otherwise it would be 1/(S[C,C]+lambda1)
-            closed_sol = 1 / (S[C, C])
+            # NOTE: closed-form solution depends on whether we use off-diagonal l1-penalty
+            if off_diagonal_l1:
+                closed_sol = 1 / (S[C, C])
+            else:
+                closed_sol = 1 / (S[C, C] + lambda1)
 
             allOmega.append(closed_sol)
             allTheta.append(closed_sol)
@@ -463,7 +471,8 @@ def block_SGL(
                 max_iter=max_iter,
                 verbose=verbose,
                 measure=measure,
-                lambda1_mask=this_lambda1_mask
+                lambda1_mask=this_lambda1_mask,
+                off_diagonal_l1=off_diagonal_l1
             )
 
             allOmega.append(block_sol['Omega'])

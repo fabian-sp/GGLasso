@@ -119,8 +119,8 @@ def test_extADMM_consistent_latent():
     template_extADMM_consistent(latent = True)
     return
 
-
-def test_block_SGL():
+@pt.mark.parametrize("off_diagonal_l1", [True, False])
+def test_block_SGL(off_diagonal_l1):
     """
     tests whether solving each connected component results in the same as solving the whole problem (see Witten et al. paper referenced in block_SGL)
     """
@@ -134,11 +134,11 @@ def test_block_SGL():
     
     Omega_0 = np.eye(p)
     
-    full_sol,_ = ADMM_SGL(S, lambda1, Omega_0, tol = 1e-7, rtol = 1e-5, verbose = False)
+    full_sol,_ = ADMM_SGL(S, lambda1, Omega_0, tol = 1e-7, rtol = 1e-5, verbose = False, off_diagonal_l1 = off_diagonal_l1)
     
     numC, allC =  get_connected_components(S, lambda1)
     assert numC > 1, "Test is redundant if only one connected component"
-    block_sol = block_SGL(S, lambda1, Omega_0, tol = 1e-7, rtol = 1e-5, verbose = False)
+    block_sol = block_SGL(S, lambda1, Omega_0, tol = 1e-7, rtol = 1e-5, verbose = False, off_diagonal_l1 = off_diagonal_l1)
     
     sol1 = full_sol['Theta']
     sol2 = block_sol['Theta']
@@ -227,7 +227,7 @@ def test_lambda1_mask_blockSGL():
     
     # solve with random lambda1_mask
     lambda1_mask = 0.9 + 0.1*np.random.rand(p,p)
-    lambda1_mask = 0.5*(lambda1_mask + lambda1_mask.T)
+    lambda1_mask = 0.5 * (lambda1_mask + lambda1_mask.T)
     
     # solve with SGL
     sol, info = ADMM_SGL(S, lambda1, Omega_0, tol=1e-10, rtol=1e-10, verbose=True, lambda1_mask=lambda1_mask)
