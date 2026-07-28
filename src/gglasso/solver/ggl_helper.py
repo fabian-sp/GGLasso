@@ -14,15 +14,16 @@ def prox_1norm(v, l):
     return np.sign(v) * np.maximum(np.abs(v) - l, 0.)
     
 @njit() 
-def prox_od_1norm(A, l):
+def prox_mat_1norm(A, l, off_diagonal=True):
     """
-    calculates the prox of the off-diagonal 1norm at a point A
+    calculates the prox of the (off-diagonal) 1norm at a matrix A
     """    
     (d1, d2) = A.shape
     res = np.sign(A) * np.maximum(np.abs(A) - l, 0.)
-    
-    for i in np.arange(np.minimum(d1, d2)):
-        res[i,i] = A[i,i]
+
+    if off_diagonal:
+        for i in np.arange(np.minimum(d1, d2)):
+            res[i,i] = A[i,i]
     
     return res
 

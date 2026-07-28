@@ -9,7 +9,7 @@ from scipy.linalg import block_diag
 import warnings
 from typing import Optional
 
-from .ggl_helper import prox_od_1norm, phiplus, prox_rank_norm
+from .ggl_helper import prox_mat_1norm, phiplus, prox_rank_norm
 
 
 def ADMM_SGL(
@@ -167,7 +167,7 @@ def ADMM_SGL(
         Omega_t = phiplus(beta=1/rho, D=eigD, Q=eigQ)
 
         # Theta Update
-        Theta_t = prox_od_1norm(Omega_t + L_t + X_t, (1/rho) * lambda1)
+        Theta_t = prox_mat_1norm(Omega_t + L_t + X_t, (1/rho) * lambda1)
 
         # L Update
         if latent:
@@ -304,8 +304,9 @@ def kkt_stopping_criterion(Omega, Theta, L, X, S, lambda1, latent=False, mu1=Non
 
     (p, p) = S.shape
 
-    term1 = np.linalg.norm(Theta - prox_od_1norm(Theta+X,
-                                                 l=lambda1)) / (1+np.linalg.norm(Theta))
+    term1 = np.linalg.norm(
+        Theta - prox_mat_1norm(Theta+X,l=lambda1)
+    ) / (1+np.linalg.norm(Theta))
 
     term2 = np.linalg.norm(Omega - Theta + L) / (1+np.linalg.norm(Theta))
 
