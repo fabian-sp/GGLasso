@@ -5,4 +5,5 @@ sphinx-gallery
 sphinx_rtd_theme
 
 scikit-fda
+multimethod<=2.0.2
 regain
