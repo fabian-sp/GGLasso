@@ -139,7 +139,7 @@ fig.tight_layout()
 # 
 # * compute a basis representation (for a finite number of basis components!). This is done using the scikit-fda function ``.to_basis()``.
 # * reconstruct the time series. This is done using the scikit-fda function ``.to_grid()``.
-# * compute the reconstruction error (defined as the median relative :math:`ell_2` error).
+# * compute the reconstruction error (defined as the median relative :math:`\\ell_2` error).
 # * plot the reconstructed time series and the error. 
 
 q = 7
@@ -273,7 +273,7 @@ for j in range(len(lambda_range)):
     all_sol[_lam] = sol.copy()
 
 #%%
-# As :math:`v_3` was constructed from :math:`v_0`, we would expect that their relationship can be recovered. Also, :math:`v_0`and :math:`v_1` are more related than :math:`v_0` and :math:`v_2` as both come from a Gaussian process whereas :math:`v_2` was piecewise linear.
+# As :math:`v_3` was constructed from :math:`v_0`, we would expect that their relationship can be recovered. Also, :math:`v_0` and :math:`v_1` are more related than :math:`v_0` and :math:`v_2` as both come from a Gaussian process whereas :math:`v_2` was piecewise linear.
 # Let's see whether these relationships are correctly identified by FSGL. 
 # Two variables :math:`v_j` and :math:`v_l` are associated if and only if the corresponding block :math:`\Theta^M_{jl}` **is non-zero**. If the basis represenation is exact, this result is given in Lemma 1 in [ref13]_ .
 # The block itself could be sparse or dense and its individual entries are harder to interpret.
