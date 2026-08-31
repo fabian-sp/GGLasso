@@ -96,7 +96,7 @@ def ADMM_SGL(
     off_diagonal_l1 : boolean, optional
         L1 penalty is applied only to the off-diagonal elements. The default is ``True``.
     fix_latent_rank : boolean, optional
-        Use SpiecEasi way to fix rank for low-rank matrix L. Will use ``int(mu1)`` as the desired rank. The default is ``False``.
+        Use SpiecEasi way to fix rank of low-rank variable L. Will use ``int(mu1)`` as the desired rank. The default is ``False``.
 
     Returns
     -------

@@ -1,7 +1,10 @@
-Using the problem object
+.. _glasso-problem-docs:
+
+Using the Problem Object
 =============================
 
-If you want to solve a (Multiple) Graphical Lasso problem, you can of course use the solvers we list in :ref:`Algorithms` directly. However, in most situations it is not clear how to choose the regularization parameters a priori and thus model selection becomes necessary. Below, we describe the model selection functionalities implemented in ``GGLasso``. In order to make its usage as simple as possible, we implemented a class ``glasso_problem`` which calls the solvers/model selection procedures internally and returns an estimator of the precision matrix/matrices in ``sklearn``-style.
+If you want to solve a (Multiple) Graphical Lasso problem, you can of course use the solvers we list in :ref:`Algorithms Overview` directly. However, in most situations it is not clear how to choose the regularization parameters a priori and thus model selection becomes necessary. Below, we describe the model selection functionalities implemented in ``GGLasso``. In order to make its usage as simple as possible, we implemented a class ``glasso_problem`` which calls the solvers/model selection procedures internally and returns an estimator of the precision matrix/matrices in ``sklearn``-style.
+
 
 Class glasso_problem
 ^^^^^^^^^^^^^^^^^^^^^
@@ -26,7 +29,7 @@ Model selection
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Choosing the regularization parameters :math:`\lambda_1` and :math:`\lambda_2` (and :math:`\mu_1` in the latent variable case) has crucial impact how well the Graphical Lasso solution recovers true edges/ non-zero entries of the precision matrix.
 
-``GGLasso`` contains model selection functionalities for each of the problem described in :ref:`Mathematical description`. Model selection is done via grid searches on the regularization parameters where the quality of a solution is assessed either with the AIC (Akaike Information Criterion) or the eBIC (Extended Bayesian Information Criterion).
+``GGLasso`` contains model selection functionalities for each of the problem described in :ref:`Mathematical Description`. Model selection is done via grid searches on the regularization parameters where the quality of a solution is assessed either with the AIC (Akaike Information Criterion) or the eBIC (Extended Bayesian Information Criterion).
 
 Typically, the eBIC chooses sparser solutions and thus leads to less false discoveries. For a single precision matrix estimate :math:`\hat{\Theta}` of dimension :math:`p` with :math:`N` samples it is given by
 

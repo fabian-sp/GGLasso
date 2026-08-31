@@ -70,7 +70,7 @@ class glasso_problem:
         
     G : 3d-array of shape(2,L,K), optional
         Only needed when dimensions are non-conforming, i.e. if number of variables is different in each instance.
-        See :ref:`Nonconforming GGL` on how to create G.
+        See :ref:`Nonconforming GGL solver` on how to create G.
         
     do_scaling : boolean, optional
         Whether to scale input S to correlations. The default is ``False``.
@@ -539,9 +539,9 @@ class glasso_problem:
                 * ``'mu1_range'``: array of values for :math:`\\mu_1` parameter.
                 * ``'lambda1_mask'``: array (p,p), non-negative, symmetric. The :math:`\\lambda_1` parameter is multiplied element-wise with this array. Only available for SGL.
         
-            Additional options that can be passed:
-                * ``'off_diagonal_l1'``: Whether the L1-regularization excludes (``True``)  or includes (``False``) the diagonal. By default ``True`` (that is, off-diagonal L1-norm).
-                * ``fix_latent_rank``: In SpiecEasi SLR, the low-rank regularization is applied by fixing thte rank of :math:`L`. Set this to ``True`` to fix the rank, and the rank will be specified to ``int(mu1)``. By default ``False``.  
+            Additional options that can be passed (relevant for SGL problems only):
+                * ``'off_diagonal_l1'``: Whether the L1-regularization excludes (set to ``True``)  or includes (set to ``False``) the diagonal. By default ``True`` (that is, off-diagonal L1-norm).
+                * ``fix_latent_rank``: In SpiecEasi SLR, the low-rank regularization is applied by fixing the rank of :math:`L`. Set ``fix_latent_rank=True`` to fix the rank in the same way; the range of desired ranks is specified with ``'mu1_range'`` (will use ``int(mu1)`` in the solver). By default ``False``.  
         """ 
         
         if modelselect_params is None:
@@ -572,7 +572,7 @@ class glasso_problem:
         ----------
         modelselect_params : dict, optional
             Dictionary with (a subset of) parameters for the grid search. This allows you to specify the grid which is used.
-            Calls ``self.set_modelselect_params()``, see doc of this method for details.
+            Calls ``self.set_modelselect_params()``, see docs of that method for details.
         method : str, optional
             Method for choosing the best solution in the grid. 
             Options are 'AIC' (Akaike Information criterion) and 'eBIC' (extended Bayesian information criterion).

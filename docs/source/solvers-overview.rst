@@ -1,4 +1,4 @@
-Algorithms
+Algorithms Overview
 =============================
 
 The ``GGLasso`` package contains solvers for several (Multiple) Graphical Lasso problem formulations. See :ref:`Mathematical description` for an overview of problem formulations.
@@ -18,6 +18,9 @@ For SGL problems, the standard ADMM is ``from gglasso.solver.single_admm_solver 
 
 ``ADMM_SGL`` can also solve latent variable Graphical Lasso problems via setting the option ``latent=True`` and specifying a positive value for the option ``mu1``, the penalty parameter for the nuclear norm.
 
+**Matching SpiecEasi SLR**: `SpiecEasi <https://github.com/zdk123/SpiecEasi>`_ is a popular ``R`` package that also implements latent variable Graphical Lasso (called ``slr`` in their package).
+The solver of SpiecEasi is slightly differing in two details: (i) it applies the l1-penalty also on the diagonal, and (ii) instead of applying the proximal operator of the nuclear norm, the user can specify a desired rank and the solver projects the low-rank variable onto that rank.
+Since version ``0.3.1``, one can match these settings in ``gglasso`` for SGL problems. We introduced two options ``off_diagonal_l1`` and ``fix_latent_rank``. See :ref:`sgl-solver-docs` for more details. For how to use these options in the ``glasso_problem`` class, see the doc of ``set_modelselect_params`` in :ref:`glasso-problem-docs`.
 
 
 MGL solver
@@ -35,13 +38,13 @@ Both ADMM and PPDNA have the option ``reg`` which can be set either to ``reg = '
 
 For MGL problems with latent variables, only the ADMM solver is available. 
 
-Nonconforming GGL 
+Nonconforming GGL solver
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 For the setting which we describe in :ref:`GGL - the nonconforming case`, we implemented an ADMM solver, see ``from gglasso.solver.ext_admm_solver import ext_ADMM_MGL``.
 This solver is slightly more complicated to call as you have to tell the solver where the overlapping pairs of variables can be found in the repsective precision matrices. This can be done with the function argument ``G`` which can be seen as a bookeeping array: you should specify a ``(2,L,K)``-shaped array where :math:`L` is the number of groups. 
 
-If your data samples are a list of ``pd.DataFrame`` objects where each Dataframe has the shape ``(n_variables,n_samples)`` and the index contains **unique identifiers** (preferably integers) for all variables, you can create ``G`` by simply calling the following two functions from ``gglasso.helper.ext_admm_helper``.
+If your data samples are a list of ``pd.DataFrame`` objects where each Dataframe has the shape ``(n_variables, n_samples)`` and the index contains **unique identifiers** (preferably integers) for all variables, you can create ``G`` by simply calling the following two functions from ``gglasso.helper.ext_admm_helper``.
 
 .. code-block:: python
 
@@ -52,12 +55,12 @@ Here, ``list_of_samples`` stands for your list of data samples as described abov
 
 We recommend to have a look at the :ref:`Nonconforming Group Graphical Lasso experiment` in our example gallery.
 
-Functional Graphical Lasso
+Functional Graphical Lasso solver
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 For Functional Graphical Lasso, we have implemented the ADMM algorithm, see ``from gglasso.solver.functional_sgl_admm import ADMM_FSGL``. Note that in [ref13]_ a block coordinate descent algorithm is proposed for solving.
 
-Further Remarks - proximal operators
+Further remarks on proximal operators
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 The ADMM for Graphical Lasso relies on the efficient computation of proximal operators, in particular for the log-determinant function and the regularization function. For a convex function :math:`f` its proximal operator is given by
