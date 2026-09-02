@@ -11,7 +11,7 @@ from numba import njit
 from numba.typed import List
 
 
-from gglasso.solver.ggl_helper import phiplus, prox_od_1norm, prox_rank_norm
+from gglasso.solver.ggl_helper import phiplus, prox_mat_1norm, prox_rank_norm
 from gglasso.helper.ext_admm_helper import check_G
 
 
@@ -204,7 +204,7 @@ def ext_ADMM_MGL(
         # Theta Update
         for k in np.arange(K): 
             V_t = (Omega_t[k] + L_t[k] + X0_t[k] + Lambda_t[k] - X1_t[k]) * 0.5
-            Theta_t[k] = prox_od_1norm(V_t, lambda1[k]/(2*rho))
+            Theta_t[k] = prox_mat_1norm(V_t, lambda1[k]/(2*rho))
         
         # L Update
         if latent:
@@ -368,7 +368,7 @@ def kkt_stopping_criterion(Omega, Theta, L, Lambda, X0, X1, S , G, lambda1, lamb
         proxk = phiplus(beta = 1, D = eigD, Q = eigQ)
         # primal varibale optimality
         term1[k] = np.linalg.norm(Omega[k] - proxk) / (1+np.linalg.norm(Omega[k]))
-        term2[k] = np.linalg.norm(Theta[k] - prox_od_1norm(Theta[k] + X0[k] - X1[k] , lambda1[k])) / (1+np.linalg.norm(Theta[k]))
+        term2[k] = np.linalg.norm(Theta[k] - prox_mat_1norm(Theta[k] + X0[k] - X1[k] , lambda1[k])) / (1+np.linalg.norm(Theta[k]))
         
         if latent:
             eigD, eigQ = np.linalg.eigh(L[k] - X0[k])

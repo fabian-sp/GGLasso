@@ -31,7 +31,7 @@ If you want to create a conda environment with full development dependencies (fo
 
 	conda env create -f environment.yml
 
-To install `gglasso` in developer mode run
+After that, install `gglasso` in developer mode with the command
 
     python -m pip install --editable .
 
@@ -39,7 +39,6 @@ To install `gglasso` in developer mode run
 Test your installation with 
 
     pytest tests/ -v
-
 
 
 
@@ -69,7 +68,7 @@ Moreover, for all problem formulation the package allows to model latent variabl
 
 ## Citation
 
-If you use `GGLasso`, please consider the following citation
+If you use `GGLasso`, please use the following citation
 
     @article{Schaipp2021,
       doi = {10.21105/joss.03865},
@@ -94,10 +93,3 @@ If you use `GGLasso`, please consider the following citation
     tracker](https://github.com/fabian-sp/GGLasso/issues).
 3)  Contributors must adhere to the [Code of
     Conduct](CODE_OF_CONDUCT.md).
-
-
-## References
-*  [1] Friedman, J., Hastie, T., and Tibshirani, R. (2007).  Sparse inverse covariance estimation with the Graphical Lasso. Biostatistics, 9(3):432–441.
-*  [2] Danaher, P., Wang, P., and Witten, D. M. (2013). The joint graphical lasso for inverse covariance estimation across multiple classes. Journal of the Royal Statistical Society: Series B (Statistical Methodology), 76(2):373–397.
-* [3] Tomasi, F., Tozzo, V., Salzo, S., and Verri, A. (2018). Latent Variable Time-varying Network Inference. InProceedings of the 24th ACM SIGKDD International Conference on Knowledge Discovery & Data Mining. ACM.
-* [4] Zhang, Y., Zhang, N., Sun, D., and Toh, K.-C. (2020). A proximal point dual Newton algorithm for solving group graphical Lasso problems. SIAM J. Optim., 30(3):2197–2220.

@@ -1,4 +1,4 @@
-Getting started
+Getting Started
 ======================
 
 .. _Github: https://github.com/fabian-sp/GGLasso

@@ -31,6 +31,7 @@ from gglasso.helper.basic_linalg import scale_array_by_diagonal
 #%%
 # For this, we first load the dataset and compute relative abundances (this is done by ``normalize``). Hence, we obtain compositional data where each sample is on the unit simplex.
 # Typically, Graphical Lasso is not applied to compositional data directly. We apply the centered log-ratio transform (using ``log_transform``). 
+# 
 
 soil = pd.read_csv('../data/soil/processed/soil_116.csv', sep=',', index_col = 0).T
 print(soil.head())
@@ -45,6 +46,7 @@ print("Shape of the transformed data: (p,N)=", (p,N))
 #%%
 # The dataset also contains the pH value for each sample. We do not make use of this for estimating the network.
 # We also calculate the sampling depth, i.e. the number of total counts per sample.
+# 
 
 ph = pd.read_csv('../data/soil/processed/ph.csv', sep=',', index_col = 0)
 ph = ph.reindex(soil.columns)
@@ -59,6 +61,7 @@ temperature = metadata["annual_season_temp"].reindex(ph.index)
 #%%
 # We compute the empirical covariance matrix and scale it to correlations. Then, we create an instance of ``glasso_problem`` and do model selection using a grid search.
 # Note that we set ``latent=True`` because we want to account for unobserved latent factors.
+#
 
 S0 = np.cov(X.values, bias = True)
 S = scale_array_by_diagonal(S0)
@@ -122,10 +125,13 @@ r = np.linalg.matrix_rank(L)
 # 
 # * the projection of each sample onto the first low-rank component vs. the original pH value.
 # * the projection of each sample onto the second low-rank component vs. the original temperature value.
+# 
 
 #%%
 #  pH vs. PCA1
 # ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+# 
+
 fig, ax = plt.subplots(1,1)
 im = ax.scatter(proj[:,0], ph, c = depth, cmap = plt.cm.Blues, vmin = 0)
 cbar = fig.colorbar(im)
@@ -139,6 +145,8 @@ print("Spearman correlation between pH and 1st component: {0}, p-value: {1}".for
 #%%
 #  Temperature vs. PCA2
 # ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+#
+
 fig, ax = plt.subplots(1,1)
 im = ax.scatter(proj[:,1], temperature, c = depth, cmap = plt.cm.Blues, vmin = 0)
 cbar = fig.colorbar(im)

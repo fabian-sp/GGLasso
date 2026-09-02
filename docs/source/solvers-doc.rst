@@ -1,5 +1,7 @@
-Detailled solver documentation
+Detailled Solver Documentation
 =====================================
+
+.. _sgl-solver-docs:
 
 SGL
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

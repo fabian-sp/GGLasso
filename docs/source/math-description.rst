@@ -1,4 +1,4 @@
-Mathematical description
+Mathematical Description
 =============================
 
 The ``GGLasso`` package can solve several problem formulations related to Graphical Lasso. On this page, we aim to define the exact formulation for each problem.
@@ -138,7 +138,7 @@ We have a simple tutorial on this in the :ref:`Functional Graphical Lasso experi
 Optimization algorithms
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-All of the above problem formulations are instances of nonlinear, convex and nonsmooth optimization problems. See :ref:`Algorithms` for an overview of solvers which we implemented for these problems and a short guide on how to use them.
+All of the above problem formulations are instances of nonlinear, convex and nonsmooth optimization problems. See :ref:`Algorithms Overview` for an overview of solvers which we implemented for these problems and a short guide on how to use them.
 
 References
 ^^^^^^^^^^^

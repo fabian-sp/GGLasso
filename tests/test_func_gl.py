@@ -8,7 +8,7 @@ from gglasso.helper.data_generation import generate_precision_matrix, sample_cov
 from gglasso.solver.single_admm_solver import ADMM_SGL
 
 from gglasso.solver.functional_sgl_admm import ADMM_FSGL
-from gglasso.solver.ggl_helper import prox_sum_Frob, prox_od_1norm
+from gglasso.solver.ggl_helper import prox_sum_Frob, prox_mat_1norm
     
 def test_FSGL_SGL():
     """
@@ -44,7 +44,7 @@ def test_prox_Frob():
     X = X+X.T
 
     Y1 = prox_sum_Frob(X, M=1, l=0.01)
-    Y2 = prox_od_1norm(X, l=0.01)
+    Y2 = prox_mat_1norm(X, l=0.01)
 
     assert_array_almost_equal(Y1,Y2, 5)
 

@@ -70,7 +70,7 @@ class glasso_problem:
         
     G : 3d-array of shape(2,L,K), optional
         Only needed when dimensions are non-conforming, i.e. if number of variables is different in each instance.
-        See :ref:`Nonconforming GGL` on how to create G.
+        See :ref:`Nonconforming GGL solver` on how to create G.
         
     do_scaling : boolean, optional
         Whether to scale input S to correlations. The default is ``False``.
@@ -101,13 +101,14 @@ class glasso_problem:
             
             
         # create an instance of GGLassoEstimator (before scaling S!)
-        self.solution = GGLassoEstimator(S = self.S.copy(),
-                                         N = self.N,
-                                         p = self.p,
-                                         K = self.K,
-                                         multiple = self.multiple,
-                                         latent = self.latent,
-                                         conforming = self.conforming
+        self.solution = GGLassoEstimator(
+            S = self.S.copy(),
+            N = self.N,
+            p = self.p,
+            K = self.K,
+            multiple = self.multiple,
+            latent = self.latent,
+            conforming = self.conforming
         )
         
         # scale S by diagonal
@@ -132,7 +133,7 @@ class glasso_problem:
             + "\n"
             + "Regularization parameters:\n"
             + f"{self.reg_params}"
-            )
+        )
         
     def _derive_problem_formulation(self):
         """
@@ -428,54 +429,58 @@ class glasso_problem:
         
         if not self.multiple:
             if self.latent:
-                sol, info = ADMM_SGL(S=self.S,
-                                     lambda1=self.reg_params['lambda1'],
-                                     Omega_0=self.Omega_0,
-                                     tol=self.tol,
-                                     rtol=self.rtol,
-                                     latent=self.latent,
-                                     mu1=self.reg_params['mu1'],
-                                     lambda1_mask=self.reg_params.get('lambda1_mask'),
-                                     **self.solver_params
+                sol, info = ADMM_SGL(
+                    S=self.S,
+                    lambda1=self.reg_params['lambda1'],
+                    Omega_0=self.Omega_0,
+                    tol=self.tol,
+                    rtol=self.rtol,
+                    latent=self.latent,
+                    mu1=self.reg_params['mu1'],
+                    lambda1_mask=self.reg_params.get('lambda1_mask'),
+                    **self.solver_params
                 )
             
             else:
-                sol = block_SGL(S=self.S,
-                                lambda1=self.reg_params['lambda1'],
-                                Omega_0=self.Omega_0,
-                                tol=self.tol,
-                                rtol=self.tol,
-                                lambda1_mask=self.reg_params.get('lambda1_mask'),
-                                **self.solver_params
+                sol = block_SGL(
+                    S=self.S,
+                    lambda1=self.reg_params['lambda1'],
+                    Omega_0=self.Omega_0,
+                    tol=self.tol,
+                    rtol=self.tol,
+                    lambda1_mask=self.reg_params.get('lambda1_mask'),
+                    **self.solver_params
                 )
                 info = {}
             
                 
         elif self.conforming:         
-            sol, info = ADMM_MGL(S=self.S,
-                                 lambda1=self.reg_params['lambda1'],
-                                 lambda2=self.reg_params['lambda2'],
-                                 reg=self.reg,
-                                 Omega_0=self.Omega_0,
-                                 latent=self.latent,
-                                 mu1=self.reg_params['mu1'],
-                                 tol=self.tol,
-                                 rtol=self.rtol,
-                                 **self.solver_params
+            sol, info = ADMM_MGL(
+                S=self.S,
+                lambda1=self.reg_params['lambda1'],
+                lambda2=self.reg_params['lambda2'],
+                reg=self.reg,
+                Omega_0=self.Omega_0,
+                latent=self.latent,
+                mu1=self.reg_params['mu1'],
+                tol=self.tol,
+                rtol=self.rtol,
+                **self.solver_params
             )
                                         
         else:
-            sol, info = ext_ADMM_MGL(S=self.S,
-                                     lambda1=self.reg_params['lambda1'],
-                                     lambda2=self.reg_params['lambda2'],
-                                     reg=self.reg,
-                                     Omega_0=self.Omega_0,
-                                     G=self.G,
-                                     tol=self.tol,
-                                     rtol=self.rtol,
-                                     latent=self.latent,
-                                     mu1=self.reg_params['mu1'],
-                                     **self.solver_params
+            sol, info = ext_ADMM_MGL(
+                S=self.S,
+                lambda1=self.reg_params['lambda1'],
+                lambda2=self.reg_params['lambda2'],
+                reg=self.reg,
+                Omega_0=self.Omega_0,
+                G=self.G,
+                tol=self.tol,
+                rtol=self.rtol,
+                latent=self.latent,
+                mu1=self.reg_params['mu1'],
+                **self.solver_params
             )
 
         # rescale
@@ -533,7 +538,11 @@ class glasso_problem:
                 * ``'lambda2_range'``: array of values for :math:`\\lambda_2` parameter.
                 * ``'mu1_range'``: array of values for :math:`\\mu_1` parameter.
                 * ``'lambda1_mask'``: array (p,p), non-negative, symmetric. The :math:`\\lambda_1` parameter is multiplied element-wise with this array. Only available for SGL.
-        """
+        
+            Additional options that can be passed (relevant for SGL problems only):
+                * ``'off_diagonal_l1'``: Whether the L1-regularization excludes (set to ``True``)  or includes (set to ``False``) the diagonal. By default ``True`` (that is, off-diagonal L1-norm).
+                * ``fix_latent_rank``: In SpiecEasi SLR, the low-rank regularization is applied by fixing the rank of :math:`L`. Set ``fix_latent_rank=True`` to fix the rank in the same way; the range of desired ranks is specified with ``'mu1_range'`` (will use ``int(mu1)`` in the solver). By default ``False``.  
+        """ 
         
         if modelselect_params is None:
             modelselect_params = dict()
@@ -563,7 +572,7 @@ class glasso_problem:
         ----------
         modelselect_params : dict, optional
             Dictionary with (a subset of) parameters for the grid search. This allows you to specify the grid which is used.
-            Calls ``self.set_modelselect_params()``, see doc of this method for details.
+            Calls ``self.set_modelselect_params()``, see docs of that method for details.
         method : str, optional
             Method for choosing the best solution in the grid. 
             Options are 'AIC' (Akaike Information criterion) and 'eBIC' (extended Bayesian information criterion).
@@ -603,18 +612,21 @@ class glasso_problem:
         # SINGLE GL --> GRID SEARCH lambda1/mu
         ###############################
         if not self.multiple:
-            sol, self._all_theta, self._all_lowrank, stats = single_grid_search(S=self.S,
-                                                                                lambda_range=self.modelselect_params['lambda1_range'],
-                                                                                N=self.N,
-                                                                                method=method,
-                                                                                gamma=gamma,
-                                                                                latent=self.latent,
-                                                                                mu_range=self.modelselect_params['mu1_range'],
-                                                                                use_block=True,
-                                                                                store_all=store_all,
-                                                                                tol=tol,
-                                                                                rtol=rtol,
-                                                                                lambda1_mask=self.modelselect_params['lambda1_mask']
+            sol, self._all_theta, self._all_lowrank, stats = single_grid_search(
+                S=self.S,
+                lambda_range=self.modelselect_params['lambda1_range'],
+                N=self.N,
+                method=method,
+                gamma=gamma,
+                latent=self.latent,
+                mu_range=self.modelselect_params['mu1_range'],
+                use_block=True,
+                store_all=store_all,
+                tol=tol,
+                rtol=rtol,
+                lambda1_mask=self.modelselect_params['lambda1_mask'],
+                off_diagonal_l1=self.modelselect_params.get('off_diagonal_l1', True),
+                fix_latent_rank=self.modelselect_params.get('fix_latent_rank', False),
             )
             
             # update the regularization parameters to the best grid point
@@ -631,18 +643,19 @@ class glasso_problem:
             # LATENT VARIABLES --> FIRST STAGE lambda1/mu1 for each instance
             ############################### 
             if self.latent:
-                self._est_uniform, self._est_indv, stage1_statistics = K_single_grid(S=self.S,
-                                                                                     lambda_range=self.modelselect_params['lambda1_range'],
-                                                                                     N=self.N,
-                                                                                     method=method,
-                                                                                     gamma=gamma,
-                                                                                     latent=self.latent,
-                                                                                     mu_range=self.modelselect_params['mu1_range'],
-                                                                                     use_block=True,
-                                                                                     store_all=store_all,
-                                                                                     tol=tol,
-                                                                                     rtol=rtol
-                )            
+                self._est_uniform, self._est_indv, stage1_statistics = K_single_grid(
+                    S=self.S,
+                    lambda_range=self.modelselect_params['lambda1_range'],
+                    N=self.N,
+                    method=method,
+                    gamma=gamma,
+                    latent=self.latent,
+                    mu_range=self.modelselect_params['mu1_range'],
+                    use_block=True,
+                    store_all=store_all,
+                    tol=tol,
+                    rtol=rtol
+                )          
                 
                 ix_mu = stage1_statistics['ix_mu']
                 
@@ -656,23 +669,24 @@ class glasso_problem:
             # SECOND STAGE --> GRID SEARCH lambda1/lambda2
             ############################### 
     
-            stats, best_ix, sol = grid_search(solver,
-                                              S=self.S,
-                                              N=self.N,
-                                              p=self.p,
-                                              reg=self.reg,
-                                              l1=self.modelselect_params['lambda1_range'],
-                                              l2=self.modelselect_params['lambda2_range'],
-                                              w2=None,
-                                              method=method,
-                                              gamma=gamma,
-                                              G=self.G,
-                                              latent=self.latent,
-                                              mu_range=self.modelselect_params['mu1_range'],
-                                              ix_mu=ix_mu,
-                                              tol=tol,
-                                              rtol=rtol,
-                                              verbose=False
+            stats, best_ix, sol = grid_search(
+                solver,
+                S=self.S,
+                N=self.N,
+                p=self.p,
+                reg=self.reg,
+                l1=self.modelselect_params['lambda1_range'],
+                l2=self.modelselect_params['lambda2_range'],
+                w2=None,
+                method=method,
+                gamma=gamma,
+                G=self.G,
+                latent=self.latent,
+                mu_range=self.modelselect_params['mu1_range'],
+                ix_mu=ix_mu,
+                tol=tol,
+                rtol=rtol,
+                verbose=False
             )
             
             # update the lambda1/lambda2 regularization parameters to the best grid point

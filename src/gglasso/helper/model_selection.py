@@ -18,8 +18,9 @@ DEFAULT_GAMMAS = [0.1, 0.3, 0.5, 0.7]
 TAU_MIN = 1e-12
 N_TAU = 20
       
-def lambda_parametrizer(l1: Union[float, np.ndarray]=0.05,
-                        w2: Union[float, np.ndarray]=0.5
+def lambda_parametrizer(
+        l1: Union[float, np.ndarray]=0.05,
+        w2: Union[float, np.ndarray]=0.5
     ):
     """transforms given l1 and w2 into the respective l2"""
     a = 1/np.sqrt(2)
@@ -31,9 +32,10 @@ def map_l_to_w(l1: float, l2: float):
     w2 = l2/(w1*np.sqrt(2))   
     return (w1,w2)
     
-def lambda_grid(l1: np.ndarray,
-                l2: Optional[np.ndarray]=None,
-                w2: Optional[np.ndarray]=None,
+def lambda_grid(
+        l1: np.ndarray,
+        l2: Optional[np.ndarray]=None,
+        w2: Optional[np.ndarray]=None,
     ):
     """
     l1, l2, w2: values for the grid
@@ -52,24 +54,25 @@ def lambda_grid(l1: np.ndarray,
         
     return L1.squeeze(), L2.squeeze()
 
-def grid_search(solver: str,
-                S: Union[np.ndarray, dict],
-                N: np.ndarray,
-                p: Union[np.ndarray, int],
-                reg: str,
-                l1: np.ndarray,
-                l2: Optional[np.ndarray]=None,
-                w2: Optional[np.ndarray]=None,
-                method: str='eBIC',
-                gamma: float=0.3,
-                G: Optional[np.ndarray]=None,
-                latent: bool=False,
-                mu_range: Optional[np.ndarray]=None,
-                ix_mu: Optional[np.ndarray]=None,
-                thresholding: bool=False,
-                tol: float=1e-7,
-                rtol: float=1e-7,
-                verbose: bool=False
+def grid_search(
+        solver: str,
+        S: Union[np.ndarray, dict],
+        N: np.ndarray,
+        p: Union[np.ndarray, int],
+        reg: str,
+        l1: np.ndarray,
+        l2: Optional[np.ndarray]=None,
+        w2: Optional[np.ndarray]=None,
+        method: str='eBIC',
+        gamma: float=0.3,
+        G: Optional[np.ndarray]=None,
+        latent: bool=False,
+        mu_range: Optional[np.ndarray]=None,
+        ix_mu: Optional[np.ndarray]=None,
+        thresholding: bool=False,
+        tol: float=1e-7,
+        rtol: float=1e-7,
+        verbose: bool=False
     ):
     """
     method for doing model selection for MGL problems using grid search and AIC/eBIC
@@ -176,12 +179,13 @@ def grid_search(solver: str,
         TAU = None
     
     # solver kwargs
-    kwargs = {'reg': reg,
-              'S': S,
-              'tol': tol,
-              'rtol': rtol,
-              'verbose': False,
-              'measure': False
+    kwargs = {
+        'reg': reg,
+        'S': S,
+        'tol': tol,
+        'rtol': rtol,
+        'verbose': False,
+        'measure': False
     }
     
     if isinstance(S, dict):
@@ -228,19 +232,21 @@ def grid_search(solver: str,
                 # store also the best solution without solution
                 _no_thr_this_score = ebic(S, sol['Theta'], N, gamma=gamma)
                 if  _no_thr_this_score < _no_thr_curr_min:
-                    _no_thr_best_params = {'lambda1': L1[g1,g2],
-                                           'lambda2': L2[g1,g2]
+                    _no_thr_best_params = {
+                        'lambda1': L1[g1,g2],
+                        'lambda2': L2[g1,g2]
                     }
                     _no_thr_curr_min = _no_thr_this_score
                     _no_thr_curr_best = sol.copy()
                 
                 # now tune threshold
-                sol['Theta'], opt_tau, _ = tune_multiple_threshold(sol['Theta'],
-                                                                   S,
-                                                                   N,
-                                                                   tau_range=None,
-                                                                   method=method,
-                                                                   gamma=gamma
+                sol['Theta'], opt_tau, _ = tune_multiple_threshold(
+                    sol['Theta'],
+                    S,
+                    N,
+                    tau_range=None,
+                    method=method,
+                    gamma=gamma
                 )
                 TAU[:, g1, g2] = opt_tau
             
@@ -280,15 +286,16 @@ def grid_search(solver: str,
     if verbose:
         print(f"Best regularization parameters: (l1,l2): {(L1[ix], L2[ix])}")
         
-    stats = {'BIC': BIC,
-             'AIC': AIC,
-             'SP': SP,
-             'RANK': RANK,
-             'TAU': TAU,
-             'L1': L1,
-             'L2': L2,
-             'BEST': {'lambda1': L1[ix], 'lambda2': L2[ix]},
-             'GAMMA': gammas
+    stats = {
+        'BIC': BIC,
+        'AIC': AIC,
+        'SP': SP,
+        'RANK': RANK,
+        'TAU': TAU,
+        'L1': L1,
+        'L2': L2,
+        'BEST': {'lambda1': L1[ix], 'lambda2': L2[ix]},
+        'GAMMA': gammas
     }
     
     if thresholding:
@@ -297,18 +304,19 @@ def grid_search(solver: str,
     
     return stats, ix, curr_best
 
-def K_single_grid(S: Union[np.ndarray, dict],
-                  lambda_range: np.ndarray,
-                  N: np.ndarray,
-                  method: str='eBIC',
-                  gamma: float=0.3,
-                  latent: bool=False,
-                  mu_range: Optional[np.ndarray]=None,
-                  thresholding: bool=False,
-                  use_block: bool=True,
-                  store_all: bool=True,
-                  tol: float=1e-7,
-                  rtol: float=1e-7
+def K_single_grid(
+        S: Union[np.ndarray, dict],
+        lambda_range: np.ndarray,
+        N: np.ndarray,
+        method: str='eBIC',
+        gamma: float=0.3,
+        latent: bool=False,
+        mu_range: Optional[np.ndarray]=None,
+        thresholding: bool=False,
+        use_block: bool=True,
+        store_all: bool=True,
+        tol: float=1e-7,
+        rtol: float=1e-7
     ):
     """
     method for doing model selection for K single Graphical Lasso problems, using grid search and AIC/eBIC
@@ -411,18 +419,19 @@ def K_single_grid(S: Union[np.ndarray, dict],
         elif isinstance(S, np.ndarray):
             S_k = S[k,:,:].copy()
         
-        best, est_k, lr_k, stats_k = single_grid_search(S=S_k,
-                                                        lambda_range=lambda_range,
-                                                        N=N[k],
-                                                        method=method,
-                                                        gamma=gamma,
-                                                        latent=latent,
-                                                        mu_range=mu_range,
-                                                        thresholding=thresholding,
-                                                        use_block=use_block,
-                                                        store_all=store_all,
-                                                        tol=tol,
-                                                        rtol=rtol
+        best, est_k, lr_k, stats_k = single_grid_search(
+            S=S_k,
+            lambda_range=lambda_range,
+            N=N[k],
+            method=method,
+            gamma=gamma,
+            latent=latent,
+            mu_range=mu_range,
+            thresholding=thresholding,
+            use_block=use_block,
+            store_all=store_all,
+            tol=tol,
+            rtol=rtol
         )
         
         #store best individual estimator
@@ -488,33 +497,37 @@ def K_single_grid(S: Union[np.ndarray, dict],
     else:
         est_uniform = None
         
-    statistics = {'BIC': BIC[gamma],
-                  'AIC': AIC,
-                  'SP': SP,
-                  'RANK': RANK,
-                  'LAMB': LAMB,
-                  'MU': MU,
-                  'ix_uniform': ix_uniform,
-                  'ix_indv': ix_indv,
-                  'ix_mu': ix_mu
+    statistics = {
+        'BIC': BIC[gamma],
+        'AIC': AIC,
+        'SP': SP,
+        'RANK': RANK,
+        'LAMB': LAMB,
+        'MU': MU,
+        'ix_uniform': ix_uniform,
+        'ix_indv': ix_indv,
+        'ix_mu': ix_mu
     }
       
     return est_uniform, est_indv, statistics
 
 
-def single_grid_search(S: np.ndarray,
-                       lambda_range: np.ndarray,
-                       N: int,
-                       method: str='eBIC',
-                       gamma: float=0.3,
-                       latent: bool=False,
-                       mu_range: np.ndarray=None,
-                       thresholding:  bool=False,
-                       use_block: bool=True,
-                       store_all: bool=True,
-                       tol: float=1e-7,
-                       rtol: float=1e-7,
-                       lambda1_mask: Optional[np.ndarray]=None
+def single_grid_search(
+        S: np.ndarray,
+        lambda_range: np.ndarray,
+        N: int,
+        method: str='eBIC',
+        gamma: float=0.3,
+        latent: bool=False,
+        mu_range: np.ndarray=None,
+        thresholding:  bool=False,
+        use_block: bool=True,
+        store_all: bool=True,
+        tol: float=1e-7,
+        rtol: float=1e-7,
+        lambda1_mask: Optional[np.ndarray]=None,
+        off_diagonal_l1: bool=True,
+        fix_latent_rank: bool=False,
     ):
     """
     method for model selection for SGL problem, doing grid search and selection via eBIC or AIC
@@ -548,7 +561,11 @@ def single_grid_search(S: np.ndarray,
     lambda1_mask : array (p,p), non-negative, optional
         A mask for the regularization parameter. If specified, the problem is solved with the element-wise regularization strength ``lambda1 * lambda1_mask``.
         The value of the mask is unchanged throughout the grid search (only ``lambda1`` is changed).
-    
+    off_diagonal_l1 : boolean, optional
+        L1 penalty is applied only to the off-diagonal elements. The default is ``True``.
+    fix_latent_rank : boolean, optional
+        Use SpiecEasi way to fix rank for low-rank matrix L. Will use ``int(mu1)`` as the desired rank. The default is ``False``.
+
     
     Returns
     -------
@@ -593,17 +610,22 @@ def single_grid_search(S: np.ndarray,
     else:
         TAU = None
     
-    kwargs = {'S': S,
-              'Omega_0': np.eye(p),
-              'X_0': np.eye(p),
-              'tol': tol,
-              'rtol': rtol,
-              'verbose': False,
-              'measure': False
+    kwargs = {
+        'S': S,
+        'Omega_0': np.eye(p),
+        'X_0': np.eye(p),
+        'tol': tol,
+        'rtol': rtol,
+        'off_diagonal_l1': off_diagonal_l1,
+        'verbose': False,
+        'measure': False
     }
         
     if lambda1_mask is not None:
         kwargs['lambda1_mask'] = lambda1_mask
+
+    if latent:
+        kwargs['fix_latent_rank'] = fix_latent_rank
     
     if store_all:
         estimates = np.zeros((_L, _M, p, p))
@@ -639,12 +661,13 @@ def single_grid_search(S: np.ndarray,
             
             # tune optimal threshold, changes sol['Theta']
             if thresholding:
-                sol['Theta'], opt_tau, _ = tune_threshold(sol['Theta'],
-                                                          S,
-                                                          N,
-                                                          tau_range=None,
-                                                          method=method,
-                                                          gamma=gamma
+                sol['Theta'], opt_tau, _ = tune_threshold(
+                    sol['Theta'],
+                    S,
+                    N,
+                    tau_range=None,
+                    method=method,
+                    gamma=gamma
                 )
                 TAU[j, m] = opt_tau
              
@@ -678,15 +701,16 @@ def single_grid_search(S: np.ndarray,
         ix = np.unravel_index(np.nanargmin(BIC[gamma]), BIC[gamma].shape)
         
     
-    stats = {'BIC': BIC,
-             'AIC': AIC,
-             'SP': SP,
-             'RANK': RANK,
-             'LAMBDA': LAMB,
-             'MU': MU,
-             'TAU': TAU,
-             'BEST': {'lambda1': LAMB[ix], 'mu1': MU[ix]},
-             'GAMMA': gammas
+    stats = {
+        'BIC': BIC,
+        'AIC': AIC,
+        'SP': SP,
+        'RANK': RANK,
+        'LAMBDA': LAMB,
+        'MU': MU,
+        'TAU': TAU,
+        'BEST': {'lambda1': LAMB[ix], 'mu1': MU[ix]},
+        'GAMMA': gammas
     }
             
     return best_sol, estimates, lowrank, stats
@@ -747,12 +771,13 @@ def tune_multiple_threshold(Theta, S, N, tau_range, method='eBIC', gamma=0.1):
     tau = np.zeros(K)
     
     for k in np.arange(K):
-        Th_k, tau_k, scores_k = tune_threshold(Theta[k],
-                                               S[k],
-                                               N[k],
-                                               tau_range,
-                                               method,
-                                               gamma
+        Th_k, tau_k, scores_k = tune_threshold(
+            Theta[k],
+            S[k],
+            N[k],
+            tau_range,
+            method,
+            gamma
         )
         score[k] = scores_k
         tau[k] = tau_k
